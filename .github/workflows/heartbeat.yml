@@ -9,6 +9,7 @@ on:
       - main
       - jett/mk0-foundation
     paths:
+      - 'STATUS.md'
       - 'spikes/canonical-resolver/**'
       - '.github/workflows/heartbeat.yml'
       - 'ops/**'
@@ -50,11 +51,13 @@ jobs:
 
       - name: Guard recovery equipment
         run: |
+          test -f STATUS.md
           test -f ops/VITALS.md
           test -f ops/RECOVERY-PLAYBOOK.md
           test -f graph/GRAPH-PROTOCOL.md
           test -f graph/CLOSURE-RECEIPT-TEMPLATE.md
           test -f mk0/04-architecture/PRIVACY-DATA-MATRIX.json
+          grep -q 'BUILD_READY                NO' STATUS.md
           grep -q 'FINANCIAL_TRUTH' ops/VITALS.md
           grep -q 'DO NOT MERGE' ops/RECOVERY-PLAYBOOK.md
           grep -q 'BUILD_READY = YES' graph/GRAPH-PROTOCOL.md
@@ -65,4 +68,5 @@ jobs:
           echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Closure graph is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Privacy data-handling matrix is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Recovery equipment is present.' >> "$GITHUB_STEP_SUMMARY"
