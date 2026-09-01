@@ -128,6 +128,9 @@ Successful all-devices-lost recovery must establish and verify a newly authorize
 ### INV-SYNC-011
 After Recovery Key rotation, the retired Recovery Private Key cannot decrypt tenant epochs that were created and wrapped only to the new Recovery Public Key.
 
+### INV-SYNC-012
+Future-access revocation must prevent a revoked device from creating **newly admissible history under an old key epoch** after cutover. Before old-epoch envelopes from that origin are treated as immutable historical replay, a still-authorized authority must commit the exact accepted historical origin stream (or an equivalent reviewed append-only commitment). Post-cutover extension, substitution, sequence forks and unresolved gaps fail closed. Exact duplicate relay delivery and transport reordering of the already committed historical set remain harmless.
+
 ## Security
 
 ### INV-SEC-001
