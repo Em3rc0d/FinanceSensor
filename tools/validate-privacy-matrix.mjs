@@ -128,6 +128,25 @@ if (keyEpoch && keyEpoch.cloudPlaintext !== 'ALLOWED_MINIMIZED') {
   fail('key epoch metadata must remain minimized');
 }
 
+const witness = requireClass('WITNESS-CHECKPOINT-METADATA');
+if (witness) {
+  if (!witness.cloudPlaintext.includes('OPAQUE_PSEUDONYMOUS_CHECKPOINT_METADATA_ONLY')) {
+    fail('witness checkpoint visibility must be limited to opaque pseudonymous checkpoint metadata');
+  }
+  if (!witness.cloudPlaintext.includes('NO_REAL_TENANT_ID')) {
+    fail('witness checkpoint metadata must not expose the real tenant id');
+  }
+  if (!witness.cloudPlaintext.includes('NO_FINANCIAL_CONTENT')) {
+    fail('witness checkpoint metadata must not expose financial content');
+  }
+  if (!witness.logging.includes('NO_CROSS_WITNESS_IDENTIFIER')) {
+    fail('witness logging must not create a stable cross-witness identifier');
+  }
+  if (!witness.logging.includes('NO_FINANCIAL_CONTENT')) {
+    fail('witness logging must exclude financial content');
+  }
+}
+
 const diagnostics = requireClass('DIAG-TELEMETRY');
 if (diagnostics && diagnostics.logging !== 'ALLOWLIST_ONLY') {
   fail('diagnostic telemetry must use an allowlist-only logging policy');
