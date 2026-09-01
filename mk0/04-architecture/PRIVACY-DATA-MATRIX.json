@@ -259,6 +259,21 @@
       "logging": "MINIMIZED"
     },
     {
+      "id": "WITNESS-CHECKPOINT-METADATA",
+      "name": "Opaque external witness checkpoint metadata and receipt",
+      "sensitivity": "HIGH",
+      "purpose": "Provide independent monotonic checkpoint memory without financial plaintext or tenant decryption authority",
+      "source": "Authorized FinanceSensor device and independent witness",
+      "localRetention": "PERSIST_AS_SECURITY_EVIDENCE_WHILE_TENANT_ACTIVE",
+      "localProtection": "SIGNED_SECURITY_METADATA_PER_WITNESS_PSEUDONYM",
+      "cloudPlaintext": "OPAQUE_PSEUDONYMOUS_CHECKPOINT_METADATA_ONLY_NO_REAL_TENANT_ID_NO_FINANCIAL_CONTENT",
+      "e2eeSync": "NOT_REQUIRED_FOR_WITNESS_RECEIPT",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_REVIEWED_WITNESS_SECURITY_RETENTION_POLICY",
+      "humanAccess": "ROLE_RESTRICTED_SECURITY_METADATA_ONLY",
+      "logging": "NO_FINANCIAL_CONTENT_NO_REAL_TENANT_ID_NO_CROSS_WITNESS_IDENTIFIER"
+    },
+    {
       "id": "DIAG-TELEMETRY",
       "name": "Operational diagnostic telemetry",
       "sensitivity": "LOW_TO_MEDIUM",
