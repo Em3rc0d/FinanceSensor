@@ -56,21 +56,26 @@ BENCHMARK DECISION ACCURACY  100%
 
 ## Q-005 load-bearing evidence
 
-Validated executable baseline: `404f7f1a0f6010d583e72010876785eef00b7254`.
+Validated executable cutover baseline: `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`.
 
 ```text
-E2EE / KEY / RECOVERY / PNS      PASS — 51/51 tests
-RECOVERY ELECTROSHOCK            PASS — 18/18 tests
-KEY AUTHORITY LOAD TEST          PASS — 5/5 tests
-T-002                            PASS
-Q-005                            ACTIVE
-ADR-014 RECOVERY OWNERSHIP       SPIKE-ACCEPTED
-INV-SYNC-008..011                PROVEN_AT_SPIKE
+E2EE / KEY / RECOVERY / REVOCATION / PNS   PASS — 62/62 tests
+RECOVERY OWNERSHIP + LOWER GATE             PASS — REC-001..018
+REVOCATION CUTOVER                          PASS — 7/7 tests
+POST-RECOVERY CUTOVER                       PASS — 4/4 tests
+KEY AUTHORITY LOAD TEST                     PASS — 5/5 tests
+T-002                                       PASS
+Q-005                                       ACTIVE
+ADR-014 RECOVERY OWNERSHIP                  SPIKE-ACCEPTED
+INV-SYNC-008..012                           PROVEN_AT_SPIKE
 ```
 
-Evidence: `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`.
+Evidence:
 
-The load-bearing audit strengthened two adjacent contracts that Recovery depends on:
+- `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
+
+The load-bearing audits now protect four adjacent contracts:
 
 ```text
 RECOVERY COVERAGE
@@ -86,28 +91,42 @@ DEVICE KEY AUTHORITY
   recipient identity must match
   both sides rechecked for tenant + epoch authorization
   cross-tenant authority is rejected
+
+REVOCATION CUTOVER
+  key rotation alone is insufficient while old keys remain replayable
+  accepted historical origin stream is authenticated and frozen
+  post-cutover stale-epoch extension/substitution is rejected
+  unresolved origin gaps fail closed
+  revoked device cannot certify its own cutoff
+
+POST-RECOVERY FINAL RESUME
+  lower-level hardening is necessary but not final authority
+  one authenticated Revocation Barrier is required per lost device
+  missing/tampered barrier keeps future sync blocked
 ```
 
-The logical all-devices-lost ownership problem is no longer conceptually open:
+The logical all-devices-lost ownership and stale-epoch cutover problems are no longer conceptually open at spike level:
 
 ```text
-SERVER MASTER KEY               REJECTED
-PASSWORD-ONLY RECOVERY          REJECTED FOR MK0
-ASYMMETRIC RECOVERY KEY         ACCEPTED AT SPIKE LEVEL
-RECOVERY PRIVATE KEY            USER-HELD / OFFLINE
-PER-EPOCH RECOVERY WRAP         REQUIRED
-AUTHENTICATED COVERAGE          REQUIRED
-AMBIGUOUS COVERAGE              FAIL CLOSED
-POST-RECOVERY DEVICE HARDENING  REQUIRED
-POST-RECOVERY TENANT ROTATION   REQUIRED
-POST-RECOVERY RECOVERY ROTATION REQUIRED
-NEXT-EPOCH RECOVERY COVERAGE    REQUIRED
-FUTURE-SYNC READINESS GATE      REQUIRED
+SERVER MASTER KEY                  REJECTED
+PASSWORD-ONLY RECOVERY             REJECTED FOR MK0
+ASYMMETRIC RECOVERY KEY            ACCEPTED AT SPIKE LEVEL
+RECOVERY PRIVATE KEY               USER-HELD / OFFLINE
+PER-EPOCH RECOVERY WRAP            REQUIRED
+AUTHENTICATED COVERAGE             REQUIRED
+AMBIGUOUS COVERAGE                 FAIL CLOSED
+POST-RECOVERY DEVICE HARDENING     REQUIRED
+POST-RECOVERY TENANT ROTATION      REQUIRED
+POST-RECOVERY RECOVERY ROTATION    REQUIRED
+NEXT-EPOCH RECOVERY COVERAGE       REQUIRED
+LOWER-LEVEL READINESS GATE         REQUIRED
+REVOCATION BARRIER                 REQUIRED
+STALE-EPOCH POST-CUTOVER HISTORY   REJECTED
+UNRESOLVED CUTOVER GAP             FAIL CLOSED
+FINAL SAFE-TO-RESUME GATE          REQUIRED
 ```
 
-A hardening **plan** is no longer enough in the executable model. `REC-018` requires the state to prove new epoch + new Recovery Key + new-device authorization + lost-device revocation + next-epoch recovery coverage before `readyForFutureSync` can become true.
-
-Q-005 remains open because production cryptography, physical Android/iOS key/background behavior, real control-plane authorization, Recovery Kit handling and physical disaster recovery still require evidence.
+Q-005 remains open because production cryptography/history commitment, physical Android/iOS key/background behavior, real control-plane authorization, Recovery Kit handling, barrier persistence and physical disaster recovery still require evidence.
 
 ## Financial ingress / Gmail evidence
 
@@ -153,42 +172,47 @@ No Gmail token/client secret/user mail is committed to the repository.
 
 ## Invariant nervous system
 
-Latest validated traceability baseline:
+Expected reconciled traceability after the revocation-cutover addition:
 
 ```text
 PRODUCT INVARIANTS          34
-DATA-MODEL INVARIANTS       42
-TOTAL WIRED                  76
+DATA-MODEL INVARIANTS       43
+TOTAL WIRED                  77
 
 SPECIFIED                    29
 PARTIAL                      18
-PROVEN_AT_SPIKE              14
+PROVEN_AT_SPIKE              15
 PROVEN                       15
 
 REGISTERED CONTRADICTIONS     2
 OPEN CONTRADICTIONS           0
 ```
 
-`INV-SYNC-008..011` are wired through `graph/traceability-recovery.json`. The new `KEY-001..005` cases additionally strengthen executable support for already-wired `INV-TEN-005` and `INV-SYNC-003`; no release-grade state promotion is inferred from those new tests alone.
+`INV-SYNC-008..012` are wired through `graph/traceability-recovery.json`. `INV-SYNC-012` is backed by `revocation.test.js` + `recovery-cutover.test.js` and the dedicated cutover evidence artifact.
+
+The `KEY-001..005` cases additionally strengthen executable support for already-wired `INV-TEN-005` and `INV-SYNC-003`; no release-grade state promotion is inferred from those tests alone.
 
 `G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
 
 ## Privacy nervous system
 
 ```text
-BASE DATA CLASSES            18
-RECOVERY DATA CLASSES         3
-TOTAL PRIVACY CLASSES        21
-PRIVACY MATRIX ECG           PASS
+BASE DATA CLASSES             18
+RECOVERY/REVOCATION CLASSES    4
+TOTAL PRIVACY CLASSES         22
+PRIVACY MATRIX ECG            EXPECTED PASS / FINAL HEARTBEAT REQUIRED
 ```
 
-Recovery classes:
+Recovery/revocation classes:
 
 ```text
 RECOVERY-PRIVATE-KEY
 RECOVERY-PUBLIC-KEY
 RECOVERY-EPOCH-WRAP
+REVOCATION-CUTOVER-BARRIER
 ```
+
+The Revocation Barrier is explicitly classified because it leaks security/activity metadata such as cutover epoch, device identity and last accepted origin sequence even though it does not expose financial payload plaintext.
 
 The privacy matrices remain design-level DRAFTs until physical storage/transport/deletion evidence exists.
 
@@ -218,10 +242,10 @@ OPS-001 Repository governance        OPEN
 G-MK0 BUILD_READY                    BLOCKED
 ```
 
-The authoritative ledger cites Recovery source, tests, ADR-014 and evidence under Q-005/S-002/T-002 while deliberately preserving their states.
+The authoritative ledger deliberately preserves these owner states. `PROVEN_AT_SPIKE` evidence does not promote Q-005/S-002 to `CLOSED`.
 
 ```text
-GRAPH        PASS
+GRAPH        EXPECTED PASS / FINAL HEARTBEAT REQUIRED
 NODES        21
 BUILD_READY  false
 ```
@@ -252,6 +276,7 @@ Apple key-store evidence
 real transport/storage inspection
 cloud deletion/backup semantics
 Recovery Kit export/import leakage testing
+Revocation Barrier storage/retention/deletion inspection
 metadata leakage analysis
 ```
 
@@ -260,24 +285,26 @@ metadata leakage analysis
 ```text
 reviewed production cryptographic construction/library
 exact production HPKE/AEAD/signature suite freeze
+reviewed production revoked-origin append-only commitment
 Android ↔ iOS cryptographic interoperability
 Android Keystore/StrongBox physical evidence
 iOS Keychain/Secure Enclave physical evidence
 real control-plane tenant authorization enforcement
 real recovery-wrap retrieval authorization
-real network partition / long-offline recovery
-real crash/restart persistence
+real Revocation Barrier persistence/authorization
+real network partition / long-offline cutover recovery
+real crash/restart persistence around cutover
 real WorkManager / BackgroundTasks behavior
 physical all-devices-lost recovery
-physical post-recovery revocation/rotation/readiness
+physical post-recovery revocation/rotation/cutover
 Recovery Kit export/import leakage controls
 recovery authentication / re-authentication gate
-recovery retention/deletion policy
+recovery + barrier retention/deletion policy
 side-channel / penetration-test review
 metadata leakage analysis
 ```
 
-The logical recovery ownership, authenticated coverage, tenant-scoped key-authority and post-recovery readiness semantics are **not** on this blocker list anymore; they are decided/tested at bounded spike level.
+The logical recovery ownership, authenticated coverage, tenant-scoped key authority, stale-epoch cutover and final post-recovery resume semantics are **not** on this blocker list anymore; they are decided/tested at bounded spike level.
 
 ## Repository governance position
 
@@ -290,27 +317,31 @@ PR #1                           DRAFT / DO NOT MERGE
 
 `OPS-001` remains an explicit dependency of `G-MK0`.
 
-## Whole-organism ECG baseline
+## Whole-organism ECG candidate
 
-Validated executable load-bearing head `404f7f1a0f6010d583e72010876785eef00b7254`:
+Executable cutover commit `0d4f3b2cbf57dee811480268bab19d2ee3a5a101` already proved:
 
 ```text
-CANONICAL RESOLVER              98 / 98 PASS
-E2EE / KEY / RECOVERY / PNS     51 / 51 PASS
-RECOVERY                        18 / 18 PASS
-KEY AUTHORITY                    5 / 5 PASS
-PHYSICAL INGRESS                21 / 21 PASS
-CLOSURE GRAPH                   PASS
-ARTIFACT STATUS AUTHORITY       PASS
-QUARRY STATUS                   PASS
-TRACEABILITY                    PASS — 76 / 76 WIRED
-PRIVACY MATRIX                  PASS — 21 CLASSES
-HEARTBEAT                       PASS
-MK0 FOUNDATION                  3 / 3 JOBS PASS
-BUILD_READY                     false
+CANONICAL RESOLVER                    PASS
+E2EE / KEY / RECOVERY / REVOCATION   62 / 62 PASS
+PHYSICAL INGRESS                      PASS
+MK0 FOUNDATION                        3 / 3 JOBS PASS
 ```
 
-Any later documentation/graph head that claims this baseline is accepted only if it repeats the whole-organism ECG successfully; green Recovery tests alone are insufficient.
+The current documentation/graph head must now repeat the **whole-organism Heartbeat** before this becomes the final reconciled baseline:
+
+```text
+CLOSURE GRAPH                   required PASS
+ARTIFACT STATUS AUTHORITY       required PASS
+QUARRY STATUS                   required PASS
+TRACEABILITY                    required PASS — 77 / 77 expected
+PRIVACY MATRIX                  required PASS — 22 classes expected
+RECOVERY EQUIPMENT GUARD        required PASS
+HEARTBEAT                       required PASS
+BUILD_READY                     must remain false
+```
+
+Green E2EE tests alone are insufficient.
 
 ## Critical path
 
@@ -319,7 +350,8 @@ Q-003 Level B controlled Gmail execution
         +
 Q-004 real deletion/revocation/privacy inspection
         +
-Q-005 production crypto + real control-plane authorization + physical mobile/recovery evidence
+Q-005 production crypto + production cutover commitment
+      + real control-plane authorization + physical mobile/recovery evidence
         ↓
 A-001 + SEC-001 reconciliation
         ↓
