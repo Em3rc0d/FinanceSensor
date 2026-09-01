@@ -1,18 +1,18 @@
 # EV-Q005 — All-Devices-Lost Recovery Electroshock
 
 **Date:** 2026-09-01  
-**Evidence level:** `PROVEN_AT_SPIKE` candidate  
-**Validated commit:** `b48d45d0d278b243bdc103df571cc3eea5ad51ee`  
-**MK0 Foundation run:** `33526869771`  
-**E2EE job:** `99919836022`  
-**Heartbeat run:** `33526869624`
+**Evidence level:** `PROVEN_AT_SPIKE`  
+**Validated commit:** `ce2bb1ebac89e12f8defd8a163e24eadf3bb32e1`  
+**MK0 Foundation run:** `33527184230`  
+**E2EE job:** `99920894672`  
+**Heartbeat run:** `33527184155`
 
 ## Result
 
 ```text
 E2EE / PERIPHERAL / RECOVERY SUITE   PASS
-TOTAL TESTS                          38 / 38 PASS
-RECOVERY TESTS                       10 / 10 PASS
+TOTAL TESTS                          40 / 40 PASS
+RECOVERY TESTS                       12 / 12 PASS
 HEARTBEAT                            PASS
 MK0 FOUNDATION                       3 / 3 JOBS PASS
 BUILD_READY                          NO
@@ -34,12 +34,14 @@ REC-007 Recovery Kit restores an epoch after all device private keys are gone
 REC-008 rotating Recovery Key blocks old key from future-only wraps
 REC-009 wrong authorizer record cannot validate a recovery wrap
 REC-010 no Recovery Kit means no hidden server recovery path
+REC-011 declared recoverable epochs require complete recovery-wrap coverage
+REC-012 post-recovery hardening revokes lost devices and rotates tenant + recovery epochs before future sync
 ```
 
 Observed result:
 
 ```text
-REC-001 ... REC-010     10 / 10 PASS
+REC-001 ... REC-012     12 / 12 PASS
 ```
 
 ## Whole-organism regression result
@@ -64,7 +66,7 @@ Therefore the new recovery model did not regress the already-wired financial hea
 
 ## Privacy result
 
-The privacy ECG now treats these as first-class classes:
+The privacy ECG treats these as first-class classes:
 
 ```text
 RECOVERY-PRIVATE-KEY
@@ -85,11 +87,11 @@ Recovery Public Key
   cloud plaintext       ALLOWED_MINIMIZED
 
 Recovery Epoch Wrap
-  cloud view             CIPHERTEXT + MINIMUM CONTEXT ONLY
-  logging                NO KEY MATERIAL
+  cloud view            CIPHERTEXT + MINIMUM CONTEXT ONLY
+  logging               NO KEY MATERIAL
 ```
 
-## Domain invariants added
+## Domain invariants proved at spike level
 
 ```text
 INV-SYNC-008 cloud alone cannot recover a tenant epoch
@@ -98,7 +100,7 @@ INV-SYNC-010 successful disaster recovery requires fresh authorization + epoch r
 INV-SYNC-011 retired Recovery Key cannot decrypt future-only epochs
 ```
 
-At this evidence level these invariants may be promoted only to `PROVEN_AT_SPIKE`.
+These invariants are `PROVEN_AT_SPIKE`, not release-grade `PROVEN`.
 
 ## Architecture implication
 
@@ -119,6 +121,41 @@ User Recovery Kit
 ```
 
 This rejects a standing server master key while still allowing an explicit all-devices-lost recovery path.
+
+## Recovery coverage invariant
+
+A key epoch cannot be advertised as recoverable merely because a Recovery Public Key exists. The spike now checks the stronger property:
+
+```text
+DECLARED RECOVERABLE EPOCH
+        ↓
+matching tenant_id
+matching recovery_key_id
+matching key_epoch
+        ↓
+recovery wrap exists
+        ↓
+RECOVERY-COVERED
+```
+
+Missing coverage is an explicit failure.
+
+## Post-recovery hardening invariant
+
+A successful disaster recovery does not reactivate lost devices or continue on the recovered historical epoch:
+
+```text
+restore through epoch N
+        ↓
+new device authorization starts at N+1
+lost devices revoked from N+1
+new tenant epoch N+1 required
+new Recovery Key required
+        ↓
+future sync may resume
+```
+
+This is a bounded transition-plan proof. Physical device enrollment/revocation and real key generation remain future evidence.
 
 ## Explicit unrecoverable state
 
@@ -153,13 +190,13 @@ FinanceSensor must not silently substitute a server backdoor for this state. Pro
 ## Closure effect
 
 ```text
-ADR-005 ownership model             eligible for SPIKE-ACCEPTED state
-INV-SYNC-008..011                   eligible for PROVEN_AT_SPIKE
-ALL_DEVICES_LOST_RECOVERY_DESIGN    no longer conceptually OPEN
-PHYSICAL_RECOVERY                    still OPEN
-PRODUCTION_CRYPTO                    still OPEN
-Q-005                                remains ACTIVE
-BUILD_READY                          remains NO
+ADR-005 ownership model             SPIKE-ACCEPTABLE
+INV-SYNC-008..011                   PROVEN_AT_SPIKE
+ALL_DEVICES_LOST_RECOVERY_DESIGN    DECIDED AT LOGICAL/SPIKE LEVEL
+PHYSICAL_RECOVERY                   OPEN
+PRODUCTION_CRYPTO                   OPEN
+Q-005                               ACTIVE
+BUILD_READY                         NO
 ```
 
 The next evidence level must move this design from Node feasibility to a reviewed production construction and physical mobile implementation.
