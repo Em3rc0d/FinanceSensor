@@ -16,8 +16,8 @@ test('INV-SYNC-005 lease failure can duplicate processing work without duplicati
   const deviceB = generateDeviceIdentity('device-b');
   const rootKey = generateTenantRootKey();
   const authorized = new Map([
-    ['device-a', publicDeviceRecord(deviceA)],
-    ['device-b', publicDeviceRecord(deviceB)]
+    ['device-a', publicDeviceRecord(deviceA, { tenantId })],
+    ['device-b', publicDeviceRecord(deviceB, { tenantId })]
   ]);
 
   // Simulate a ProcessingLease failure: both devices independently process the
