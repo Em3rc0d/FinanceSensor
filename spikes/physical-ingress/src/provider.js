@@ -70,6 +70,11 @@ export class SyntheticMailProvider {
     };
   }
 
+  getCurrentHistoryId() {
+    this._record('profile.get', {});
+    return String(this.currentHistoryId);
+  }
+
   expireHistoryBefore(historyId) {
     this.minimumHistoryId = Number(historyId);
   }
