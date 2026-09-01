@@ -56,8 +56,6 @@ BENCHMARK DECISION ACCURACY  100%
 
 ## Q-005 peripheral / parasympathetic / recovery evidence
 
-The Q-005 bounded executable system now includes recovery as a first-class subsystem.
-
 ```text
 E2EE / PNS / RECOVERY SUITE      PASS — 40/40 tests
 RECOVERY ELECTROSHOCK            PASS — 12/12 tests
@@ -67,9 +65,7 @@ ADR-005 RECOVERY OWNERSHIP       SPIKE-ACCEPTED
 INV-SYNC-008..011                PROVEN_AT_SPIKE
 ```
 
-Recovery evidence:
-
-`mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+Evidence: `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`.
 
 The logical all-devices-lost ownership problem is no longer conceptually open:
 
@@ -85,11 +81,9 @@ POST-RECOVERY TENANT ROTATION   REQUIRED
 POST-RECOVERY RECOVERY ROTATION REQUIRED
 ```
 
-Q-005 remains deliberately open because production cryptography, physical Android/iOS key/background behavior, real cloud authorization, Recovery Kit handling and physical disaster recovery still require evidence.
+Q-005 remains open because production cryptography, physical Android/iOS key/background behavior, real cloud authorization, Recovery Kit handling and physical disaster recovery still require evidence.
 
 ## Financial ingress / Gmail evidence
-
-The source pipeline has two explicitly separated evidence levels.
 
 ### Level A — contractual harness
 
@@ -110,8 +104,6 @@ S-003                          ACTIVE
 ```
 
 Evidence: `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`.
-
-Raw mail can be discarded only **after** its derived semantic meaning is captured in encrypted FinancialEvidence. Restart/replay therefore does not require retaining the original email body.
 
 ### Level B — real Gmail provider
 
@@ -151,13 +143,11 @@ REGISTERED CONTRADICTIONS     2
 OPEN CONTRADICTIONS           0
 ```
 
-The four new data-model invariants are `INV-SYNC-008..011`, owned by the recovery system and wired through `graph/traceability-recovery.json`.
+The four new data-model invariants are `INV-SYNC-008..011`, wired through `graph/traceability-recovery.json`.
 
 `G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
 
 ## Privacy nervous system
-
-The privacy validator now treats recovery as part of the same deny-by-default policy:
 
 ```text
 BASE DATA CLASSES            18
@@ -174,39 +164,37 @@ RECOVERY-PUBLIC-KEY
 RECOVERY-EPOCH-WRAP
 ```
 
-The matrix remains a design-level DRAFT until physical storage/transport/deletion evidence exists.
+The privacy matrices remain design-level DRAFTs until physical storage/transport/deletion evidence exists.
 
 ## Closure graph
 
 ```text
 P-001 Product thesis                 PASS
 P-002 Product invariants             PASS
-
 Q-001 Canonical semantics            CLOSED
 Q-002 Fingerprinting/dedup           CLOSED
 Q-003 Gmail feasibility              ACTIVE
 Q-004 Email privacy                  ACTIVE
 Q-005 E2EE multi-device sync         ACTIVE
-
 C-001 External-transfer semantics    CLOSED
 C-002 Refund/reversal projection     CLOSED
-
 A-001 Core architecture              DRAFTED
 SEC-001 Security/privacy arch        DRAFTED
 DM-001 Core data model               DRAFTED
 WF-001 Signature wireframes          DRAFTED
 S-001 Canonical resolver spike       ACTIVE
 T-001 Canonical resolver test        PASS
-S-002 Peripheral convergence spike   ACTIVE
+S-002 E2EE/PNS/recovery spike        ACTIVE
 T-002 E2EE/PNS/recovery suite        PASS
 S-003 Physical ingress spike         ACTIVE
 T-003 Ingress/privacy suite          PASS
 OPS-001 Repository governance        OPEN
-
 G-MK0 BUILD_READY                    BLOCKED
 ```
 
-Latest validated graph ECG:
+The authoritative ledger now cites Recovery source, tests, ADR and evidence under Q-005/S-002/T-002 while deliberately preserving their states.
+
+Latest validated graph ECG before this final reconciliation:
 
 ```text
 GRAPH PASS
@@ -214,11 +202,7 @@ NODES        21
 BUILD_READY  false
 ```
 
-Recovery extends the graph through `graph/traceability-recovery.json`; it does not falsely close Q-005.
-
 ## Gmail position
-
-Current source-feasibility position:
 
 ```text
 minimum Gmail scope candidate      gmail.readonly
@@ -232,28 +216,9 @@ security assessment applicability  still open for actual architecture
 real Gmail OAuth/API spike         BLOCKED ON CONTROLLED CREDENTIAL
 ```
 
-Research provenance: `research/GMAIL-2026-SOURCES.md`.
-
 Q-003 remains `ACTIVE`; provider-contract evidence cannot substitute for a controlled real Gmail execution.
 
-## Privacy position
-
-Q-004 has executable Level A evidence for:
-
-```text
-raw-content non-persistence
-local encrypted durable state
-content-free telemetry allowlist
-credential deletion on disconnect
-optional derived-state reset
-local tenant deletion
-request accounting
-restart/replay without raw mail
-recovery private-key cloud prohibition
-recovery public/wrap minimization policy
-```
-
-Still required before Q-004 closure:
+## Q-004 / privacy remaining proof
 
 ```text
 real Gmail lifecycle evidence
@@ -288,7 +253,7 @@ side-channel / penetration-test review
 metadata leakage analysis
 ```
 
-The **logical recovery ownership model is not on this blocker list anymore**; ADR-005 resolved that at spike level. Physical and production proof remains open.
+The logical recovery ownership model is **not** on this blocker list anymore; ADR-005 resolved it at spike level.
 
 ## Repository governance position
 
@@ -301,9 +266,9 @@ PR #1                           DRAFT / DO NOT MERGE
 
 `OPS-001` remains an explicit dependency of `G-MK0`.
 
-## Latest whole-organism ECG
+## Whole-organism ECG baseline
 
-Validated recovery head before this status reconciliation:
+Validated executable recovery head:
 
 ```text
 CANONICAL RESOLVER              98 / 98 PASS
@@ -320,7 +285,7 @@ MK0 FOUNDATION                  3 / 3 JOBS PASS
 BUILD_READY                     false
 ```
 
-A final ECG must remain green after this status/graph reconciliation before this baseline is treated as current.
+The current documentation/graph head must repeat this ECG successfully before becoming the final reconciled baseline.
 
 ## Critical path
 
