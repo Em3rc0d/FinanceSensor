@@ -15,7 +15,11 @@ import {
   recoveryPublicRecord,
   wrapTenantEpochForRecovery
 } from '../src/recovery.js';
-import { createRevocationBarrier } from '../src/revocation.js';
+import {
+  assertRevokedOriginHistory,
+  createRevocationBarrier,
+  originHistoryCommitment
+} from '../src/revocation.js';
 import { assertPostRecoverySafeToResume } from '../src/recovery-cutover.js';
 
 function setupStressRig() {
@@ -82,17 +86,23 @@ function setupStressRig() {
   ]);
 
   const oldRoot = generateTenantRootKey();
-  const historicalEnvelope = (device, sequence, eventId, amount) => createEncryptedEnvelope({
+  const historicalEnvelope = (
+    device,
+    sequence,
+    eventId,
+    amount,
+    keyEpoch = recoveredThroughEpoch
+  ) => createEncryptedEnvelope({
     tenantId,
-    keyEpoch: recoveredThroughEpoch,
+    keyEpoch,
     tenantRootKey: oldRoot,
     originDevice: device,
     originDeviceSequence: sequence,
     eventId,
-    createdAt: `2026-08-31T10:${String(sequence).padStart(2, '0')}:00.000Z`,
+    createdAt: `2026-08-31T10:${String(sequence % 60).padStart(2, '0')}:00.000Z`,
     action: {
       type: 'CANONICAL_EVENT_CREATED',
-      canonicalEventId: `canonical-${eventId}`,
+      canonicalEventId: `canonical-${eventId}-${sequence}`,
       event: { amount, currency: 'PEN' }
     }
   });
@@ -119,16 +129,22 @@ function setupStressRig() {
 
   return {
     tenantId,
+    recoveredThroughEpoch,
     nextKeyEpoch,
     recovered,
     recoveredRecord,
+    lostA,
+    lostB,
     lostARecord,
     lostBRecord,
+    lurking,
     lurkingRecord,
     recovery,
     coverage,
     plan,
     records,
+    oldRoot,
+    historicalEnvelope,
     historyA,
     historyB,
     barrierA,
@@ -234,4 +250,168 @@ test('KNEE-005 final recovery gate requires recovered origin history evidence fo
   assert.throws(() => assertPostRecoverySafeToResume(safeArgs(rig, {
     revokedOriginHistories: incompleteHistories
   })), /post-recovery-revoked-origin-history-missing:device-lost-b/);
+});
+
+test('KNEE-006 one replay event id cannot identify two different historical envelopes', () => {
+  const rig = setupStressRig();
+  const reusedEventIdHistory = [
+    rig.historicalEnvelope(rig.lostA, 1, 'reused-event-id', 10),
+    rig.historicalEnvelope(rig.lostA, 2, 'reused-event-id', 20)
+  ];
+
+  assert.throws(() => originHistoryCommitment({
+    tenantId: rig.tenantId,
+    revokedDeviceRecord: rig.lostARecord,
+    revokedFromEpoch: rig.nextKeyEpoch,
+    historicalEnvelopes: reusedEventIdHistory
+  }), /historical-event-id-reuse:reused-event-id/);
+});
+
+test('KNEE-007 a signed fork at every tested origin sequence is rejected rather than averaged or last-write-wins', () => {
+  const rig = setupStressRig();
+  const history = Array.from({ length: 16 }, (_, index) =>
+    rig.historicalEnvelope(rig.lostA, index + 1, `fatigue-${index + 1}`, index + 1)
+  );
+
+  for (let sequence = 1; sequence <= history.length; sequence += 1) {
+    const fork = rig.historicalEnvelope(
+      rig.lostA,
+      sequence,
+      `fork-${sequence}`,
+      10_000 + sequence
+    );
+    assert.throws(() => originHistoryCommitment({
+      tenantId: rig.tenantId,
+      revokedDeviceRecord: rig.lostARecord,
+      revokedFromEpoch: rig.nextKeyEpoch,
+      historicalEnvelopes: [...history, fork]
+    }), new RegExp(`historical-sequence-fork:${sequence}`));
+  }
+});
+
+test('KNEE-008 sixty-four-envelope history survives reverse order and repeated exact relay delivery', () => {
+  const rig = setupStressRig();
+  const history = Array.from({ length: 64 }, (_, index) =>
+    rig.historicalEnvelope(rig.lostA, index + 1, `load-${index + 1}`, index + 1)
+  );
+  const barrier = rig.barrierFor(
+    rig.lostARecord,
+    history,
+    '2026-09-01T11:08:00.000Z'
+  );
+  const loaded = [
+    ...history.slice().reverse(),
+    ...history,
+    ...history.slice().reverse()
+  ];
+
+  const frozen = assertRevokedOriginHistory({
+    barrier,
+    historicalEnvelopes: loaded,
+    revokedDeviceRecord: rig.lostARecord,
+    authorizingDeviceRecord: rig.recoveredRecord
+  });
+
+  assert.equal(frozen.historicalOriginFrozen, true);
+  assert.equal(frozen.lastAcceptedSequence, 64);
+});
+
+test('KNEE-009 old epochs remain historical only below the revocation epoch; the cutover epoch itself is forbidden', () => {
+  const rig = setupStressRig();
+  const historicalAcrossEpochs = Array.from({ length: 7 }, (_, index) =>
+    rig.historicalEnvelope(
+      rig.lostA,
+      index + 1,
+      `epoch-${index + 1}`,
+      index + 1,
+      index + 1
+    )
+  );
+
+  const commitment = originHistoryCommitment({
+    tenantId: rig.tenantId,
+    revokedDeviceRecord: rig.lostARecord,
+    revokedFromEpoch: rig.nextKeyEpoch,
+    historicalEnvelopes: historicalAcrossEpochs
+  });
+  assert.equal(commitment.lastAcceptedSequence, 7);
+
+  const crossesCutover = rig.historicalEnvelope(
+    rig.lostA,
+    8,
+    'epoch-8-forbidden',
+    8,
+    rig.nextKeyEpoch
+  );
+  assert.throws(() => originHistoryCommitment({
+    tenantId: rig.tenantId,
+    revokedDeviceRecord: rig.lostARecord,
+    revokedFromEpoch: rig.nextKeyEpoch,
+    historicalEnvelopes: [...historicalAcrossEpochs, crossesCutover]
+  }), /historical-envelope-crosses-revocation-epoch/);
+});
+
+test('KNEE-010 thirty-two equivalent barrier retries remain one semantic cutover authority', () => {
+  const rig = setupStressRig();
+  const retryBarriers = Array.from({ length: 32 }, (_, index) =>
+    rig.barrierFor(
+      rig.lostARecord,
+      rig.historyA,
+      `2026-09-01T12:${String(index).padStart(2, '0')}:00.000Z`
+    )
+  );
+
+  const barriers = new Map([
+    [rig.lostARecord.deviceId, retryBarriers],
+    [rig.lostBRecord.deviceId, rig.barrierB]
+  ]);
+  const safe = assertPostRecoverySafeToResume(safeArgs(rig, {
+    revocationBarriers: barriers
+  }));
+
+  assert.equal(safe.safeToResumeFutureSync, true);
+  assert.equal(safe.verifiedRevocationBarriers, 2);
+  assert.equal(safe.observedRevocationBarrierPackages, 33);
+});
+
+test('KNEE-011 a device active at the last recovered epoch cannot disappear from the lost-device plan merely because it is already marked revoked at N+1', () => {
+  const rig = setupStressRig();
+  const omitted = generateDeviceIdentity('device-omitted-lost');
+  const omittedRecord = publicDeviceRecord(omitted, {
+    tenantId: rig.tenantId,
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: rig.nextKeyEpoch,
+    status: 'REVOKED'
+  });
+  const poisonedRecords = new Map(rig.records);
+  poisonedRecords.set(omittedRecord.deviceId, omittedRecord);
+
+  assert.throws(() => assertPostRecoveryReadyForFutureSync({
+    plan: rig.plan,
+    deviceAuthorizationRecords: poisonedRecords,
+    currentTenantKeyEpoch: rig.nextKeyEpoch,
+    activeRecoveryKeyId: rig.recovery.recoveryKeyId,
+    recoveryCoverage: rig.coverage
+  }), /post-recovery-active-at-recovery-epoch-not-declared-lost:device-omitted-lost/);
+});
+
+test('KNEE-012 unrelated authorization records from another tenant do not contaminate the recovery gate', () => {
+  const rig = setupStressRig();
+  const otherTenantDevice = generateDeviceIdentity('device-other-tenant');
+  const otherTenantRecord = publicDeviceRecord(otherTenantDevice, {
+    tenantId: 'tenant-other',
+    authorizedFromEpoch: 1,
+    status: 'ACTIVE'
+  });
+  const records = new Map(rig.records);
+  records.set(otherTenantRecord.deviceId, otherTenantRecord);
+
+  const ready = assertPostRecoveryReadyForFutureSync({
+    plan: rig.plan,
+    deviceAuthorizationRecords: records,
+    currentTenantKeyEpoch: rig.nextKeyEpoch,
+    activeRecoveryKeyId: rig.recovery.recoveryKeyId,
+    recoveryCoverage: rig.coverage
+  });
+  assert.equal(ready.readyForFutureSync, true);
 });
