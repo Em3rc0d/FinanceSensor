@@ -1,11 +1,11 @@
 # SEC-001 — Q-005 Security Revalidation
 
 **Status authority:** `graph/closure-ledger.json`  
-**Scope:** security consequences introduced by multi-device E2EE synchronization.
+**Scope:** security consequences introduced by multi-device E2EE synchronization and all-devices-lost recovery.
 
-## 1. New trust boundaries
+## 1. Trust boundaries
 
-Q-005 introduces explicit boundaries that SEC-001 must model:
+Q-005 introduces four explicit boundaries that SEC-001 must model:
 
 ```text
 AUTHORIZED DEVICE
@@ -14,28 +14,38 @@ AUTHORIZED DEVICE
   sees decrypted financial state
 
 CLOUD RELAY / CONTROL PLANE
-  sees routing metadata
+  sees minimized routing metadata
   stores opaque sync envelopes
   stores public device-key metadata
   stores device-specific wrapped tenant-key packages
+  stores Recovery Public Key metadata + recovery-wrap ciphertext
   must not need financial plaintext
+  must not hold Recovery Private Key authority
 
-REVOKED DEVICE
+RECOVERY KIT / USER-HELD AUTHORITY
+  holds Recovery Private Key material
+  exists outside ordinary app/cloud state after setup/export
+  may restore retained tenant epochs after all devices are lost
+  must be re-imported locally during disaster recovery
+
+REVOKED / LOST DEVICE
   may retain historical data/key material already obtained
   must lose future authorization/key epochs
+  must not obtain Recovery Private Key from normal operation
 ```
 
 ## 2. Threat actors
 
 ### Honest-but-curious relay
 
-Can observe:
+Can observe minimized metadata such as:
 
 ```text
 tenant opaque identity
 device identities
 key epoch numbers
-message timing
+recovery key id/public key
+message/recovery-wrap timing
 ciphertext sizes
 server ordering / activity patterns
 ```
@@ -48,6 +58,7 @@ amount/merchant/category meaning
 email content
 tenant root key
 device private key
+Recovery Private Key
 ```
 
 ### Malicious/compromised relay
@@ -61,10 +72,13 @@ reorder
 duplicate
 substitute ciphertext
 substitute device metadata
-serve stale key wraps
+serve stale device wraps
+serve stale/incomplete recovery wraps
+substitute recovery public metadata
+withhold recovery coverage
 ```
 
-Candidate controls:
+Candidate controls demonstrated structurally or at spike level:
 
 ```text
 AEAD integrity
@@ -74,11 +88,14 @@ per-device monotonic sequence
 key epoch authorization
 local checkpoint/gap detection
 explicit device public-key trust records
+recovery-wrap context binding
+historical authorizer signature verification
+recovery coverage checks
 ```
 
 A malicious relay can still withhold data. Q-005 does not claim Byzantine availability.
 
-### Revoked device
+### Revoked/lost device
 
 A revoked device may possess old tenant keys and previously decrypted data.
 
@@ -88,6 +105,7 @@ Security objective:
 NO FUTURE KEY EPOCH
 NO FUTURE AUTHORIZED ENVELOPE ACCESS
 NO NEW AUTHORIZED ORIGIN AFTER REVOCATION EPOCH
+NO RECOVERY PRIVATE AUTHORITY FROM NORMAL DEVICE STATE
 ```
 
 Non-objective:
@@ -98,13 +116,35 @@ REMOTE ERASURE OF HISTORICAL PLAINTEXT ALREADY SEEN
 
 ### Compromised currently authorized device
 
-This remains a severe threat: an authorized compromised device can read data/key material it is legitimately allowed to receive.
+This remains a severe threat: an authorized compromised device can read data/key material it is legitimately allowed to receive and can create legitimate wraps while authorized.
 
 Q-005 key rotation/revocation limits future exposure after detection but cannot protect plaintext while the compromised device remains authorized.
 
+### Stolen Recovery Kit
+
+A stolen Recovery Kit is a high-severity recovery-authority compromise.
+
+Consequences depend on what ciphertext/recovery wraps the attacker can obtain and on account/control-plane authorization. Therefore production recovery must not rely solely on possession of the Recovery Private Key to gain arbitrary server access.
+
+Required defense-in-depth direction:
+
+```text
+account authentication / re-authentication
+        +
+recovery-wrap retrieval authorization
+        +
+Recovery Private Key possession
+        ↓
+local recovery
+        ↓
+mandatory device + tenant epoch + Recovery Key rotation
+```
+
+Exact recovery authentication policy remains open.
+
 ## 3. Cryptographic construction status
 
-The spike currently demonstrates bounded properties using Node primitives:
+The feasibility spike demonstrates bounded properties using Node primitives:
 
 ```text
 X25519-style ephemeral key agreement
@@ -113,16 +153,20 @@ AES-256-GCM AEAD
 Ed25519 origin signatures
 ```
 
-This is **not** a production-suite approval.
+The same warning applies to recovery.js: this is **not** a production-suite approval.
 
-Candidate production rule:
+Production rule:
 
-- use audited/reviewed HPKE implementation for tenant-key distribution;
-- choose the final AEAD/signature suite through security ADR/review;
-- preserve AAD/context binding and origin authentication properties;
+- use a reviewed/audited HPKE implementation or equivalently reviewed construction for tenant-key distribution/recovery wrapping;
+- select final AEAD/signature suite through security ADR/review;
+- preserve tenant/epoch/recipient/recovery-key context binding;
+- preserve origin/authorizer authentication properties;
 - do not port the spike's hand-composed key-wrap code directly into the app.
 
-Research provenance: `research/SYNC-CRYPTO-2026-SOURCES.md`.
+Research provenance:
+
+- `research/SYNC-CRYPTO-2026-SOURCES.md`
+- `research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md`
 
 ## 4. Key hierarchy security requirements
 
@@ -145,6 +189,22 @@ DeviceKeyWrap
   recipient-bound
   tenant/epoch/context-bound
   signed/authenticated
+
+Recovery Public Key
+  cloud-visible minimized metadata
+  cannot decrypt
+
+Recovery Private Key
+  user-held offline authority
+  not ordinary app persistence
+  never cloud plaintext
+  never E2EE-synchronized as tenant state
+  never logged
+
+RecoveryEpochWrap
+  tenant/epoch/recovery-key bound
+  authenticated
+  cloud stores ciphertext + minimum context only
 ```
 
 ## 5. Envelope security requirements
@@ -163,11 +223,61 @@ schema binding
 
 Financial semantics should remain inside ciphertext unless a later requirement demonstrates a compelling need for particular plaintext metadata.
 
-## 6. Metadata leakage
+## 6. Recovery security requirements
+
+ADR-005 is accepted at the logical/spike level:
+
+```text
+SERVER MASTER KEY          REJECTED
+PASSWORD-ONLY RECOVERY     REJECTED FOR MK0
+ASYMMETRIC RECOVERY KEY    ACCEPTED AT SPIKE LEVEL
+PRIVATE RECOVERY KEY       USER-HELD / OFFLINE
+PER-EPOCH RECOVERY WRAP    REQUIRED
+```
+
+A key epoch cannot be described as recoverable unless coverage is explicit.
+
+```text
+recoverable epoch N
+        ↓
+matching tenant_id
+matching recovery_key_id
+matching key_epoch
+        ↓
+recovery wrap exists
+        ↓
+RECOVERY-COVERED
+```
+
+The recovery spike demonstrates 12/12 bounded properties including cloud non-authority, wrong-key failure, multi-epoch restore, tamper rejection, no-kit/no-backdoor state, coverage completeness and post-recovery hardening.
+
+Evidence:
+
+`../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+
+## 7. Post-recovery hardening
+
+Recovery itself increases exposure because Recovery Private Key material must be imported into a device. Therefore successful disaster recovery must immediately transition away from the recovered historical trust state:
+
+```text
+restore through epoch N
+        ↓
+new device authorized from N+1
+lost devices revoked from N+1
+new tenant epoch N+1 required
+new Recovery Key required
+retire old Recovery Key for future epochs
+        ↓
+normal future sync
+```
+
+This is `PROVEN_AT_SPIKE` only as a deterministic transition plan. Real platform authorization, key generation and revocation remain physical evidence requirements.
+
+## 8. Metadata leakage
 
 E2EE does not mean zero metadata.
 
-Potential leakage:
+Potential leakage now includes:
 
 ```text
 when a device was active
@@ -175,21 +285,24 @@ how many events were synchronized
 relative ciphertext sizes
 which devices belong to one tenant
 key rotation/revocation timing
+presence/count of recovery wraps
+Recovery Key rotation timing
+recovery activity timing
 ```
 
 Open question: define an acceptable metadata leakage budget and determine whether padding/batching is worth battery/latency cost.
 
-MK0 must not claim "cloud knows nothing". A defensible claim is narrower: **normal cloud sync does not require financial payload plaintext**.
+MK0 must not claim "cloud knows nothing". A defensible claim is narrower: **normal cloud sync/recovery storage does not require financial payload plaintext or Recovery Private Key authority**.
 
-## 7. Conflict safety
+## 9. Conflict safety
 
-A relay arrival order is not user intent.
+Relay arrival order is not user intent.
 
 Concurrent incompatible corrections must produce deterministic local `SyncConflict` state instead of silent last-write-wins financial mutation.
 
-The spike currently demonstrates this for category corrections only. Other non-commutative domain actions remain to be enumerated before Q-005 closure.
+The spike demonstrates this for category corrections only. Other non-commutative domain actions remain to be enumerated before Q-005 closure.
 
-## 8. Background / parasympathetic security
+## 10. Background / parasympathetic security
 
 Background interruption must not create a partial-security state.
 
@@ -207,28 +320,28 @@ durable checkpoint
 
 If the OS terminates work, a unit may replay but must remain idempotent.
 
-Low battery/resource constraints may defer work; they may not disable encryption, signature validation, provenance or deduplication.
+Low battery/resource constraints may defer work; they may not disable encryption, signature validation, provenance, deduplication or recovery-coverage checks.
 
-## 9. Recovery risk
+## 11. Privacy matrix revalidation
 
-All-devices-lost recovery remains **OPEN**.
-
-Do not add a server-held universal master key as an undocumented convenience path.
-
-Any recovery design must state:
+Q-005 recovery adds explicit classes:
 
 ```text
-who can recover
-what secret proves recovery authority
-what the server can learn
-what happens after attacker account takeover
-how recovery is revoked/rotated
-how deletion affects recovery material
+RECOVERY-PRIVATE-KEY   CRITICAL
+RECOVERY-PUBLIC-KEY    MEDIUM
+RECOVERY-EPOCH-WRAP    HIGH
 ```
 
-## 10. Spike evidence level
+`tools/validate-privacy-matrix.mjs` now merges and validates both:
 
-The Q-005 synthetic suite can establish only `PROVEN_AT_SPIKE` for bounded properties such as:
+- `PRIVACY-DATA-MATRIX.json`
+- `PRIVACY-RECOVERY-MATRIX.json`
+
+The matrix remains a design-level policy until physical storage/transport/deletion evidence exists.
+
+## 12. Spike evidence level
+
+The Q-005 synthetic suite currently establishes `PROVEN_AT_SPIKE` for bounded properties including:
 
 - encrypted opaque relay payload;
 - tamper detection;
@@ -239,31 +352,48 @@ The Q-005 synthetic suite can establish only `PROVEN_AT_SPIKE` for bounded prope
 - future-access revocation model;
 - lease failure not being sole correctness mechanism;
 - deterministic conflict creation/resolution;
-- bounded parasympathetic scheduling rules.
+- bounded parasympathetic scheduling rules;
+- cloud lacking Recovery Private Key/root-key authority in the modeled recovery view;
+- Recovery Public Key non-decryptability;
+- multi-epoch recovery with correct Recovery Kit;
+- recovery-wrap context/tamper checks;
+- complete recovery coverage requirement;
+- post-recovery hardening transition plan.
+
+Observed suite:
+
+```text
+Q-005 E2EE/PNS/RECOVERY  40 / 40 PASS
+RECOVERY                 12 / 12 PASS
+```
 
 It does **not** establish:
 
 ```text
 mobile secure-keystore correctness
 production HPKE implementation correctness
+Android ↔ iOS crypto interoperability
 side-channel resistance
 real cloud authorization enforcement
+real recovery-wrap retrieval authorization
 real network partition behavior
 real app crash/restart persistence
-all-devices-lost recovery
+physical Recovery Kit export/import safety
+physical all-devices-lost recovery
+physical post-recovery revocation/rotation
 Android/iOS physical background behavior
 penetration-test results
 ```
 
-## 11. SEC-001 impact
+## 13. SEC-001 impact
 
 ```text
 SEC-001 remains DRAFTED
-Q-005 adds concrete candidate controls
-Q-004 privacy matrix expanded
-DM-001 sync/key model expanded
-production crypto ADR still OPEN
-physical mobile evidence still OPEN
+Q-005 recovery ownership model is SPIKE-ACCEPTED
+Q-004 privacy model includes recovery classes
+DM-001 must include recovery records/relationships
+production crypto decision remains OPEN
+physical mobile evidence remains OPEN
 ```
 
 No security closure is claimed from the synthetic spike alone.
