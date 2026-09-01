@@ -9,7 +9,7 @@ How can several authorized phones share one tenant's financial truth while the c
 
 ## Current finding
 
-Q-005 is now a coupled system of five load-bearing concerns:
+Q-005 is now a coupled system of six load-bearing concerns:
 
 ```text
 PERIPHERAL NERVOUS SYSTEM
@@ -51,9 +51,17 @@ TRUSTED CHECKPOINT SYSTEM
   rollback/fork/gap detection
   explicit no-anchor uncertainty
   no false global-latest claim
+
+OPAQUE WITNESS SYSTEM
+  independent monotonic checkpoint memory
+  per-witness pseudonymous log identity
+  rollback/fork/gap/parent enforcement
+  relay-behind detection
+  witness-divergence detection
+  explicit unavailable/unconfirmed state
 ```
 
-A secure protocol that corrupts state under replay is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A signed checkpoint chain that calls an old server view `LATEST` is also unacceptable.
+A secure protocol that corrupts state under replay is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A signed checkpoint chain that calls an old server view `LATEST` is unacceptable. A witness that needs financial plaintext or a stable real tenant identifier is also unacceptable.
 
 Detailed contracts:
 
@@ -61,9 +69,11 @@ Detailed contracts:
 - `../04-architecture/PARASYMPATHETIC-SYNC.md`
 - `../04-architecture/REVOCATION-CUTOVER.md`
 - `../04-architecture/TRUSTED-CHECKPOINT.md`
+- `../04-architecture/WITNESS-FRESHNESS.md`
 - `../04-architecture/Q005-ANTI-ROLLBACK-SECURITY-REVALIDATION.md`
 - `../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
 - `../11-decisions/ADR-015-TRUSTED-CHECKPOINT-ANTI-ROLLBACK.md`
+- `../11-decisions/ADR-016-OPAQUE-WITNESS-FRESHNESS.md`
 
 ## Ownership and authority
 
@@ -240,40 +250,16 @@ VALID SIGNED STATE
 PROOF THAT THE RELAY RETURNED THE NEWEST VALID STATE
 ```
 
-The first checkpoint baseline intentionally verified authenticity only. The adversarial suite then produced:
+The first checkpoint baseline intentionally verified authenticity only. The adversarial suite produced eight red assertions. After repair:
 
 ```text
-RED HEAD
-98 total distributed tests
-90 PASS
-8 FAIL
-```
-
-The failures proved missing protection for:
-
-```text
-rollback behind an independent anchor
-same-sequence checkpoint equivocation
-wrong previous-checkpoint hash
-checkpoint sequence gap
-cross-tenant checkpoint advance
-signed fast-forward over unknown checkpoints
-no-anchor false confidence
-anchor-sequence equivocation
-```
-
-After repair:
-
-```text
-ARB-001..014            14 / 14 PASS
-full distributed suite  98 / 98 PASS
+ARB-001..014             14 / 14 PASS
+checkpoint-era suite      98 / 98 PASS
 ```
 
 Evidence:
 
 `../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
-
-### Accepted bounded checkpoint semantics
 
 FinanceSensor now distinguishes:
 
@@ -283,26 +269,11 @@ TrustedCheckpointAnchor
 CheckpointVerificationResult
 ```
 
-An independently retained anchor establishes a minimum accepted tenant state.
-
-Relative to it:
-
-```text
-presented state behind anchor      → FAIL CLOSED
-same sequence / different hash     → FAIL CLOSED
-anchor sequence / different hash   → FAIL CLOSED
-sequence gap / fast-forward        → FAIL CLOSED
-wrong previous checkpoint hash     → FAIL CLOSED
-cross-tenant checkpoint advance    → FAIL CLOSED
-unauthorized/revoked signer         → FAIL CLOSED
-exact duplicate checkpoint         → IDEMPOTENT
-```
+An independently retained anchor establishes a minimum accepted tenant state. Relative to it, rollback, same-sequence equivocation, anchor equivocation, gap/fast-forward, parent mismatch, cross-tenant advance and invalid authority fail closed. Exact duplicate delivery is retry-equivalent.
 
 This is `INV-SYNC-016`.
 
 ### Freshness honesty
-
-The checkpoint system deliberately refuses to claim more than it knows.
 
 ```text
 no independent anchor
@@ -314,18 +285,6 @@ valid chain extending anchor
 ```
 
 This is `INV-SYNC-017`.
-
-A valid anchored chain proves append-only consistency relative to the anchor. It does **not** prove that the relay supplied every later checkpoint that ever existed.
-
-Example:
-
-```text
-independent anchor = 9
-real tenant once reached = 12
-relay presents exactly = 9
-```
-
-The client can prove it was not silently rolled back before/forked at checkpoint 9. It cannot infer from relay-only evidence that checkpoints 10..12 never existed.
 
 Therefore:
 
@@ -339,7 +298,93 @@ APPEND-ONLY CONSISTENCY
 GLOBAL FRESHNESS
 ```
 
-ADR-015 is `SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED`.
+## Opaque independent witness — ADR-016
+
+ADR-015 answers rollback relative to a trusted anchor. ADR-016 adds independent memory of checkpoint progress without turning the witness into a holder of financial truth.
+
+The first witness implementation intentionally authenticated submissions but did not enforce monotonicity/contradiction rules. The adversarial campaign produced:
+
+```text
+weak witness baseline    109 / 116 PASS
+red assertions             7
+```
+
+The seven failures were:
+
+```text
+rollback submission
+same-sequence different-hash fork
+sequence gap / fast-forward
+wrong previous checkpoint hash
+valid witness ahead of relay
+same-sequence valid witness divergence
+configured witness/log binding confusion
+```
+
+After repair:
+
+```text
+WIT-001..018             18 / 18 PASS
+full distributed suite 116 / 116 PASS
+```
+
+Evidence:
+
+`../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
+
+### Witness privacy contract
+
+Each witness receives a different opaque log identifier. The candidate protocol does not require:
+
+```text
+real tenant id
+email / bank / account identifiers
+amount / merchant / category
+financial event type
+origin-device identities / origin heads
+financial payload ciphertext
+Tenant Root Key
+Recovery Private Key
+```
+
+Timing, checkpoint sequence and cadence remain metadata leakage and must be quantified before production.
+
+### Witness continuity
+
+```text
+first checkpoint = sequence 1 + null parent
+next checkpoint = N+1 + exact remembered parent hash
+lower sequence = rollback reject
+same sequence + different hash = fork reject
+gap = reject
+parent mismatch = reject
+exact same semantic checkpoint = retry-equivalent
+```
+
+This is `INV-SYNC-018`.
+
+### Witness evidence honesty
+
+The executable spike uses three witnesses and a two-witness threshold only as a bounded test configuration.
+
+```text
+2 agreeing current witnesses + no contradictory valid evidence
+→ WITNESS_CONFIRMED_THROUGH_N
+
+valid witness ahead of relay
+→ RELAY_BEHIND_WITNESS
+
+valid same-sequence divergence
+→ WITNESS_DIVERGENCE
+
+insufficient/unavailable witnesses
+→ explicit unconfirmed state
+→ NEVER silently trust relay freshness
+```
+
+This is `INV-SYNC-019`.
+
+`2-of-3` is **not** frozen as the production policy.
 
 ## Parasympathetic model
 
@@ -365,7 +410,7 @@ Primary rule:
 EVENTUAL FRESHNESS > FAKE REAL-TIME
 ```
 
-Resource constraints may defer work. They may not disable encryption, authorization, provenance, idempotency, conflict safety or checkpoint verification.
+Resource constraints may defer work. They may not disable encryption, authorization, provenance, idempotency, conflict safety, checkpoint verification or witness-evidence honesty.
 
 ## Current bounded `PROVEN_AT_SPIKE` Q-005 invariants
 
@@ -380,34 +425,36 @@ INV-SYNC-014  tenant-isolated materialization
 INV-SYNC-015  conflict-resolution conflict safety
 INV-SYNC-016  independent-anchor rollback/fork/gap protection
 INV-SYNC-017  no false global-freshness claim
+INV-SYNC-018  opaque witness monotonic continuity
+INV-SYNC-019  contradiction-aware witness evidence honesty
 ```
 
-These are bounded synthetic properties, not release-grade `PROVEN`.
+These are bounded spike properties, not release-grade `PROVEN`.
 
 ## Current executable baseline
 
-Reconciled head:
+Validated head before this documentation reconciliation:
 
-`13a6d738ea394171ebf39badf447134d251c6327`
+`fbc11506f37998e5a059bd6dc349f70f40b10c4b`
 
 ```text
-E2EE / KEY / RECOVERY / REVOCATION /
-KNEE / CHECKPOINT / PNS                    98 / 98 PASS
-CANONICAL RESOLVER                          98 / 98 PASS
-PHYSICAL INGRESS                            21 / 21 PASS
-TRACEABILITY                                82 / 82 WIRED
-PRIVACY                                     23 classes PASS
-HEARTBEAT                                   SUCCESS
-MK0 FOUNDATION                              3 / 3 PASS
-BUILD_READY                                 false
+DISTRIBUTED / WITNESS                    116 / 116 PASS
+CANONICAL RESOLVER                        98 / 98 PASS
+PHYSICAL INGRESS                          31 / 31 PASS
+TRACEABILITY                              84 / 84 WIRED
+PROVEN_AT_SPIKE                           22
+PRIVACY                                   24 classes PASS
+HEARTBEAT                                 SUCCESS
+MK0 FOUNDATION                            SUCCESS
+BUILD_READY                               false
 ```
 
 ## Remaining blockers
 
-Q-005 stays `ACTIVE`. The major remaining questions are now primarily production/physical plus the stronger freshness policy:
+Q-005 stays `ACTIVE`:
 
 ```text
-production independent witness/freshness strategy
+production witness operator/topology/quorum policy
 Recovery Kit checkpoint-anchor refresh semantics
 reviewed production append-only checkpoint construction
 atomic crash-safe checkpoint + anchor advancement
@@ -423,7 +470,7 @@ long-offline / network-partition behavior
 Recovery Kit export/import leakage controls
 physical all-devices-lost recovery
 physical post-recovery revocation/rotation/cutover
-retention/deletion semantics
+witness/checkpoint retention and deletion semantics
 metadata leakage analysis
 penetration / side-channel review
 ```
@@ -445,10 +492,11 @@ REVOCATION MEANING                 FUTURE ACCESS + FROZEN HISTORY
 REVOCATION BARRIER                 REQUIRED / SPIKE-TESTED
 ALL-DEVICES-LOST RECOVERY          SPIKE-ACCEPTED / ADR-014
 TRUSTED CHECKPOINT                 SPIKE-ACCEPTED / ADR-015
-RELAY AS SOLE TRUST ANCHOR         REJECTED
+OPAQUE WITNESS MODEL               SPIKE-ACCEPTED / ADR-016
+RELAY AS SOLE TRUST/FRESHNESS      REJECTED
 NO-ANCHOR FRESHNESS                INDETERMINATE
-GLOBAL-LATEST FRESHNESS            UNPROVEN
-PRODUCTION WITNESS STRATEGY        OPEN
+GLOBAL-LATEST FRESHNESS            NOT CLAIMED
+PRODUCTION WITNESS POLICY          OPEN
 PRODUCTION CRYPTO                  OPEN
 PHYSICAL MOBILE RECOVERY           OPEN
 
@@ -457,6 +505,6 @@ MULTI_DEVICE_DESIGN                ACTIVE / NOT CLOSED
 
 ## Closure criteria
 
-Q-005 closes only when bounded logical evidence is supplemented by release-grade proof for production crypto, tenant authorization, real mobile key/anchor storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected freshness/witness contract.
+Q-005 closes only when bounded logical evidence is supplemented by release-grade proof for production crypto, tenant authorization, real mobile key/anchor storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected production freshness/witness contract.
 
 `PROVEN_AT_SPIKE ≠ PROVEN`.
