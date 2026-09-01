@@ -5,11 +5,11 @@
 
 ## Question
 
-How can several authorized phones share one tenant's financial truth while the cloud remains unable to interpret plaintext financial content — and while mobile background behavior remains calm, battery-aware, offline-tolerant and recoverable?
+How can several authorized phones share one tenant's financial truth while the cloud remains unable to interpret plaintext financial content — and while synchronization stays recoverable, conflict-safe, rollback-resistant, battery-aware and honest about freshness?
 
 ## Current finding
 
-Q-005 is a coupled system of four load-bearing concerns:
+Q-005 is now a coupled system of five load-bearing concerns:
 
 ```text
 PERIPHERAL NERVOUS SYSTEM
@@ -42,20 +42,30 @@ RECOVERY SYSTEM
 DISTRIBUTED CONFLICT SYSTEM
   no global last-write-wins
   explicit correction conflicts
-  explicit resolution conflicts
+  explicit resolution meta-conflicts
   tenant-isolated materialization
+
+TRUSTED CHECKPOINT SYSTEM
+  signed tenant checkpoints
+  independent minimum trusted anchor
+  rollback/fork/gap detection
+  explicit no-anchor uncertainty
+  no false global-latest claim
 ```
 
-A secure protocol that corrupts state under replay is unacceptable. A convergent protocol that exposes financial plaintext is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A battery-friendly scheduler that relaxes correctness is unacceptable.
+A secure protocol that corrupts state under replay is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A signed checkpoint chain that calls an old server view `LATEST` is also unacceptable.
 
 Detailed contracts:
 
 - `../04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md`
 - `../04-architecture/PARASYMPATHETIC-SYNC.md`
 - `../04-architecture/REVOCATION-CUTOVER.md`
+- `../04-architecture/TRUSTED-CHECKPOINT.md`
+- `../04-architecture/Q005-ANTI-ROLLBACK-SECURITY-REVALIDATION.md`
 - `../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
+- `../11-decisions/ADR-015-TRUSTED-CHECKPOINT-ANTI-ROLLBACK.md`
 
-## Ownership model
+## Ownership and authority
 
 ```text
 Tenant owns financial truth
@@ -71,27 +81,13 @@ ProcessingLease only coordinates work
 
 `Device != Tenant` remains non-negotiable.
 
-A valid device signature or matching `device_id` is not sufficient authority. The identity must be authorized for the same tenant and key epoch.
+A valid signature or matching `device_id` is not authority by itself. The identity must be authorized for the same tenant and key epoch.
 
 ## Cloud / edge contract
 
 The cloud is an opaque relay/control plane, not the holder of financial truth.
 
-Cloud-visible routing metadata may include minimized fields such as:
-
-```text
-event_id
-tenant_id opaque identifier
-origin_device_id
-origin_device_sequence
-key_epoch
-schema_version
-created_at / relay order
-ciphertext framing + size
-signature
-```
-
-The normal sync path does not require plaintext:
+Normal encrypted sync does not require cloud plaintext for:
 
 ```text
 amount
@@ -104,9 +100,9 @@ Tenant Root Key
 Recovery Private Key
 ```
 
-E2EE does not mean zero metadata. Timing, device membership, epoch rotation and ciphertext sizes remain part of the privacy threat model.
+Security metadata such as device IDs, epochs, checkpoint cadence and ciphertext sizes remains part of the privacy threat model.
 
-## Key authority
+## Device-key authority
 
 The bounded spike enforces:
 
@@ -122,13 +118,7 @@ VALID KEY AUTHORITY =
 
 `KEY-001..005` cover identity binding, revoked-authorizer rejection, recipient re-check, cross-tenant origin rejection and cross-tenant key-recipient rejection.
 
-Production key wrapping remains subject to a reviewed implementation/library. The Node composition is feasibility evidence, not production cryptography.
-
 ## Immutable sync identity
-
-The knee stress campaign demonstrated that replay identity must not behave like a mutable map slot.
-
-The current spike rule is:
 
 ```text
 same event_id
@@ -140,34 +130,18 @@ same event_id
 → FAIL CLOSED
 ```
 
-A second identity axis is also frozen:
+A second identity axis is also fixed:
 
 ```text
 (tenant_id, origin_device_id, origin_device_sequence)
 → exactly one event identity
 ```
 
-Two distinct event IDs cannot occupy the same origin sequence for one tenant/device, even when their economic payloads happen to be identical.
-
-Equal sequence numbers on **different** origin devices remain independent.
-
 This is `INV-SYNC-013`.
 
 ## Tenant-isolated materialization
 
-One materialization pass belongs to one tenant.
-
-```text
-Tenant A decoded actions
-        +
-Tenant B decoded actions
-        ↓
-MIXED TENANT INPUT
-        ↓
-FAIL CLOSED
-```
-
-A caller cannot accidentally or maliciously combine two tenants into one canonical/correction projection.
+One materialization pass belongs to exactly one tenant. Mixed-tenant decoded input fails closed before canonical/correction state is projected.
 
 This is `INV-SYNC-014`.
 
@@ -175,53 +149,25 @@ This is `INV-SYNC-014`.
 
 FinanceSensor rejects global last-write-wins for user financial truth.
 
-### Concurrent corrections
-
 ```text
-same target
-+ same base revision
-+ incompatible values
-        ↓
-CATEGORY_CORRECTION_CONFLICT
-        ↓
-no hidden winner
+incompatible concurrent corrections
+→ explicit correction conflict
+
+incompatible concurrent resolutions
+→ explicit meta-conflict
+
+resolution outside known candidate set
+→ invalid resolution / no mutation
+
+concurrent same-choice resolutions
+→ retry-equivalent / converge
 ```
-
-### Concurrent resolutions
-
-The stress campaign found that conflict **resolution** must itself be conflict-safe.
-
-```text
-two resolutions
-+ same target/base revision
-+ different selected corrections
-        ↓
-CATEGORY_RESOLUTION_CONFLICT
-        ↓
-no hidden winner
-```
-
-A resolution pointing outside the known candidate set becomes `CATEGORY_RESOLUTION_INVALID` and does not mutate authoritative category state.
-
-Multiple concurrent resolutions selecting the same correction are retry-equivalent and converge.
 
 This is `INV-SYNC-015`.
 
-## Device revocation
+## Device revocation and historical admissibility
 
-Basic future-key revocation is necessary but insufficient:
-
-```text
-revoke B from N+1
-        ↓
-rotate Tenant Root Key to N+1
-        ↓
-B cannot receive N+1
-```
-
-A lost device may still possess epoch N material and its signing private key. Without a cutover, it could create a cryptographically valid envelope later while labeling it as historical epoch N.
-
-Therefore:
+Future-key rotation is necessary but insufficient. A lost device may retain epoch N material and its signing private key.
 
 ```text
 VALID OLD SIGNATURE + OLD KEY
@@ -229,53 +175,11 @@ VALID OLD SIGNATURE + OLD KEY
 POST-CUTOVER HISTORICAL AUTHORITY
 ```
 
-## Revocation Barrier
-
-Before old-epoch envelopes from a revoked origin are accepted as immutable history, a still-authorized authority freezes the accepted historical stream.
-
-Candidate barrier binds:
-
-```text
-tenant_id
-revoked_device_id
-revoked_from_epoch
-last_accepted_origin_sequence
-history_commitment
-authorizing_device_id
-signature
-```
-
-The bounded model requires:
-
-```text
-contiguous origin sequence
-unique event_id semantics
-unique origin sequence semantics
-valid historical signatures
-epoch < revocation epoch
-exact history commitment
-```
-
-It rejects:
-
-```text
-post-cutover old-epoch extension
-historical substitution
-sequence forks
-event_id reuse
-known sequence gaps
-cross-tenant authority
-revoked-device self-cutover
-barrier tampering
-```
-
-Exact duplicate delivery and transport reordering of the already committed set remain harmless.
+The Revocation Barrier freezes the accepted historical origin stream and rejects post-cutover old-epoch extension, historical substitution, event-ID reuse, sequence forks, known gaps, cross-tenant authority and revoked-device self-cutover.
 
 This is `INV-SYNC-012`.
 
-## All-devices-lost recovery
-
-ADR-014 remains the logical decision:
+## All-devices-lost recovery — ADR-014
 
 ```text
 SERVER MASTER KEY         REJECTED
@@ -285,24 +189,16 @@ Recovery Private Key      USER-HELD / OFFLINE
 PER-EPOCH RECOVERY WRAP   REQUIRED
 ```
 
-RecoveryCoverage is not inferred merely because ciphertext exists. It requires authenticated tenant/epoch/Recovery-Key/authorizer binding and one non-ambiguous distinct authority for the declared epoch.
+RecoveryCoverage requires authenticated tenant/epoch/Recovery-Key/authorizer binding and exactly one non-ambiguous distinct authority for each declared recoverable epoch.
 
-## Complete lost-device inventory
-
-The knee campaign added a stronger recovery rule:
-
-> Every tenant device that still had authority at the **last recovered epoch** must be explicitly accounted for in the all-devices-lost plan.
-
-A device cannot disappear from the lost set merely because its authorization record was already edited to `REVOKED` from `N+1`.
-
-Before resuming future sync:
+Before future sync resumes:
 
 ```text
 new device ACTIVE from N+1
 all devices active at recovered epoch accounted for
-all declared lost devices REVOKED from N+1
-no undeclared tenant device authorized at N+1
-Tenant Root Key rotated to N+1
+all lost devices REVOKED from N+1
+no undeclared old device authorized at N+1
+Tenant Root Key rotated
 Recovery Key rotated
 N+1 RecoveryCoverage valid
 recovered history evidence present per lost device
@@ -312,29 +208,142 @@ barrier commitment matches recovered history
 SAFE_TO_RESUME_FUTURE_SYNC
 ```
 
-A hardening plan is not the same thing as applied/verified hardening.
+## Knee stress campaign
 
-## Recovery barrier retries and ambiguity
+Evidence:
 
-A barrier signature contains non-semantic framing such as creation time/signature randomness. The gate therefore distinguishes package identity from **semantic cutover authority**.
+`../10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
+
+The campaign deliberately introduced adversarial assertions before fixes and exposed 12 weaknesses that previous green suites did not protect.
+
+Final pre-checkpoint result:
 
 ```text
-same tenant/device/epoch/sequence/history/authorizer
-+ re-signed/retried packages
-→ one semantic authority
-
-multiple distinct authentic semantic commitments
-→ AMBIGUOUS
-→ FAIL CLOSED
+84 / 84 PASS
 ```
 
-The stress suite exercised 32 equivalent re-signed barriers without creating false ambiguity.
+It established bounded executable support for:
+
+```text
+INV-SYNC-013 immutable replay + origin sequence identity
+INV-SYNC-014 tenant-isolated materialization
+INV-SYNC-015 conflict-resolution conflict safety
+```
+
+## Trusted Checkpoint / Anti-Rollback — ADR-015
+
+The knee campaign exposed a stronger limitation:
+
+```text
+VALID SIGNED STATE
+        ≠
+PROOF THAT THE RELAY RETURNED THE NEWEST VALID STATE
+```
+
+The first checkpoint baseline intentionally verified authenticity only. The adversarial suite then produced:
+
+```text
+RED HEAD
+98 total distributed tests
+90 PASS
+8 FAIL
+```
+
+The failures proved missing protection for:
+
+```text
+rollback behind an independent anchor
+same-sequence checkpoint equivocation
+wrong previous-checkpoint hash
+checkpoint sequence gap
+cross-tenant checkpoint advance
+signed fast-forward over unknown checkpoints
+no-anchor false confidence
+anchor-sequence equivocation
+```
+
+After repair:
+
+```text
+ARB-001..014            14 / 14 PASS
+full distributed suite  98 / 98 PASS
+```
+
+Evidence:
+
+`../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
+
+### Accepted bounded checkpoint semantics
+
+FinanceSensor now distinguishes:
+
+```text
+SignedCheckpoint
+TrustedCheckpointAnchor
+CheckpointVerificationResult
+```
+
+An independently retained anchor establishes a minimum accepted tenant state.
+
+Relative to it:
+
+```text
+presented state behind anchor      → FAIL CLOSED
+same sequence / different hash     → FAIL CLOSED
+anchor sequence / different hash   → FAIL CLOSED
+sequence gap / fast-forward        → FAIL CLOSED
+wrong previous checkpoint hash     → FAIL CLOSED
+cross-tenant checkpoint advance    → FAIL CLOSED
+unauthorized/revoked signer         → FAIL CLOSED
+exact duplicate checkpoint         → IDEMPOTENT
+```
+
+This is `INV-SYNC-016`.
+
+### Freshness honesty
+
+The checkpoint system deliberately refuses to claim more than it knows.
+
+```text
+no independent anchor
+→ INDETERMINATE_FRESHNESS
+
+valid chain extending anchor
+→ CONSISTENT_FROM_ANCHOR
+→ latestGlobalFreshness = UNPROVEN
+```
+
+This is `INV-SYNC-017`.
+
+A valid anchored chain proves append-only consistency relative to the anchor. It does **not** prove that the relay supplied every later checkpoint that ever existed.
+
+Example:
+
+```text
+independent anchor = 9
+real tenant once reached = 12
+relay presents exactly = 9
+```
+
+The client can prove it was not silently rolled back before/forked at checkpoint 9. It cannot infer from relay-only evidence that checkpoints 10..12 never existed.
+
+Therefore:
+
+```text
+AUTHENTICITY
+        ≠
+AUTHORIZATION
+        ≠
+APPEND-ONLY CONSISTENCY
+        ≠
+GLOBAL FRESHNESS
+```
+
+ADR-015 is `SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED`.
 
 ## Parasympathetic model
 
 The sync engine does not permanently poll.
-
-Candidate runtime states remain:
 
 ```text
 RESTING
@@ -356,57 +365,9 @@ Primary rule:
 EVENTUAL FRESHNESS > FAKE REAL-TIME
 ```
 
-Android WorkManager and Apple BackgroundTasks remain the intended OS-cooperative direction. Low battery or unavailable network may defer work; they may not disable encryption, authorization, provenance, idempotency or conflict safety.
+Resource constraints may defer work. They may not disable encryption, authorization, provenance, idempotency, conflict safety or checkpoint verification.
 
-## Knee stress campaign
-
-Dedicated evidence:
-
-`../10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
-
-The campaign deliberately introduced adversarial assertions before fixes.
-
-Observed red → green progression:
-
-```text
-Wave 1   62 / 67 PASS  → 67 / 67 PASS
-Wave 2   72 / 74 PASS  → weaknesses repaired
-Wave 3   75 / 77 PASS  → 77 / 77 PASS
-Wave 4   78 / 80 PASS  → 80 / 80 PASS
-Wave 5   83 / 84 PASS  → 84 / 84 PASS
-```
-
-The five waves exposed **12 red assertions** that earlier green suites did not protect.
-
-Load cases included:
-
-```text
-16 signed historical sequence-fork positions
-64-envelope history
-reverse-order history replay
-triple exact delivery replay
-32 equivalent re-signed Revocation Barriers
-epochs 1..7 historical vs epoch 8 cutover
-same event_id divergent content
-same sequence divergent event identities
-mixed-tenant materialization
-concurrent incompatible conflict resolutions
-invalid resolution target
-concurrent same-choice resolution retries
-```
-
-Final validated executable head:
-
-`d09a420532d0f02ba904fec401932919065e66cc`
-
-```text
-E2EE / KEY / RECOVERY / REVOCATION / KNEE / PNS   84 / 84 PASS
-CANONICAL RESOLVER                                  PASS
-PHYSICAL INGRESS                                    PASS
-MK0 FOUNDATION                                     3 / 3 PASS
-```
-
-## Current `PROVEN_AT_SPIKE` Q-005 invariants
+## Current bounded `PROVEN_AT_SPIKE` Q-005 invariants
 
 ```text
 INV-SYNC-008  cloud lacks recovery decryption authority
@@ -417,80 +378,85 @@ INV-SYNC-012  frozen revoked-origin historical admissibility
 INV-SYNC-013  immutable replay + origin sequence identity
 INV-SYNC-014  tenant-isolated materialization
 INV-SYNC-015  conflict-resolution conflict safety
+INV-SYNC-016  independent-anchor rollback/fork/gap protection
+INV-SYNC-017  no false global-freshness claim
 ```
 
 These are bounded synthetic properties, not release-grade `PROVEN`.
 
-## Critical non-claim: malicious relay withholding
+## Current executable baseline
 
-Signatures and history commitments protect integrity of **observed** state. They do not prove Byzantine availability.
+Reconciled head:
 
-A malicious relay that withholds an envelope a fresh recovery device has never seen, while also withholding the evidence that would reveal the later prefix, may make an older complete-looking prefix appear to be all that exists.
+`13a6d738ea394171ebf39badf447134d251c6327`
 
 ```text
-FIRST-SEEN COMPLETE-LOOKING PREFIX
-        ≠
-PROOF OF NO WITHHELD LATER PREFIX
+E2EE / KEY / RECOVERY / REVOCATION /
+KNEE / CHECKPOINT / PNS                    98 / 98 PASS
+CANONICAL RESOLVER                          98 / 98 PASS
+PHYSICAL INGRESS                            21 / 21 PASS
+TRACEABILITY                                82 / 82 WIRED
+PRIVACY                                     23 classes PASS
+HEARTBEAT                                   SUCCESS
+MK0 FOUNDATION                              3 / 3 PASS
+BUILD_READY                                 false
 ```
-
-Closing that stronger property requires a separately reviewed anti-rollback/transparency/trusted-checkpoint design. Candidate directions include a locally protected monotonic checkpoint that survives recovery, a user-held recovery commitment, or another independently authenticated transparency mechanism.
-
-No candidate is frozen yet.
 
 ## Remaining blockers
 
-Q-005 stays `ACTIVE` until physical/production evidence closes at least:
+Q-005 stays `ACTIVE`. The major remaining questions are now primarily production/physical plus the stronger freshness policy:
 
 ```text
+production independent witness/freshness strategy
+Recovery Kit checkpoint-anchor refresh semantics
+reviewed production append-only checkpoint construction
+atomic crash-safe checkpoint + anchor advancement
 reviewed production HPKE/AEAD/signature implementation
-reviewed production append-only history commitment
-anti-rollback / relay-withholding trust-anchor decision
 Android ↔ iOS cryptographic interoperability
 Android Keystore / StrongBox evidence
 Apple Keychain / Secure Enclave evidence
+protected mobile checkpoint-anchor storage
 real control-plane tenant authorization
-real recovery-wrap/barrier retrieval authorization
-real barrier persistence + retention/deletion
-crash/restart atomicity at cutover
+real recovery-wrap/checkpoint/barrier authorization
+crash/restart atomicity
 long-offline / network-partition behavior
 Recovery Kit export/import leakage controls
 physical all-devices-lost recovery
 physical post-recovery revocation/rotation/cutover
+retention/deletion semantics
 metadata leakage analysis
 penetration / side-channel review
 ```
 
-A malicious relay may still withhold data. Q-005 does not claim Byzantine availability.
-
 ## Current decision
 
 ```text
-TENANT_KEY_EPOCHS                 ACCEPTED LOGICAL MODEL
-TENANT-SCOPED DEVICE AUTH         REQUIRED / SPIKE-TESTED
-PER_DEVICE_KEY_WRAPPING           REQUIRED
-KEY-WRAP AUTHORITY RECHECK        REQUIRED / SPIKE-TESTED
-OPAQUE CLOUD ENVELOPES            REQUIRED
-EVENT_ID MUTABLE SLOT             REJECTED
-ORIGIN SEQUENCE REUSE             REJECTED
-MIXED-TENANT MATERIALIZATION      REJECTED
-GLOBAL LWW FINANCIAL STATE        REJECTED
-RESOLUTION LWW                    REJECTED
-EXPLICIT RESOLUTION META-CONFLICT REQUIRED / SPIKE-TESTED
-REVOCATION MEANING                FUTURE ACCESS + FROZEN ACCEPTED HISTORY
-REVOCATION BARRIER                REQUIRED / SPIKE-TESTED
-UNRESOLVED CUTOVER GAP            FAIL CLOSED
-ALL-DEVICES-LOST RECOVERY         SPIKE-ACCEPTED / ADR-014
-POST-RECOVERY FINAL GATE          REQUIRED / SPIKE-TESTED
-BYZANTINE RELAY AVAILABILITY      NOT CLAIMED
-ANTI-ROLLBACK TRUST ANCHOR        OPEN
-PRODUCTION CRYPTO                 OPEN
-PHYSICAL MOBILE RECOVERY          OPEN
+TENANT_KEY_EPOCHS                  ACCEPTED LOGICAL MODEL
+TENANT-SCOPED DEVICE AUTH          REQUIRED / SPIKE-TESTED
+PER_DEVICE_KEY_WRAPPING            REQUIRED
+OPAQUE CLOUD ENVELOPES             REQUIRED
+EVENT_ID MUTABLE SLOT              REJECTED
+ORIGIN SEQUENCE REUSE              REJECTED
+MIXED-TENANT MATERIALIZATION       REJECTED
+GLOBAL LWW FINANCIAL STATE         REJECTED
+RESOLUTION LWW                     REJECTED
+EXPLICIT RESOLUTION META-CONFLICT  REQUIRED / SPIKE-TESTED
+REVOCATION MEANING                 FUTURE ACCESS + FROZEN HISTORY
+REVOCATION BARRIER                 REQUIRED / SPIKE-TESTED
+ALL-DEVICES-LOST RECOVERY          SPIKE-ACCEPTED / ADR-014
+TRUSTED CHECKPOINT                 SPIKE-ACCEPTED / ADR-015
+RELAY AS SOLE TRUST ANCHOR         REJECTED
+NO-ANCHOR FRESHNESS                INDETERMINATE
+GLOBAL-LATEST FRESHNESS            UNPROVEN
+PRODUCTION WITNESS STRATEGY        OPEN
+PRODUCTION CRYPTO                  OPEN
+PHYSICAL MOBILE RECOVERY           OPEN
 
-MULTI_DEVICE_DESIGN               ACTIVE / NOT CLOSED
+MULTI_DEVICE_DESIGN                ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
 
-Q-005 closes only when the logical spike evidence is replaced/supplemented by release-grade proof for production cryptography, tenant authorization, real mobile key storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected anti-rollback/relay-withholding contract.
+Q-005 closes only when bounded logical evidence is supplemented by release-grade proof for production crypto, tenant authorization, real mobile key/anchor storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected freshness/witness contract.
 
 `PROVEN_AT_SPIKE ≠ PROVEN`.
