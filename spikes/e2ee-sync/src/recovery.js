@@ -9,12 +9,13 @@ import {
   sign,
   verify
 } from 'node:crypto';
-import { stableJson } from './protocol.js';
+import { isAuthorizedForEpoch, stableJson } from './protocol.js';
 
 // FEASIBILITY SPIKE ONLY.
 // This proves recovery ownership/revocation properties. Production recovery
 // wrapping must use a reviewed HPKE implementation and platform key controls.
 
+const RECOVERY_WRAP_PROTOCOL = 'FINANCESENSOR_RECOVERY_WRAP_SPIKE_V1';
 const utf8 = value => Buffer.from(String(value), 'utf8');
 const b64 = buffer => Buffer.from(buffer).toString('base64url');
 const fromB64 = value => Buffer.from(value, 'base64url');
@@ -61,6 +62,56 @@ function signedBytes(header, encrypted) {
   ]);
 }
 
+function decodeRecoveryPackage(wrapped) {
+  const header = wrapped?.header;
+  if (!header || typeof header !== 'object') throw new Error('invalid-recovery-package');
+  if (header.protocol !== RECOVERY_WRAP_PROTOCOL) throw new Error('unsupported-recovery-protocol');
+  if (!header.tenantId || !Number.isInteger(header.keyEpoch) || header.keyEpoch <= 0) {
+    throw new Error('invalid-recovery-package-context');
+  }
+  if (!header.recoveryKeyId || !header.authorizingDeviceId || !header.ephemeralPublicKey) {
+    throw new Error('invalid-recovery-package-context');
+  }
+  if (!wrapped.nonce || !wrapped.ciphertext || !wrapped.tag || !wrapped.signature) {
+    throw new Error('invalid-recovery-package-framing');
+  }
+
+  const encrypted = {
+    nonce: fromB64(wrapped.nonce),
+    ciphertext: fromB64(wrapped.ciphertext),
+    tag: fromB64(wrapped.tag)
+  };
+
+  if (encrypted.nonce.length !== 12 || encrypted.tag.length !== 16 || encrypted.ciphertext.length !== 32) {
+    throw new Error('invalid-recovery-package-framing');
+  }
+
+  return encrypted;
+}
+
+export function validateRecoveryWrap({ package: wrapped, authorizingDeviceRecord }) {
+  const encrypted = decodeRecoveryPackage(wrapped);
+  if (!authorizingDeviceRecord) throw new Error('recovery-authorizer-record-required');
+  if (wrapped.header.authorizingDeviceId !== authorizingDeviceRecord.deviceId) {
+    throw new Error('recovery-authorizer-identity-mismatch');
+  }
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, wrapped.header.keyEpoch)) {
+    throw new Error('recovery-authorizer-not-authorized-for-epoch');
+  }
+
+  const authorizerPublicKey = publicKeyFromDer(authorizingDeviceRecord.signingPublicKey);
+  if (!verify(null, signedBytes(wrapped.header, encrypted), authorizerPublicKey, fromB64(wrapped.signature))) {
+    throw new Error('invalid-recovery-wrap-signature');
+  }
+
+  return {
+    tenantId: wrapped.header.tenantId,
+    keyEpoch: wrapped.header.keyEpoch,
+    recoveryKeyId: wrapped.header.recoveryKeyId,
+    authorizingDeviceId: wrapped.header.authorizingDeviceId
+  };
+}
+
 export function generateRecoveryIdentity(recoveryKeyId) {
   if (!recoveryKeyId) throw new Error('recovery-key-id-required');
   return {
@@ -70,6 +121,9 @@ export function generateRecoveryIdentity(recoveryKeyId) {
 }
 
 export function recoveryPublicRecord(recoveryIdentity) {
+  if (!recoveryIdentity?.recoveryKeyId || !recoveryIdentity?.encryption?.publicKey) {
+    throw new Error('invalid-recovery-identity');
+  }
   return {
     recoveryKeyId: recoveryIdentity.recoveryKeyId,
     encryptionPublicKey: b64(publicKeyDer(recoveryIdentity.encryption.publicKey))
@@ -85,6 +139,12 @@ export function wrapTenantEpochForRecovery({
 }) {
   if (!tenantId || !Number.isInteger(keyEpoch) || keyEpoch <= 0) throw new Error('invalid-recovery-context');
   if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
+  if (!recoveryRecord?.recoveryKeyId || !recoveryRecord?.encryptionPublicKey) {
+    throw new Error('invalid-recovery-record');
+  }
+  if (!authorizingDevice?.deviceId || !authorizingDevice?.signing?.privateKey) {
+    throw new Error('invalid-recovery-authorizer');
+  }
 
   const ephemeral = generateKeyPairSync('x25519');
   const recoveryPublicKey = publicKeyFromDer(recoveryRecord.encryptionPublicKey);
@@ -96,7 +156,7 @@ export function wrapTenantEpochForRecovery({
   });
 
   const header = {
-    protocol: 'FINANCESENSOR_RECOVERY_WRAP_SPIKE_V1',
+    protocol: RECOVERY_WRAP_PROTOCOL,
     tenantId,
     keyEpoch,
     recoveryKeyId: recoveryRecord.recoveryKeyId,
@@ -121,17 +181,10 @@ export function unwrapTenantEpochFromRecovery({
   authorizingDeviceRecord
 }) {
   if (!recoveryIdentity?.encryption?.privateKey) throw new Error('recovery-private-key-required');
-  if (wrapped.header.recoveryKeyId !== recoveryIdentity.recoveryKeyId) throw new Error('wrong-recovery-key-id');
+  if (wrapped?.header?.recoveryKeyId !== recoveryIdentity.recoveryKeyId) throw new Error('wrong-recovery-key-id');
 
-  const encrypted = {
-    nonce: fromB64(wrapped.nonce),
-    ciphertext: fromB64(wrapped.ciphertext),
-    tag: fromB64(wrapped.tag)
-  };
-  const authorizerPublicKey = publicKeyFromDer(authorizingDeviceRecord.signingPublicKey);
-  if (!verify(null, signedBytes(wrapped.header, encrypted), authorizerPublicKey, fromB64(wrapped.signature))) {
-    throw new Error('invalid-recovery-wrap-signature');
-  }
+  validateRecoveryWrap({ package: wrapped, authorizingDeviceRecord });
+  const encrypted = decodeRecoveryPackage(wrapped);
 
   const ephemeralPublicKey = publicKeyFromDer(wrapped.header.ephemeralPublicKey);
   const sharedSecret = diffieHellman({
@@ -147,35 +200,52 @@ export function unwrapTenantEpochFromRecovery({
   return decrypt(wrappingKey, encrypted, utf8(stableJson(wrapped.header)));
 }
 
-export function assertRecoveryCoverage({ tenantId, recoveryKeyId, recoverableEpochs, packages }) {
+export function assertRecoveryCoverage({
+  tenantId,
+  recoveryKeyId,
+  recoverableEpochs,
+  packages,
+  authorizingDeviceRecords
+}) {
   if (!tenantId || !recoveryKeyId) throw new Error('recovery-coverage-context-required');
   if (!Array.isArray(recoverableEpochs) || recoverableEpochs.length === 0) {
     throw new Error('recoverable-epochs-required');
   }
   if (!Array.isArray(packages)) throw new Error('recovery-packages-required');
+  if (!(authorizingDeviceRecords instanceof Map)) throw new Error('recovery-authorizer-records-required');
 
   const expectedEpochs = [...new Set(recoverableEpochs)].sort((a, b) => a - b);
   for (const epoch of expectedEpochs) {
     if (!Number.isInteger(epoch) || epoch <= 0) throw new Error('invalid-recoverable-epoch');
   }
 
-  const covered = new Set();
+  const packagesByEpoch = new Map(expectedEpochs.map(epoch => [epoch, new Set()]));
   for (const wrapped of packages) {
     const header = wrapped?.header ?? {};
     if (header.tenantId !== tenantId) continue;
     if (header.recoveryKeyId !== recoveryKeyId) continue;
-    if (expectedEpochs.includes(header.keyEpoch)) covered.add(header.keyEpoch);
+    if (!packagesByEpoch.has(header.keyEpoch)) continue;
+
+    const authorizingDeviceRecord = authorizingDeviceRecords.get(header.authorizingDeviceId);
+    validateRecoveryWrap({ package: wrapped, authorizingDeviceRecord });
+    packagesByEpoch.get(header.keyEpoch).add(stableJson(wrapped));
   }
 
-  const missing = expectedEpochs.filter(epoch => !covered.has(epoch));
+  const missing = expectedEpochs.filter(epoch => packagesByEpoch.get(epoch).size === 0);
   if (missing.length > 0) {
     throw new Error(`recovery-coverage-missing:${missing.join(',')}`);
+  }
+
+  const ambiguous = expectedEpochs.filter(epoch => packagesByEpoch.get(epoch).size > 1);
+  if (ambiguous.length > 0) {
+    throw new Error(`recovery-coverage-ambiguous:${ambiguous.join(',')}`);
   }
 
   return {
     tenantId,
     recoveryKeyId,
-    coveredEpochs: expectedEpochs
+    coveredEpochs: expectedEpochs,
+    validatedDistinctPackages: expectedEpochs.length
   };
 }
 
