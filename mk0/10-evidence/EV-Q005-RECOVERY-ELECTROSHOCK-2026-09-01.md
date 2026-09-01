@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-01  
 **Evidence level:** `PROVEN_AT_SPIKE`  
-**Validated commit:** `ce2bb1ebac89e12f8defd8a163e24eadf3bb32e1`  
+**Validated executable commit:** `ce2bb1ebac89e12f8defd8a163e24eadf3bb32e1`  
 **MK0 Foundation run:** `33527184230`  
 **E2EE job:** `99920894672`  
 **Heartbeat run:** `33527184155`
@@ -46,7 +46,7 @@ REC-001 ... REC-012     12 / 12 PASS
 
 ## Whole-organism regression result
 
-The recovery tissue was not tested in isolation only. On the same validated head:
+The recovery tissue was not tested in isolation only. On the same validated executable head:
 
 ```text
 canonical resolver                    PASS
@@ -124,7 +124,7 @@ This rejects a standing server master key while still allowing an explicit all-d
 
 ## Recovery coverage invariant
 
-A key epoch cannot be advertised as recoverable merely because a Recovery Public Key exists. The spike now checks the stronger property:
+A key epoch cannot be advertised as recoverable merely because a Recovery Public Key exists. The spike checks the stronger property:
 
 ```text
 DECLARED RECOVERABLE EPOCH
@@ -171,6 +171,28 @@ no cryptographic recovery path
 
 FinanceSensor must not silently substitute a server backdoor for this state. Provider data may later be re-imported where sources still retain it, but local-only state may be unrecoverable.
 
+## Graph reconciliation
+
+After executable proof, the recovery evidence was wired into:
+
+```text
+graph/traceability-recovery.json
+graph/closure-ledger.json
+STATUS.md
+```
+
+The authoritative ledger deliberately preserves:
+
+```text
+Q-005   ACTIVE
+S-002   ACTIVE
+T-002   PASS
+G-MK0   BLOCKED
+BUILD_READY false
+```
+
+No `CLOSED` or release-grade `PROVEN` state is inferred from a synthetic spike.
+
 ## What this evidence does NOT prove
 
 - reviewed production HPKE implementation correctness;
@@ -190,7 +212,7 @@ FinanceSensor must not silently substitute a server backdoor for this state. Pro
 ## Closure effect
 
 ```text
-ADR-005 ownership model             SPIKE-ACCEPTABLE
+ADR-005 ownership model             SPIKE-ACCEPTED
 INV-SYNC-008..011                   PROVEN_AT_SPIKE
 ALL_DEVICES_LOST_RECOVERY_DESIGN    DECIDED AT LOGICAL/SPIKE LEVEL
 PHYSICAL_RECOVERY                   OPEN
