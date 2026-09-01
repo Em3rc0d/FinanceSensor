@@ -116,11 +116,7 @@ export function generateDeviceIdentity(deviceId) {
   if (!deviceId) throw new Error('device-id-required');
   const encryption = generateKeyPairSync('x25519');
   const signing = generateKeyPairSync('ed25519');
-  return {
-    deviceId,
-    encryption,
-    signing
-  };
+  return { deviceId, encryption, signing };
 }
 
 export function publicDeviceRecord(device, {
@@ -172,29 +168,15 @@ export function wrapTenantRootKey({
   if (!tenantId) throw new Error('tenant-id-required');
   assertKeyEpoch(keyEpoch);
   if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
-  if (!recipientDeviceRecord || recipientDeviceRecord.tenantId !== tenantId) {
-    throw new Error('recipient-tenant-mismatch');
-  }
-  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) {
-    throw new Error('recipient-not-authorized-for-epoch');
-  }
-  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) {
-    throw new Error('authorizer-tenant-mismatch');
-  }
-  if (authorizingDeviceRecord.deviceId !== authorizingDevice?.deviceId) {
-    throw new Error('authorizer-identity-mismatch');
-  }
-  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) {
-    throw new Error('authorizer-not-authorized-for-epoch');
-  }
+  if (!recipientDeviceRecord || recipientDeviceRecord.tenantId !== tenantId) throw new Error('recipient-tenant-mismatch');
+  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) throw new Error('recipient-not-authorized-for-epoch');
+  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) throw new Error('authorizer-tenant-mismatch');
+  if (authorizingDeviceRecord.deviceId !== authorizingDevice?.deviceId) throw new Error('authorizer-identity-mismatch');
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) throw new Error('authorizer-not-authorized-for-epoch');
 
   const ephemeral = generateKeyPairSync('x25519');
   const recipientPublicKey = publicKeyFromDer(recipientDeviceRecord.encryptionPublicKey);
-  const sharedSecret = diffieHellman({
-    privateKey: ephemeral.privateKey,
-    publicKey: recipientPublicKey
-  });
-
+  const sharedSecret = diffieHellman({ privateKey: ephemeral.privateKey, publicKey: recipientPublicKey });
   const wrappingKey = deriveKey(sharedSecret, {
     tenantId,
     keyEpoch,
@@ -235,27 +217,13 @@ export function unwrapTenantRootKey({
   const { nonce, ciphertext, tag } = decodeKeyWrapPackage(wrapped);
   const { tenantId, keyEpoch } = wrapped.header;
 
-  if (wrapped.header.recipientDeviceId !== recipientDevice?.deviceId) {
-    throw new Error('wrong-recipient-device');
-  }
-  if (!recipientDeviceRecord || recipientDeviceRecord.deviceId !== recipientDevice.deviceId) {
-    throw new Error('recipient-authorization-identity-mismatch');
-  }
-  if (recipientDeviceRecord.tenantId !== tenantId) {
-    throw new Error('recipient-tenant-mismatch');
-  }
-  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) {
-    throw new Error('recipient-not-authorized-for-epoch');
-  }
-  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) {
-    throw new Error('authorizer-tenant-mismatch');
-  }
-  if (wrapped.header.authorizingDeviceId !== authorizingDeviceRecord.deviceId) {
-    throw new Error('authorizer-identity-mismatch');
-  }
-  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) {
-    throw new Error('authorizer-not-authorized-for-epoch');
-  }
+  if (wrapped.header.recipientDeviceId !== recipientDevice?.deviceId) throw new Error('wrong-recipient-device');
+  if (!recipientDeviceRecord || recipientDeviceRecord.deviceId !== recipientDevice.deviceId) throw new Error('recipient-authorization-identity-mismatch');
+  if (recipientDeviceRecord.tenantId !== tenantId) throw new Error('recipient-tenant-mismatch');
+  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) throw new Error('recipient-not-authorized-for-epoch');
+  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) throw new Error('authorizer-tenant-mismatch');
+  if (wrapped.header.authorizingDeviceId !== authorizingDeviceRecord.deviceId) throw new Error('authorizer-identity-mismatch');
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) throw new Error('authorizer-not-authorized-for-epoch');
 
   const authorizerSigningKey = publicKeyFromDer(authorizingDeviceRecord.signingPublicKey);
   const validSignature = verify(
@@ -267,21 +235,14 @@ export function unwrapTenantRootKey({
   if (!validSignature) throw new Error('invalid-key-wrap-signature');
 
   const ephemeralPublicKey = publicKeyFromDer(wrapped.header.ephemeralPublicKey);
-  const sharedSecret = diffieHellman({
-    privateKey: recipientDevice.encryption.privateKey,
-    publicKey: ephemeralPublicKey
-  });
+  const sharedSecret = diffieHellman({ privateKey: recipientDevice.encryption.privateKey, publicKey: ephemeralPublicKey });
   const wrappingKey = deriveKey(sharedSecret, {
     tenantId,
     keyEpoch,
     domain: `device-wrap/${recipientDevice.deviceId}`
   });
 
-  return aeadDecrypt(
-    wrappingKey,
-    { nonce, ciphertext, tag },
-    utf8(stableJson(wrapped.header))
-  );
+  return aeadDecrypt(wrappingKey, { nonce, ciphertext, tag }, utf8(stableJson(wrapped.header)));
 }
 
 export function createEncryptedEnvelope({
@@ -298,9 +259,7 @@ export function createEncryptedEnvelope({
   if (!tenantId) throw new Error('tenant-id-required');
   assertKeyEpoch(keyEpoch);
   if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
-  if (!Number.isInteger(originDeviceSequence) || originDeviceSequence <= 0) {
-    throw new Error('invalid-origin-device-sequence');
-  }
+  if (!Number.isInteger(originDeviceSequence) || originDeviceSequence <= 0) throw new Error('invalid-origin-device-sequence');
 
   const header = {
     protocol: SYNC_PROTOCOL,
@@ -313,11 +272,7 @@ export function createEncryptedEnvelope({
     createdAt
   };
   const aad = utf8(stableJson(header));
-  const syncKey = deriveKey(tenantRootKey, {
-    tenantId,
-    keyEpoch,
-    domain: 'sync-payload'
-  });
+  const syncKey = deriveKey(tenantRootKey, { tenantId, keyEpoch, domain: 'sync-payload' });
   const encrypted = aeadEncrypt(syncKey, utf8(stableJson(action)), aad);
   const signature = sign(
     null,
@@ -368,10 +323,7 @@ export function decryptEnvelope({ envelope, tenantRootKey, authorizedDeviceRecor
     utf8(stableJson(envelope.header))
   );
 
-  return {
-    header: envelope.header,
-    action: JSON.parse(plaintext.toString('utf8'))
-  };
+  return { header: envelope.header, action: JSON.parse(plaintext.toString('utf8')) };
 }
 
 export function inspectOriginSequences(envelopes) {
@@ -391,10 +343,7 @@ export function inspectOriginSequences(envelopes) {
         if (!sequenceSet.has(expected)) gaps.push(expected);
       }
     }
-    report[origin] = {
-      highestSeen: sequences.at(-1) ?? 0,
-      gaps
-    };
+    report[origin] = { highestSeen: sequences.at(-1) ?? 0, gaps };
   }
   return report;
 }
@@ -404,9 +353,26 @@ function correctionConflictKey(targetId, baseRevision, corrections) {
   return sha256(utf8(stableJson({ targetId, baseRevision, ids })));
 }
 
+function decodedIdentityDigest(decoded) {
+  return sha256(utf8(stableJson({ header: decoded.header, action: decoded.action })));
+}
+
 export function materializeDecodedEvents(decodedEvents) {
   const unique = new Map();
-  for (const decoded of decodedEvents) unique.set(decoded.header.eventId, decoded);
+  const identityDigests = new Map();
+  for (const decoded of decodedEvents) {
+    const eventId = decoded?.header?.eventId;
+    if (!eventId) throw new Error('sync-event-id-required');
+    const digest = decodedIdentityDigest(decoded);
+    const existingDigest = identityDigests.get(eventId);
+    if (existingDigest != null && existingDigest !== digest) {
+      throw new Error(`sync-event-id-content-conflict:${eventId}`);
+    }
+    if (existingDigest == null) {
+      identityDigests.set(eventId, digest);
+      unique.set(eventId, decoded);
+    }
+  }
 
   const events = [...unique.values()].sort((a, b) => {
     const deviceCompare = a.header.originDeviceId.localeCompare(b.header.originDeviceId);
@@ -443,9 +409,7 @@ export function materializeDecodedEvents(decodedEvents) {
       correctionGroups.get(key).push(event);
     }
 
-    if (action.type === 'CATEGORY_CONFLICT_RESOLVED') {
-      resolutions.push(event);
-    }
+    if (action.type === 'CATEGORY_CONFLICT_RESOLVED') resolutions.push(event);
   }
 
   const categoryState = {};
@@ -509,10 +473,7 @@ export function materializeDecodedEvents(decodedEvents) {
     }
 
     if (currentCategory != null) {
-      categoryState[targetId] = {
-        categoryId: currentCategory,
-        revision: currentRevision
-      };
+      categoryState[targetId] = { categoryId: currentCategory, revision: currentRevision };
     }
   }
 
