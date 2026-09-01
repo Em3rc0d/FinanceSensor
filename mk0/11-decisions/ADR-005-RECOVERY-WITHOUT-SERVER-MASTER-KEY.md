@@ -1,6 +1,6 @@
 # ADR-005 — All-Devices-Lost Recovery Without a Server Master Key
 
-**Status:** CANDIDATE / SPIKE REQUIRED  
+**Status:** SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED  
 **Owner:** Q-005  
 **Date:** 2026-09-01
 
@@ -14,7 +14,7 @@ A convenient answer would be for FinanceSensor cloud to retain a master decrypti
 
 A human password alone is also rejected for MK0 because an encrypted cloud recovery envelope creates an offline guessing target if the server dataset is stolen.
 
-## Decision candidate
+## Decision
 
 Use an **asymmetric Recovery Key** independent from device keys.
 
@@ -23,7 +23,7 @@ Tenant setup
     ↓
 generate Recovery Keypair locally
     ↓
-Recovery Public Key  ───────────────► tenant metadata
+Recovery Public Key  ───────────────► minimized tenant metadata
 Recovery Private Key ───────────────► user Recovery Kit only
     ↓
 device confirms Recovery Kit saved
@@ -31,20 +31,38 @@ device confirms Recovery Kit saved
 private recovery material removed from ordinary app state
 ```
 
-For every tenant key epoch:
+For every tenant key epoch declared recoverable:
 
 ```text
 Tenant Epoch Key N
-   ├─ HPKE wrap → Device A public key
-   ├─ HPKE wrap → Device B public key
-   └─ HPKE wrap → Recovery public key
+   ├─ production wrap → Device A public key
+   ├─ production wrap → Device B public key
+   └─ production wrap → Recovery Public Key
 ```
 
-The cloud can store all ciphertext wraps. It never possesses the Recovery Private Key.
+The cloud may store ciphertext wraps and minimum routing/version metadata. It never possesses the Recovery Private Key.
 
 ## Normal operation
 
-Devices need only the recovery **public** key to create a recovery wrap for every new epoch. Therefore normal devices do not need to retain the Recovery Private Key, and a revoked device cannot use the public key to decrypt future epochs.
+Devices need only the recovery **public** key to create a recovery wrap for every new recoverable epoch. Therefore ordinary devices do not need to retain the Recovery Private Key, and a revoked device cannot use public recovery material to decrypt future epochs.
+
+## Recovery coverage rule
+
+A tenant epoch is not considered recoverable merely because a Recovery Public Key exists.
+
+```text
+recoverable epoch N
+        ↓
+matching tenant_id
+matching recovery_key_id
+matching key_epoch
+        ↓
+authenticated recovery wrap exists
+        ↓
+RECOVERY-COVERED
+```
+
+A missing wrap is an explicit integrity/configuration failure, not a silent downgrade.
 
 ## All-devices-lost sequence
 
@@ -59,31 +77,33 @@ new device unwraps required tenant epochs locally
         ↓
 financial history becomes decryptable locally
         ↓
-new hardware-backed device keypair generated
+new hardware-backed device identity generated
         ↓
-old device authorizations revoked
+lost device authorizations revoked
         ↓
-new tenant epoch generated
+new tenant epoch N+1 generated
         ↓
-new recovery keypair generated
+new Recovery Keypair generated
         ↓
 new Recovery Kit confirmed
         ↓
 old Recovery Key retired for future epochs
+        ↓
+normal future sync resumes
 ```
 
-Rotating the recovery key after successful recovery limits future exposure of the key material that had to be imported during recovery.
+Recovery is not permission to silently reactivate lost devices or continue indefinitely on historical key material.
 
 ## Server capability
 
-Server stores only:
+Server stores only the minimum required recovery-plane material, conceptually:
 
 ```text
 recovery_key_id
 recovery_public_key
 key_epoch
-opaque recovery wrap ciphertext
-minimum suite/version metadata
+opaque recovery-wrap ciphertext
+minimum suite/version/routing metadata
 ```
 
 Server cannot decrypt a tenant epoch from those values alone.
@@ -93,10 +113,10 @@ Server cannot decrypt a tenant epoch from those values alone.
 ### All devices lost + Recovery Kit available
 
 ```text
-RECOVERY POSSIBLE
+CRYPTOGRAPHIC RECOVERY POSSIBLE
 ```
 
-subject to account authentication, compatible client version and valid recovery wraps.
+subject to account authentication, compatible client version, valid recovery-wrap coverage and intact historical authorization records needed to authenticate wraps.
 
 ### All devices lost + Recovery Kit also lost
 
@@ -104,37 +124,50 @@ subject to account authentication, compatible client version and valid recovery 
 CRYPTOGRAPHIC RECOVERY IMPOSSIBLE
 ```
 
-FinanceSensor must say this plainly. The application may rebuild whatever is still obtainable from source providers after reconnecting them, but local-only corrections, historical source data no longer available upstream, annotations or other unsynchronized/unrecoverable state may be lost.
+FinanceSensor must say this plainly. The application may rebuild whatever is still obtainable from source providers after reconnecting them, but local-only corrections, historical source data no longer available upstream, annotations or other unrecoverable state may be lost.
 
 No hidden server bypass is permitted.
 
 ## Why asymmetric recovery instead of a symmetric recovery secret stored on devices
 
-If ordinary devices held a reusable symmetric recovery key so they could update recovery envelopes, a revoked device possessing that key could potentially decrypt future recovery material. A public recovery key solves the update problem without giving devices the recovery decryption capability.
+If ordinary devices held a reusable symmetric recovery secret so they could update recovery envelopes, a revoked device possessing that secret could potentially decrypt future recovery material. A public Recovery Key solves the update problem without giving ordinary devices recovery decryption authority.
 
 ## Why not password-only recovery in MK0
 
-A user-chosen password has uncertain entropy. If cloud recovery ciphertext is stolen, an attacker may perform offline guesses. A future password-protected Recovery Kit may use a reviewed memory-hard KDF such as Argon2id, but the underlying recovery authority must remain high-entropy cryptographic material.
+A user-chosen password has uncertain entropy. If cloud recovery ciphertext is stolen, an attacker may perform offline guesses. A future password-protected Recovery Kit may use a reviewed memory-hard KDF, but the underlying recovery authority must remain high-entropy cryptographic material.
 
 ## Recovery Kit UX is not frozen here
 
-Possible representations include a QR/file and a human-transcribable high-entropy encoding with checksum. This ADR freezes the cryptographic ownership model, not the final UX representation.
+Possible representations include a file/QR and a human-transcribable high-entropy encoding with checksum. This ADR freezes the cryptographic ownership model, not the final UX representation.
 
-Do not copy cryptocurrency wallet vocabulary/mechanics unnecessarily into the consumer UI.
+Do not import cryptocurrency wallet language/mechanics into consumer UX unless it improves comprehension and is directly justified.
 
-## Security properties required
+## Security properties demonstrated at spike level
 
 ```text
-REC-001 cloud alone cannot recover tenant epoch keys
-REC-002 wrong recovery private key fails
-REC-003 recovery can cover every retained historical epoch
-REC-004 revoked device cannot use recovery public material to decrypt
-REC-005 recovery wrap is bound to tenant + epoch + recovery-key id
-REC-006 tampered recovery wrap fails
-REC-007 successful recovery rotates device authorization + tenant epoch
-REC-008 successful recovery can rotate recovery key for future epochs
-REC-009 old recovery key cannot decrypt epochs wrapped only to the new recovery key
-REC-010 losing devices + Recovery Kit means explicit unrecoverable state, not silent server bypass
+REC-001 cloud view excludes Recovery Private Key and tenant root key
+REC-002 wrong Recovery Private Key fails
+REC-003 one Recovery identity restores all epochs wrapped to it
+REC-004 Recovery Public Key alone cannot decrypt
+REC-005 wrap is context-bound to tenant + epoch + recovery-key id
+REC-006 tampered recovery ciphertext fails
+REC-007 Recovery Kit restores after all device private keys are gone
+REC-008 old Recovery Key cannot decrypt future-only new-key wraps
+REC-009 wrong historical authorizer record cannot validate the wrap
+REC-010 no Recovery Kit means no hidden recovery path
+REC-011 declared recoverable epochs require complete wrap coverage
+REC-012 post-recovery hardening revokes lost devices and requires tenant/recovery rotation
+```
+
+Evidence:
+
+`mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+
+Observed bounded suite:
+
+```text
+RECOVERY TESTS   12 / 12 PASS
+E2EE TOTAL       40 / 40 PASS
 ```
 
 ## Non-goals for MK0
@@ -143,12 +176,14 @@ REC-010 losing devices + Recovery Kit means explicit unrecoverable state, not si
 - Shamir secret sharing;
 - server-held escrow master key;
 - password-only recovery;
-- silent platform-cloud backup of recovery private material;
+- silent platform-cloud backup of Recovery Private Key material;
 - pretending a revoked device can be forced to forget historical plaintext it already possessed.
 
 ## Production suite interaction
 
-Recovery wraps should use a reviewed HPKE implementation. The device-wrap interoperability candidate is P-256/HKDF-SHA256/AES-GCM-128 because current Android hardware-backed P-256 and Apple Secure Enclave/CryptoKit capabilities can align around that suite. Recovery key material itself is not required to be device-bound because it is specifically the off-device recovery authority.
+Recovery wraps must use a reviewed production construction/library. HPKE remains the leading direction, but the spike implementation is deliberately **not** the production cryptographic suite.
+
+The cross-platform device-wrap candidate remains aligned around a suite that can be implemented safely on both Android and Apple platforms; final algorithm/library choice is still security-review work.
 
 See:
 
@@ -157,13 +192,19 @@ See:
 ## Decision state
 
 ```text
-SERVER_MASTER_KEY            REJECTED
-PASSWORD_ONLY_RECOVERY       REJECTED FOR MK0
-RECOVERY_PUBLIC_KEY          CANDIDATE
-RECOVERY_PRIVATE_KEY         USER-HELD / OFFLINE
-PER_EPOCH_RECOVERY_WRAP      REQUIRED CANDIDATE
-POST-RECOVERY EPOCH ROTATION REQUIRED
-POST-RECOVERY KEY ROTATION   REQUIRED CANDIDATE
+SERVER_MASTER_KEY             REJECTED
+PASSWORD_ONLY_RECOVERY        REJECTED FOR MK0
+RECOVERY_PUBLIC_KEY           ACCEPTED AT LOGICAL/SPIKE LEVEL
+RECOVERY_PRIVATE_KEY          USER-HELD / OFFLINE
+PER_EPOCH_RECOVERY_WRAP       REQUIRED
+RECOVERY_COVERAGE_CHECK       REQUIRED
+POST-RECOVERY DEVICE HARDEN   REQUIRED
+POST-RECOVERY EPOCH ROTATION  REQUIRED
+POST-RECOVERY KEY ROTATION    REQUIRED
+PHYSICAL MOBILE RECOVERY      OPEN
+PRODUCTION CRYPTO SUITE       OPEN
 ```
 
-This ADR remains candidate until the recovery spike and security revalidation pass.
+## Why this ADR is not release-grade `PROVEN`
+
+The spike proves the ownership and state-transition model only. Q-005 still requires reviewed production crypto, physical Android/iOS key behavior, real cloud authorization, recovery-kit handling and physical disaster-recovery evidence before release closure.
