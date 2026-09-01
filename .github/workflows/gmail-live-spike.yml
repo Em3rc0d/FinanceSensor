@@ -1,4 +1,8 @@
-name: Gmail Live Ingress Spike
+name: Gmail Bearer Reachability Spike
+
+# This workflow is deliberately NOT the FinanceSensor-owned OAuth Level-C proof.
+# It accepts one ephemeral bearer credential only. Long-lived OAuth authority
+# remains on the controlled edge/client runtime and must never be moved into CI.
 
 on:
   workflow_dispatch:
@@ -8,7 +12,7 @@ on:
         required: true
         default: '30'
       revoke_after:
-        description: 'Revoke the controlled OAuth token after evidence collection'
+        description: 'Revoke the controlled bearer after evidence collection'
         required: true
         default: true
         type: boolean
@@ -37,8 +41,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Refuse missing live credential
+      - name: Refuse missing ephemeral bearer
         run: test -n "$FINANCESENSOR_GMAIL_ACCESS_TOKEN"
 
-      - name: Run controlled Gmail ingress
+      - name: Run controlled Gmail bearer reachability probe
         run: npm run live:gmail
