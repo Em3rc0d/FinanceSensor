@@ -122,12 +122,21 @@
       "id": "Q-005",
       "kind": "quarry",
       "title": "Local-first E2EE multi-device synchronization",
-      "status": "OPEN",
-      "artifacts": ["mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md"],
+      "status": "ACTIVE",
+      "artifacts": [
+        "mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md",
+        "mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md",
+        "mk0/04-architecture/PARASYMPATHETIC-SYNC.md"
+      ],
       "dependsOn": ["P-002"],
-      "validates": ["A-001", "DM-001", "SEC-001", "G-MK0"],
+      "validates": ["A-001", "DM-001", "SEC-001", "S-002", "T-002", "G-MK0"],
       "revalidates": ["P-002"],
-      "evidence": [],
+      "evidence": [
+        "spikes/e2ee-sync/src/protocol.js",
+        "spikes/e2ee-sync/src/scheduler.js",
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js"
+      ],
       "closureReceipt": null
     },
     {
@@ -207,6 +216,40 @@
         ".github/workflows/mk0-foundation.yml",
         "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
       ],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-002",
+      "kind": "spike",
+      "title": "E2EE multi-device convergence and autonomic sync spike",
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/e2ee-sync/src/protocol.js",
+        "spikes/e2ee-sync/src/scheduler.js"
+      ],
+      "dependsOn": ["Q-005"],
+      "validates": ["T-002"],
+      "revalidates": ["Q-005", "DM-001", "SEC-001", "Q-004"],
+      "evidence": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-002",
+      "kind": "test",
+      "title": "E2EE sync and parasympathetic invariant suite",
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        ".github/workflows/mk0-foundation.yml"
+      ],
+      "dependsOn": ["Q-005", "S-002"],
+      "validates": [],
+      "revalidates": ["Q-005", "S-002", "DM-001", "SEC-001", "Q-004"],
+      "evidence": [".github/workflows/mk0-foundation.yml"],
       "closureReceipt": null
     },
     {
