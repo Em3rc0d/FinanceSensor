@@ -342,10 +342,25 @@ export function assertPostRecoveryReadyForFutureSync({
     }
   }
 
+  // Every tenant device that still had authority at the last recovered epoch
+  // must be explicitly accounted for in the all-devices-lost plan. A device
+  // cannot disappear from the lost set merely because its record has already
+  // been edited to REVOKED from N+1; it still needs cutover/history handling.
+  const plannedLostIds = new Set(plan.revokeDevices.map(item => item.deviceId));
+  for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
+    if (deviceId === plan.activateDevice.deviceId) continue;
+    if (record?.tenantId !== plan.tenantId) continue;
+    if (
+      isAuthorizedForEpoch(record, plan.recoveredThroughEpoch, plan.tenantId) &&
+      !plannedLostIds.has(deviceId)
+    ) {
+      throw new Error(`post-recovery-active-at-recovery-epoch-not-declared-lost:${deviceId}`);
+    }
+  }
+
   // ALL_DEVICES_LOST_RECOVERY is intentionally stricter than ordinary
-  // multi-device operation. Before future sync resumes, no undeclared legacy
-  // tenant device may still have authority at the new epoch. Otherwise a
-  // forgotten device could survive outside the explicit revocation plan.
+  // multi-device operation. Before future sync resumes, no undeclared tenant
+  // device may have authority at the new epoch either.
   for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
     if (deviceId === plan.activateDevice.deviceId) continue;
     if (record?.tenantId !== plan.tenantId) continue;
