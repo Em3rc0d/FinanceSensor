@@ -27,6 +27,8 @@ const normalizeText = (value = '') => String(value ?? '')
   .replace(/[^a-z0-9]+/g, ' ')
   .trim();
 
+const canonicalNumber = (value) => Object.is(Number(value), -0) ? 0 : Number(value);
+
 export function normalizeMerchant(raw = '') {
   return normalizeText(raw)
     .replace(/\b(pending|pendiente|visa|mastercard|mc|pos|purchase|compra|pago)\b/g, ' ')
@@ -255,7 +257,7 @@ export function projectEconomicEffect(event, { linkedContribution = null } = {})
       const originalExpense = Math.abs(Number(linkedContribution?.expense ?? 0));
       if (originalExpense <= 0) return zeroEffect(EffectState.REQUIRES_LINK);
       if (amount - originalExpense > 0.005) return zeroEffect(EffectState.REQUIRES_REVIEW);
-      return { income: 0, expense: -amount, state: EffectState.OFFSET };
+      return { income: 0, expense: canonicalNumber(-amount), state: EffectState.OFFSET };
     }
 
     case EventType.REVERSAL: {
@@ -267,8 +269,8 @@ export function projectEconomicEffect(event, { linkedContribution = null } = {})
         return zeroEffect(EffectState.REQUIRES_REVIEW);
       }
       return {
-        income: -originalIncome,
-        expense: -originalExpense,
+        income: canonicalNumber(-originalIncome),
+        expense: canonicalNumber(-originalExpense),
         state: EffectState.OFFSET
       };
     }
@@ -280,5 +282,8 @@ export function projectEconomicEffect(event, { linkedContribution = null } = {})
 
 export function economicContribution(event, context = {}) {
   const effect = projectEconomicEffect(event, context);
-  return { income: effect.income, expense: effect.expense };
+  return {
+    income: canonicalNumber(effect.income),
+    expense: canonicalNumber(effect.expense)
+  };
 }
