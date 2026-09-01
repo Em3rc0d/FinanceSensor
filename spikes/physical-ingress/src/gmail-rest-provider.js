@@ -20,15 +20,65 @@ function headersToObject(headers = []) {
   return out;
 }
 
+function contentIdFor(part) {
+  const header = (part.headers ?? []).find(item => String(item.name).toLowerCase() === 'content-id');
+  if (!header?.value) return null;
+  return String(header.value).replace(/^<|>$/g, '') || null;
+}
+
+function collectAttachmentDescriptors(payload, output = []) {
+  if (!payload) return output;
+  const parts = Array.isArray(payload.parts) ? payload.parts : [];
+  for (const part of parts) {
+    const attachmentId = part.body?.attachmentId;
+    if (attachmentId) {
+      const contentId = contentIdFor(part);
+      output.push({
+        filename: part.filename || null,
+        mimeType: part.mimeType || 'application/octet-stream',
+        attachmentId,
+        size: Number(part.body?.size ?? 0),
+        inline: Boolean(contentId),
+        contentId
+      });
+    }
+    collectAttachmentDescriptors(part, output);
+  }
+  return output;
+}
+
+function sanitizedApiError(status) {
+  const error = new Error(`Gmail API request failed with status ${status}`);
+  error.code = status === 401 ? 'REAUTH_REQUIRED' : 'GMAIL_API_ERROR';
+  error.status = status;
+  return error;
+}
+
 export class GmailRestProvider {
-  constructor({ accessToken, fetchImpl = globalThis.fetch, userId = 'me' }) {
-    if (!accessToken) throw new Error('Gmail access token required');
+  constructor({ accessToken, credentialProvider, fetchImpl = globalThis.fetch, userId = 'me' }) {
+    if (!accessToken && !credentialProvider) throw new Error('Gmail access token or credential provider required');
+    if (credentialProvider && typeof credentialProvider.getAccessToken !== 'function') {
+      throw new Error('credentialProvider.getAccessToken required');
+    }
     if (typeof fetchImpl !== 'function') throw new Error('fetch implementation required');
-    this.accessToken = accessToken;
+    this.accessToken = accessToken ? String(accessToken) : null;
+    this.credentialProvider = credentialProvider ?? null;
     this.fetch = fetchImpl;
     this.userId = userId;
     this.base = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(userId)}`;
     this.calls = [];
+  }
+
+  async _token() {
+    const token = this.credentialProvider
+      ? await this.credentialProvider.getAccessToken()
+      : this.accessToken;
+    if (!token) {
+      const error = new Error('Gmail source authorization unavailable');
+      error.code = 'REAUTH_REQUIRED';
+      throw error;
+    }
+    return String(token);
   }
 
   async _request(path, query = {}) {
@@ -39,13 +89,16 @@ export class GmailRestProvider {
       else url.searchParams.set(key, String(value));
     }
     this.calls.push({ path, query: structuredClone(query) });
+    const token = await this._token();
     const response = await this.fetch(url, {
-      headers: { Authorization: `Bearer ${this.accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
     if (!response.ok) {
       if (response.status === 404 && path === '/history') throw new HistoryExpiredError('Gmail historyId expired');
-      const text = await response.text();
-      throw new Error(`Gmail API ${response.status}: ${text.slice(0, 300)}`);
+      if (response.status === 401 && this.credentialProvider?.onUnauthorized) {
+        await this.credentialProvider.onUnauthorized({ status: 401 });
+      }
+      throw sanitizedApiError(response.status);
     }
     return response.json();
   }
@@ -75,7 +128,7 @@ export class GmailRestProvider {
       historyId: message.historyId,
       headers,
       body: flattenBody(message.payload),
-      attachments: []
+      attachments: collectAttachmentDescriptors(message.payload)
     };
   }
 
