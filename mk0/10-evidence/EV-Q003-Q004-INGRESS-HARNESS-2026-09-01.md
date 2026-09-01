@@ -2,16 +2,17 @@
 
 **Date:** 2026-09-01  
 **Evidence level:** CONTRACTUAL / SYNTHETIC PROVIDER  
-**Validated commit:** `7628156bb392cd597ec7cd26c7468a8984623487`  
-**MK0 Foundation run:** `33520615184`  
-**Physical ingress job:** `99898616829`  
-**Heartbeat run:** `33520615206`
+**Validated commit:** `ec2fadbafa2186ac8e791354c649ab30ca4d4538`  
+**MK0 Foundation run:** `33521224879`  
+**Physical ingress job:** `99900688076`
 
 ## Result
 
 ```text
 PHYSICAL_INGRESS_HARNESS     PASS
 TESTS                        21 / 21 PASS
+ASYNC_PROVIDER_CONTRACT      PASS
+REAL_GMAIL_ADAPTER           IMPLEMENTED / NOT EXECUTED
 REAL_GMAIL_PROVIDER          NOT EXECUTED
 Q-003                        ACTIVE
 Q-004                        ACTIVE
@@ -39,11 +40,12 @@ BUILD_READY                  NO
 - disconnect removes credential/cursor;
 - disconnect can either retain derived history or explicitly erase Gmail-derived state;
 - tenant deletion destroys credential and local encrypted state;
-- request accounting matches provider operations.
+- request accounting matches provider operations;
+- one async provider contract is used for synthetic and real-provider paths.
 
 ## Important semantic correction discovered during implementation
 
-Discarding raw mail means the system cannot later re-run semantic classification from subject/body. Therefore FinanceSensor must persist the **derived semantic type** inside encrypted local financial evidence before raw content is discarded.
+Discarding raw mail means the system cannot later re-run semantic classification from subject/body. Therefore FinanceSensor persists the **derived semantic type** inside encrypted local financial evidence before raw content is discarded.
 
 This preserves:
 
@@ -55,13 +57,34 @@ restart/replay correctness
 
 without retaining an inbox mirror.
 
+## Real adapter prepared
+
+The repository now contains:
+
+```text
+spikes/physical-ingress/src/gmail-rest-provider.js
+spikes/physical-ingress/live/run-gmail.mjs
+.github/workflows/gmail-live-spike.yml
+```
+
+The live path:
+
+- uses Gmail REST directly;
+- supports bounded `messages.list`;
+- supports `messages.get` METADATA/FULL;
+- supports `history.list`;
+- reads the mailbox `historyId` from profile;
+- prints aggregate operational evidence only;
+- can revoke the controlled OAuth token after the run;
+- never requires a client secret or token to be committed.
+
 ## What this evidence does NOT prove
 
 This artifact does not prove:
 
-- Google OAuth succeeds for FinanceSensor;
+- Google OAuth consent succeeds for the actual FinanceSensor project;
 - `gmail.readonly` is approved for the production app;
-- real `messages.list`, `messages.get`, or `history.list` behavior on a controlled Gmail account;
+- real Gmail endpoint behavior against a controlled mailbox;
 - Google verification/security-assessment acceptance;
 - Android Credential Manager / Keystore token behavior;
 - physical-device RAM/battery/network behavior;
@@ -79,13 +102,15 @@ controlled Gmail test account
         ↓
 real OAuth user consent
         ↓
-gmail.readonly
+gmail.readonly access token outside repository
+        ↓
+Gmail Live Ingress Spike workflow
         ↓
 real bounded list / metadata / full / history
         ↓
-Android protected credential storage
+remote token revoke
         ↓
-revoke + restart + delete
+Android protected credential storage follow-up
         ↓
 network / local-storage inspection
         ↓
