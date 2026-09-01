@@ -235,14 +235,10 @@ export function assertRecoveryCoverage({
   }
 
   const missing = expectedEpochs.filter(epoch => packagesByEpoch.get(epoch).size === 0);
-  if (missing.length > 0) {
-    throw new Error(`recovery-coverage-missing:${missing.join(',')}`);
-  }
+  if (missing.length > 0) throw new Error(`recovery-coverage-missing:${missing.join(',')}`);
 
   const ambiguous = expectedEpochs.filter(epoch => packagesByEpoch.get(epoch).size > 1);
-  if (ambiguous.length > 0) {
-    throw new Error(`recovery-coverage-ambiguous:${ambiguous.join(',')}`);
-  }
+  if (ambiguous.length > 0) throw new Error(`recovery-coverage-ambiguous:${ambiguous.join(',')}`);
 
   return {
     tenantId,
@@ -260,12 +256,8 @@ export function planPostRecoveryHardening({
   newRecoveryKeyId
 }) {
   if (!tenantId || !newDeviceId || !newRecoveryKeyId) throw new Error('post-recovery-context-required');
-  if (!Number.isInteger(recoveredThroughEpoch) || recoveredThroughEpoch <= 0) {
-    throw new Error('invalid-recovered-through-epoch');
-  }
-  if (!Array.isArray(lostDeviceIds) || lostDeviceIds.length === 0) {
-    throw new Error('lost-device-set-required');
-  }
+  if (!Number.isInteger(recoveredThroughEpoch) || recoveredThroughEpoch <= 0) throw new Error('invalid-recovered-through-epoch');
+  if (!Array.isArray(lostDeviceIds) || lostDeviceIds.length === 0) throw new Error('lost-device-set-required');
 
   const revokedDeviceIds = [...new Set(lostDeviceIds)].sort();
   if (revokedDeviceIds.includes(newDeviceId)) throw new Error('new-device-cannot-be-revoked');
@@ -286,15 +278,8 @@ export function planPostRecoveryHardening({
       authorizedFromEpoch: nextKeyEpoch,
       reason: 'ALL_DEVICES_LOST_RECOVERY'
     },
-    rotateTenantKey: {
-      required: true,
-      nextKeyEpoch,
-      reason: 'ALL_DEVICES_LOST_RECOVERY'
-    },
-    rotateRecoveryKey: {
-      required: true,
-      newRecoveryKeyId
-    }
+    rotateTenantKey: { required: true, nextKeyEpoch, reason: 'ALL_DEVICES_LOST_RECOVERY' },
+    rotateRecoveryKey: { required: true, newRecoveryKeyId }
   };
 }
 
@@ -308,17 +293,11 @@ export function assertPostRecoveryReadyForFutureSync({
   if (!plan?.tenantId || !plan?.rotateTenantKey?.required || !plan?.rotateRecoveryKey?.required) {
     throw new Error('invalid-post-recovery-plan');
   }
-  if (!(deviceAuthorizationRecords instanceof Map)) {
-    throw new Error('post-recovery-device-records-required');
-  }
+  if (!(deviceAuthorizationRecords instanceof Map)) throw new Error('post-recovery-device-records-required');
 
   const nextKeyEpoch = plan.rotateTenantKey.nextKeyEpoch;
-  if (currentTenantKeyEpoch !== nextKeyEpoch) {
-    throw new Error('post-recovery-tenant-epoch-not-rotated');
-  }
-  if (activeRecoveryKeyId !== plan.rotateRecoveryKey.newRecoveryKeyId) {
-    throw new Error('post-recovery-recovery-key-not-rotated');
-  }
+  if (currentTenantKeyEpoch !== nextKeyEpoch) throw new Error('post-recovery-tenant-epoch-not-rotated');
+  if (activeRecoveryKeyId !== plan.rotateRecoveryKey.newRecoveryKeyId) throw new Error('post-recovery-recovery-key-not-rotated');
 
   const activated = deviceAuthorizationRecords.get(plan.activateDevice.deviceId);
   if (
@@ -326,9 +305,7 @@ export function assertPostRecoveryReadyForFutureSync({
     activated.status !== 'ACTIVE' ||
     activated.authorizedFromEpoch !== nextKeyEpoch ||
     !isAuthorizedForEpoch(activated, nextKeyEpoch, plan.tenantId)
-  ) {
-    throw new Error('post-recovery-new-device-not-authorized');
-  }
+  ) throw new Error('post-recovery-new-device-not-authorized');
 
   for (const expectedRevocation of plan.revokeDevices) {
     const record = deviceAuthorizationRecords.get(expectedRevocation.deviceId);
@@ -337,30 +314,11 @@ export function assertPostRecoveryReadyForFutureSync({
       record.status !== 'REVOKED' ||
       record.revokedFromEpoch !== nextKeyEpoch ||
       isAuthorizedForEpoch(record, nextKeyEpoch, plan.tenantId)
-    ) {
-      throw new Error(`post-recovery-lost-device-not-revoked:${expectedRevocation.deviceId}`);
-    }
+    ) throw new Error(`post-recovery-lost-device-not-revoked:${expectedRevocation.deviceId}`);
   }
 
-  // Every tenant device that still had authority at the last recovered epoch
-  // must be explicitly accounted for in the all-devices-lost plan. A device
-  // cannot disappear from the lost set merely because its record has already
-  // been edited to REVOKED from N+1; it still needs cutover/history handling.
-  const plannedLostIds = new Set(plan.revokeDevices.map(item => item.deviceId));
-  for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
-    if (deviceId === plan.activateDevice.deviceId) continue;
-    if (record?.tenantId !== plan.tenantId) continue;
-    if (
-      isAuthorizedForEpoch(record, plan.recoveredThroughEpoch, plan.tenantId) &&
-      !plannedLostIds.has(deviceId)
-    ) {
-      throw new Error(`post-recovery-active-at-recovery-epoch-not-declared-lost:${deviceId}`);
-    }
-  }
-
-  // ALL_DEVICES_LOST_RECOVERY is intentionally stricter than ordinary
-  // multi-device operation. Before future sync resumes, no undeclared tenant
-  // device may have authority at the new epoch either.
+  // First reject any undeclared tenant device that still has present/future
+  // authority. This preserves the most actionable diagnostic.
   for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
     if (deviceId === plan.activateDevice.deviceId) continue;
     if (record?.tenantId !== plan.tenantId) continue;
@@ -369,14 +327,25 @@ export function assertPostRecoveryReadyForFutureSync({
     }
   }
 
+  // Then prove historical inventory completeness. A device that was active at
+  // the last recovered epoch cannot disappear from the lost set merely because
+  // its record was already edited to REVOKED from N+1.
+  const plannedLostIds = new Set(plan.revokeDevices.map(item => item.deviceId));
+  for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
+    if (deviceId === plan.activateDevice.deviceId) continue;
+    if (record?.tenantId !== plan.tenantId) continue;
+    if (
+      isAuthorizedForEpoch(record, plan.recoveredThroughEpoch, plan.tenantId) &&
+      !plannedLostIds.has(deviceId)
+    ) throw new Error(`post-recovery-active-at-recovery-epoch-not-declared-lost:${deviceId}`);
+  }
+
   if (
     !recoveryCoverage ||
     recoveryCoverage.tenantId !== plan.tenantId ||
     recoveryCoverage.recoveryKeyId !== activeRecoveryKeyId ||
     !recoveryCoverage.coveredEpochs?.includes(nextKeyEpoch)
-  ) {
-    throw new Error('post-recovery-next-epoch-not-recovery-covered');
-  }
+  ) throw new Error('post-recovery-next-epoch-not-recovery-covered');
 
   return {
     readyForFutureSync: true,
