@@ -10,16 +10,17 @@ Can a public FinanceSensor app obtain and retain the Gmail access required for i
 
 ## Current answer
 
-**Technically plausible; provider contract proven; real Gmail execution still required before closure.**
+**Technically plausible; provider contract and real-provider reachability are proven, while FinanceSensor-owned OAuth transport is still awaiting controlled authorization.**
 
-FinanceSensor now has two intentionally separated evidence levels:
+FinanceSensor now separates three evidence levels:
 
 ```text
-LEVEL A — CONTRACTUAL HARNESS      PASS
-LEVEL B — CONTROLLED REAL GMAIL    NOT EXECUTED
+LEVEL A — CONTRACTUAL HARNESS                PASS
+LEVEL B — REAL PROVIDER REACHABILITY         PASS
+LEVEL C — FINANCESENSOR-OWNED OAUTH TRANSPORT NOT EXECUTED
 ```
 
-Level A proves the internal ingestion/privacy contract. It does not prove Google consent, real endpoint behavior or production approval.
+Level A proves the internal ingestion/privacy contract. Level B proves that an already-authorized Gmail connection can return real transactional message structure to the engineering environment. Neither substitutes for Level C, which must exercise FinanceSensor's own OAuth client, scope grant and REST adapter.
 
 ## Authoritative findings
 
@@ -114,6 +115,17 @@ NO pooled Gmail corpus for generalized model training
 Source:
 - https://developers.google.com/workspace/workspace-api-user-data-developer-policy
 
+### F-003-11 — Real provider shape is compatible with the staged contract
+
+A controlled 2026-09-01 probe through an already-authorized Gmail engineering connector returned real transactional message identifiers, metadata, body text and MIME descriptors. No real content or credential was copied into the repository.
+
+The observed shape exposed defects in amount localization, merchant provenance and operation-reference extraction. Those defects were converted into a sanitized contract fixture and repaired before this finding was promoted.
+
+Evidence:
+`mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
+
+This proves provider reachability and source-shape compatibility, **not** FinanceSensor-owned OAuth transport.
+
 ## Endpoint/scope matrix
 
 | MK0 need | Endpoint / mode | Candidate scope | Decision |
@@ -135,10 +147,10 @@ Implemented under `spikes/physical-ingress/`.
 Evidence:
 `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
 
-Observed:
+After the real-shape hardening campaign, the current suite is:
 
 ```text
-21 / 21 PASS
+27 / 27 PASS
 bounded 30/90-day listing          PASS
 metadata-first                     PASS
 FULL only for candidates           PASS
@@ -147,17 +159,42 @@ history 404 recovery               PASS
 restart/replay                     PASS
 idempotent reprocessing            PASS
 canonical resolver reuse           PASS
+localized thousands/decimals       PASS
+provider operation provenance      PASS
+sender != invented merchant        PASS
+external-transfer preservation     PASS
 raw body durable retention         0
 raw attachment retention           0
 plaintext financial cloud          0 in harness
 token in logs                      0 in harness
 ```
 
-The ingress engine was converted to one async provider contract so synthetic and real Gmail adapters traverse the same code path.
+The ingress engine uses one async provider contract so synthetic and real Gmail adapters traverse the same downstream code path.
 
-## Level B — real Gmail path prepared
+## Level B — real provider reachability
 
-Implemented but **not executed**:
+Executed 2026-09-01 through an already-authorized Gmail engineering connector.
+
+Observed:
+
+```text
+REAL_PROVIDER_CONNECTION       PASS
+REAL_MESSAGE_IDS               RECEIVED
+REAL_TRANSACTIONAL_METADATA    RECEIVED
+REAL_TRANSACTIONAL_BODY        RECEIVED
+REAL_MIME_DESCRIPTORS          RECEIVED IN SAMPLE
+REAL_RAW_CONTENT IN REPO       0
+REAL_FINANCIAL LITERALS IN CI  0
+```
+
+Evidence:
+`mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
+
+The connector's bearer credential was not and cannot be repurposed as FinanceSensor's product credential. This boundary is intentional.
+
+## Level C — FinanceSensor-owned real Gmail path prepared
+
+Implemented but **not yet authorized/executed**:
 
 ```text
 spikes/physical-ingress/src/gmail-rest-provider.js
@@ -177,11 +214,11 @@ aggregate privacy-safe result output
 optional remote token revoke
 ```
 
-The manual workflow is isolated behind environment `gmail-controlled-spike` and expects an ephemeral secret named `FINANCESENSOR_GMAIL_ACCESS_TOKEN`. No real credential belongs in the repository or chat transcript.
+The manual workflow is isolated behind environment `gmail-controlled-spike` and expects an ephemeral secret named `FINANCESENSOR_GMAIL_ACCESS_TOKEN`. No real credential belongs in the repository, CI logs or chat transcript.
 
 ## Remaining external gate
 
-Q-003 cannot close until a **controlled Google Cloud DEV project + controlled Gmail test account** grants the candidate `gmail.readonly` access and the live path is executed.
+Q-003 cannot close until a **controlled Google Cloud DEV project + controlled Gmail test account** grants the candidate `gmail.readonly` access to FinanceSensor's own OAuth client and the Level-C path executes.
 
 That evidence must establish at least:
 
@@ -215,18 +252,22 @@ BYTES / TIMING                 measured
 ## Current decision
 
 ```text
-GMAIL_TECHNICAL_PRIMITIVES       PASS
-MINIMUM_SCOPE_CANDIDATE          gmail.readonly
-METADATA_FIRST_PIPELINE          PROVEN_AT_SPIKE
-INCREMENTAL_SYNC_MODEL           PROVEN_AT_SPIKE
-REAL_GMAIL_ADAPTER               READY / NOT EXECUTED
-PUSH_REQUIRED_FOR_MK0            NO
-PRODUCTION_OAUTH_VERIFICATION    REQUIRED
-PERMITTED_USE_FIT                PLAUSIBLE / NOT YET VERIFIED
+GMAIL_TECHNICAL_PRIMITIVES        PASS
+MINIMUM_SCOPE_CANDIDATE           gmail.readonly
+METADATA_FIRST_PIPELINE           PROVEN_AT_SPIKE
+INCREMENTAL_SYNC_MODEL            PROVEN_AT_SPIKE
+REAL_PROVIDER_REACHABILITY        PASS
+REAL_TRANSACTIONAL_DATA_RECEPTION PASS
+SANITIZED_REAL_SHAPE_CONTRACT     27 / 27 PASS
+FINANCESENSOR_GMAIL_ADAPTER       READY
+FINANCESENSOR_OAUTH_TRANSPORT     READY / NOT AUTHORIZED
+PUSH_REQUIRED_FOR_MK0             NO
+PRODUCTION_OAUTH_VERIFICATION     REQUIRED
+PERMITTED_USE_FIT                 PLAUSIBLE / NOT YET VERIFIED
 SECURITY_ASSESSMENT_APPLICABILITY OPEN
-REAL_GMAIL_LIVE_SPIKE            BLOCKED ON CONTROLLED AUTHORIZATION
+LEVEL_C_LIVE_SPIKE                BLOCKED ON CONTROLLED AUTHORIZATION
 
-GMAIL_FEASIBILITY                ACTIVE / NOT CLOSED
+GMAIL_FEASIBILITY                 ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
@@ -238,7 +279,7 @@ Q-003 closes only when:
 - security-assessment applicability is documented for actual architecture;
 - appropriate-use fit has no unresolved policy contradiction;
 - consent/disclosure requirements are captured;
-- controlled real OAuth + list/metadata/full/history path executes;
+- controlled FinanceSensor OAuth + list/metadata/full/history path executes;
 - remote revoke behavior is observed;
 - request/byte/timing evidence is recorded;
 - Android protected credential handling is reconciled or explicitly scoped to Q-004/Q-005;
