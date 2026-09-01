@@ -35,9 +35,14 @@
       "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-001-CANONICAL-TRANSACTIONS.md"],
       "dependsOn": ["P-001", "P-002"],
-      "validates": ["Q-002", "DM-001", "S-001", "T-001", "G-MK0"],
+      "validates": ["Q-002", "C-001", "C-002", "DM-001", "S-001", "T-001", "G-MK0"],
       "revalidates": ["P-001", "P-002"],
-      "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
+      "evidence": [
+        "spikes/canonical-resolver/fixtures/classification-cases.json",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "graph/CONTRADICTIONS.md"
+      ],
       "closureReceipt": null
     },
     {
@@ -49,7 +54,35 @@
       "dependsOn": ["P-002", "Q-001"],
       "validates": ["DM-001", "S-001", "T-001", "G-MK0"],
       "revalidates": ["P-002", "Q-001"],
-      "evidence": ["spikes/canonical-resolver/src/resolver.js", "spikes/canonical-resolver/test/resolver.test.js"],
+      "evidence": [
+        "spikes/canonical-resolver/src/resolver.js",
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "C-001",
+      "kind": "contradiction",
+      "title": "External transfer is not an economic category",
+      "status": "OPEN",
+      "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
+      "dependsOn": ["Q-001"],
+      "validates": [],
+      "revalidates": ["Q-001", "DM-001", "G-MK0"],
+      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
+      "closureReceipt": null
+    },
+    {
+      "id": "C-002",
+      "kind": "contradiction",
+      "title": "Refund and reversal require relationship-aware offsets",
+      "status": "OPEN",
+      "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
+      "dependsOn": ["Q-001"],
+      "validates": [],
+      "revalidates": ["Q-001", "DM-001", "G-MK0"],
+      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
       "closureReceipt": null
     },
     {
@@ -117,11 +150,15 @@
       "kind": "data-model",
       "title": "Core data model",
       "status": "DRAFTED",
-      "artifacts": ["mk0/05-data-model/CORE-DATA-MODEL.md", "mk0/05-data-model/INVARIANTS.md"],
+      "artifacts": [
+        "mk0/05-data-model/CORE-DATA-MODEL.md",
+        "mk0/05-data-model/INVARIANTS.md",
+        "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"
+      ],
       "dependsOn": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
       "validates": ["WF-001", "G-MK0"],
       "revalidates": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
-      "evidence": [],
+      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
       "closureReceipt": null
     },
     {
@@ -133,15 +170,26 @@
       "dependsOn": ["Q-001", "Q-002"],
       "validates": ["T-001"],
       "revalidates": ["Q-001", "Q-002", "DM-001"],
-      "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
+      "evidence": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js"
+      ],
       "closureReceipt": null
     },
     {
       "id": "T-001",
       "kind": "test",
       "title": "Canonical resolver invariant suite",
-      "status": "PASS",
-      "artifacts": ["spikes/canonical-resolver/test/resolver.test.js", ".github/workflows/mk0-foundation.yml"],
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        ".github/workflows/mk0-foundation.yml"
+      ],
       "dependsOn": ["P-002", "Q-001", "Q-002", "S-001"],
       "validates": [],
       "revalidates": ["P-002", "Q-001", "Q-002", "S-001", "DM-001"],
