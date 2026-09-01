@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "extends": "traceability-matrix.json",
+  "groups": [
+    {
+      "id": "TR-DM-RECOVERY",
+      "source": "data-model",
+      "invariants": ["INV-SYNC-008", "INV-SYNC-009", "INV-SYNC-010", "INV-SYNC-011"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-005", "SEC-001", "DM-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/recovery.test.js"],
+      "evidence": [],
+      "mapsTo": []
+    }
+  ],
+  "interrupts": []
+}
