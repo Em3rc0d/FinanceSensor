@@ -57,6 +57,7 @@ function verifyHistoricalEnvelope({ envelope, tenantId, revokedDeviceRecord, rev
   if (envelope.header.originDeviceId !== revokedDeviceRecord.deviceId) {
     throw new Error('historical-envelope-origin-mismatch');
   }
+  if (!envelope.header.eventId) throw new Error('historical-event-id-required');
   if (!Number.isInteger(envelope.header.originDeviceSequence) || envelope.header.originDeviceSequence <= 0) {
     throw new Error('invalid-historical-origin-sequence');
   }
@@ -95,15 +96,26 @@ export function originHistoryCommitment({
   if (!Array.isArray(historicalEnvelopes)) throw new Error('historical-envelopes-required');
 
   const bySequence = new Map();
+  const eventIdToSequence = new Map();
   for (const envelope of historicalEnvelopes) {
     verifyHistoricalEnvelope({ envelope, tenantId, revokedDeviceRecord, revokedFromEpoch });
     const sequence = envelope.header.originDeviceSequence;
+    const eventId = envelope.header.eventId;
     const digest = envelopeDigest(envelope);
     const existing = bySequence.get(sequence);
     if (existing && existing.digest !== digest) {
       throw new Error(`historical-sequence-fork:${sequence}`);
     }
-    if (!existing) bySequence.set(sequence, { digest, envelope });
+
+    const previousSequenceForEvent = eventIdToSequence.get(eventId);
+    if (previousSequenceForEvent != null && previousSequenceForEvent !== sequence) {
+      throw new Error(`historical-event-id-reuse:${eventId}`);
+    }
+
+    if (!existing) {
+      bySequence.set(sequence, { digest, envelope });
+      eventIdToSequence.set(eventId, sequence);
+    }
   }
 
   const ordered = [...bySequence.entries()].sort(([a], [b]) => a - b);
