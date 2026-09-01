@@ -4,27 +4,48 @@ import process from 'node:process';
 
 const root = process.cwd();
 const matrixPath = path.join(root, 'graph', 'traceability-matrix.json');
+const recoveryMatrixPath = path.join(root, 'graph', 'traceability-recovery.json');
 const ledgerPath = path.join(root, 'graph', 'closure-ledger.json');
 const productPath = path.join(root, 'product', 'PRODUCT-INVARIANTS.md');
 const dmPath = path.join(root, 'mk0', '05-data-model', 'INVARIANTS.md');
 const contradictionsPath = path.join(root, 'graph', 'CONTRADICTIONS.md');
 
 const failures = [];
-const fail = (message) => failures.push(message);
-const exists = (relativePath) => fs.existsSync(path.join(root, relativePath));
+const fail = message => failures.push(message);
+const exists = relativePath => fs.existsSync(path.join(root, relativePath));
 
-for (const required of [matrixPath, ledgerPath, productPath, dmPath, contradictionsPath]) {
+for (const required of [matrixPath, recoveryMatrixPath, ledgerPath, productPath, dmPath, contradictionsPath]) {
   if (!fs.existsSync(required)) {
     console.error(`TRACEABILITY_FAIL: missing ${path.relative(root, required)}`);
     process.exit(1);
   }
 }
 
-const matrix = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
+const baseMatrix = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
+const recoveryMatrix = JSON.parse(fs.readFileSync(recoveryMatrixPath, 'utf8'));
 const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
 const productText = fs.readFileSync(productPath, 'utf8');
 const dmText = fs.readFileSync(dmPath, 'utf8');
 const contradictionsText = fs.readFileSync(contradictionsPath, 'utf8');
+
+if (recoveryMatrix.extends !== 'traceability-matrix.json') {
+  fail('recovery traceability matrix must extend traceability-matrix.json');
+}
+if (recoveryMatrix.schemaVersion !== baseMatrix.schemaVersion) {
+  fail('recovery traceability schemaVersion must match base matrix');
+}
+
+const matrix = {
+  ...baseMatrix,
+  groups: [
+    ...(baseMatrix.groups ?? []),
+    ...(recoveryMatrix.groups ?? [])
+  ],
+  interrupts: [
+    ...(baseMatrix.interrupts ?? []),
+    ...(recoveryMatrix.interrupts ?? [])
+  ]
+};
 
 const productIds = [...productText.matchAll(/^###\s+((?:FIN|PRIV|TEN|HUM|UX|DEV)-\d{3})\b/gm)].map(m => m[1]);
 const dmIds = [...dmText.matchAll(/^###\s+(INV-[A-Z]+-\d{3})\b/gm)].map(m => m[1]);
@@ -33,9 +54,13 @@ const allInvariantIds = new Set([...productIds, ...dmIds]);
 const ledgerNodes = new Map((ledger.nodes ?? []).map(node => [node.id, node]));
 const allowedStates = new Set(['SPECIFIED', 'PARTIAL', 'PROVEN_AT_SPIKE', 'PROVEN']);
 
+const seenGroups = new Set();
 const seen = new Map();
 for (const group of matrix.groups ?? []) {
   if (!group.id) fail('traceability group without id');
+  if (seenGroups.has(group.id)) fail(`duplicate traceability group ${group.id}`);
+  seenGroups.add(group.id);
+
   if (!allowedStates.has(group.status)) fail(`${group.id} invalid status ${group.status}`);
   if (!['product', 'data-model'].includes(group.source)) fail(`${group.id} invalid source ${group.source}`);
   if (!Array.isArray(group.invariants) || group.invariants.length === 0) fail(`${group.id} has no invariants`);
@@ -125,7 +150,6 @@ for (const contradiction of ledgerContradictions) {
   if (count !== 1) fail(`${contradiction} must appear exactly once in traceability interrupts, found ${count}`);
 }
 
-// A release-level PROVEN invariant cannot remain interrupted by an open contradiction.
 for (const group of matrix.groups ?? []) {
   if (group.status !== 'PROVEN') continue;
   const invariants = new Set(group.invariants ?? []);
@@ -173,6 +197,8 @@ console.log('TRACEABILITY_PASS');
 console.log(`productInvariants=${productIds.length}`);
 console.log(`dataModelInvariants=${dmIds.length}`);
 console.log(`wiredInvariants=${seen.size}`);
+console.log(`baseGroups=${baseMatrix.groups?.length ?? 0}`);
+console.log(`recoveryGroups=${recoveryMatrix.groups?.length ?? 0}`);
 console.log(`contradictions=${ledgerContradictions.length}`);
 console.log(`releaseGate=${releaseGate?.status ?? 'MISSING'}`);
 console.log(`buildReady=${ledger.buildReady}`);
