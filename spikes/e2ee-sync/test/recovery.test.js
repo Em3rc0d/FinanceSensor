@@ -6,6 +6,7 @@ import {
   publicDeviceRecord
 } from '../src/protocol.js';
 import {
+  assertPostRecoveryReadyForFutureSync,
   assertRecoveryCoverage,
   cloudRecoveryView,
   generateRecoveryIdentity,
@@ -272,4 +273,82 @@ test('REC-017 exact duplicate delivery of one authenticated wrap remains idempot
 
   assert.deepEqual(coverage.coveredEpochs, [4]);
   assert.equal(coverage.validatedDistinctPackages, 1);
+});
+
+test('REC-018 future sync remains blocked until new epoch, new Recovery Key, new-device authorization and lost-device revocation are all applied', () => {
+  const recoveredThroughEpoch = 7;
+  const nextKeyEpoch = 8;
+  const newDevice = generateDeviceIdentity('device-recovered');
+  const lostDeviceB = generateDeviceIdentity('device-b');
+  const newDeviceRecord = publicDeviceRecord(newDevice, { authorizedFromEpoch: nextKeyEpoch });
+  const lostRecordA = publicDeviceRecord(authorizer, {
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: nextKeyEpoch,
+    status: 'REVOKED'
+  });
+  const lostRecordB = publicDeviceRecord(lostDeviceB, {
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: nextKeyEpoch,
+    status: 'REVOKED'
+  });
+  const nextRecovery = generateRecoveryIdentity('recovery-after-disaster');
+  const nextRoot = generateTenantRootKey();
+  const nextPackage = wrap(nextKeyEpoch, nextRoot, nextRecovery, newDevice);
+  const coverage = assertRecoveryCoverage({
+    tenantId,
+    recoveryKeyId: nextRecovery.recoveryKeyId,
+    recoverableEpochs: [nextKeyEpoch],
+    packages: [nextPackage],
+    authorizingDeviceRecords: new Map([[newDeviceRecord.deviceId, newDeviceRecord]])
+  });
+  const plan = planPostRecoveryHardening({
+    tenantId,
+    recoveredThroughEpoch,
+    newDeviceId: newDevice.deviceId,
+    lostDeviceIds: [authorizer.deviceId, lostDeviceB.deviceId],
+    newRecoveryKeyId: nextRecovery.recoveryKeyId
+  });
+  const completeRecords = new Map([
+    [newDeviceRecord.deviceId, newDeviceRecord],
+    [lostRecordA.deviceId, lostRecordA],
+    [lostRecordB.deviceId, lostRecordB]
+  ]);
+
+  assert.throws(() => assertPostRecoveryReadyForFutureSync({
+    plan,
+    deviceAuthorizationRecords: completeRecords,
+    currentTenantKeyEpoch: recoveredThroughEpoch,
+    activeRecoveryKeyId: nextRecovery.recoveryKeyId,
+    recoveryCoverage: coverage
+  }), /post-recovery-tenant-epoch-not-rotated/);
+
+  assert.throws(() => assertPostRecoveryReadyForFutureSync({
+    plan,
+    deviceAuthorizationRecords: completeRecords,
+    currentTenantKeyEpoch: nextKeyEpoch,
+    activeRecoveryKeyId: 'recovery-stale',
+    recoveryCoverage: coverage
+  }), /post-recovery-recovery-key-not-rotated/);
+
+  const missingRevocation = new Map(completeRecords);
+  missingRevocation.set(lostRecordB.deviceId, publicDeviceRecord(lostDeviceB));
+  assert.throws(() => assertPostRecoveryReadyForFutureSync({
+    plan,
+    deviceAuthorizationRecords: missingRevocation,
+    currentTenantKeyEpoch: nextKeyEpoch,
+    activeRecoveryKeyId: nextRecovery.recoveryKeyId,
+    recoveryCoverage: coverage
+  }), /post-recovery-lost-device-not-revoked:device-b/);
+
+  const ready = assertPostRecoveryReadyForFutureSync({
+    plan,
+    deviceAuthorizationRecords: completeRecords,
+    currentTenantKeyEpoch: nextKeyEpoch,
+    activeRecoveryKeyId: nextRecovery.recoveryKeyId,
+    recoveryCoverage: coverage
+  });
+
+  assert.equal(ready.readyForFutureSync, true);
+  assert.equal(ready.nextKeyEpoch, nextKeyEpoch);
+  assert.equal(ready.activeDeviceId, newDevice.deviceId);
 });
