@@ -65,6 +65,12 @@ Every canonical amount retains original currency.
 ### INV-FIN-009
 Forecast/expected events never mutate observed historical totals as if they already occurred.
 
+### INV-FIN-010
+An external transfer or otherwise unresolved movement does not derive income, expense or neutrality from movement mechanism/direction alone. Until explicit evidence resolves the economic effect, it remains reviewable and contributes neither income nor expense to authoritative totals.
+
+### INV-FIN-011
+The cumulative automatic refund/reversal offset applied to an original event cannot exceed the original economic contribution. An over-offset, incompatible amount or ambiguous relationship requires review rather than automatic projection.
+
 ## Corrections
 
 ### INV-COR-001
