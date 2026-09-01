@@ -1,7 +1,7 @@
 # DM-001 Addendum — Movement Semantics vs Economic Effect
 
-**Status:** DRAFT / produced by Q-001 contradiction audit.  
-**Blocks:** DM-001 freeze until executable evidence reconciles C-001 and C-002.
+**Status:** DRAFTED / Q-001 semantic slice reconciled  
+**Blocks:** DM-001 freeze until the broader model, architecture and security dependencies close.
 
 ## Problem
 
@@ -12,7 +12,7 @@ The initial taxonomy mixed two dimensions:
 1. **what kind of movement happened**;
 2. **what economic effect that movement has for this tenant**.
 
-Those dimensions must be separated.
+Those dimensions are now explicitly separated.
 
 ## Axis A — movement semantics
 
@@ -32,7 +32,17 @@ UNKNOWN
 
 This describes the observed financial mechanism/event family.
 
-## Axis B — ownership / relationship
+## Axis B — flow direction
+
+```text
+IN
+OUT
+UNKNOWN
+```
+
+Direction is an observation about movement, not an economic classification by itself.
+
+## Axis C — ownership / relationship
 
 ```text
 OWN_ACCOUNT
@@ -45,7 +55,7 @@ UNKNOWN
 
 This helps distinguish an internal transfer from an economically meaningful external movement.
 
-## Axis C — economic effect
+## Axis D — economic effect
 
 ```text
 EXPENSE
@@ -56,7 +66,7 @@ OFFSET_INCOME
 UNKNOWN
 ```
 
-This is the dimension that financial summaries consume.
+This is the dimension consumed by financial summaries.
 
 ## Projection state
 
@@ -81,15 +91,16 @@ Examples:
 | Bank fee | FINANCIAL_INSTITUTION | — | EXPENSE |
 | Refund | Merchant | linked original expense | OFFSET_EXPENSE |
 | Reversal | — | linked original event | inverse of original effect |
-| External transfer | EXTERNAL_PARTY | purpose unknown | UNKNOWN |
-| External transfer | EXTERNAL_PARTY | rent/payment evidence | EXPENSE |
-| External transfer received | EXTERNAL_PARTY | salary/client evidence | INCOME |
+| External transfer OUT | EXTERNAL_PARTY | purpose unknown | UNKNOWN / REVIEW |
+| External transfer OUT | EXTERNAL_PARTY | rent/payment evidence | EXPENSE |
+| External transfer IN | EXTERNAL_PARTY | salary/client evidence | INCOME |
+| External transfer | — | explicit neutral relationship | NEUTRAL |
 
 ## Canonical event implication
 
-`CanonicalFinancialEvent` should not rely on one enum to encode all semantics.
+`CanonicalFinancialEvent` must not rely on one enum to encode all semantics.
 
-Candidate direction:
+Candidate logical direction:
 
 ```text
 id
@@ -103,7 +114,28 @@ economic_effect_state
 ...
 ```
 
-The exact physical fields remain unfrozen.
+The exact physical columns remain unfrozen.
+
+## External-transfer resolution
+
+An external transfer starts unresolved unless evidence or an auditable user correction establishes its economic meaning.
+
+```text
+TRANSFER + OUT + no meaning evidence
+→ REQUIRES_REVIEW
+→ income 0 / expense 0
+
+TRANSFER + OUT + resolved EXPENSE
+→ expense +amount
+
+TRANSFER + IN + resolved INCOME
+→ income +amount
+
+TRANSFER + explicit NEUTRAL
+→ income 0 / expense 0
+```
+
+Direction and resolved effect must be compatible. For example, an outgoing transfer cannot silently become `INCOME`.
 
 ## Relationship-aware projection
 
@@ -118,6 +150,8 @@ original event
         ↓
 original economic contribution
         ↓
+remaining offset capacity
+        ↓
 current contribution delta
 ```
 
@@ -128,52 +162,65 @@ PURCHASE S/100
   economic_effect = EXPENSE
   expense_delta   = +100
 
-REFUND S/40
+REFUND #1 S/40
   relation        = REFUNDS purchase
-  economic_effect = OFFSET_EXPENSE
   expense_delta   = -40
+  remaining       = 60
+
+REFUND #2 S/35
+  relation        = REFUNDS purchase
+  expense_delta   = -35
+  remaining       = 25
 ```
 
-The original event is not destructively rewritten. The materialized financial state is projected from the event graph.
+A later refund of S/30 would exceed the remaining S/25 and therefore routes to review rather than producing an impossible negative net expense.
 
-## Invariants introduced
+The original event is not destructively rewritten. Materialized financial state is projected from the event graph and its relationships.
 
-### INV-ECO-001
-Movement mechanism does not by itself determine economic effect when ownership/purpose is unresolved.
+## Canonical invariants
 
-### INV-ECO-002
-External transfers default to `economic_effect = UNKNOWN`, not silently to expense/income/neutral.
+This addendum no longer maintains a second invariant namespace. The authoritative rules live in:
 
-### INV-ECO-003
-Internal transfers between tenant-owned accounts contribute zero to income and expense.
+- `product/PRODUCT-INVARIANTS.md`
+- `mk0/05-data-model/INVARIANTS.md`
 
-### INV-ECO-004
-Card settlement contributes zero to expense when it settles purchases already represented as expenses.
-
-### INV-ECO-005
-A linked refund offsets the related expense rather than becoming ordinary income.
-
-### INV-ECO-006
-A linked reversal negates the economic contribution of the event it reverses.
-
-### INV-ECO-007
-Unlinked refund/reversal events remain unresolved and cannot silently alter totals until relationship confidence is sufficient.
-
-### INV-ECO-008
-Forecast/predicted occurrences never project as observed economic effect.
-
-## Closure condition
-
-This addendum can be merged into DM-001 only after:
+Relevant product invariants:
 
 ```text
-semantic matrix
-    +
-relationship-aware projection tests
-    +
-external-transfer unresolved tests
-    +
-refund/reversal offset tests
-        ↓
-Q-001 closure audit
+FIN-004  internal transfers do not create income/expense
+FIN-005  card settlement is not the purchase again
+FIN-009  movement mechanism is not economic meaning
+FIN-010  offsets cannot erase more economic value than exists
 ```
+
+Relevant data-model invariants:
+
+```text
+INV-FIN-001  internal-transfer neutrality
+INV-FIN-002  card-settlement neutrality
+INV-FIN-003  refund is not ordinary income
+INV-FIN-004  reversal follows explicit semantics
+INV-FIN-010  unresolved external movement has no invented effect
+INV-FIN-011  cumulative offsets are bounded by original contribution
+```
+
+## Executable reconciliation evidence
+
+Current bounded evidence:
+
+- `spikes/canonical-resolver/test/economic-effect.test.js`
+- `spikes/canonical-resolver/test/fingerprinting-benchmark.test.js`
+- `mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md`
+
+The current suite demonstrates unresolved/resolved external transfers, direction/effect compatibility, partial/full refunds, cumulative-offset bounds, reversals, idempotency and adversarial matching behavior.
+
+## Non-claims
+
+This semantic reconciliation does not freeze:
+
+- the final SQL/SQLite physical representation;
+- real-provider extraction accuracy;
+- UI wording for every review state;
+- every future movement family beyond MK0 scope.
+
+New evidence can reopen Q-001 if it reveals an unmodeled contradiction.
