@@ -11,7 +11,8 @@
       "status": "DRAFTED",
       "artifacts": ["product/PRODUCT-THESIS.md"],
       "dependsOn": [],
-      "validates": ["P-002", "Q-001", "Q-003", "Q-004"],
+      "validates": ["P-002", "Q-001", "Q-003", "Q-004", "WF-001"],
+      "revalidates": [],
       "evidence": [],
       "closureReceipt": null
     },
@@ -22,7 +23,8 @@
       "status": "DRAFTED",
       "artifacts": ["product/PRODUCT-INVARIANTS.md"],
       "dependsOn": ["P-001"],
-      "validates": ["Q-001", "Q-002", "Q-004", "Q-005", "DM-001", "T-001"],
+      "validates": ["Q-001", "Q-002", "Q-004", "Q-005", "DM-001", "T-001", "WF-001"],
+      "revalidates": ["P-001"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -33,7 +35,8 @@
       "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-001-CANONICAL-TRANSACTIONS.md"],
       "dependsOn": ["P-001", "P-002"],
-      "validates": ["DM-001", "S-001", "T-001"],
+      "validates": ["Q-002", "DM-001", "S-001", "T-001", "G-MK0"],
+      "revalidates": ["P-001", "P-002"],
       "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
       "closureReceipt": null
     },
@@ -44,7 +47,8 @@
       "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-002-FINGERPRINTING.md"],
       "dependsOn": ["P-002", "Q-001"],
-      "validates": ["DM-001", "S-001", "T-001"],
+      "validates": ["DM-001", "S-001", "T-001", "G-MK0"],
+      "revalidates": ["P-002", "Q-001"],
       "evidence": ["spikes/canonical-resolver/src/resolver.js", "spikes/canonical-resolver/test/resolver.test.js"],
       "closureReceipt": null
     },
@@ -56,6 +60,7 @@
       "artifacts": ["mk0/02-quarries/Q-003-GMAIL-POLICY.md"],
       "dependsOn": ["P-001"],
       "validates": ["A-001", "SEC-001", "G-MK0"],
+      "revalidates": ["P-001"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -67,6 +72,7 @@
       "artifacts": ["mk0/02-quarries/Q-004-EMAIL-PRIVACY.md"],
       "dependsOn": ["P-001", "P-002"],
       "validates": ["A-001", "SEC-001", "G-MK0"],
+      "revalidates": ["P-001", "P-002"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -78,6 +84,7 @@
       "artifacts": ["mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md"],
       "dependsOn": ["P-002"],
       "validates": ["A-001", "DM-001", "SEC-001", "G-MK0"],
+      "revalidates": ["P-002"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -88,7 +95,8 @@
       "status": "DRAFTED",
       "artifacts": ["mk0/04-architecture/CORE-ARCHITECTURE.md"],
       "dependsOn": ["Q-003", "Q-004", "Q-005"],
-      "validates": ["DM-001", "SEC-001", "G-MK0"],
+      "validates": ["DM-001", "G-MK0"],
+      "revalidates": ["Q-003", "Q-004", "Q-005"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -99,7 +107,8 @@
       "status": "DRAFTED",
       "artifacts": ["mk0/04-architecture/SECURITY-PRIVACY.md"],
       "dependsOn": ["Q-003", "Q-004", "Q-005"],
-      "validates": ["A-001", "DM-001", "G-MK0"],
+      "validates": ["DM-001", "G-MK0"],
+      "revalidates": ["Q-003", "Q-004", "Q-005", "A-001"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -109,8 +118,9 @@
       "title": "Core data model",
       "status": "DRAFTED",
       "artifacts": ["mk0/05-data-model/CORE-DATA-MODEL.md", "mk0/05-data-model/INVARIANTS.md"],
-      "dependsOn": ["Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
-      "validates": ["S-001", "T-001", "G-MK0"],
+      "dependsOn": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
+      "validates": ["WF-001", "G-MK0"],
+      "revalidates": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -121,7 +131,8 @@
       "status": "ACTIVE",
       "artifacts": ["spikes/canonical-resolver/src/resolver.js"],
       "dependsOn": ["Q-001", "Q-002"],
-      "validates": ["Q-001", "Q-002", "DM-001", "T-001"],
+      "validates": ["T-001"],
+      "revalidates": ["Q-001", "Q-002", "DM-001"],
       "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
       "closureReceipt": null
     },
@@ -132,7 +143,8 @@
       "status": "PASS",
       "artifacts": ["spikes/canonical-resolver/test/resolver.test.js", ".github/workflows/mk0-foundation.yml"],
       "dependsOn": ["P-002", "Q-001", "Q-002", "S-001"],
-      "validates": ["S-001", "Q-001", "Q-002"],
+      "validates": [],
+      "revalidates": ["P-002", "Q-001", "Q-002", "S-001", "DM-001"],
       "evidence": [".github/workflows/mk0-foundation.yml"],
       "closureReceipt": null
     },
@@ -141,9 +153,10 @@
       "kind": "ux",
       "title": "Signature wireframes",
       "status": "DRAFTED",
-      "artifacts": ["mk0/06-wireframes/SIGNATURE-WIREFRAMES.md"],
+      "artifacts": ["mk0/06-wireframes/SIGNATURE-WIREFRAMES.md", "mk0/06-wireframes/VIEWPORT-CONTRACT.md"],
       "dependsOn": ["P-001", "P-002", "DM-001"],
       "validates": ["G-MK0"],
+      "revalidates": ["P-001", "P-002", "DM-001"],
       "evidence": [],
       "closureReceipt": null
     },
@@ -155,6 +168,7 @@
       "artifacts": ["mk0/12-release/RELEASE-GATES.md", "STATUS.md"],
       "dependsOn": ["Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001"],
       "validates": [],
+      "revalidates": ["P-001", "P-002", "Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001"],
       "evidence": [],
       "closureReceipt": null
     }
