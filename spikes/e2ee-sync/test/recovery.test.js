@@ -6,8 +6,10 @@ import {
   publicDeviceRecord
 } from '../src/protocol.js';
 import {
+  assertRecoveryCoverage,
   cloudRecoveryView,
   generateRecoveryIdentity,
+  planPostRecoveryHardening,
   recoveryPublicRecord,
   unwrapTenantEpochFromRecovery,
   wrapTenantEpochForRecovery
@@ -102,8 +104,6 @@ test('REC-007 all devices may be gone and the Recovery Kit can still restore an 
   const recovery = generateRecoveryIdentity('recovery-disaster');
   const root = generateTenantRootKey();
   const pkg = wrap(7, root, recovery);
-  // No device private key is used by the recovery operation; only the historical
-  // authorizer public record is required to verify that the wrap was legitimate.
   const restored = unwrapTenantEpochFromRecovery({
     package: pkg,
     recoveryIdentity: recovery,
@@ -150,4 +150,49 @@ test('REC-010 no private Recovery Kit means no hidden recovery path exists in th
     recoveryIdentity: null,
     authorizingDeviceRecord: authorizerRecord
   }), /recovery-private-key-required/);
+});
+
+test('REC-011 declared recoverable epochs require complete recovery-wrap coverage', () => {
+  const recovery = generateRecoveryIdentity('recovery-coverage');
+  const packages = [
+    wrap(1, generateTenantRootKey(), recovery),
+    wrap(2, generateTenantRootKey(), recovery)
+  ];
+
+  assert.deepEqual(
+    assertRecoveryCoverage({
+      tenantId,
+      recoveryKeyId: recovery.recoveryKeyId,
+      recoverableEpochs: [1, 2],
+      packages
+    }).coveredEpochs,
+    [1, 2]
+  );
+
+  assert.throws(() => assertRecoveryCoverage({
+    tenantId,
+    recoveryKeyId: recovery.recoveryKeyId,
+    recoverableEpochs: [1, 2, 3],
+    packages
+  }), /recovery-coverage-missing:3/);
+});
+
+test('REC-012 post-recovery hardening revokes lost devices and rotates tenant + recovery epochs before future sync', () => {
+  const plan = planPostRecoveryHardening({
+    tenantId,
+    recoveredThroughEpoch: 7,
+    newDeviceId: 'device-recovered',
+    lostDeviceIds: ['device-a', 'device-b', 'device-a'],
+    newRecoveryKeyId: 'recovery-after-disaster'
+  });
+
+  assert.equal(plan.rotateTenantKey.required, true);
+  assert.equal(plan.rotateTenantKey.nextKeyEpoch, 8);
+  assert.equal(plan.activateDevice.deviceId, 'device-recovered');
+  assert.equal(plan.activateDevice.authorizedFromEpoch, 8);
+  assert.deepEqual(plan.revokeDevices.map(x => x.deviceId), ['device-a', 'device-b']);
+  assert.ok(plan.revokeDevices.every(x => x.revokedFromEpoch === 8));
+  assert.equal(plan.rotateRecoveryKey.required, true);
+  assert.equal(plan.rotateRecoveryKey.newRecoveryKeyId, 'recovery-after-disaster');
+  assert.equal(plan.revokeDevices.some(x => x.deviceId === 'device-recovered'), false);
 });
