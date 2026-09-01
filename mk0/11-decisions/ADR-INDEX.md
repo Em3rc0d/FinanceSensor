@@ -40,6 +40,10 @@ Supersedes / superseded by
 | ADR-013 | Minimum supported Android baseline | OPEN | device matrix evidence |
 | ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
 | ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED | Q-005 physical anchor/witness evidence |
+| ADR-016 | Opaque independent witness freshness | SPIKE-ACCEPTED / PRODUCTION WITNESS POLICY OPEN | Q-005 witness deployment/physical evidence |
+| ADR-017 | Gmail mobile OAuth boundary | PROPOSED / CONTRACT TESTED / CONTROLLED AUTHORIZATION REQUIRED | Q-003/Q-004 controlled OAuth + mobile credential evidence |
+
+**Next available ADR:** `ADR-018`.
 
 ## ADR-014 evidence boundary
 
@@ -85,7 +89,52 @@ Evidence:
 - `../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/checkpoint.test.js`
 
-It does not freeze a production Merkle/hash-chain implementation, independent witness/transparency service, platform protected anchor storage, Recovery Kit anchor refresh cadence or globally latest Byzantine freshness semantics.
+## ADR-016 evidence boundary
+
+ADR-016 adds an **independent opaque witness** as a stronger freshness signal without moving financial truth outside the edge.
+
+```text
+REAL TENANT ID AT WITNESS             FORBIDDEN BY CANDIDATE CONTRACT
+FINANCIAL PLAINTEXT AT WITNESS        FORBIDDEN
+PER-WITNESS OPAQUE LOG ID             REQUIRED
+ROLLBACK/FORK/GAP/PARENT MISMATCH     FAIL CLOSED
+WITNESS AHEAD OF RELAY                RELAY_BEHIND_WITNESS
+VALID SAME-SEQUENCE DIVERGENCE        WITNESS_DIVERGENCE
+INSUFFICIENT INDEPENDENT EVIDENCE     EXPLICITLY UNCONFIRMED
+SILENT FALLBACK TO RELAY              REJECTED
+2-OF-3 SPIKE THRESHOLD                NOT A PRODUCTION DECISION
+```
+
+Evidence:
+
+- `ADR-016-OPAQUE-WITNESS-FRESHNESS.md`
+- `../04-architecture/WITNESS-FRESHNESS.md`
+- `../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
+- `../../spikes/e2ee-sync/test/witness.test.js`
+
+## ADR-017 evidence boundary
+
+ADR-017 freezes the current **Gmail authorization ownership boundary**, not a completed production OAuth deployment.
+
+```text
+MINIMUM SCOPE CANDIDATE            gmail.readonly
+GMAIL DATA PLANE                   EDGE-LOCAL
+NORMAL CLOUD REFRESH-TOKEN CUSTODY REJECTED
+SHORT-LIVED TOKEN PROVIDER         CONTRACT TESTED
+401                                REAUTH_REQUIRED
+OOB COPY/PASTE                     REJECTED
+AUTO ATTACHMENT BYTE DOWNLOAD      REJECTED
+REAL PROVIDER REACHABILITY         PASS
+FINANCESENSOR-OWNED OAUTH CONSENT  NOT YET EXECUTED
+```
+
+Evidence:
+
+- `ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
+- `../10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
+- `../10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md`
+- `../../spikes/physical-ingress/test/gmail-rest-provider.test.js`
+- `../../spikes/physical-ingress/test/real-provider-shape.test.js`
 
 ## Decision discipline
 
