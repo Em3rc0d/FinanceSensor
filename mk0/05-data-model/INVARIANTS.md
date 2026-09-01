@@ -104,6 +104,12 @@ Two authorized devices replaying the same complete event set converge to equival
 ### INV-SYNC-005
 Processing leases are optimization/coordination primitives, never the sole correctness mechanism.
 
+### INV-SYNC-006
+When connectivity or an OS background execution window is unavailable, pending sync work remains durably resumable without a busy-poll retry loop.
+
+### INV-SYNC-007
+Battery/storage/resource constraints may defer noncritical heavy work but must never silently relax financial-correctness, provenance, encryption or idempotency rules.
+
 ## Security
 
 ### INV-SEC-001
