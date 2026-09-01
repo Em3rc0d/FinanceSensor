@@ -12,11 +12,11 @@ Can a public FinanceSensor app obtain and retain the Gmail access required for i
 
 **Technically plausible; provider contract and real-provider reachability are proven, while FinanceSensor-owned OAuth transport is still awaiting controlled authorization.**
 
-FinanceSensor now separates three evidence levels:
+FinanceSensor separates three evidence levels:
 
 ```text
-LEVEL A — CONTRACTUAL HARNESS                PASS
-LEVEL B — REAL PROVIDER REACHABILITY         PASS
+LEVEL A — CONTRACTUAL HARNESS                 PASS
+LEVEL B — REAL PROVIDER REACHABILITY          PASS
 LEVEL C — FINANCESENSOR-OWNED OAUTH TRANSPORT NOT EXECUTED
 ```
 
@@ -126,6 +126,39 @@ Evidence:
 
 This proves provider reachability and source-shape compatibility, **not** FinanceSensor-owned OAuth transport.
 
+### F-003-12 — OAuth/token/MIME adapter boundary is executable
+
+ADR-017 freezes the current candidate mobile boundary:
+
+```text
+system browser / supported platform Google authorization
+        ↓
+device-local credential broker
+        ↓ short-lived access token
+GmailRestProvider
+        ↓
+metadata-first ingestion
+```
+
+The normal cloud control plane is not the ordinary custodian of Gmail refresh authority.
+
+The adapter now proves at spike level:
+
+```text
+dynamic access-token provider        PASS
+401 → REAUTH_REQUIRED                 PASS
+no blind infinite 401 retry          PASS
+bearer token not reflected in error  PASS
+MIME attachment descriptors          PASS
+automatic attachment-byte download   0
+```
+
+Evidence:
+- `../11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
+- `../10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md`
+
+This remains a transport contract, not proof of a FinanceSensor-owned Google consent grant.
+
 ## Endpoint/scope matrix
 
 | MK0 need | Endpoint / mode | Candidate scope | Decision |
@@ -145,28 +178,33 @@ This proves provider reachability and source-shape compatibility, **not** Financ
 Implemented under `spikes/physical-ingress/`.
 
 Evidence:
-`mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
+- `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
+- `mk0/10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md`
 
-After the real-shape hardening campaign, the current suite is:
+Current executable suite:
 
 ```text
-27 / 27 PASS
-bounded 30/90-day listing          PASS
-metadata-first                     PASS
-FULL only for candidates           PASS
-incremental history model          PASS
-history 404 recovery               PASS
-restart/replay                     PASS
-idempotent reprocessing            PASS
-canonical resolver reuse           PASS
-localized thousands/decimals       PASS
-provider operation provenance      PASS
-sender != invented merchant        PASS
-external-transfer preservation     PASS
-raw body durable retention         0
-raw attachment retention           0
-plaintext financial cloud          0 in harness
-token in logs                      0 in harness
+31 / 31 PASS
+bounded 30/90-day listing              PASS
+metadata-first                         PASS
+FULL only for candidates               PASS
+incremental history model              PASS
+history 404 recovery                   PASS
+restart/replay                         PASS
+idempotent reprocessing                PASS
+canonical resolver reuse               PASS
+localized thousands/decimals           PASS
+provider operation provenance          PASS
+sender != invented merchant            PASS
+external-transfer preservation         PASS
+dynamic short-lived token contract     PASS
+401 explicit reauthorization           PASS
+secret-safe API error boundary         PASS
+MIME descriptor-only discovery         PASS
+raw body durable retention             0
+raw attachment retention               0
+plaintext financial cloud              0 in harness
+token in tested logs/state             0
 ```
 
 The ingress engine uses one async provider contract so synthetic and real Gmail adapters traverse the same downstream code path.
@@ -206,15 +244,17 @@ Prepared capabilities:
 
 ```text
 real Gmail REST Bearer auth
+short-lived credential-provider adapter contract
 bounded messages.list
 METADATA / FULL messages.get
 history.list
 profile historyId
+MIME descriptors without automatic attachment fetch
 aggregate privacy-safe result output
 optional remote token revoke
 ```
 
-The manual workflow is isolated behind environment `gmail-controlled-spike` and expects an ephemeral secret named `FINANCESENSOR_GMAIL_ACCESS_TOKEN`. No real credential belongs in the repository, CI logs or chat transcript.
+The controlled workflow is isolated behind environment `gmail-controlled-spike` and expects an ephemeral credential boundary. No real credential belongs in the repository, CI logs or chat transcript.
 
 ## Remaining external gate
 
@@ -229,11 +269,14 @@ REAL_METADATA_GET              PASS / FAIL
 REAL_SELECTED_FULL_GET         PASS / FAIL
 REAL_HISTORY_CURSOR            PASS / FAIL
 REAL_INCREMENTAL_SYNC          PASS / FAIL
+REAL_REAUTH_LIFECYCLE          PASS / FAIL
 REAL_REMOTE_REVOCATION         PASS / FAIL
 NO_SECRET_LOGGING              PASS / FAIL
 BOUNDED_REQUESTS               measured
 BYTES / TIMING                 measured
 ```
+
+No Google Cloud administration connector is available in the current engineering environment, so creation/ownership of that external OAuth DEV project cannot be automated from this repository session. This is an external authorization boundary, not an implementation gap in the Gmail adapter.
 
 ## Verification package still required before public launch
 
@@ -252,22 +295,26 @@ BYTES / TIMING                 measured
 ## Current decision
 
 ```text
-GMAIL_TECHNICAL_PRIMITIVES        PASS
-MINIMUM_SCOPE_CANDIDATE           gmail.readonly
-METADATA_FIRST_PIPELINE           PROVEN_AT_SPIKE
-INCREMENTAL_SYNC_MODEL            PROVEN_AT_SPIKE
-REAL_PROVIDER_REACHABILITY        PASS
-REAL_TRANSACTIONAL_DATA_RECEPTION PASS
-SANITIZED_REAL_SHAPE_CONTRACT     27 / 27 PASS
-FINANCESENSOR_GMAIL_ADAPTER       READY
-FINANCESENSOR_OAUTH_TRANSPORT     READY / NOT AUTHORIZED
-PUSH_REQUIRED_FOR_MK0             NO
-PRODUCTION_OAUTH_VERIFICATION     REQUIRED
-PERMITTED_USE_FIT                 PLAUSIBLE / NOT YET VERIFIED
-SECURITY_ASSESSMENT_APPLICABILITY OPEN
-LEVEL_C_LIVE_SPIKE                BLOCKED ON CONTROLLED AUTHORIZATION
+GMAIL_TECHNICAL_PRIMITIVES         PASS
+MINIMUM_SCOPE_CANDIDATE            gmail.readonly
+METADATA_FIRST_PIPELINE            PROVEN_AT_SPIKE
+INCREMENTAL_SYNC_MODEL             PROVEN_AT_SPIKE
+REAL_PROVIDER_REACHABILITY         PASS
+REAL_TRANSACTIONAL_DATA_RECEPTION  PASS
+PHYSICAL INGRESS SUITE             31 / 31 PASS
+SANITIZED_REAL_SHAPE               PASS
+DYNAMIC TOKEN ADAPTER              PROVEN_AT_SPIKE
+MIME DESCRIPTOR BOUNDARY           PROVEN_AT_SPIKE
+FINANCESENSOR_GMAIL_ADAPTER        READY
+FINANCESENSOR_OAUTH_TRANSPORT      READY / NOT AUTHORIZED
+MOBILE OAUTH BOUNDARY              ADR-017 PROPOSED / CONTRACT TESTED
+PUSH_REQUIRED_FOR_MK0              NO
+PRODUCTION_OAUTH_VERIFICATION      REQUIRED
+PERMITTED_USE_FIT                  PLAUSIBLE / NOT YET VERIFIED
+SECURITY_ASSESSMENT_APPLICABILITY  OPEN
+LEVEL_C_LIVE_SPIKE                 BLOCKED ON CONTROLLED AUTHORIZATION
 
-GMAIL_FEASIBILITY                 ACTIVE / NOT CLOSED
+GMAIL_FEASIBILITY                  ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
@@ -280,7 +327,7 @@ Q-003 closes only when:
 - appropriate-use fit has no unresolved policy contradiction;
 - consent/disclosure requirements are captured;
 - controlled FinanceSensor OAuth + list/metadata/full/history path executes;
-- remote revoke behavior is observed;
+- reauthorization and remote revoke behavior are observed;
 - request/byte/timing evidence is recorded;
 - Android protected credential handling is reconciled or explicitly scoped to Q-004/Q-005;
 - evidence artifact is stored under `mk0/10-evidence/`;
