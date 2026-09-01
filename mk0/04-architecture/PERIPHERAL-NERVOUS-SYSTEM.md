@@ -2,7 +2,7 @@
 
 **Scope:** Q-005 candidate architecture  
 **Status authority:** `graph/closure-ledger.json`  
-**Purpose:** connect tenant keys, authorized devices, encrypted synchronization, replay, convergence and revocation without giving the cloud financial plaintext.
+**Purpose:** connect tenant keys, authorized devices, encrypted synchronization, replay, convergence, revocation and recovery cutover without giving the cloud financial plaintext.
 
 ## 1. Thesis
 
@@ -19,7 +19,7 @@ cloud stores/routes opaque envelopes
       ↓
 other authorized devices verify + decrypt + replay locally
       ↓
-equivalent materialized financial state
+equivalent financial state
 ```
 
 A device is a peripheral execution node. It is never the tenant itself.
@@ -38,6 +38,9 @@ INTEGRITY
 AUTHENTIC ORIGIN
   a receiving device can verify which authorized device produced an envelope
 
+TENANT + EPOCH AUTHORITY
+  a valid key/signature outside the correct tenant/epoch does not grant authority
+
 REPLAY IDEMPOTENCY
   duplicate delivery changes state zero additional times
 
@@ -47,8 +50,14 @@ CONVERGENCE
 REVOCATION
   a revoked device loses future key/payload authorization
 
+HISTORICAL CUTOVER
+  a revoked device cannot fabricate newly admissible old-epoch history after cutover
+
 KEY EPOCHS
   revocation or key compromise can move the tenant to fresh key material
+
+RECOVERY
+  all-devices-lost restoration does not give cloud a standing master key
 
 DOMAIN CONFLICT SAFETY
   concurrent non-commutative user actions do not silently overwrite one another
@@ -65,6 +74,7 @@ Candidate production direction:
 - bind routing metadata as authenticated additional data (AAD);
 - use domain-separated key derivation;
 - keep device private keys in platform-protected key storage where supported;
+- use a reviewed append-only/history-commitment structure for revocation cutover;
 - conduct a dedicated cryptographic review before freezing algorithms.
 
 HPKE is standardized in RFC 9180 and explicitly composes a KEM, KDF and AEAD. It includes interoperable suites based on ECDH/X25519, HKDF and authenticated encryption.
@@ -77,7 +87,7 @@ Source: https://csrc.nist.gov/pubs/sp/800/38/d/final
 
 ### Spike non-claim
 
-The Node feasibility spike may compose platform primitives to **test protocol properties only**. Its wrapping construction is not automatically production-approved merely because tests pass.
+The Node feasibility spike may compose platform primitives to **test protocol properties only**. Its wrapping and history-commitment constructions are not automatically production-approved merely because tests pass.
 
 ## 4. Candidate key hierarchy
 
@@ -96,6 +106,10 @@ Device A
 Device B
   encryption keypair
   signing keypair
+
+Recovery
+  public key → cloud-visible minimized metadata
+  private key → user-held offline Recovery Kit
 ```
 
 Rules:
@@ -105,7 +119,9 @@ Rules:
 3. Domain keys are derived with domain separation; one key is not reused indiscriminately for every purpose.
 4. Cloud may store a tenant key **wrapped to a specific authorized device**, never usable plaintext.
 5. Device private key material never becomes an application-table/cloud field.
-6. Historical keys have an explicit retention policy; revocation primarily guarantees loss of **future** access, not magical erasure of plaintext a device already saw.
+6. `DeviceAuthorization` is tenant-scoped and epoch-scoped.
+7. Historical keys have an explicit retention policy; revocation guarantees loss of **future** authority, not magical erasure of plaintext a device already saw.
+8. Retained historical keys do not grant permission to create newly admissible history after an authenticated revocation cutover.
 
 ## 5. Device enrollment
 
@@ -118,7 +134,7 @@ B registers public-key metadata + pairing request
         ↓
 Trusted Device A displays/verifies B fingerprint
         ↓ explicit user approval
-A verifies current tenant/device authorization
+A verifies A and B authorization for same tenant + current epoch
         ↓
 A wraps current Tenant Root Key epoch to B
         ↓
@@ -128,23 +144,25 @@ cloud stores opaque wrapped-key package
         ↓
 B downloads package
         ↓
-B verifies authorizing device signature
+B rechecks its tenant + epoch authorization
+        ↓
+B verifies authorizing device identity/signature
         ↓
 B unwraps locally
         ↓
 B joins sync from checkpoint
 ```
 
-No silent device enrollment.
+No silent device enrollment and no device-global authorization shortcut.
 
 ## 6. Device revocation
 
-Candidate sequence:
+### Future key cutover
 
 ```text
-user revokes Device B
+user revokes Device B from N+1
         ↓
-control plane marks B REVOKED
+control plane marks B REVOKED for N+1+
         ↓
 new uploads/download authorizations for B denied
         ↓
@@ -155,11 +173,69 @@ N+1 wrapped only for still-authorized devices
 new envelopes use epoch N+1
 ```
 
+### Why this is not enough
+
+B may still possess:
+
+```text
+Tenant Root Key N
++
+B signing private key
+```
+
+So B could fabricate a new envelope after revocation while labeling it as historical epoch N. A receiver retaining epoch N cannot infer creation time from a valid old signature.
+
+Therefore:
+
+```text
+VALID OLD SIGNATURE + OLD KEY
+        ≠
+POST-CUTOVER HISTORICAL AUTHORITY
+```
+
+### Revocation Barrier
+
+The accepted historical origin stream must be frozen by a still-authorized authority:
+
+```text
+accepted historical B envelopes
+        ↓
+validate tenant + historical epoch authorization + signatures
+        ↓
+require contiguous origin sequence through chosen cutoff
+        ↓
+canonical history commitment
+        ↓
+signed Revocation Barrier
+```
+
+The barrier binds:
+
+```text
+tenant_id
+revoked_device_id
+revoked_from_epoch
+last_accepted_origin_sequence
+history_commitment
+authorizing_device_id
+signature
+```
+
+After cutover, an old-epoch envelope from B is admissible only if it belongs to the authenticated committed historical set (or a reviewed production-equivalent commitment).
+
+Exact duplicate relay delivery and transport reorder remain harmless. Extension, substitution, sequence forks and unresolved gaps fail closed.
+
+Detailed contract:
+
+`REVOCATION-CUTOVER.md`
+
 ### Revocation truth
 
-Revocation can prevent future access. It cannot make a previously compromised device forget financial data or old keys it already possessed.
+Revocation can prevent future authority. It cannot make a previously compromised device forget financial data or old keys it already possessed.
 
 Therefore FinanceSensor must never claim remote erasure of already-decrypted historical data.
+
+A malicious relay can still withhold data; the barrier protects integrity, not Byzantine availability.
 
 ## 7. Opaque sync envelope
 
@@ -202,7 +278,7 @@ financial event type plaintext
 insight plaintext
 ```
 
-Timing, device identifiers and ciphertext sizes are still metadata leakage and remain part of the threat model.
+Timing, device identifiers, sequence/cutover values and ciphertext sizes are still metadata leakage and remain part of the threat model.
 
 ## 8. Per-device sequence
 
@@ -218,9 +294,12 @@ Uses:
 - detect duplicate/replayed envelopes;
 - detect missing ranges/gaps;
 - provide stable origin ordering;
-- aid diagnostics without reading financial content.
+- aid diagnostics without reading financial content;
+- define a contiguous historical prefix for authenticated revocation cutover.
 
 A sequence is not global economic ordering.
+
+At cutover, a history such as `1,2,4` cannot be certified as complete through `4` while `3` remains unresolved.
 
 ## 9. Server sequence
 
@@ -229,6 +308,8 @@ The relay may assign an opaque `server_sequence` for pagination/checkpointing.
 It is **transport order**, not necessarily user-intent order.
 
 FinanceSensor must not solve financial conflicts by blindly applying "last server write wins".
+
+A server sequence is also not sufficient proof that an old-epoch envelope predated revocation. Historical admissibility is governed by the authenticated revoked-origin commitment.
 
 ## 10. Domain conflict model
 
@@ -314,6 +395,8 @@ verify/decrypt/replay
 
 Offline is not an exceptional error state.
 
+A long-offline device that returns after another device was revoked must obtain the current authorization/cutover metadata before admitting newly delivered historical envelopes from the revoked origin.
+
 ## 13. Checkpoints
 
 Each device stores local sync checkpoints such as:
@@ -323,11 +406,14 @@ last_server_sequence_seen
 per-origin highest contiguous sequence
 missing sequence ranges
 key epochs held
+known Revocation Barriers
 schema versions understood
 pending local envelope IDs
 ```
 
 Checkpoints are local encrypted operational state. They must be crash-safe.
+
+A Revocation Barrier and the local accepted-history checkpoint must not be persisted in a way that allows restart to forget the cutover and reopen stale history as admissible.
 
 ## 14. Schema evolution
 
@@ -353,37 +439,44 @@ No destructive "best effort" parsing of unknown financial state.
 
 ### One device lost, another survives
 
-Surviving trusted device can authorize a replacement device and wrap the current tenant key epoch.
+Surviving trusted device can authorize a replacement device, rotate future tenant key epoch and certify the revoked device's accepted historical cutoff.
 
 ### All devices lost
 
-This is intentionally unresolved for MK0 closure until the recovery product contract is selected.
-
-Options to evaluate separately:
+ADR-014 selects an asymmetric Recovery Key with a user-held offline Recovery Private Key and no standing server master key.
 
 ```text
-NO_RECOVERY
-  strongest simplicity/privacy, highest user-loss risk
-
-USER_RECOVERY_SECRET
-  zero-knowledge style recovery with usability risk
-
-RECOVERY_DEVICE / trusted contact
-  additional trust/onboarding complexity
-
-ENCRYPTED_RECOVERY_SERVICE
-  requires a rigorously specified server-blind recovery construction
+recover retained epochs with Recovery Kit
+        ↓
+new device identity
+        ↓
+lost devices REVOKED from N+1
+new device ACTIVE from N+1
+        ↓
+new Tenant Root Key epoch N+1
+new Recovery Key
+new authenticated RecoveryCoverage(N+1)
+        ↓
+lower-level post-recovery readiness
+        ↓
+new device signs Revocation Barrier
+for every lost origin after validating accepted history
+        ↓
+final SAFE_TO_RESUME_FUTURE_SYNC gate
 ```
 
-We do not smuggle a cloud master key into the design just to make recovery convenient.
+If every device and the Recovery Kit are lost, cryptographic recovery is intentionally impossible. No hidden server bypass is permitted.
 
-## 16. Q-005 physical proof requirements
+Detailed decision:
 
-The bounded spike must demonstrate at minimum:
+`../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
+
+## 16. Q-005 executable proof state
+
+The bounded Node suite currently demonstrates:
 
 ```text
-2 device identities
-per-device wrapped tenant key
+key-wrap tenant/epoch/identity authority
 wrong-device unwrap failure
 ciphertext tamper failure
 envelope origin signature verification
@@ -391,9 +484,32 @@ cloud-visible payload contains no selected financial plaintext
 duplicate replay idempotency
 reverse delivery convergence
 per-device sequence gap detection
-revocation + key-epoch rotation blocks future access
-concurrent correction becomes deterministic conflict
-explicit conflict resolution converges
+future key-epoch revocation
+stale-epoch post-cutover injection rejection
+historical substitution/fork/gap rejection
+revoked-device self-cutover rejection
+concurrent correction deterministic conflict
+explicit conflict resolution convergence
+all-devices-lost recovery ownership
+recovery coverage/authentication/ambiguity rules
+lower-level post-recovery readiness
+final lost-origin cutover resume gate
+parasympathetic scheduling/backoff rules
+```
+
+Observed executable cutover baseline:
+
+```text
+E2EE / KEY / RECOVERY / REVOCATION / PNS   62 / 62 PASS
+REVOCATION CUTOVER                           7 / 7 PASS
+POST-RECOVERY CUTOVER                        4 / 4 PASS
 ```
 
 Passing this spike moves selected invariants only to `PROVEN_AT_SPIKE`, never release-level `PROVEN`.
+
+Relevant evidence:
+
+- `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
+
+Q-005 remains `ACTIVE` pending reviewed production constructions and physical Android/iOS/control-plane evidence.
