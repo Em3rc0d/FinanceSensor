@@ -114,7 +114,8 @@
         "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
         "tools/validate-privacy-matrix.mjs",
-        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -142,7 +143,8 @@
         "research/SYNC-CRYPTO-2026-SOURCES.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
         "mk0/05-data-model/SYNC-KEY-MODEL.md",
-        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md"
+        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -173,7 +175,8 @@
       "evidence": [
         "research/SYNC-CRYPTO-2026-SOURCES.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
-        "spikes/e2ee-sync/test/protocol.test.js"
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -196,7 +199,8 @@
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
-        "spikes/e2ee-sync/test/lease-failure.test.js"
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -256,7 +260,8 @@
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
-        "spikes/e2ee-sync/test/lease-failure.test.js"
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -264,7 +269,7 @@
       "id": "T-002",
       "kind": "test",
       "title": "E2EE sync and parasympathetic invariant suite",
-      "status": "ACTIVE",
+      "status": "PASS",
       "artifacts": [
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
@@ -275,7 +280,10 @@
       "dependsOn": ["Q-005", "S-002"],
       "validates": [],
       "revalidates": ["Q-005", "S-002", "DM-001", "SEC-001", "Q-004"],
-      "evidence": [".github/workflows/mk0-foundation.yml"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+      ],
       "closureReceipt": null
     },
     {
