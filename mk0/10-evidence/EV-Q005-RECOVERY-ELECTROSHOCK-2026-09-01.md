@@ -3,9 +3,12 @@
 **Date:** 2026-09-01  
 **Evidence level:** `PROVEN_AT_SPIKE`  
 **Validated executable commit:** `ce2bb1ebac89e12f8defd8a163e24eadf3bb32e1`  
-**MK0 Foundation run:** `33527184230`  
-**E2EE job:** `99920894672`  
-**Heartbeat run:** `33527184155`
+**Recovery execution / MK0 Foundation run:** `33527184230`  
+**Recovery E2EE job:** `99920894672`  
+**Recovery execution Heartbeat:** `33527184155`  
+**Final reconciled head:** `8dff480d433cff8e94dc53ea93a95972a9153f75`  
+**Final reconciled Heartbeat:** `33529026521`  
+**Final reconciled MK0 Foundation:** `33529026634`
 
 ## Result
 
@@ -15,6 +18,11 @@ TOTAL TESTS                          40 / 40 PASS
 RECOVERY TESTS                       12 / 12 PASS
 HEARTBEAT                            PASS
 MK0 FOUNDATION                       3 / 3 JOBS PASS
+ARTIFACT STATUS AUTHORITY            PASS
+QUARRY STATUS                        PASS
+TRACEABILITY                         PASS
+PRIVACY MATRIX                       PASS
+RECOVERY ADR IDENTITY GUARD          PASS
 BUILD_READY                          NO
 Q-005                                ACTIVE
 ```
@@ -46,7 +54,7 @@ REC-001 ... REC-012     12 / 12 PASS
 
 ## Whole-organism regression result
 
-The recovery tissue was not tested in isolation only. On the same validated executable head:
+The recovery tissue was not tested in isolation only. On the reconciled head, FinanceSensor passed:
 
 ```text
 canonical resolver                    PASS
@@ -59,7 +67,7 @@ artifact status authority             PASS
 quarry status                         PASS
 invariant traceability                PASS
 privacy base + recovery matrix        PASS
-recovery equipment guard              PASS
+recovery equipment / ADR identity     PASS
 ```
 
 Therefore the new recovery model did not regress the already-wired financial heart, source-ingress contract, privacy boundary or graph validators in this bounded environment.
@@ -193,15 +201,32 @@ BUILD_READY false
 
 No `CLOSED` or release-grade `PROVEN` state is inferred from a synthetic spike.
 
-## ADR identity correction
+## Governance arrhythmias found and corrected
 
-The pre-existing ADR index already reserved `ADR-005` for transaction fingerprint/resolver strategy. Recovery therefore uses the unique identifier:
+The electroshock found two non-cryptographic inconsistencies that would have polluted the graph if left unresolved.
+
+### ADR identity collision
+
+The pre-existing ADR index already reserved `ADR-005` for transaction fingerprint/resolver strategy. Recovery was therefore reassigned to:
 
 ```text
 ADR-014 — All-Devices-Lost Recovery Without a Server Master Key
 ```
 
-The duplicate experimental filename was removed; CI guards against its reintroduction.
+The duplicate experimental ADR-005 recovery file was removed and CI now guards against its reintroduction.
+
+### Node status vs ADR maturity
+
+`Q-005` is an owner graph node and remains `ACTIVE`. `SPIKE-ACCEPTED` describes the maturity of the Recovery decision, not the node status.
+
+ADR-014 now declares these separately:
+
+```text
+Owner node: Q-005 (ACTIVE)
+Decision maturity: SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED
+```
+
+The final reconciled Heartbeat proved that `Artifact status authority` accepts this separation without weakening the authoritative ledger.
 
 ## What this evidence does NOT prove
 
