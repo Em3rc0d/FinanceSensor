@@ -46,6 +46,9 @@ jobs:
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
+      - name: Artifact status authority ECG
+        run: node tools/validate-artifact-status.mjs
+
       - name: Quarry status ECG
         run: node tools/validate-quarry-status.mjs
 
@@ -62,6 +65,7 @@ jobs:
           test -f ops/RECOVERY-PLAYBOOK.md
           test -f graph/GRAPH-PROTOCOL.md
           test -f graph/NERVOUS-SYSTEM.md
+          test -f graph/STATUS-AUTHORITY.md
           test -f graph/traceability-matrix.json
           test -f graph/CLOSURE-RECEIPT-TEMPLATE.md
           test -f mk0/04-architecture/PRIVACY-DATA-MATRIX.json
@@ -70,12 +74,14 @@ jobs:
           grep -q 'DO NOT MERGE' ops/RECOVERY-PLAYBOOK.md
           grep -q 'BUILD_READY = YES' graph/GRAPH-PROTOCOL.md
           grep -q 'PRODUCT INVARIANT' graph/NERVOUS-SYSTEM.md
+          grep -q 'only authoritative source' graph/STATUS-AUTHORITY.md
 
       - name: Heartbeat summary
         run: |
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Closure graph is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Artifact status declarations agree with the authoritative ledger.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Quarry Markdown states match the closure ledger.' >> "$GITHUB_STEP_SUMMARY"
           echo 'All declared product/data-model invariants are wired into the nervous system.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Privacy data-handling matrix is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
