@@ -1,0 +1,50 @@
+name: FinanceSensor Heartbeat
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+  push:
+    branches:
+      - main
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/canonical-resolver/**'
+      - '.github/workflows/heartbeat.yml'
+      - 'ops/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-heartbeat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vital-signs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Canonical resolver ECG
+        working-directory: spikes/canonical-resolver
+        run: npm test
+
+      - name: Guard recovery playbook
+        run: |
+          test -f ops/VITALS.md
+          test -f ops/RECOVERY-PLAYBOOK.md
+          grep -q 'FINANCIAL_TRUTH' ops/VITALS.md
+          grep -q 'DO NOT MERGE' ops/RECOVERY-PLAYBOOK.md
+
+      - name: Heartbeat summary
+        run: |
+          echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
