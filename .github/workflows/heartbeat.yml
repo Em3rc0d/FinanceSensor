@@ -83,7 +83,8 @@ jobs:
           test -f mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json
           test -f mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
-          test -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          test -f mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
@@ -93,8 +94,9 @@ jobs:
           grep -q 'BUILD_READY = YES' graph/GRAPH-PROTOCOL.md
           grep -q 'PRODUCT INVARIANT' graph/NERVOUS-SYSTEM.md
           grep -q 'only authoritative source' graph/STATUS-AUTHORITY.md
-          grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
+          ! grep -R -q 'ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY' STATUS.md graph mk0 product research spikes tools ops --exclude='ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md'
 
       - name: Heartbeat summary
         run: |
@@ -108,4 +110,4 @@ jobs:
           echo 'All declared product/data-model invariants are wired into the nervous system.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Privacy base + recovery data-handling matrices are structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Recovery equipment is present and wired.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Recovery equipment and ADR identity are present and uniquely wired.' >> "$GITHUB_STEP_SUMMARY"
