@@ -55,6 +55,30 @@ if (token) {
   if (token.logging !== 'FORBIDDEN') fail('OAuth token logging must be FORBIDDEN');
 }
 
+for (const id of ['DEVICE-PRIVATE-KEY', 'TENANT-ROOT-KEY']) {
+  const item = requireClass(id);
+  if (!item) continue;
+  if (item.cloudPlaintext !== 'FORBIDDEN') fail(`${id} cloud plaintext must be FORBIDDEN`);
+  if (item.logging !== 'FORBIDDEN') fail(`${id} logging must be FORBIDDEN`);
+  if (!item.localProtection.includes('PROTECTED') && !item.localProtection.includes('ENCRYPTED')) {
+    fail(`${id} must require protected/encrypted local key storage`);
+  }
+}
+
+const publicKey = requireClass('DEVICE-PUBLIC-KEY');
+if (publicKey && publicKey.cloudPlaintext !== 'ALLOWED_MINIMIZED') {
+  fail('device public-key metadata may be cloud-visible only in minimized form');
+}
+
+const keyWrap = requireClass('TENANT-KEY-WRAP');
+if (keyWrap) {
+  if (keyWrap.cloudPlaintext !== 'WRAPPED_KEY_CIPHERTEXT_AND_MINIMUM_CONTEXT_ONLY') {
+    fail('tenant key wrap may expose wrapped ciphertext + minimum context only');
+  }
+  if (!keyWrap.localProtection.includes('CIPHERTEXT')) fail('tenant key wrap must remain ciphertext');
+  if (keyWrap.logging !== 'NO_KEY_MATERIAL') fail('tenant key wrap logging must exclude key material');
+}
+
 for (const id of ['MAIL-BODY', 'MAIL-ATTACHMENT']) {
   const item = requireClass(id);
   if (!item) continue;
@@ -75,6 +99,19 @@ for (const id of ['FIN-EVIDENCE', 'FIN-CANONICAL-EVENT', 'FIN-INSIGHT']) {
 const envelope = requireClass('CLOUD-E2EE-ENVELOPE');
 if (envelope && envelope.cloudPlaintext !== 'CIPHERTEXT_AND_MINIMUM_ROUTING_METADATA_ONLY') {
   fail('cloud sync envelope must expose ciphertext + minimum routing metadata only');
+}
+
+const checkpoint = requireClass('SYNC-CHECKPOINT');
+if (checkpoint) {
+  if (!checkpoint.localProtection.includes('ENCRYPTED')) fail('sync checkpoint must be encrypted locally');
+  if (checkpoint.cloudPlaintext !== 'FORBIDDEN_MK0_DEVICE_CHECKPOINT') {
+    fail('device sync checkpoint cloud plaintext must remain forbidden in MK0');
+  }
+}
+
+const keyEpoch = requireClass('KEY-EPOCH-METADATA');
+if (keyEpoch && keyEpoch.cloudPlaintext !== 'ALLOWED_MINIMIZED') {
+  fail('key epoch metadata must remain minimized');
 }
 
 const diagnostics = requireClass('DIAG-TELEMETRY');
