@@ -22,6 +22,22 @@ function canonicalReceiptBody(input) {
   });
 }
 
+function makeReceipt(witness, submission, observedAt) {
+  const receiptBody = {
+    witnessId: witness.witnessId,
+    witnessLogId: submission.witnessLogId,
+    checkpointSequence: submission.checkpointSequence,
+    checkpointHash: submission.checkpointHash,
+    previousCheckpointHash: submission.previousCheckpointHash,
+    observedAt,
+    protocolVersion: submission.protocolVersion
+  };
+  return {
+    ...receiptBody,
+    signature: crypto.sign(null, Buffer.from(canonicalReceiptBody(receiptBody)), witness.privateKey).toString('base64')
+  };
+}
+
 export function generateEd25519Identity() {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
   return { publicKey, privateKey };
@@ -93,9 +109,43 @@ export function submitCheckpointToWitness(witness, submission, observedAt = '202
     return { accepted: false, code: 'INVALID_SUBMISSION_AUTHORITY' };
   }
 
-  // INTENTIONALLY WEAK BASELINE:
-  // authenticity is checked, but monotonicity / parent continuity / rollback / fork
-  // semantics are not yet enforced. The adversarial suite must make this go red.
+  const latest = witness.latestByLog.get(submission.witnessLogId);
+
+  if (!latest) {
+    if (submission.checkpointSequence !== 1 || submission.previousCheckpointHash !== null) {
+      return { accepted: false, code: 'WITNESS_BOOTSTRAP_INVALID' };
+    }
+  } else {
+    if (submission.checkpointSequence < latest.checkpointSequence) {
+      return { accepted: false, code: 'WITNESS_ROLLBACK_REJECTED' };
+    }
+
+    if (submission.checkpointSequence === latest.checkpointSequence) {
+      const retryEquivalent =
+        submission.checkpointHash === latest.checkpointHash &&
+        submission.previousCheckpointHash === latest.previousCheckpointHash &&
+        submission.protocolVersion === latest.protocolVersion;
+
+      if (!retryEquivalent) {
+        return { accepted: false, code: 'WITNESS_FORK_REJECTED' };
+      }
+
+      return {
+        accepted: true,
+        code: 'RETRY_EQUIVALENT',
+        receipt: makeReceipt(witness, submission, observedAt)
+      };
+    }
+
+    if (submission.checkpointSequence > latest.checkpointSequence + 1) {
+      return { accepted: false, code: 'WITNESS_SEQUENCE_GAP' };
+    }
+
+    if (submission.previousCheckpointHash !== latest.checkpointHash) {
+      return { accepted: false, code: 'WITNESS_PARENT_MISMATCH' };
+    }
+  }
+
   const head = {
     checkpointSequence: submission.checkpointSequence,
     checkpointHash: submission.checkpointHash,
@@ -104,33 +154,62 @@ export function submitCheckpointToWitness(witness, submission, observedAt = '202
   };
   witness.latestByLog.set(submission.witnessLogId, head);
 
-  const receiptBody = {
-    witnessId: witness.witnessId,
-    witnessLogId: submission.witnessLogId,
-    checkpointSequence: submission.checkpointSequence,
-    checkpointHash: submission.checkpointHash,
-    previousCheckpointHash: submission.previousCheckpointHash,
-    observedAt,
-    protocolVersion: submission.protocolVersion
-  };
   return {
     accepted: true,
     code: 'ACCEPTED',
-    receipt: {
-      ...receiptBody,
-      signature: crypto.sign(null, Buffer.from(canonicalReceiptBody(receiptBody)), witness.privateKey).toString('base64')
-    }
+    receipt: makeReceipt(witness, submission, observedAt)
   };
 }
 
 export function evaluateWitnessFreshness({ relayCheckpoint, witnessViews, configuredWitnesses, threshold }) {
   const valid = [];
+  let configuredInvalidEvidence = false;
+
   for (const view of witnessViews) {
-    const config = configuredWitnesses.find(item => item.witnessId === view.receipt?.witnessId);
+    const receipt = view.receipt;
+    const config = configuredWitnesses.find(item => item.witnessId === receipt?.witnessId);
     if (!config) continue;
-    if (config.witnessLogId !== view.receipt.witnessLogId) continue;
-    if (!verifyWitnessReceipt(view.receipt, config.witnessPublicKey)) continue;
-    valid.push(view.receipt);
+
+    if (config.witnessLogId !== receipt.witnessLogId) {
+      configuredInvalidEvidence = true;
+      continue;
+    }
+
+    if (!verifyWitnessReceipt(receipt, config.witnessPublicKey)) {
+      configuredInvalidEvidence = true;
+      continue;
+    }
+
+    valid.push(receipt);
+  }
+
+  if (configuredInvalidEvidence) {
+    return {
+      status: 'INVALID_WITNESS_RECEIPT',
+      confirmedThrough: null,
+      confirmingWitnesses: []
+    };
+  }
+
+  const ahead = valid.filter(receipt => receipt.checkpointSequence > relayCheckpoint.checkpointSequence);
+  if (ahead.length > 0) {
+    return {
+      status: 'RELAY_BEHIND_WITNESS',
+      confirmedThrough: null,
+      confirmingWitnesses: []
+    };
+  }
+
+  const sameSequenceDivergence = valid.filter(receipt =>
+    receipt.checkpointSequence === relayCheckpoint.checkpointSequence &&
+    receipt.checkpointHash !== relayCheckpoint.checkpointHash
+  );
+  if (sameSequenceDivergence.length > 0) {
+    return {
+      status: 'WITNESS_DIVERGENCE',
+      confirmedThrough: null,
+      confirmingWitnesses: []
+    };
   }
 
   const agreeing = valid.filter(receipt =>
