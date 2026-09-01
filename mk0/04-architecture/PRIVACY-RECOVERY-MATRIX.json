@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "status": "DRAFT",
+  "extends": "PRIVACY-DATA-MATRIX.json",
+  "classes": [
+    {
+      "id": "RECOVERY-PRIVATE-KEY",
+      "name": "User-held Recovery Private Key / Recovery Kit authority",
+      "sensitivity": "CRITICAL",
+      "purpose": "Restore tenant key epochs locally after all authorized devices are unavailable",
+      "source": "Locally generated during tenant recovery setup or post-recovery rotation",
+      "localRetention": "TRANSIENT_IN_APP_MEMORY_DURING_SETUP_OR_RECOVERY_USER_HELD_OFFLINE_AFTER_EXPORT",
+      "localProtection": "USER_HELD_OFFLINE_RECOVERY_KIT_OPTIONALLY_LOCALLY_PROTECTED_DURING_IMPORT",
+      "cloudPlaintext": "FORBIDDEN",
+      "e2eeSync": "FORBIDDEN",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "REMOVE_FROM_APP_MEMORY_AFTER_CONFIRMED_EXPORT_OR_RECOVERY_AND_RETIRE_OLD_KIT_AFTER_ROTATION",
+      "humanAccess": "USER_ONLY",
+      "logging": "FORBIDDEN"
+    },
+    {
+      "id": "RECOVERY-PUBLIC-KEY",
+      "name": "Tenant Recovery Public Key metadata",
+      "sensitivity": "MEDIUM",
+      "purpose": "Allow authorized devices to create recovery wraps for future tenant key epochs without recovery decryption authority",
+      "source": "Derived from user-held Recovery Keypair",
+      "localRetention": "PERSIST_WHILE_RECOVERY_KEY_ID_ACTIVE_OR_HISTORICALLY_REFERENCED",
+      "localProtection": "STANDARD_SECURE_METADATA_STORAGE",
+      "cloudPlaintext": "ALLOWED_MINIMIZED",
+      "e2eeSync": "NOT_REQUIRED",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_RECOVERY_KEY_RETENTION_POLICY_AFTER_ROTATION",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED"
+    },
+    {
+      "id": "RECOVERY-EPOCH-WRAP",
+      "name": "Tenant key epoch wrapped to Recovery Public Key",
+      "sensitivity": "HIGH",
+      "purpose": "Provide zero-knowledge all-devices-lost restoration for retained tenant key epochs",
+      "source": "Trusted authorized FinanceSensor device",
+      "localRetention": "PERSIST_AS_RECOVERY_AUTHORIZATION_ARTIFACT",
+      "localProtection": "CIPHERTEXT_AUTHENTICATED_CONTEXT",
+      "cloudPlaintext": "WRAPPED_KEY_CIPHERTEXT_AND_MINIMUM_CONTEXT_ONLY",
+      "e2eeSync": "REQUIRED",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_KEY_EPOCH_RECOVERY_RETENTION_POLICY",
+      "humanAccess": "CIPHERTEXT_AND_ROUTING_METADATA_ONLY",
+      "logging": "NO_KEY_MATERIAL"
+    }
+  ]
+}
