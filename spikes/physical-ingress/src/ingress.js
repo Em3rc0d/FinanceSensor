@@ -14,10 +14,43 @@ export function isLikelyFinancialMetadata(headers = {}) {
   return FINANCIAL_SUBJECT.test(headers.Subject ?? '') || FINANCIAL_SENDER.test(headers.From ?? '');
 }
 
+function parseLocalizedNumber(raw = '') {
+  const token = String(raw).replace(/[\u00A0 ]/g, '').replace(/[^0-9.,]/g, '');
+  if (!token || !/\d/.test(token)) return null;
+
+  const lastDot = token.lastIndexOf('.');
+  const lastComma = token.lastIndexOf(',');
+  let decimalSeparator = null;
+
+  if (lastDot >= 0 && lastComma >= 0) {
+    decimalSeparator = lastDot > lastComma ? '.' : ',';
+  } else {
+    const separator = lastDot >= 0 ? '.' : lastComma >= 0 ? ',' : null;
+    if (separator) {
+      const last = token.lastIndexOf(separator);
+      const trailingDigits = token.length - last - 1;
+      if (trailingDigits === 1 || trailingDigits === 2) decimalSeparator = separator;
+    }
+  }
+
+  let normalized;
+  if (decimalSeparator) {
+    const decimalIndex = token.lastIndexOf(decimalSeparator);
+    const integerPart = token.slice(0, decimalIndex).replace(/[.,]/g, '');
+    const fractionalPart = token.slice(decimalIndex + 1).replace(/[.,]/g, '');
+    normalized = `${integerPart}.${fractionalPart}`;
+  } else {
+    normalized = token.replace(/[.,]/g, '');
+  }
+
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : null;
+}
+
 function parseAmount(body = '') {
-  const match = String(body).match(/(?:PEN|S\/|USD|US\$|\$)\s*([0-9]+(?:[.,][0-9]{1,2})?)/i);
+  const match = String(body).match(/(?:PEN|S\/|USD|US\$|\$)\s*([0-9][0-9.,\u00A0 ]*)/i);
   if (!match) return null;
-  return Number(match[1].replace(',', '.'));
+  return parseLocalizedNumber(match[1]);
 }
 
 function parseCurrency(body = '') {
@@ -26,17 +59,24 @@ function parseCurrency(body = '') {
   return 'PEN';
 }
 
-function parseMerchant(body = '', headers = {}) {
-  const match = String(body).match(/merchant\s*:\s*([^;\n]+)/i);
-  if (match) return match[1].trim();
-  const sender = String(headers.From ?? '');
-  return sender.split('@')[0] || null;
+function parseMerchant(body = '') {
+  const match = String(body).match(/(?:merchant|comercio|establecimiento)\s*:\s*([^;\n]+)/i);
+  return match ? match[1].trim() : null;
+}
+
+function parseProviderTransactionId(body = '') {
+  const text = String(body);
+  const match = text.match(/(?:c[oó]digo\s+de\s+operaci[oó]n|operation\s+code|transaction\s+id)\s*[:#-]?\s*(?:\r?\n\s*)?([A-Za-z0-9-]{4,64})/i);
+  return match ? match[1].trim() : null;
 }
 
 function inferDirection(subject = '', body = '') {
   const text = `${subject} ${body}`.toLowerCase();
+
+  if (/cuenta\s+(?:a|de)\s+cargo|transferencia\s+(?:realizada|enviada)|transfer sent/.test(text)) return 'OUT';
+  if (/cuenta\s+(?:de\s+)?abono|transferencia\s+(?:recibida|entrante)|transfer received/.test(text)) return 'IN';
   if (/refund|reembolso|devolucion|abono|deposito|salary|sueldo|recibida|received/.test(text)) return 'IN';
-  if (/compra|purchase|consumo|cargo|charged|payment|pago|comision|fee|transferencia realizada|transfer sent/.test(text)) return 'OUT';
+  if (/compra|purchase|consumo|charged|payment|pago|comision|fee|\bcargo\b/.test(text)) return 'OUT';
   return null;
 }
 
@@ -44,6 +84,7 @@ export function extractFinancialEvidence(fullMessage) {
   const amount = parseAmount(fullMessage.body);
   if (!Number.isFinite(amount) || amount <= 0) return null;
   const subject = fullMessage.headers?.Subject ?? '';
+  const providerTransactionId = parseProviderTransactionId(fullMessage.body);
   const evidence = {
     tenantId: 'tenant-ingress',
     sourceType: 'GMAIL',
@@ -51,12 +92,12 @@ export function extractFinancialEvidence(fullMessage) {
     occurredAt: fullMessage.headers?.Date,
     amount,
     currency: parseCurrency(fullMessage.body),
-    rawMerchant: parseMerchant(fullMessage.body, fullMessage.headers),
+    rawMerchant: parseMerchant(fullMessage.body),
     subject,
     bodySnippet: String(fullMessage.body).slice(0, 160),
     direction: inferDirection(subject, fullMessage.body),
     confidence: 0.9,
-    references: {}
+    references: providerTransactionId ? { providerTransactionId } : {}
   };
   evidence.semanticType = classifyCandidate(evidence);
   return evidence;
