@@ -15,12 +15,15 @@
     {
       "id": "TR-FIN-TRANSFER",
       "source": "product",
-      "invariants": ["FIN-004"],
+      "invariants": ["FIN-004", "FIN-009"],
       "status": "PROVEN_AT_SPIKE",
       "ownerNodes": ["Q-001", "C-001", "DM-001", "T-001"],
       "tests": ["spikes/canonical-resolver/test/economic-effect.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
-      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
-      "mapsTo": ["INV-FIN-001"]
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "mapsTo": ["INV-FIN-001", "INV-FIN-010"]
     },
     {
       "id": "TR-FIN-CARD",
@@ -33,13 +36,30 @@
       "mapsTo": ["INV-FIN-002"]
     },
     {
+      "id": "TR-FIN-OFFSETS",
+      "source": "product",
+      "invariants": ["FIN-010"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-001", "C-002", "DM-001", "T-001"],
+      "tests": ["spikes/canonical-resolver/test/economic-effect.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"],
+      "mapsTo": ["INV-FIN-003", "INV-FIN-004", "INV-FIN-011"]
+    },
+    {
       "id": "TR-FIN-IDEMPOTENCY",
       "source": "product",
       "invariants": ["FIN-007"],
       "status": "PROVEN_AT_SPIKE",
       "ownerNodes": ["Q-002", "S-001", "T-001"],
-      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
-      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "tests": [
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/resolver.test.js"
+      ],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
       "mapsTo": ["INV-FIN-005", "INV-FIN-007"]
     },
     {
@@ -111,8 +131,11 @@
       "invariants": ["TEN-004"],
       "status": "PROVEN_AT_SPIKE",
       "ownerNodes": ["Q-002", "S-001", "T-001"],
-      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js"],
-      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js", "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js"],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
       "mapsTo": ["INV-FIN-007"]
     },
     {
@@ -188,11 +211,29 @@
     {
       "id": "TR-DM-FIN-PROVEN-SPIKE",
       "source": "data-model",
-      "invariants": ["INV-FIN-001", "INV-FIN-002", "INV-FIN-003", "INV-FIN-004", "INV-FIN-005", "INV-FIN-006", "INV-FIN-007"],
+      "invariants": [
+        "INV-FIN-001",
+        "INV-FIN-002",
+        "INV-FIN-003",
+        "INV-FIN-004",
+        "INV-FIN-005",
+        "INV-FIN-006",
+        "INV-FIN-007",
+        "INV-FIN-010",
+        "INV-FIN-011"
+      ],
       "status": "PROVEN_AT_SPIKE",
       "ownerNodes": ["Q-001", "Q-002", "S-001", "T-001"],
-      "tests": ["spikes/canonical-resolver/test/resolver.test.js", "spikes/canonical-resolver/test/fingerprinting.test.js", "spikes/canonical-resolver/test/economic-effect.test.js"],
-      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "tests": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js"
+      ],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
       "mapsTo": []
     },
     {
@@ -257,11 +298,11 @@
   "interrupts": [
     {
       "contradiction": "C-001",
-      "invariants": ["FIN-001", "FIN-004", "HUM-005", "INV-FIN-001"]
+      "invariants": ["FIN-001", "FIN-004", "FIN-009", "HUM-005", "INV-FIN-001", "INV-FIN-010"]
     },
     {
       "contradiction": "C-002",
-      "invariants": ["FIN-001", "FIN-003", "INV-FIN-003", "INV-FIN-004"]
+      "invariants": ["FIN-001", "FIN-003", "FIN-010", "INV-FIN-003", "INV-FIN-004", "INV-FIN-011"]
     }
   ]
 }
