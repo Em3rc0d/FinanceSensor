@@ -137,19 +137,38 @@ export class LocalOAuthCredentialProvider {
   #clientId;
   #refreshToken;
   #fetch;
+  #now;
+  #refreshSkewMs;
+  #accessToken = null;
+  #expiresAtMs = 0;
+  #refreshPromise = null;
 
-  constructor({ clientId, refreshToken, fetchImpl = globalThis.fetch }) {
+  constructor({
+    clientId,
+    refreshToken,
+    fetchImpl = globalThis.fetch,
+    now = () => Date.now(),
+    refreshSkewMs = 60_000
+  }) {
     this.#clientId = assertNonEmpty(clientId, 'clientId');
     this.#refreshToken = assertNonEmpty(refreshToken, 'refreshToken');
     if (typeof fetchImpl !== 'function') throw new Error('fetch implementation required');
+    if (typeof now !== 'function') throw new Error('now implementation required');
+    if (!Number.isFinite(refreshSkewMs) || refreshSkewMs < 0) throw new Error('refreshSkewMs must be non-negative');
     this.#fetch = fetchImpl;
+    this.#now = now;
+    this.#refreshSkewMs = Number(refreshSkewMs);
   }
 
   toJSON() {
     return { type: 'LocalOAuthCredentialProvider', credentialAuthority: 'DEVICE_LOCAL' };
   }
 
-  async getAccessToken() {
+  #hasUsableAccessToken() {
+    return Boolean(this.#accessToken) && this.#now() < (this.#expiresAtMs - this.#refreshSkewMs);
+  }
+
+  async #refreshAccessToken() {
     const params = new URLSearchParams();
     params.set('grant_type', 'refresh_token');
     params.set('client_id', this.#clientId);
@@ -171,6 +190,32 @@ export class LocalOAuthCredentialProvider {
 
     const payload = await response.json();
     if (!payload?.access_token) throw new OAuthTokenError('MISSING_ACCESS_TOKEN');
-    return String(payload.access_token);
+
+    const expiresInSeconds = Number(payload.expires_in);
+    const boundedLifetimeMs = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+      ? expiresInSeconds * 1000
+      : 5 * 60 * 1000;
+
+    this.#accessToken = String(payload.access_token);
+    this.#expiresAtMs = this.#now() + boundedLifetimeMs;
+    return this.#accessToken;
+  }
+
+  async getAccessToken() {
+    if (this.#hasUsableAccessToken()) return this.#accessToken;
+    if (this.#refreshPromise) return this.#refreshPromise;
+
+    this.#refreshPromise = this.#refreshAccessToken();
+    try {
+      return await this.#refreshPromise;
+    } finally {
+      this.#refreshPromise = null;
+    }
+  }
+
+  async onUnauthorized({ status } = {}) {
+    if (status !== undefined && status !== 401) return;
+    this.#accessToken = null;
+    this.#expiresAtMs = 0;
   }
 }
