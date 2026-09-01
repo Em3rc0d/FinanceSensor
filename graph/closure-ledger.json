@@ -57,7 +57,8 @@
       "evidence": [
         "spikes/canonical-resolver/src/resolver.js",
         "spikes/canonical-resolver/test/resolver.test.js",
-        "spikes/canonical-resolver/test/fingerprinting.test.js"
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -89,24 +90,32 @@
       "id": "Q-003",
       "kind": "quarry",
       "title": "Gmail production feasibility",
-      "status": "OPEN",
+      "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-003-GMAIL-POLICY.md"],
       "dependsOn": ["P-001"],
       "validates": ["A-001", "SEC-001", "G-MK0"],
       "revalidates": ["P-001"],
-      "evidence": [],
+      "evidence": [
+        "mk0/02-quarries/Q-003-GMAIL-POLICY.md",
+        "research/GMAIL-2026-SOURCES.md"
+      ],
       "closureReceipt": null
     },
     {
       "id": "Q-004",
       "kind": "quarry",
       "title": "Email privacy and data minimization",
-      "status": "OPEN",
+      "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-004-EMAIL-PRIVACY.md"],
       "dependsOn": ["P-001", "P-002"],
       "validates": ["A-001", "SEC-001", "G-MK0"],
       "revalidates": ["P-001", "P-002"],
-      "evidence": [],
+      "evidence": [
+        "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "tools/validate-privacy-matrix.mjs",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+      ],
       "closureReceipt": null
     },
     {
@@ -174,7 +183,8 @@
         "spikes/canonical-resolver/test/resolver.test.js",
         "spikes/canonical-resolver/test/corpus.test.js",
         "spikes/canonical-resolver/test/fingerprinting.test.js",
-        "spikes/canonical-resolver/test/economic-effect.test.js"
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -182,7 +192,7 @@
       "id": "T-001",
       "kind": "test",
       "title": "Canonical resolver invariant suite",
-      "status": "ACTIVE",
+      "status": "PASS",
       "artifacts": [
         "spikes/canonical-resolver/test/resolver.test.js",
         "spikes/canonical-resolver/test/corpus.test.js",
@@ -193,7 +203,10 @@
       "dependsOn": ["P-002", "Q-001", "Q-002", "S-001"],
       "validates": [],
       "revalidates": ["P-002", "Q-001", "Q-002", "S-001", "DM-001"],
-      "evidence": [".github/workflows/mk0-foundation.yml"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+      ],
       "closureReceipt": null
     },
     {
