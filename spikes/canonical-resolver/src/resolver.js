@@ -134,6 +134,12 @@ export function hasIndependentSources(a, b) {
   return new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size > 1;
 }
 
+export function merchantsCompatibleForReview(a, b) {
+  const merchantA = normalizeMerchant(a.merchantCanonical || a.rawMerchant || '');
+  const merchantB = normalizeMerchant(b.merchantCanonical || b.rawMerchant || '');
+  return !merchantA || !merchantB || merchantA === merchantB;
+}
+
 export function matchScore(a, b) {
   if (a.tenantId !== b.tenantId) return 0;
   if (a.currency !== b.currency) return 0;
@@ -185,6 +191,7 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
     if (best) {
       const strongReference = sharedStrongReference(best, candidate);
       const independentSources = hasIndependentSources(best, candidate);
+      const merchantCompatible = merchantsCompatibleForReview(best, candidate);
 
       // Automatic merging requires a hard cross-artifact link. Amount + merchant + time
       // are useful for ranking but are not sufficient proof of economic identity.
@@ -196,8 +203,9 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
       }
 
       // Independent sources may strongly suggest the same event but, without a hard link,
-      // ambiguity is surfaced instead of silently mutating financial truth.
-      if (independentSources && bestScore >= reviewThreshold) {
+      // ambiguity is surfaced instead of silently mutating financial truth. Different known
+      // merchants are not treated as the same candidate merely because amount/time match.
+      if (independentSources && merchantCompatible && bestScore >= reviewThreshold) {
         review.push({ candidate, possibleCanonicalId: best.id, score: bestScore });
         continue;
       }
