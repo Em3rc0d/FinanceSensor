@@ -47,6 +47,21 @@
       "deletionTrigger": "TENANT_DELETE_OR_KEY_EPOCH_RECOVERY_RETENTION_POLICY",
       "humanAccess": "CIPHERTEXT_AND_ROUTING_METADATA_ONLY",
       "logging": "NO_KEY_MATERIAL"
+    },
+    {
+      "id": "REVOCATION-CUTOVER-BARRIER",
+      "name": "Signed revoked-device historical cutover commitment",
+      "sensitivity": "HIGH",
+      "purpose": "Freeze the exact accepted historical origin stream for a revoked device so retained old keys cannot create newly admissible history after cutover",
+      "source": "Still-authorized device or newly recovered device after validating the accepted historical origin stream",
+      "localRetention": "PERSIST_WHILE_HISTORICAL_EPOCHS_OR_REVOKED_DEVICE_HISTORY_REMAIN_REPLAYABLE",
+      "localProtection": "SIGNED_AUTHORIZATION_METADATA_WITH_TENANT_DEVICE_EPOCH_AND_HISTORY_COMMITMENT_BINDING",
+      "cloudPlaintext": "ALLOWED_MINIMIZED_SIGNED_METADATA_ONLY",
+      "e2eeSync": "NOT_REQUIRED_CONTROL_PLANE_AUTHORIZATION_METADATA",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_REVOKED_DEVICE_HISTORY_RETENTION_POLICY",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED_NO_FINANCIAL_CONTENT"
     }
   ]
 }
