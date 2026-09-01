@@ -46,7 +46,7 @@ Detailed contracts:
 
 - `../04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md`
 - `../04-architecture/PARASYMPATHETIC-SYNC.md`
-- `../11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
+- `../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
 
 ## Target model
 
@@ -273,7 +273,7 @@ No busy retries while offline. Authentication failure transitions to reconnect/`
 
 ## All-devices-lost recovery decision
 
-The logical ownership model is now decided at spike level through ADR-005:
+The logical ownership model is now decided at spike level through ADR-014:
 
 ```text
 SERVER MASTER KEY         REJECTED
@@ -397,7 +397,7 @@ REVOCATION_MEANING              FUTURE ACCESS
 PERMANENT_BACKGROUND_POLLING    REJECTED
 OS_COOPERATIVE_SCHEDULING       REQUIRED
 OFFLINE_IS_ERROR                NO
-ALL_DEVICES_LOST_RECOVERY       SPIKE-ACCEPTED / ADR-005
+ALL_DEVICES_LOST_RECOVERY       SPIKE-ACCEPTED / ADR-014
 SERVER_MASTER_KEY               REJECTED
 PRODUCTION_CRYPTO_SUITE         OPEN / SECURITY REVIEW REQUIRED
 PHYSICAL_MOBILE_RECOVERY        OPEN
@@ -414,7 +414,7 @@ Q-005 closes only when:
 - device enrollment/revocation sequence frozen;
 - future-access revocation physically demonstrated;
 - event ordering/conflict semantics frozen;
-- all-devices-lost behavior remains reconciled with ADR-005;
+- all-devices-lost behavior remains reconciled with ADR-014;
 - recovery coverage and post-recovery hardening are physically demonstrated;
 - encrypted sync prototype demonstrates two-device convergence;
 - duplicate delivery and lease failure remain economically idempotent;
