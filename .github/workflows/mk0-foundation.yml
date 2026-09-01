@@ -29,3 +29,20 @@ jobs:
 
       - name: Verify resolver invariants
         run: npm test
+
+  e2ee-sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: spikes/e2ee-sync
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify peripheral and parasympathetic invariants
+        run: npm test
