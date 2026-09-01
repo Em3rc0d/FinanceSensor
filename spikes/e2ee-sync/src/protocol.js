@@ -353,6 +353,19 @@ function correctionConflictKey(targetId, baseRevision, corrections) {
   return sha256(utf8(stableJson({ targetId, baseRevision, ids })));
 }
 
+function resolutionConflictKey(targetId, baseRevision, resolutions) {
+  return sha256(utf8(stableJson({
+    targetId,
+    baseRevision,
+    resolutions: resolutions
+      .map(event => ({
+        eventId: event.header.eventId,
+        selectedCorrectionEventId: event.action.selectedCorrectionEventId
+      }))
+      .sort((a, b) => a.eventId.localeCompare(b.eventId))
+  })));
+}
+
 function decodedIdentityDigest(decoded) {
   return sha256(utf8(stableJson({ header: decoded.header, action: decoded.action })));
 }
@@ -360,16 +373,34 @@ function decodedIdentityDigest(decoded) {
 export function materializeDecodedEvents(decodedEvents) {
   const unique = new Map();
   const identityDigests = new Map();
+  const sequenceOwners = new Map();
+
   for (const decoded of decodedEvents) {
     const eventId = decoded?.header?.eventId;
     if (!eventId) throw new Error('sync-event-id-required');
+
+    const tenantId = decoded?.header?.tenantId;
+    const originDeviceId = decoded?.header?.originDeviceId;
+    const originDeviceSequence = decoded?.header?.originDeviceSequence;
+    if (!tenantId || !originDeviceId || !Number.isInteger(originDeviceSequence) || originDeviceSequence <= 0) {
+      throw new Error('invalid-decoded-sync-origin');
+    }
+
     const digest = decodedIdentityDigest(decoded);
     const existingDigest = identityDigests.get(eventId);
     if (existingDigest != null && existingDigest !== digest) {
       throw new Error(`sync-event-id-content-conflict:${eventId}`);
     }
+
+    const sequenceKey = `${tenantId}::${originDeviceId}::${originDeviceSequence}`;
+    const sequenceOwner = sequenceOwners.get(sequenceKey);
+    if (sequenceOwner != null && sequenceOwner !== eventId) {
+      throw new Error(`sync-origin-sequence-fork:${originDeviceId}:${originDeviceSequence}`);
+    }
+
     if (existingDigest == null) {
       identityDigests.set(eventId, digest);
+      sequenceOwners.set(sequenceKey, eventId);
       unique.set(eventId, decoded);
     }
   }
@@ -443,33 +474,68 @@ export function materializeDecodedEvents(decodedEvents) {
       }
 
       const conflictKey = correctionConflictKey(targetId, baseRevision, group);
-      const resolution = resolutions
+      const applicableResolutions = resolutions
         .filter(event => event.action.targetId === targetId && event.action.baseRevision === baseRevision)
-        .sort((a, b) => a.header.eventId.localeCompare(b.header.eventId))
-        .at(-1);
+        .sort((a, b) => a.header.eventId.localeCompare(b.header.eventId));
 
-      const selected = resolution
-        ? group.find(event => event.header.eventId === resolution.action.selectedCorrectionEventId)
-        : null;
-
-      if (selected) {
-        currentCategory = selected.action.categoryId;
-        currentRevision += 1;
-      } else {
-        conflicts[conflictKey] = {
-          type: 'CATEGORY_CORRECTION_CONFLICT',
-          targetId,
-          baseRevision,
-          candidates: group
-            .map(event => ({
+      if (applicableResolutions.length > 0) {
+        const validCorrectionIds = new Set(group.map(event => event.header.eventId));
+        const invalidResolutions = applicableResolutions.filter(
+          event => !validCorrectionIds.has(event.action.selectedCorrectionEventId)
+        );
+        if (invalidResolutions.length > 0) {
+          const invalidKey = resolutionConflictKey(targetId, baseRevision, applicableResolutions);
+          conflicts[invalidKey] = {
+            type: 'CATEGORY_RESOLUTION_INVALID',
+            targetId,
+            baseRevision,
+            resolutions: applicableResolutions.map(event => ({
               eventId: event.header.eventId,
               deviceId: event.header.originDeviceId,
-              categoryId: event.action.categoryId
+              selectedCorrectionEventId: event.action.selectedCorrectionEventId
             }))
-            .sort((a, b) => a.eventId.localeCompare(b.eventId))
-        };
-        break;
+          };
+          break;
+        }
+
+        const selectedCorrectionIds = new Set(
+          applicableResolutions.map(event => event.action.selectedCorrectionEventId)
+        );
+        if (selectedCorrectionIds.size > 1) {
+          const metaConflictKey = resolutionConflictKey(targetId, baseRevision, applicableResolutions);
+          conflicts[metaConflictKey] = {
+            type: 'CATEGORY_RESOLUTION_CONFLICT',
+            targetId,
+            baseRevision,
+            resolutions: applicableResolutions.map(event => ({
+              eventId: event.header.eventId,
+              deviceId: event.header.originDeviceId,
+              selectedCorrectionEventId: event.action.selectedCorrectionEventId
+            }))
+          };
+          break;
+        }
+
+        const selectedId = applicableResolutions[0].action.selectedCorrectionEventId;
+        const selected = group.find(event => event.header.eventId === selectedId);
+        currentCategory = selected.action.categoryId;
+        currentRevision += 1;
+        continue;
       }
+
+      conflicts[conflictKey] = {
+        type: 'CATEGORY_CORRECTION_CONFLICT',
+        targetId,
+        baseRevision,
+        candidates: group
+          .map(event => ({
+            eventId: event.header.eventId,
+            deviceId: event.header.originDeviceId,
+            categoryId: event.action.categoryId
+          }))
+          .sort((a, b) => a.eventId.localeCompare(b.eventId))
+      };
+      break;
     }
 
     if (currentCategory != null) {
