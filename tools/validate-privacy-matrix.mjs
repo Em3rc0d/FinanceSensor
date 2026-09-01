@@ -159,6 +159,25 @@ if (recoveryWrap) {
   if (recoveryWrap.logging !== 'NO_KEY_MATERIAL') fail('Recovery epoch wrap logging must exclude key material');
 }
 
+const trustedCheckpoint = requireClass('TRUSTED-CHECKPOINT-METADATA');
+if (trustedCheckpoint) {
+  if (!trustedCheckpoint.localProtection.includes('OUTSIDE_RELAY_ONLY_TRUST_DOMAIN')) {
+    fail('trusted checkpoint authoritative anchor must exist outside the relay-only trust domain');
+  }
+  if (!trustedCheckpoint.cloudPlaintext.includes('SIGNED_SECURITY_METADATA_ONLY')) {
+    fail('trusted checkpoint cloud plaintext must be minimized signed security metadata only');
+  }
+  if (!trustedCheckpoint.cloudPlaintext.includes('NOT_SOLE_TRUSTED_ANCHOR')) {
+    fail('cloud checkpoint copy must not be the sole trusted anchor');
+  }
+  if (!trustedCheckpoint.logging.includes('NO_FINANCIAL_CONTENT')) {
+    fail('trusted checkpoint logging must exclude financial content');
+  }
+  if (!trustedCheckpoint.logging.includes('NO_FULL_ORIGIN_HEAD_DUMP')) {
+    fail('trusted checkpoint logging must exclude full origin-head dumps');
+  }
+}
+
 if (failures.length > 0) {
   console.error('PRIVACY_MATRIX_FAIL');
   for (const issue of failures) console.error(`- ${issue}`);
