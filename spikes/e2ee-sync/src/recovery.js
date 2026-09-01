@@ -295,6 +295,68 @@ export function planPostRecoveryHardening({
   };
 }
 
+export function assertPostRecoveryReadyForFutureSync({
+  plan,
+  deviceAuthorizationRecords,
+  currentTenantKeyEpoch,
+  activeRecoveryKeyId,
+  recoveryCoverage
+}) {
+  if (!plan?.tenantId || !plan?.rotateTenantKey?.required || !plan?.rotateRecoveryKey?.required) {
+    throw new Error('invalid-post-recovery-plan');
+  }
+  if (!(deviceAuthorizationRecords instanceof Map)) {
+    throw new Error('post-recovery-device-records-required');
+  }
+
+  const nextKeyEpoch = plan.rotateTenantKey.nextKeyEpoch;
+  if (currentTenantKeyEpoch !== nextKeyEpoch) {
+    throw new Error('post-recovery-tenant-epoch-not-rotated');
+  }
+  if (activeRecoveryKeyId !== plan.rotateRecoveryKey.newRecoveryKeyId) {
+    throw new Error('post-recovery-recovery-key-not-rotated');
+  }
+
+  const activated = deviceAuthorizationRecords.get(plan.activateDevice.deviceId);
+  if (
+    !activated ||
+    activated.status !== 'ACTIVE' ||
+    activated.authorizedFromEpoch !== nextKeyEpoch ||
+    !isAuthorizedForEpoch(activated, nextKeyEpoch)
+  ) {
+    throw new Error('post-recovery-new-device-not-authorized');
+  }
+
+  for (const expectedRevocation of plan.revokeDevices) {
+    const record = deviceAuthorizationRecords.get(expectedRevocation.deviceId);
+    if (
+      !record ||
+      record.status !== 'REVOKED' ||
+      record.revokedFromEpoch !== nextKeyEpoch ||
+      isAuthorizedForEpoch(record, nextKeyEpoch)
+    ) {
+      throw new Error(`post-recovery-lost-device-not-revoked:${expectedRevocation.deviceId}`);
+    }
+  }
+
+  if (
+    !recoveryCoverage ||
+    recoveryCoverage.tenantId !== plan.tenantId ||
+    recoveryCoverage.recoveryKeyId !== activeRecoveryKeyId ||
+    !recoveryCoverage.coveredEpochs?.includes(nextKeyEpoch)
+  ) {
+    throw new Error('post-recovery-next-epoch-not-recovery-covered');
+  }
+
+  return {
+    readyForFutureSync: true,
+    tenantId: plan.tenantId,
+    nextKeyEpoch,
+    activeRecoveryKeyId,
+    activeDeviceId: plan.activateDevice.deviceId
+  };
+}
+
 export function cloudRecoveryView(packageList, recoveryRecord) {
   return {
     recoveryKeyId: recoveryRecord.recoveryKeyId,
