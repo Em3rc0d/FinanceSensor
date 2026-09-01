@@ -6,7 +6,7 @@ No implementation assumption becomes permanent architecture without an ADR when 
 
 ```text
 ADR-### — Title
-Status: PROPOSED | ACCEPTED | SUPERSEDED | REJECTED
+Status: PROPOSED | ACCEPTED | SPIKE-ACCEPTED | SUPERSEDED | REJECTED
 Date
 Context
 Decision drivers
@@ -21,7 +21,7 @@ Test/evidence required
 Supersedes / superseded by
 ```
 
-## Planned ADRs
+## Planned / active ADRs
 
 | ADR | Decision | Status | Blocked by |
 |---|---|---|---|
@@ -32,12 +32,35 @@ Supersedes / superseded by
 | ADR-005 | Transaction fingerprint/resolver strategy | BLOCKED | Q-002 |
 | ADR-006 | Local persistence/encryption technology | OPEN | device spike/security review |
 | ADR-007 | Sync event model and ordering | BLOCKED | Q-005 |
-| ADR-008 | E2EE key hierarchy and recovery | BLOCKED | Q-005/security review |
+| ADR-008 | E2EE key hierarchy and production crypto | BLOCKED | Q-005/security review |
 | ADR-009 | Mobile implementation stack | OPEN | low-end Android spike |
 | ADR-010 | Control-plane runtime/cloud platform | OPEN | architecture + cost evaluation |
 | ADR-011 | Classification stack | OPEN | extraction/resolver spike |
 | ADR-012 | Analytics/telemetry privacy boundary | PROPOSED | Q-004 |
 | ADR-013 | Minimum supported Android baseline | OPEN | device matrix evidence |
+| ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
+
+## ADR-014 evidence boundary
+
+ADR-014 freezes only the **logical recovery ownership and hardening model**:
+
+```text
+SERVER MASTER KEY               REJECTED
+PASSWORD-ONLY RECOVERY          REJECTED FOR MK0
+ASYMMETRIC RECOVERY KEY         ACCEPTED AT SPIKE LEVEL
+RECOVERY PRIVATE KEY            USER-HELD / OFFLINE
+PER-EPOCH RECOVERY COVERAGE     REQUIRED
+POST-RECOVERY DEVICE HARDENING  REQUIRED
+TENANT + RECOVERY ROTATION      REQUIRED
+```
+
+Evidence:
+
+- `ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
+- `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../../spikes/e2ee-sync/test/recovery.test.js`
+
+It does not freeze the production HPKE/AEAD/signature implementation, platform key-store behavior, Recovery Kit UX or physical disaster recovery.
 
 ## Decision discipline
 
@@ -58,3 +81,5 @@ Minor implementation detail does not need an ADR.
 ## Rule
 
 If code and ADR disagree, either the code is wrong or the ADR must be explicitly superseded. Silent architectural drift is not accepted.
+
+`SPIKE-ACCEPTED` is intentionally weaker than release-grade `PROVEN`.
