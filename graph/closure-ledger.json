@@ -150,7 +150,7 @@
         "mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md",
         "mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md",
         "mk0/04-architecture/PARASYMPATHETIC-SYNC.md",
-        "mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md"
+        "mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md"
       ],
       "dependsOn": ["P-002"],
       "validates": ["A-001", "DM-001", "SEC-001", "S-002", "T-002", "G-MK0"],
