@@ -21,6 +21,7 @@ CLOUD RELAY / CONTROL PLANE
   stores tenant-scoped device authorization metadata
   stores device-specific wrapped tenant-key packages
   stores Recovery Public Key metadata + recovery-wrap ciphertext
+  stores signed revocation-cutover metadata
   must not need financial plaintext
   must not hold Recovery Private Key authority
 
@@ -32,7 +33,9 @@ RECOVERY KIT / USER-HELD AUTHORITY
 
 REVOKED / LOST DEVICE
   may retain historical data/key material already obtained
+  may retain its historical signing private key
   must lose future authorization/key epochs
+  must not gain newly admissible stale-epoch history after cutover
   must not obtain Recovery Private Key from normal operation
 ```
 
@@ -50,6 +53,10 @@ recovery key id/public key
 message/recovery-wrap timing
 ciphertext sizes
 server ordering / activity patterns
+revocation cutover epoch
+last accepted origin sequence
+history commitment
+cutover authorizer identity
 ```
 
 Must not obtain:
@@ -80,6 +87,10 @@ serve stale/incomplete/tampered recovery wraps
 serve multiple conflicting authentic recovery wraps
 substitute recovery public metadata
 withhold recovery coverage
+serve a newly fabricated old-epoch envelope from a revoked device
+replace an already committed historical envelope
+raise/lower a revocation cutoff
+serve a revoked-origin history with an unresolved gap
 ```
 
 Candidate controls demonstrated structurally or at spike level:
@@ -99,7 +110,10 @@ historical authorizer signature verification
 authenticated recovery coverage checks
 ambiguous recovery coverage fails closed
 exact duplicate recovery-wrap delivery is idempotent
-post-recovery future-sync readiness gate
+post-recovery lower-level readiness gate
+authenticated revoked-origin history commitment
+signed Revocation Barrier
+post-recovery final cutover gate
 ```
 
 A malicious relay can still withhold data. Q-005 does not claim Byzantine availability.
@@ -119,35 +133,68 @@ AUTHORIZED FOR SAME TENANT
     +
 AUTHORIZED FOR SAME KEY EPOCH
     ↓
-USABLE AUTHORITY
+USABLE CURRENT AUTHORITY
 ```
 
-The spike explicitly rejects a cross-tenant authorization record for both sync-envelope origin and tenant-key recipient paths.
+The spike explicitly rejects a cross-tenant authorization record for sync-envelope origin, tenant-key recipient and revocation-cutover authorizer paths.
 
 ### Revoked/lost device
 
-A revoked device may possess old tenant keys and previously decrypted data.
+A revoked device may possess old tenant keys, its old signing private key and previously decrypted data.
+
+A key insight from the load-bearing audit is that this attack remains possible after simple epoch rotation:
+
+```text
+B revoked from epoch N+1
+B still owns Tenant Root Key N
+B still owns signing key
+        ↓
+B fabricates envelope after revocation
+but marks it as epoch N
+        ↓
+receiver retains N for historical replay
+```
+
+Therefore a valid historical signature is not enough after cutover.
 
 Security objective:
 
 ```text
 NO FUTURE KEY EPOCH
 NO FUTURE AUTHORIZED ENVELOPE ACCESS
-NO NEW AUTHORIZED ORIGIN AFTER REVOCATION EPOCH
+NO NEW AUTHORIZED ORIGIN AT/AFTER REVOCATION EPOCH
+NO NEWLY ADMISSIBLE STALE-EPOCH HISTORY AFTER CUTOVER
 NO RECOVERY PRIVATE AUTHORITY FROM NORMAL DEVICE STATE
 ```
 
-Non-objective:
+Historical admissibility rule:
+
+```text
+old-epoch envelope from revoked origin
+        ↓
+belongs to exact authenticated cutover commitment?
+        ├─ YES → historical replay may remain admissible
+        └─ NO  → FAIL CLOSED
+```
+
+Non-objectives:
 
 ```text
 REMOTE ERASURE OF HISTORICAL PLAINTEXT ALREADY SEEN
+BYZANTINE AVAILABILITY AGAINST A RELAY THAT WITHHOLDS DATA
 ```
+
+Detailed contract:
+
+`REVOCATION-CUTOVER.md`
 
 ### Compromised currently authorized device
 
 This remains a severe threat: an authorized compromised device can read data/key material it is legitimately allowed to receive and can create legitimate wraps while authorized.
 
 Q-005 key rotation/revocation limits future exposure after detection but cannot protect plaintext while the compromised device remains authorized.
+
+A currently authorized device can also certify a cutover. Production UI/control-plane policy must therefore ensure that revocation barriers are created only through the intended trusted/recovery state transition, not as an unreviewed generic signing operation.
 
 ### Stolen Recovery Kit
 
@@ -170,7 +217,9 @@ mandatory device + tenant epoch + Recovery Key rotation
         ↓
 verified next-epoch recovery coverage
         ↓
-future sync gate opens
+authenticated Revocation Barrier for every lost device
+        ↓
+SAFE_TO_RESUME_FUTURE_SYNC
 ```
 
 Exact recovery authentication policy remains open.
@@ -183,10 +232,11 @@ The feasibility spike demonstrates bounded properties using Node primitives:
 X25519-style ephemeral key agreement
 HKDF-SHA256 domain separation
 AES-256-GCM AEAD
-Ed25519 origin/authorizer signatures
+Ed25519 origin/authorizer/cutover signatures
+SHA-256 historical envelope commitment
 ```
 
-The same warning applies to recovery.js: this is **not** a production-suite approval.
+The same warning applies to recovery.js and revocation.js: this is **not** a production-suite approval.
 
 Production rule:
 
@@ -195,7 +245,8 @@ Production rule:
 - preserve tenant/epoch/recipient/recovery-key context binding;
 - preserve origin/authorizer authentication properties;
 - preserve tenant-scoped authorization checks at both key-wrap creation and consumption;
-- do not port the spike's hand-composed key-wrap code directly into the app.
+- select a reviewed append-only historical commitment representation for revoked-origin cutover (hash chain, Merkle-style commitment, checkpoint or equivalent);
+- do not port the spike's hand-composed key-wrap/history-commitment code directly into the app.
 
 Research provenance:
 
@@ -250,6 +301,15 @@ RecoveryEpochWrap
   authorizer tenant/epoch authorization-bound
   authenticated
   cloud stores ciphertext + minimum context only
+
+RevocationBarrier
+  cloud-visible signed authorization metadata
+  tenant-bound
+  revoked-device-bound
+  cutover-epoch-bound
+  accepted-history commitment-bound
+  authorizer identity + tenant/epoch authority-bound
+  must not be self-authorized by revoked device
 ```
 
 ## 5. Envelope security requirements
@@ -271,6 +331,8 @@ schema binding
 Financial semantics should remain inside ciphertext unless a later requirement demonstrates a compelling need for particular plaintext metadata.
 
 A valid signature from a device record associated with another tenant is not sufficient authority.
+
+For a **revoked** origin, ordinary envelope authenticity is also insufficient to establish historical admissibility after cutover. The envelope must belong to the authenticated accepted-history commitment.
 
 ## 6. Recovery security requirements
 
@@ -306,15 +368,18 @@ RECOVERY-COVERED
 
 Exact duplicate delivery of the same authenticated wrap is idempotent. A tampered package cannot count as coverage. Multiple distinct authentic packages for the same declared epoch fail closed as ambiguous until an explicit reconciliation model exists.
 
-The recovery spike now demonstrates **18/18** bounded Recovery properties, including cloud non-authority, wrong-key failure, multi-epoch restore, tamper rejection, no-kit/no-backdoor state, authenticated coverage, ambiguity handling and a fail-closed post-recovery future-sync gate.
+The recovery suite now covers `REC-001..REC-022` across recovery ownership, lower-level hardening and final revoked-origin cutover safety. `REV-001..REV-007` independently exercise the stale-epoch history commitment.
 
 Evidence:
 
-`../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
 
-## 7. Post-recovery hardening
+## 7. Post-recovery hardening and cutover
 
-Recovery itself increases exposure because Recovery Private Key material must be imported into a device. Therefore successful disaster recovery must immediately transition away from the recovered historical trust state:
+Recovery itself increases exposure because Recovery Private Key material must be imported into a device. Therefore successful disaster recovery must immediately transition away from the recovered historical trust state.
+
+### Lower-level hardening
 
 ```text
 restore through epoch N
@@ -326,14 +391,28 @@ new Recovery Key applied
 old Recovery Key retired for future epochs
 new RecoveryEpochWrap N+1 authenticated
         ↓
-POST-RECOVERY READINESS CHECK
-        ↓ PASS
-normal future sync
+LOWER-LEVEL READINESS CHECK
 ```
 
-A transition **plan** alone is not sufficient. The bounded implementation now has a fail-closed readiness predicate that refuses future sync if the tenant epoch was not rotated, the Recovery Key was not rotated, the new device is not properly authorized, any declared lost device remains authorized, or the new epoch lacks matching recovery coverage.
+`REC-018` proves that a plan alone is insufficient and that these state transitions must actually be applied.
 
-This remains `PROVEN_AT_SPIKE`. Real platform authorization, key generation, control-plane enforcement and physical revocation remain evidence requirements.
+### Final resume authority
+
+The audit found that lower-level readiness still leaves stale-epoch injection possible if a lost device retains epoch N + its signing key.
+
+Therefore:
+
+```text
+LOWER-LEVEL READINESS
+        +
+AUTHENTICATED REVOCATION BARRIER FOR EACH LOST DEVICE
+        ↓
+SAFE_TO_RESUME_FUTURE_SYNC
+```
+
+`REC-019..REC-022` prove this distinction in the bounded model.
+
+This remains `PROVEN_AT_SPIKE`. Real platform authorization, key generation, control-plane enforcement, barrier persistence and physical revocation remain evidence requirements.
 
 ## 8. Metadata leakage
 
@@ -351,6 +430,10 @@ key rotation/revocation timing
 presence/count of recovery wraps
 Recovery Key rotation timing
 recovery activity timing
+revocation cutover epoch
+last accepted origin sequence
+history commitment
+cutover authorizer identity
 ```
 
 Open question: define an acceptable metadata leakage budget and determine whether padding/batching is worth battery/latency cost.
@@ -385,16 +468,19 @@ durable checkpoint
 
 If the OS terminates work, a unit may replay but must remain idempotent.
 
-Low battery/resource constraints may defer work; they may not disable encryption, authorization, signature validation, provenance, deduplication or recovery-coverage checks.
+Revocation cutover requires an additional durability rule: once a barrier is accepted, the barrier and the local accepted-history checkpoint must commit atomically enough that restart cannot reopen stale history as admissible merely because the operational checkpoint was lost.
+
+Low battery/resource constraints may defer work; they may not disable encryption, authorization, signature validation, provenance, deduplication, recovery-coverage checks or revocation-cutover checks.
 
 ## 11. Privacy matrix revalidation
 
-Q-005 recovery adds explicit classes:
+Q-005 recovery/revocation now adds explicit classes:
 
 ```text
-RECOVERY-PRIVATE-KEY   CRITICAL
-RECOVERY-PUBLIC-KEY    MEDIUM
-RECOVERY-EPOCH-WRAP    HIGH
+RECOVERY-PRIVATE-KEY          CRITICAL
+RECOVERY-PUBLIC-KEY           MEDIUM
+RECOVERY-EPOCH-WRAP           HIGH
+REVOCATION-CUTOVER-BARRIER    HIGH
 ```
 
 `tools/validate-privacy-matrix.mjs` merges and validates both:
@@ -414,11 +500,16 @@ The Q-005 synthetic suite currently establishes `PROVEN_AT_SPIKE` support for bo
 - tenant-scoped + epoch-scoped origin authorization;
 - tenant-scoped + epoch-scoped key-wrap authorizer/recipient authorization;
 - recipient authorization re-check when unwrapping a tenant key;
-- cross-tenant key/origin rejection;
+- cross-tenant key/origin/cutover rejection;
 - per-device sequence model;
 - duplicate replay idempotency;
 - deterministic two-device convergence;
-- future-access revocation model;
+- future-key revocation model;
+- authenticated revoked-origin accepted-history cutover;
+- stale-epoch post-cutover extension rejection;
+- historical sequence substitution rejection;
+- unresolved cutover gap rejection;
+- revoked-device self-cutover rejection;
 - lease failure not being sole correctness mechanism;
 - deterministic conflict creation/resolution;
 - bounded parasympathetic scheduling rules;
@@ -428,16 +519,16 @@ The Q-005 synthetic suite currently establishes `PROVEN_AT_SPIKE` support for bo
 - recovery-wrap context/tamper/authorizer checks;
 - authenticated, non-ambiguous recovery coverage;
 - exact recovery-wrap replay idempotency;
-- post-recovery future-sync readiness gate.
+- lower-level post-recovery readiness gate;
+- final post-recovery revocation-cutover gate.
 
-Observed suite on commit `404f7f1a0f6010d583e72010876785eef00b7254`:
+Observed suite on executable commit `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`:
 
 ```text
-Q-005 E2EE/KEY/RECOVERY/PNS  51 / 51 PASS
-RECOVERY                    18 / 18 PASS
-KEY AUTHORITY                 5 / 5 PASS
-HEARTBEAT                         PASS
-MK0 FOUNDATION                3 / 3 PASS
+Q-005 E2EE/KEY/RECOVERY/REVOCATION/PNS  62 / 62 PASS
+REVOCATION CUTOVER                       7 / 7 PASS
+POST-RECOVERY CUTOVER                    4 / 4 PASS
+MK0 FOUNDATION                           3 / 3 PASS
 ```
 
 It does **not** establish:
@@ -445,15 +536,17 @@ It does **not** establish:
 ```text
 mobile secure-keystore correctness
 production HPKE implementation correctness
+production append-only cutover commitment correctness
 Android ↔ iOS crypto interoperability
 side-channel resistance
 real control-plane tenant authorization enforcement
 real recovery-wrap retrieval authorization
+real revocation-barrier persistence/authorization
 real network partition behavior
 real app crash/restart persistence
 physical Recovery Kit export/import safety
 physical all-devices-lost recovery
-physical post-recovery revocation/rotation
+physical post-recovery revocation/rotation/cutover
 Android/iOS physical background behavior
 penetration-test results
 ```
@@ -464,9 +557,11 @@ penetration-test results
 SEC-001 remains DRAFTED
 Q-005 recovery ownership model is SPIKE-ACCEPTED under ADR-014
 tenant/epoch key authority is strengthened at spike level
-Q-004 privacy model includes recovery classes
-DM-001 includes recovery records/relationships and fail-closed readiness semantics
+stale-epoch revocation injection is addressed at spike level by INV-SYNC-012
+Q-004 privacy model includes recovery + revocation-cutover metadata classes
+DM-001 must include revocation barrier lifecycle/retention before freeze
 production crypto decision remains OPEN
+production history-commitment representation remains OPEN
 physical mobile/control-plane evidence remains OPEN
 ```
 
