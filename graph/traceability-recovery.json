@@ -6,10 +6,10 @@
       "id": "TR-DM-RECOVERY",
       "source": "data-model",
       "invariants": ["INV-SYNC-008", "INV-SYNC-009", "INV-SYNC-010", "INV-SYNC-011"],
-      "status": "PARTIAL",
+      "status": "PROVEN_AT_SPIKE",
       "ownerNodes": ["Q-005", "SEC-001", "DM-001", "S-002", "T-002"],
       "tests": ["spikes/e2ee-sync/test/recovery.test.js"],
-      "evidence": [],
+      "evidence": ["mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"],
       "mapsTo": []
     }
   ],
