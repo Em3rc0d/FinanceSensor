@@ -8,83 +8,94 @@
       "id": "P-001",
       "kind": "product",
       "title": "Product thesis",
-      "status": "DRAFTED",
+      "status": "PASS",
       "artifacts": ["product/PRODUCT-THESIS.md"],
       "dependsOn": [],
       "validates": ["P-002", "Q-001", "Q-003", "Q-004", "WF-001"],
       "revalidates": [],
-      "evidence": [],
+      "evidence": ["mk0/10-evidence/EV-MK0-PRODUCT-CONTRACT-2026-09-01.md"],
       "closureReceipt": null
     },
     {
       "id": "P-002",
       "kind": "product",
       "title": "Product invariants",
-      "status": "DRAFTED",
+      "status": "PASS",
       "artifacts": ["product/PRODUCT-INVARIANTS.md"],
       "dependsOn": ["P-001"],
       "validates": ["Q-001", "Q-002", "Q-004", "Q-005", "DM-001", "T-001", "WF-001"],
       "revalidates": ["P-001"],
-      "evidence": [],
+      "evidence": ["mk0/10-evidence/EV-MK0-PRODUCT-CONTRACT-2026-09-01.md"],
       "closureReceipt": null
     },
     {
       "id": "Q-001",
       "kind": "quarry",
       "title": "Canonical financial semantics",
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "artifacts": ["mk0/02-quarries/Q-001-CANONICAL-TRANSACTIONS.md"],
-      "dependsOn": ["P-001", "P-002"],
-      "validates": ["Q-002", "C-001", "C-002", "DM-001", "S-001", "T-001", "G-MK0"],
-      "revalidates": ["P-001", "P-002"],
+      "dependsOn": ["P-001", "P-002", "C-001", "C-002"],
+      "validates": ["Q-002", "DM-001", "S-001", "T-001", "G-MK0"],
+      "revalidates": ["P-001", "P-002", "C-001", "C-002"],
       "evidence": [
         "spikes/canonical-resolver/fixtures/classification-cases.json",
+        "spikes/canonical-resolver/src/resolver.js",
         "spikes/canonical-resolver/test/corpus.test.js",
         "spikes/canonical-resolver/test/economic-effect.test.js",
-        "graph/CONTRADICTIONS.md"
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
       ],
-      "closureReceipt": null
+      "closureReceipt": "mk0/11-decisions/closure-receipts/Q-001.md"
     },
     {
       "id": "Q-002",
       "kind": "quarry",
       "title": "Fingerprinting, deduplication and idempotency",
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "artifacts": ["mk0/02-quarries/Q-002-FINGERPRINTING.md"],
       "dependsOn": ["P-002", "Q-001"],
       "validates": ["DM-001", "S-001", "T-001", "G-MK0"],
       "revalidates": ["P-002", "Q-001"],
       "evidence": [
+        "spikes/canonical-resolver/BENCHMARK-CONTRACT.md",
         "spikes/canonical-resolver/src/resolver.js",
         "spikes/canonical-resolver/test/resolver.test.js",
         "spikes/canonical-resolver/test/fingerprinting.test.js",
-        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
       ],
-      "closureReceipt": null
+      "closureReceipt": "mk0/11-decisions/closure-receipts/Q-002.md"
     },
     {
       "id": "C-001",
       "kind": "contradiction",
       "title": "External transfer is not an economic category",
-      "status": "OPEN",
+      "status": "CLOSED",
       "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
-      "dependsOn": ["Q-001"],
-      "validates": [],
+      "dependsOn": [],
+      "validates": ["Q-001"],
       "revalidates": ["Q-001", "DM-001", "G-MK0"],
-      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
-      "closureReceipt": null
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/C-001.md"
     },
     {
       "id": "C-002",
       "kind": "contradiction",
       "title": "Refund and reversal require relationship-aware offsets",
-      "status": "OPEN",
+      "status": "CLOSED",
       "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
-      "dependsOn": ["Q-001"],
-      "validates": [],
+      "dependsOn": [],
+      "validates": ["Q-001"],
       "revalidates": ["Q-001", "DM-001", "G-MK0"],
-      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
-      "closureReceipt": null
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/C-002.md"
     },
     {
       "id": "Q-003",
@@ -196,6 +207,8 @@
       "revalidates": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
       "evidence": [
         "spikes/canonical-resolver/test/economic-effect.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md",
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
@@ -217,8 +230,10 @@
         "spikes/canonical-resolver/test/resolver.test.js",
         "spikes/canonical-resolver/test/corpus.test.js",
         "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
         "spikes/canonical-resolver/test/economic-effect.test.js",
-        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -231,6 +246,7 @@
         "spikes/canonical-resolver/test/resolver.test.js",
         "spikes/canonical-resolver/test/corpus.test.js",
         "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
         "spikes/canonical-resolver/test/economic-effect.test.js",
         ".github/workflows/mk0-foundation.yml"
       ],
@@ -239,7 +255,8 @@
       "revalidates": ["P-002", "Q-001", "Q-002", "S-001", "DM-001"],
       "evidence": [
         ".github/workflows/mk0-foundation.yml",
-        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
       ],
       "closureReceipt": null
     },
