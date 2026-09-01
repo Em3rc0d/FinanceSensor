@@ -56,7 +56,8 @@ BENCHMARK DECISION ACCURACY  100%
 
 ## Q-005 load-bearing evidence
 
-Validated executable cutover baseline: `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`.
+Validated executable cutover commit: `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`.  
+Validated whole-organism architecture/documentation head: `fd7036a0fe60a7765e5a399130718c42adb9da95`.
 
 ```text
 E2EE / KEY / RECOVERY / REVOCATION / PNS   PASS — 62/62 tests
@@ -172,7 +173,7 @@ No Gmail token/client secret/user mail is committed to the repository.
 
 ## Invariant nervous system
 
-Expected reconciled traceability after the revocation-cutover addition:
+Validated Heartbeat result:
 
 ```text
 PRODUCT INVARIANTS          34
@@ -200,7 +201,7 @@ The `KEY-001..005` cases additionally strengthen executable support for already-
 BASE DATA CLASSES             18
 RECOVERY/REVOCATION CLASSES    4
 TOTAL PRIVACY CLASSES         22
-PRIVACY MATRIX ECG            EXPECTED PASS / FINAL HEARTBEAT REQUIRED
+PRIVACY MATRIX ECG            PASS
 ```
 
 Recovery/revocation classes:
@@ -244,8 +245,10 @@ G-MK0 BUILD_READY                    BLOCKED
 
 The authoritative ledger deliberately preserves these owner states. `PROVEN_AT_SPIKE` evidence does not promote Q-005/S-002 to `CLOSED`.
 
+Validated graph ECG:
+
 ```text
-GRAPH        EXPECTED PASS / FINAL HEARTBEAT REQUIRED
+GRAPH        PASS
 NODES        21
 BUILD_READY  false
 ```
@@ -317,31 +320,34 @@ PR #1                           DRAFT / DO NOT MERGE
 
 `OPS-001` remains an explicit dependency of `G-MK0`.
 
-## Whole-organism ECG candidate
+## Whole-organism ECG baseline
 
-Executable cutover commit `0d4f3b2cbf57dee811480268bab19d2ee3a5a101` already proved:
+Validated whole-organism architecture/documentation head `fd7036a0fe60a7765e5a399130718c42adb9da95`:
 
 ```text
-CANONICAL RESOLVER                    PASS
+CANONICAL RESOLVER                    98 / 98 PASS
 E2EE / KEY / RECOVERY / REVOCATION   62 / 62 PASS
-PHYSICAL INGRESS                      PASS
+PHYSICAL INGRESS                      21 / 21 PASS
+CLOSURE GRAPH                         PASS
+ARTIFACT STATUS AUTHORITY             PASS
+QUARRY STATUS                         PASS
+TRACEABILITY                          PASS — 77 / 77 WIRED
+PRIVACY MATRIX                        PASS — 22 CLASSES
+RECOVERY EQUIPMENT GUARD              PASS
+HEARTBEAT                             PASS
 MK0 FOUNDATION                        3 / 3 JOBS PASS
+BUILD_READY                           false
 ```
 
-The current documentation/graph head must now repeat the **whole-organism Heartbeat** before this becomes the final reconciled baseline:
+Observed workflow evidence:
 
 ```text
-CLOSURE GRAPH                   required PASS
-ARTIFACT STATUS AUTHORITY       required PASS
-QUARRY STATUS                   required PASS
-TRACEABILITY                    required PASS — 77 / 77 expected
-PRIVACY MATRIX                  required PASS — 22 classes expected
-RECOVERY EQUIPMENT GUARD        required PASS
-HEARTBEAT                       required PASS
-BUILD_READY                     must remain false
+Heartbeat push run       33534911199   SUCCESS
+MK0 Foundation PR run    33534907666   SUCCESS
+MK0 Foundation push      SUCCESS
 ```
 
-Green E2EE tests alone are insufficient.
+This is a bounded spike/documentation baseline, not a release-grade security approval.
 
 ## Critical path
 
