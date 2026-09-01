@@ -61,7 +61,7 @@ E2EE / PNS / RECOVERY SUITE      PASS — 40/40 tests
 RECOVERY ELECTROSHOCK            PASS — 12/12 tests
 T-002                            PASS
 Q-005                            ACTIVE
-ADR-005 RECOVERY OWNERSHIP       SPIKE-ACCEPTED
+ADR-014 RECOVERY OWNERSHIP       SPIKE-ACCEPTED
 INV-SYNC-008..011                PROVEN_AT_SPIKE
 ```
 
@@ -192,7 +192,7 @@ OPS-001 Repository governance        OPEN
 G-MK0 BUILD_READY                    BLOCKED
 ```
 
-The authoritative ledger now cites Recovery source, tests, ADR and evidence under Q-005/S-002/T-002 while deliberately preserving their states.
+The authoritative ledger cites Recovery source, tests, ADR-014 and evidence under Q-005/S-002/T-002 while deliberately preserving their states.
 
 Latest validated graph ECG before this final reconciliation:
 
@@ -253,7 +253,7 @@ side-channel / penetration-test review
 metadata leakage analysis
 ```
 
-The logical recovery ownership model is **not** on this blocker list anymore; ADR-005 resolved it at spike level.
+The logical recovery ownership model is **not** on this blocker list anymore; ADR-014 resolved it at spike level.
 
 ## Repository governance position
 
