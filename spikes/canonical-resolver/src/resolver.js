@@ -120,6 +120,20 @@ function minutesApart(a, b) {
   return Math.abs(ta - tb) / 60000;
 }
 
+const referenceKeys = ['orderId', 'receiptId', 'invoiceId', 'authorizationId', 'providerTransactionId'];
+
+export function sharedStrongReference(a, b) {
+  return referenceKeys.some(key => {
+    const av = a.references?.[key];
+    const bv = b.references?.[key];
+    return Boolean(av && bv && av === bv);
+  });
+}
+
+export function hasIndependentSources(a, b) {
+  return new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size > 1;
+}
+
 export function matchScore(a, b) {
   if (a.tenantId !== b.tenantId) return 0;
   if (a.currency !== b.currency) return 0;
@@ -136,17 +150,14 @@ export function matchScore(a, b) {
   const merchantB = normalizeMerchant(b.merchantCanonical || b.rawMerchant || '');
   if (merchantA && merchantA === merchantB) score += 0.2;
 
-  const orderA = a.references?.orderId || a.references?.receiptId || a.references?.invoiceId;
-  const orderB = b.references?.orderId || b.references?.receiptId || b.references?.invoiceId;
-  if (orderA && orderB && orderA === orderB) score += 0.3;
+  if (sharedStrongReference(a, b)) score += 0.3;
 
   const delta = minutesApart(a.occurredAt, b.occurredAt);
   if (delta <= 15) score += 0.15;
   else if (delta <= 24 * 60) score += 0.08;
   else if (delta > 72 * 60) score -= 0.2;
 
-  const distinctIndependentSources = new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])]).size > 1;
-  if (distinctIndependentSources) score += 0.05;
+  if (hasIndependentSources(a, b)) score += 0.05;
 
   return Math.max(0, Math.min(1, Number(score.toFixed(2))));
 }
@@ -171,16 +182,27 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
       }
     }
 
-    if (best && bestScore >= autoMergeThreshold) {
-      best.evidenceIds = [...new Set([...best.evidenceIds, ...candidate.evidenceIds])];
-      best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];
-      best.confidence = Math.max(best.confidence, candidate.confidence, bestScore);
-      continue;
-    }
+    if (best) {
+      const strongReference = sharedStrongReference(best, candidate);
+      const independentSources = hasIndependentSources(best, candidate);
+      const crossSourceMergeEligible = strongReference || independentSources;
 
-    if (best && bestScore >= reviewThreshold) {
-      review.push({ candidate, possibleCanonicalId: best.id, score: bestScore });
-      continue;
+      // Conservative rule: two distinct artifacts from the same source family are
+      // never silently collapsed only because amount/merchant/time happen to match.
+      // False merges corrupt financial truth more severely than temporary false splits.
+      if (crossSourceMergeEligible && bestScore >= autoMergeThreshold) {
+        best.evidenceIds = [...new Set([...best.evidenceIds, ...candidate.evidenceIds])];
+        best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];
+        best.confidence = Math.max(best.confidence, candidate.confidence, bestScore);
+        continue;
+      }
+
+      // Ambiguity is surfaced only when independent sources suggest the same event.
+      // Same-source distinct artifacts remain separate unless a strong reference links them.
+      if (crossSourceMergeEligible && bestScore >= reviewThreshold) {
+        review.push({ candidate, possibleCanonicalId: best.id, score: bestScore });
+        continue;
+      }
     }
 
     canonical.push({
