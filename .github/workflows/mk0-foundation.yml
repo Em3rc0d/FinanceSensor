@@ -46,3 +46,20 @@ jobs:
 
       - name: Verify peripheral and parasympathetic invariants
         run: npm test
+
+  physical-ingress:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: spikes/physical-ingress
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify ingress, recovery and privacy invariants
+        run: npm test
