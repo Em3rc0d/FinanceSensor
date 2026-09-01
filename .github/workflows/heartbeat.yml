@@ -12,6 +12,7 @@ on:
       - 'STATUS.md'
       - 'spikes/canonical-resolver/**'
       - 'spikes/e2ee-sync/**'
+      - 'spikes/physical-ingress/**'
       - '.github/workflows/heartbeat.yml'
       - 'ops/**'
       - 'graph/**'
@@ -48,6 +49,10 @@ jobs:
         working-directory: spikes/e2ee-sync
         run: npm test
 
+      - name: Physical ingress + privacy ECG
+        working-directory: spikes/physical-ingress
+        run: npm test
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -76,6 +81,7 @@ jobs:
           test -f mk0/04-architecture/PRIVACY-DATA-MATRIX.json
           test -f mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
+          test -f spikes/physical-ingress/README.md
           grep -q 'BUILD_READY                NO' STATUS.md
           grep -q 'FINANCIAL_TRUTH' ops/VITALS.md
           grep -q 'DO NOT MERGE' ops/RECOVERY-PLAYBOOK.md
@@ -88,6 +94,7 @@ jobs:
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Peripheral E2EE and parasympathetic scheduler invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Physical ingress, recovery and privacy-boundary invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Closure graph is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Artifact status declarations agree with the authoritative ledger.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Quarry Markdown states match the closure ledger.' >> "$GITHUB_STEP_SUMMARY"
