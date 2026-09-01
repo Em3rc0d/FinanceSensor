@@ -1,191 +1,115 @@
 # Q-002 — Transaction Fingerprinting, Deduplication and Idempotency
 
 **Priority:** P0  
-**Status:** ACTIVE
+**Status:** CLOSED
 
 ## Question
 
 How do we recognize the same economic event when different sources, devices or provider states expose different identifiers without accidentally merging two genuine purchases?
 
-## Central rule
+## Closed rule
 
 ```text
 provider_source_id != canonical_transaction_id
 ```
 
-External IDs are provenance and matching signals, not economic identity.
+Source-native IDs are provenance/matching signals, not canonical economic identity.
 
-## Current resolver safety posture
-
-The current feasibility spike is deliberately conservative:
+## Resolver identity policy
 
 ```text
-exact same evidence replay
-        ↓
-IDEMPOTENT / ignore duplicate
+exact stable evidence replay
+→ IDEMPOTENT
 
-shared hard cross-artifact reference
-(order / receipt / invoice / authorization / provider transaction id)
-        ↓
-AUTO-MERGE if all hard compatibility checks pass
+strong cross-artifact reference
++ no hard contradiction
+→ AUTO-MERGE
 
-independent sources + compatible merchant + high similarity
-but no hard reference
-        ↓
-REVIEW, not silent merge
+strong weak-signal similarity
++ independent sources
++ no hard reference
+→ REVIEW
 
-same source family + same amount + same merchant + nearby time
-but distinct evidence identities
-        ↓
-KEEP SEPARATE
+same-source same-value nearby events
++ distinct evidence identity
+→ KEEP SEPARATE
 ```
 
-The design currently prefers a temporary false split over a silent false merge because a false merge corrupts financial truth and is difficult for a user to detect.
+The system intentionally prefers a visible/recoverable false split or review over a silent false merge.
 
-## Hard compatibility gates
+## Hard contradiction gates
 
-Current spike rejects matching when any of these contradict:
+Known mismatch on any of these blocks automatic identity:
 
 ```text
 tenant
 currency
 amount at cent precision
-semantic compatibility
+flow direction
+financial account when both known
+payment instrument when both known
+incompatible semantic type
 ```
 
-A shared reference cannot override a different amount or incompatible semantic type.
+Strong references cannot override those contradictions.
 
-## Candidate matching signals
+## Benchmark contract
+
+Thresholds were frozen before benchmark acceptance in:
+
+`spikes/canonical-resolver/BENCHMARK-CONTRACT.md`
 
 ```text
-tenant
-financial account / payment instrument
-amount
-currency
-merchant canonical identity
-merchant raw identity
-time window
-event semantic type
-source family
-receipt/order/invoice references
-authorization reference
-provider transaction reference
-evidence identity
+UNSAFE_FALSE_MERGES          = 0
+AUTO_MERGE_PRECISION         = 100%
+HARD_LINK_FALSE_SPLITS       = 0
+REPLAY_DUPLICATE_COUNT       = 0
+DECISION_ACCURACY            >= 95%
 ```
 
-No one weak field is sufficient.
+## Observed benchmark
 
-## Evidence already produced
-
-The safety matrix currently verifies at least:
-
-- exact replay convergence;
-- bank email + merchant receipt correlation;
-- genuine same-value purchases remain separate;
-- same-source same-value purchases minutes apart remain separate;
-- cross-source similarity without hard reference routes to review;
-- different known merchants stay separate;
-- shared order ID can merge;
-- shared authorization ID can connect pending/posting evidence;
-- tenant isolation;
-- currency isolation;
-- amount mismatch blocks merge even with shared reference;
-- purchase vs reversal remain distinct;
-- compatible refund/income evidence can converge only with hard linkage;
-- missing merchant remains reviewable, not auto-merged.
-
-See:
-
-- `../../spikes/canonical-resolver/test/fingerprinting.test.js`
-- `../../spikes/canonical-resolver/test/resolver.test.js`
-- `../10-evidence/EV-MK0-ECG-2026-09-01.md`
-
-## Device idempotency
-
-Each source artifact/evidence needs a stable identity such that:
+The 28-scenario adversarial benchmark produced:
 
 ```text
-process(E) once == process(E) N times
+unsafeFalseMerges       0
+autoMergePrecision      100%
+hardLinkFalseSplits     0
+replayDuplicateCount    0
+decisionAccuracy        100%
 ```
 
-Processing leases can reduce duplicate work across devices, but they are never the correctness mechanism. Duplicate delivery/replay must remain safe.
+The full canonical resolver suite passed **98/98** at the closure-candidate baseline.
 
-## False-positive cost
+## Multi-device correctness link
 
-Incorrectly merging two genuine equal-value purchases is financial corruption.
+Processing leases remain an optimization, not a correctness primitive. `spikes/e2ee-sync/test/lease-failure.test.js` demonstrates duplicate work can occur without duplicating canonical financial truth.
 
-Example:
+## Evidence
 
-```text
-09:00 Coffee S/20
-09:02 Coffee S/20
-```
-
-Two source artifacts may represent two real purchases. Similarity alone cannot prove identity.
-
-## Finding
-
-Transaction resolution is an evidence-identity problem, not a database `UNIQUE` constraint and not merely a similarity score.
-
-## Implication
-
-FinanceSensor needs separate identities for:
-
-1. `SourceArtifact`;
-2. `FinancialEvidence`;
-3. `FinancialEventCandidate`;
-4. `CanonicalFinancialEvent`.
-
-Resolver lineage must preserve why evidence was merged, reviewed, rejected or kept separate.
+- `spikes/canonical-resolver/BENCHMARK-CONTRACT.md`
+- `spikes/canonical-resolver/src/resolver.js`
+- `spikes/canonical-resolver/test/fingerprinting.test.js`
+- `spikes/canonical-resolver/test/fingerprinting-benchmark.test.js`
+- `spikes/canonical-resolver/test/resolver.test.js`
+- `spikes/e2ee-sync/test/lease-failure.test.js`
+- `mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md`
 
 ## Non-claims
 
-Current tests do not establish:
+Q-002 closure does not prove:
 
-- production precision/recall against real heterogeneous mail/provider data;
-- final score weights/thresholds;
-- behavior across every pending→posted provider pattern;
-- complete multi-device convergence;
-- bank-API reconciliation behavior.
+- production precision/recall for every provider;
+- final provider-specific score calibration;
+- every future pending→posted pattern;
+- every future bank-API identity rule.
 
-## Benchmark still required
+A supported real-data benchmark that exposes a false merge or missing identity signal reopens Q-002.
 
-Before Q-002 can close, create a labeled adversarial benchmark with intentional:
+## Closure receipt
 
-```text
-true duplicates
-true same-value separate purchases
-pending → posted transitions
-cross-source receipts
-partial refunds
-reversals
-merchant-name variations
-missing merchant/account identifiers
-multi-device replay
-contradictory references
-```
-
-Measure at minimum:
+`mk0/11-decisions/closure-receipts/Q-002.md`
 
 ```text
-false merge rate
-false split rate
-auto-merge precision
-review rate
-replay duplicate count
+Q-002 = CLOSED
 ```
-
-The acceptable thresholds must be frozen before closure rather than chosen after seeing results.
-
-## Closure criteria
-
-- adversarial benchmark exists and is versioned;
-- precision/false-merge/false-split targets are declared before benchmark acceptance;
-- exact replay never increases canonical event count/totals;
-- weak similarity never silently forces a merge;
-- ambiguous cross-source cases route to review;
-- hard-reference contradictions block merge;
-- behavior reconciles with DM-001 and Q-001 economic semantics;
-- multi-device replay is tested before final closure;
-- closure audit passes;
-- Q-002 closure receipt is issued.
