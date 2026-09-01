@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "buildReady": false,
+  "nodes": [
+    {
+      "id": "P-001",
+      "kind": "product",
+      "title": "Product thesis",
+      "status": "DRAFTED",
+      "artifacts": ["product/PRODUCT-THESIS.md"],
+      "dependsOn": [],
+      "validates": ["P-002", "Q-001", "Q-003", "Q-004"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "P-002",
+      "kind": "product",
+      "title": "Product invariants",
+      "status": "DRAFTED",
+      "artifacts": ["product/PRODUCT-INVARIANTS.md"],
+      "dependsOn": ["P-001"],
+      "validates": ["Q-001", "Q-002", "Q-004", "Q-005", "DM-001", "T-001"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-001",
+      "kind": "quarry",
+      "title": "Canonical financial semantics",
+      "status": "ACTIVE",
+      "artifacts": ["mk0/02-quarries/Q-001-CANONICAL-TRANSACTIONS.md"],
+      "dependsOn": ["P-001", "P-002"],
+      "validates": ["DM-001", "S-001", "T-001"],
+      "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-002",
+      "kind": "quarry",
+      "title": "Fingerprinting, deduplication and idempotency",
+      "status": "ACTIVE",
+      "artifacts": ["mk0/02-quarries/Q-002-FINGERPRINTING.md"],
+      "dependsOn": ["P-002", "Q-001"],
+      "validates": ["DM-001", "S-001", "T-001"],
+      "evidence": ["spikes/canonical-resolver/src/resolver.js", "spikes/canonical-resolver/test/resolver.test.js"],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-003",
+      "kind": "quarry",
+      "title": "Gmail production feasibility",
+      "status": "OPEN",
+      "artifacts": ["mk0/02-quarries/Q-003-GMAIL-POLICY.md"],
+      "dependsOn": ["P-001"],
+      "validates": ["A-001", "SEC-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-004",
+      "kind": "quarry",
+      "title": "Email privacy and data minimization",
+      "status": "OPEN",
+      "artifacts": ["mk0/02-quarries/Q-004-EMAIL-PRIVACY.md"],
+      "dependsOn": ["P-001", "P-002"],
+      "validates": ["A-001", "SEC-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-005",
+      "kind": "quarry",
+      "title": "Local-first E2EE multi-device synchronization",
+      "status": "OPEN",
+      "artifacts": ["mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md"],
+      "dependsOn": ["P-002"],
+      "validates": ["A-001", "DM-001", "SEC-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "A-001",
+      "kind": "architecture",
+      "title": "Core architecture",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/04-architecture/CORE-ARCHITECTURE.md"],
+      "dependsOn": ["Q-003", "Q-004", "Q-005"],
+      "validates": ["DM-001", "SEC-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "SEC-001",
+      "kind": "security",
+      "title": "Security and privacy architecture",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/04-architecture/SECURITY-PRIVACY.md"],
+      "dependsOn": ["Q-003", "Q-004", "Q-005"],
+      "validates": ["A-001", "DM-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "DM-001",
+      "kind": "data-model",
+      "title": "Core data model",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/05-data-model/CORE-DATA-MODEL.md", "mk0/05-data-model/INVARIANTS.md"],
+      "dependsOn": ["Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
+      "validates": ["S-001", "T-001", "G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-001",
+      "kind": "spike",
+      "title": "Canonical resolver feasibility spike",
+      "status": "ACTIVE",
+      "artifacts": ["spikes/canonical-resolver/src/resolver.js"],
+      "dependsOn": ["Q-001", "Q-002"],
+      "validates": ["Q-001", "Q-002", "DM-001", "T-001"],
+      "evidence": ["spikes/canonical-resolver/test/resolver.test.js"],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-001",
+      "kind": "test",
+      "title": "Canonical resolver invariant suite",
+      "status": "PASS",
+      "artifacts": ["spikes/canonical-resolver/test/resolver.test.js", ".github/workflows/mk0-foundation.yml"],
+      "dependsOn": ["P-002", "Q-001", "Q-002", "S-001"],
+      "validates": ["S-001", "Q-001", "Q-002"],
+      "evidence": [".github/workflows/mk0-foundation.yml"],
+      "closureReceipt": null
+    },
+    {
+      "id": "WF-001",
+      "kind": "ux",
+      "title": "Signature wireframes",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/06-wireframes/SIGNATURE-WIREFRAMES.md"],
+      "dependsOn": ["P-001", "P-002", "DM-001"],
+      "validates": ["G-MK0"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "G-MK0",
+      "kind": "gate",
+      "title": "MK0 BUILD_READY",
+      "status": "BLOCKED",
+      "artifacts": ["mk0/12-release/RELEASE-GATES.md", "STATUS.md"],
+      "dependsOn": ["Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001"],
+      "validates": [],
+      "evidence": [],
+      "closureReceipt": null
+    }
+  ]
+}
