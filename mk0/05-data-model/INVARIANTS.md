@@ -17,7 +17,7 @@ A `User` can theoretically belong to more than one Tenant; schema must not equat
 A Tenant can contain more than one `FinancialIdentity` even if MK0 exposes one-person UX.
 
 ### INV-TEN-005
-Every financial-domain entity that requires isolation has an unambiguous tenant ownership path.
+Every financial-domain or authorization entity that requires isolation has an unambiguous tenant ownership path. Device authorization is tenant-scoped; a device identity or public key record from another tenant cannot authorize an envelope or receive tenant key material merely because the device identifier matches.
 
 ## Evidence
 
@@ -102,7 +102,7 @@ Per-device event sequences are monotonic.
 Duplicate delivery of the same encrypted sync event is idempotent.
 
 ### INV-SYNC-003
-A revoked device cannot obtain new tenant key material or new sync payload authorization.
+A revoked device cannot obtain new tenant key material or new sync payload authorization. Device-key distribution is tenant-and-epoch scoped: both authorizer and recipient identities must match their authorization records and be authorized for the same tenant and key epoch when a key wrap is created or consumed.
 
 ### INV-SYNC-004
 Two authorized devices replaying the same complete event set converge to equivalent materialized financial state.
@@ -120,10 +120,10 @@ Battery/storage/resource constraints may defer noncritical heavy work but must n
 The cloud control/relay plane cannot recover a retained tenant root-key epoch from recovery metadata and recovery-wrap ciphertext alone; the Recovery Private Key is never cloud plaintext and is never synchronized as ordinary tenant state.
 
 ### INV-SYNC-009
-Every tenant key epoch declared recoverable after all authorized devices are lost must have an authenticated recovery wrap bound to the same tenant, key epoch and Recovery Key identity before that epoch can be considered recovery-covered.
+Every tenant key epoch declared recoverable after all authorized devices are lost must have exactly one distinct authenticated recovery-wrap authority for that recovery generation before the epoch can be considered recovery-covered. The accepted wrap must be bound to the same tenant, key epoch and Recovery Key identity, its signed authorizer identity must match the supplied authorization record, that authorizer must have been authorized for the same tenant and epoch, tampered/invalid wraps cannot count as coverage, and multiple distinct authentic wraps for one declared epoch fail closed until explicitly reconciled. Exact duplicate delivery of the same authenticated wrap remains idempotent.
 
 ### INV-SYNC-010
-Successful all-devices-lost recovery must establish a newly authorized device state and rotate the tenant to a fresh key epoch before normal future synchronization resumes; recovery is not permission to silently reactivate lost devices.
+Successful all-devices-lost recovery must establish and verify a newly authorized device state, revoke the lost devices for the next epoch, rotate the tenant to a fresh key epoch, rotate the Recovery Key, and establish recovery coverage for that next epoch **before normal future synchronization can resume**. A recovery plan alone is insufficient; the hardening state must be applied and verified. Recovery is not permission to silently reactivate lost devices.
 
 ### INV-SYNC-011
 After Recovery Key rotation, the retired Recovery Private Key cannot decrypt tenant epochs that were created and wrapped only to the new Recovery Public Key.
