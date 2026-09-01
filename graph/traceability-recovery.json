@@ -47,6 +47,16 @@
       ],
       "evidence": ["mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md"],
       "mapsTo": ["INV-SYNC-001", "INV-SYNC-002", "INV-SYNC-004", "INV-SYNC-012", "INV-TEN-005"]
+    },
+    {
+      "id": "TR-DM-ANTI-ROLLBACK",
+      "source": "data-model",
+      "invariants": ["INV-SYNC-016", "INV-SYNC-017"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-005", "SEC-001", "DM-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/checkpoint.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md"],
+      "mapsTo": ["INV-TEN-005", "INV-SYNC-003", "INV-SYNC-012", "INV-SYNC-013", "INV-SYNC-014"]
     }
   ],
   "interrupts": []
