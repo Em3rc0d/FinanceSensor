@@ -140,6 +140,12 @@ A materialized financial/sync state is tenant-isolated. One materialization pass
 ### INV-SYNC-015
 Conflict resolution is itself conflict-safe. Concurrent incompatible resolution actions over the same target/base revision produce a deterministic explicit meta-conflict rather than a hidden winner; a resolution that selects outside the known candidate set fails closed; equivalent concurrent resolutions selecting the same candidate converge idempotently.
 
+### INV-SYNC-016
+An independently retained `TrustedCheckpointAnchor` defines the minimum accepted checkpoint state for one tenant. A relay view that falls behind that anchor, equivocates at an already anchored/checkpointed sequence, skips an intermediate checkpoint, crosses tenants, or breaks the authenticated `previous_checkpoint_hash` chain fails closed. Exact delivery of the same checkpoint remains retry-equivalent.
+
+### INV-SYNC-017
+Checkpoint authenticity and append-only consistency must never be represented as proof of globally latest state. Without an independent trusted checkpoint anchor or separately reviewed witness, the result is `INDETERMINATE_FRESHNESS`; even a valid chain extending an anchor may establish `CONSISTENT_FROM_ANCHOR` while `latestGlobalFreshness` remains `UNPROVEN` because an unseen later tail may have been withheld.
+
 ## Security
 
 ### INV-SEC-001
