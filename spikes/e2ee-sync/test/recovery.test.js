@@ -18,6 +18,7 @@ import {
 const tenantId = 'tenant-recovery';
 const authorizer = generateDeviceIdentity('device-a');
 const authorizerRecord = publicDeviceRecord(authorizer);
+const authorizerRecords = new Map([[authorizerRecord.deviceId, authorizerRecord]]);
 
 function wrap(epoch, root, recovery, signer = authorizer) {
   return wrapTenantEpochForRecovery({
@@ -152,7 +153,7 @@ test('REC-010 no private Recovery Kit means no hidden recovery path exists in th
   }), /recovery-private-key-required/);
 });
 
-test('REC-011 declared recoverable epochs require complete recovery-wrap coverage', () => {
+test('REC-011 declared recoverable epochs require complete authenticated recovery-wrap coverage', () => {
   const recovery = generateRecoveryIdentity('recovery-coverage');
   const packages = [
     wrap(1, generateTenantRootKey(), recovery),
@@ -164,7 +165,8 @@ test('REC-011 declared recoverable epochs require complete recovery-wrap coverag
       tenantId,
       recoveryKeyId: recovery.recoveryKeyId,
       recoverableEpochs: [1, 2],
-      packages
+      packages,
+      authorizingDeviceRecords: authorizerRecords
     }).coveredEpochs,
     [1, 2]
   );
@@ -173,7 +175,8 @@ test('REC-011 declared recoverable epochs require complete recovery-wrap coverag
     tenantId,
     recoveryKeyId: recovery.recoveryKeyId,
     recoverableEpochs: [1, 2, 3],
-    packages
+    packages,
+    authorizingDeviceRecords: authorizerRecords
   }), /recovery-coverage-missing:3/);
 });
 
@@ -195,4 +198,78 @@ test('REC-012 post-recovery hardening revokes lost devices and rotates tenant + 
   assert.equal(plan.rotateRecoveryKey.required, true);
   assert.equal(plan.rotateRecoveryKey.newRecoveryKeyId, 'recovery-after-disaster');
   assert.equal(plan.revokeDevices.some(x => x.deviceId === 'device-recovered'), false);
+});
+
+test('REC-013 authorizer identity in the signed header must match the supplied authorization record', () => {
+  const recovery = generateRecoveryIdentity('recovery-authorizer-binding');
+  const pkg = wrap(1, generateTenantRootKey(), recovery);
+  const aliasRecord = { ...authorizerRecord, deviceId: 'device-shadow' };
+
+  assert.throws(() => unwrapTenantEpochFromRecovery({
+    package: pkg,
+    recoveryIdentity: recovery,
+    authorizingDeviceRecord: aliasRecord
+  }), /recovery-authorizer-identity-mismatch/);
+});
+
+test('REC-014 a device revoked for the target epoch cannot authorize a recovery wrap', () => {
+  const recovery = generateRecoveryIdentity('recovery-revoked-authorizer');
+  const pkg = wrap(2, generateTenantRootKey(), recovery);
+  const revokedRecord = publicDeviceRecord(authorizer, {
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: 2,
+    status: 'REVOKED'
+  });
+
+  assert.throws(() => unwrapTenantEpochFromRecovery({
+    package: pkg,
+    recoveryIdentity: recovery,
+    authorizingDeviceRecord: revokedRecord
+  }), /recovery-authorizer-not-authorized-for-epoch/);
+});
+
+test('REC-015 a tampered wrap cannot satisfy recovery coverage merely by existing', () => {
+  const recovery = generateRecoveryIdentity('recovery-authenticated-coverage');
+  const valid = wrap(1, generateTenantRootKey(), recovery);
+  const tampered = wrap(2, generateTenantRootKey(), recovery);
+  const chars = tampered.ciphertext.split('');
+  chars[0] = chars[0] === 'A' ? 'B' : 'A';
+  tampered.ciphertext = chars.join('');
+
+  assert.throws(() => assertRecoveryCoverage({
+    tenantId,
+    recoveryKeyId: recovery.recoveryKeyId,
+    recoverableEpochs: [1, 2],
+    packages: [valid, tampered],
+    authorizingDeviceRecords: authorizerRecords
+  }), /invalid-recovery-wrap-signature/);
+});
+
+test('REC-016 distinct authentic wraps for one epoch are ambiguous and fail closed', () => {
+  const recovery = generateRecoveryIdentity('recovery-ambiguous');
+  const packageA = wrap(3, generateTenantRootKey(), recovery);
+  const packageB = wrap(3, generateTenantRootKey(), recovery);
+
+  assert.throws(() => assertRecoveryCoverage({
+    tenantId,
+    recoveryKeyId: recovery.recoveryKeyId,
+    recoverableEpochs: [3],
+    packages: [packageA, packageB],
+    authorizingDeviceRecords: authorizerRecords
+  }), /recovery-coverage-ambiguous:3/);
+});
+
+test('REC-017 exact duplicate delivery of one authenticated wrap remains idempotent', () => {
+  const recovery = generateRecoveryIdentity('recovery-duplicate-delivery');
+  const pkg = wrap(4, generateTenantRootKey(), recovery);
+  const coverage = assertRecoveryCoverage({
+    tenantId,
+    recoveryKeyId: recovery.recoveryKeyId,
+    recoverableEpochs: [4],
+    packages: [pkg, structuredClone(pkg), structuredClone(pkg)],
+    authorizingDeviceRecords: authorizerRecords
+  });
+
+  assert.deepEqual(coverage.coveredEpochs, [4]);
+  assert.equal(coverage.validatedDistinctPackages, 1);
 });
