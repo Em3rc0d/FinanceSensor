@@ -17,9 +17,11 @@ import {
 // Production key wrapping must use an audited/reviewed construction/library
 // (candidate: HPKE) rather than treating this spike as production cryptography.
 
-const utf8 = (value) => Buffer.from(String(value), 'utf8');
-const b64 = (buffer) => Buffer.from(buffer).toString('base64url');
-const fromB64 = (value) => Buffer.from(value, 'base64url');
+const KEY_WRAP_PROTOCOL = 'FINANCESENSOR_KEY_WRAP_SPIKE_V1';
+const SYNC_PROTOCOL = 'FINANCESENSOR_SYNC_SPIKE_V1';
+const utf8 = value => Buffer.from(String(value), 'utf8');
+const b64 = buffer => Buffer.from(buffer).toString('base64url');
+const fromB64 = value => Buffer.from(value, 'base64url');
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -83,7 +85,35 @@ function signedBytes(header, nonce, ciphertext, tag) {
   ]);
 }
 
+function assertKeyEpoch(keyEpoch) {
+  if (!Number.isInteger(keyEpoch) || keyEpoch <= 0) throw new Error('invalid-key-epoch');
+}
+
+function decodeKeyWrapPackage(wrapped) {
+  const header = wrapped?.header;
+  if (!header || typeof header !== 'object') throw new Error('invalid-key-wrap-package');
+  if (header.protocol !== KEY_WRAP_PROTOCOL) throw new Error('unsupported-key-wrap-protocol');
+  if (!header.tenantId || !header.recipientDeviceId || !header.authorizingDeviceId || !header.ephemeralPublicKey) {
+    throw new Error('invalid-key-wrap-context');
+  }
+  assertKeyEpoch(header.keyEpoch);
+  if (!wrapped.nonce || !wrapped.ciphertext || !wrapped.tag || !wrapped.signature) {
+    throw new Error('invalid-key-wrap-framing');
+  }
+
+  const decoded = {
+    nonce: fromB64(wrapped.nonce),
+    ciphertext: fromB64(wrapped.ciphertext),
+    tag: fromB64(wrapped.tag)
+  };
+  if (decoded.nonce.length !== 12 || decoded.tag.length !== 16 || decoded.ciphertext.length !== 32) {
+    throw new Error('invalid-key-wrap-framing');
+  }
+  return decoded;
+}
+
 export function generateDeviceIdentity(deviceId) {
+  if (!deviceId) throw new Error('device-id-required');
   const encryption = generateKeyPairSync('x25519');
   const signing = generateKeyPairSync('ed25519');
   return {
@@ -94,11 +124,19 @@ export function generateDeviceIdentity(deviceId) {
 }
 
 export function publicDeviceRecord(device, {
+  tenantId,
   authorizedFromEpoch = 1,
   revokedFromEpoch = null,
   status = 'ACTIVE'
 } = {}) {
+  if (!tenantId) throw new Error('tenant-id-required-for-device-authorization');
+  assertKeyEpoch(authorizedFromEpoch);
+  if (revokedFromEpoch != null) assertKeyEpoch(revokedFromEpoch);
+  if (revokedFromEpoch != null && revokedFromEpoch < authorizedFromEpoch) {
+    throw new Error('invalid-device-authorization-window');
+  }
   return {
+    tenantId,
     deviceId: device.deviceId,
     encryptionPublicKey: b64(publicKeyDer(device.encryption.publicKey)),
     signingPublicKey: b64(publicKeyDer(device.signing.publicKey)),
@@ -112,9 +150,12 @@ export function generateTenantRootKey() {
   return randomBytes(32);
 }
 
-export function isAuthorizedForEpoch(record, keyEpoch) {
+export function isAuthorizedForEpoch(record, keyEpoch, tenantId = null) {
   if (!record) return false;
+  if (!Number.isInteger(keyEpoch) || keyEpoch <= 0) return false;
+  if (tenantId != null && record.tenantId !== tenantId) return false;
   if (record.status === 'REVOKED' && record.revokedFromEpoch == null) return false;
+  if (record.status !== 'ACTIVE' && record.status !== 'REVOKED') return false;
   if (keyEpoch < record.authorizedFromEpoch) return false;
   if (record.revokedFromEpoch != null && keyEpoch >= record.revokedFromEpoch) return false;
   return true;
@@ -125,10 +166,26 @@ export function wrapTenantRootKey({
   keyEpoch,
   tenantRootKey,
   recipientDeviceRecord,
-  authorizingDevice
+  authorizingDevice,
+  authorizingDeviceRecord
 }) {
-  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch)) {
+  if (!tenantId) throw new Error('tenant-id-required');
+  assertKeyEpoch(keyEpoch);
+  if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
+  if (!recipientDeviceRecord || recipientDeviceRecord.tenantId !== tenantId) {
+    throw new Error('recipient-tenant-mismatch');
+  }
+  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) {
     throw new Error('recipient-not-authorized-for-epoch');
+  }
+  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) {
+    throw new Error('authorizer-tenant-mismatch');
+  }
+  if (authorizingDeviceRecord.deviceId !== authorizingDevice?.deviceId) {
+    throw new Error('authorizer-identity-mismatch');
+  }
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) {
+    throw new Error('authorizer-not-authorized-for-epoch');
   }
 
   const ephemeral = generateKeyPairSync('x25519');
@@ -145,7 +202,7 @@ export function wrapTenantRootKey({
   });
 
   const header = {
-    protocol: 'FINANCESENSOR_KEY_WRAP_SPIKE_V1',
+    protocol: KEY_WRAP_PROTOCOL,
     tenantId,
     keyEpoch,
     recipientDeviceId: recipientDeviceRecord.deviceId,
@@ -172,18 +229,34 @@ export function wrapTenantRootKey({
 export function unwrapTenantRootKey({
   package: wrapped,
   recipientDevice,
+  recipientDeviceRecord,
   authorizingDeviceRecord
 }) {
-  if (wrapped.header.recipientDeviceId !== recipientDevice.deviceId) {
+  const { nonce, ciphertext, tag } = decodeKeyWrapPackage(wrapped);
+  const { tenantId, keyEpoch } = wrapped.header;
+
+  if (wrapped.header.recipientDeviceId !== recipientDevice?.deviceId) {
     throw new Error('wrong-recipient-device');
   }
-  if (!isAuthorizedForEpoch(authorizingDeviceRecord, wrapped.header.keyEpoch)) {
+  if (!recipientDeviceRecord || recipientDeviceRecord.deviceId !== recipientDevice.deviceId) {
+    throw new Error('recipient-authorization-identity-mismatch');
+  }
+  if (recipientDeviceRecord.tenantId !== tenantId) {
+    throw new Error('recipient-tenant-mismatch');
+  }
+  if (!isAuthorizedForEpoch(recipientDeviceRecord, keyEpoch, tenantId)) {
+    throw new Error('recipient-not-authorized-for-epoch');
+  }
+  if (!authorizingDeviceRecord || authorizingDeviceRecord.tenantId !== tenantId) {
+    throw new Error('authorizer-tenant-mismatch');
+  }
+  if (wrapped.header.authorizingDeviceId !== authorizingDeviceRecord.deviceId) {
+    throw new Error('authorizer-identity-mismatch');
+  }
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, keyEpoch, tenantId)) {
     throw new Error('authorizer-not-authorized-for-epoch');
   }
 
-  const nonce = fromB64(wrapped.nonce);
-  const ciphertext = fromB64(wrapped.ciphertext);
-  const tag = fromB64(wrapped.tag);
   const authorizerSigningKey = publicKeyFromDer(authorizingDeviceRecord.signingPublicKey);
   const validSignature = verify(
     null,
@@ -199,8 +272,8 @@ export function unwrapTenantRootKey({
     publicKey: ephemeralPublicKey
   });
   const wrappingKey = deriveKey(sharedSecret, {
-    tenantId: wrapped.header.tenantId,
-    keyEpoch: wrapped.header.keyEpoch,
+    tenantId,
+    keyEpoch,
     domain: `device-wrap/${recipientDevice.deviceId}`
   });
 
@@ -222,12 +295,15 @@ export function createEncryptedEnvelope({
   eventId = randomUUID(),
   createdAt = new Date().toISOString()
 }) {
+  if (!tenantId) throw new Error('tenant-id-required');
+  assertKeyEpoch(keyEpoch);
+  if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
   if (!Number.isInteger(originDeviceSequence) || originDeviceSequence <= 0) {
     throw new Error('invalid-origin-device-sequence');
   }
 
   const header = {
-    protocol: 'FINANCESENSOR_SYNC_SPIKE_V1',
+    protocol: SYNC_PROTOCOL,
     eventId,
     tenantId,
     originDeviceId: originDevice.deviceId,
@@ -259,8 +335,13 @@ export function createEncryptedEnvelope({
 }
 
 export function decryptEnvelope({ envelope, tenantRootKey, authorizedDeviceRecords }) {
+  if (envelope?.header?.protocol !== SYNC_PROTOCOL) throw new Error('unsupported-sync-protocol');
+  if (!envelope?.header?.tenantId) throw new Error('invalid-sync-context');
+  assertKeyEpoch(envelope.header.keyEpoch);
+  if (!Buffer.isBuffer(tenantRootKey) || tenantRootKey.length !== 32) throw new Error('invalid-tenant-root-key');
+
   const origin = authorizedDeviceRecords.get(envelope.header.originDeviceId);
-  if (!isAuthorizedForEpoch(origin, envelope.header.keyEpoch)) {
+  if (!isAuthorizedForEpoch(origin, envelope.header.keyEpoch, envelope.header.tenantId)) {
     throw new Error('origin-device-not-authorized-for-epoch');
   }
 
