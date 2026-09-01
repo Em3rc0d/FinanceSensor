@@ -72,10 +72,17 @@ function setup() {
     [lostBRecord.deviceId, lostBRecord]
   ]);
 
+  // The historical evidence is explicit even when it is empty. An absent
+  // history is not equivalent to a proven-empty history.
+  const histories = new Map([
+    [lostA.deviceId, []],
+    [lostB.deviceId, []]
+  ]);
+
   const barrierA = createRevocationBarrier({
     tenantId,
     revokedDeviceRecord: lostARecord,
-    historicalEnvelopes: [],
+    historicalEnvelopes: histories.get(lostA.deviceId),
     authorizingDevice: newDevice,
     authorizingDeviceRecord: newDeviceRecord,
     createdAt: '2026-09-01T11:30:00.000Z'
@@ -83,7 +90,7 @@ function setup() {
   const barrierB = createRevocationBarrier({
     tenantId,
     revokedDeviceRecord: lostBRecord,
-    historicalEnvelopes: [],
+    historicalEnvelopes: histories.get(lostB.deviceId),
     authorizingDevice: newDevice,
     authorizingDeviceRecord: newDeviceRecord,
     createdAt: '2026-09-01T11:30:01.000Z'
@@ -102,77 +109,69 @@ function setup() {
     coverage,
     plan,
     records,
+    histories,
     barriers,
     barrierA,
     barrierB
   };
 }
 
+function safeArgs(fixture, overrides = {}) {
+  return {
+    plan: fixture.plan,
+    deviceAuthorizationRecords: fixture.records,
+    currentTenantKeyEpoch: fixture.nextKeyEpoch,
+    activeRecoveryKeyId: fixture.recovery.recoveryKeyId,
+    recoveryCoverage: fixture.coverage,
+    revocationBarriers: fixture.barriers,
+    revokedOriginHistories: fixture.histories,
+    ...overrides
+  };
+}
+
 test('REC-019 lower-level hardening alone is not the final resume authority', () => {
-  const { nextKeyEpoch, recovery, coverage, plan, records } = setup();
+  const fixture = setup();
   const base = assertPostRecoveryReadyForFutureSync({
-    plan,
-    deviceAuthorizationRecords: records,
-    currentTenantKeyEpoch: nextKeyEpoch,
-    activeRecoveryKeyId: recovery.recoveryKeyId,
-    recoveryCoverage: coverage
+    plan: fixture.plan,
+    deviceAuthorizationRecords: fixture.records,
+    currentTenantKeyEpoch: fixture.nextKeyEpoch,
+    activeRecoveryKeyId: fixture.recovery.recoveryKeyId,
+    recoveryCoverage: fixture.coverage
   });
   assert.equal(base.readyForFutureSync, true);
 
-  assert.throws(() => assertPostRecoverySafeToResume({
-    plan,
-    deviceAuthorizationRecords: records,
-    currentTenantKeyEpoch: nextKeyEpoch,
-    activeRecoveryKeyId: recovery.recoveryKeyId,
-    recoveryCoverage: coverage,
+  assert.throws(() => assertPostRecoverySafeToResume(safeArgs(fixture, {
     revocationBarriers: null
-  }), /post-recovery-revocation-barriers-required/);
+  })), /post-recovery-revocation-barriers-required/);
 });
 
-test('REC-020 future sync becomes safe only after every lost device has an authenticated cutover barrier', () => {
-  const { nextKeyEpoch, newDevice, recovery, coverage, plan, records, barriers } = setup();
-  const safe = assertPostRecoverySafeToResume({
-    plan,
-    deviceAuthorizationRecords: records,
-    currentTenantKeyEpoch: nextKeyEpoch,
-    activeRecoveryKeyId: recovery.recoveryKeyId,
-    recoveryCoverage: coverage,
-    revocationBarriers: barriers
-  });
+test('REC-020 future sync becomes safe only after every lost device has an authenticated cutover barrier bound to recovered history', () => {
+  const fixture = setup();
+  const safe = assertPostRecoverySafeToResume(safeArgs(fixture));
 
   assert.equal(safe.safeToResumeFutureSync, true);
   assert.equal(safe.verifiedRevocationBarriers, 2);
-  assert.equal(safe.activeDeviceId, newDevice.deviceId);
+  assert.equal(safe.activeDeviceId, fixture.newDevice.deviceId);
 });
 
 test('REC-021 one missing lost-device cutover barrier keeps future sync blocked', () => {
-  const { nextKeyEpoch, recovery, coverage, plan, records, barriers } = setup();
-  const incomplete = new Map(barriers);
+  const fixture = setup();
+  const incomplete = new Map(fixture.barriers);
   incomplete.delete('device-lost-b');
 
-  assert.throws(() => assertPostRecoverySafeToResume({
-    plan,
-    deviceAuthorizationRecords: records,
-    currentTenantKeyEpoch: nextKeyEpoch,
-    activeRecoveryKeyId: recovery.recoveryKeyId,
-    recoveryCoverage: coverage,
+  assert.throws(() => assertPostRecoverySafeToResume(safeArgs(fixture, {
     revocationBarriers: incomplete
-  }), /post-recovery-revocation-barrier-missing:device-lost-b/);
+  })), /post-recovery-revocation-barrier-missing:device-lost-b/);
 });
 
 test('REC-022 tampering with a post-recovery cutover barrier keeps future sync blocked', () => {
-  const { nextKeyEpoch, recovery, coverage, plan, records, barriers, barrierA } = setup();
-  const tampered = structuredClone(barrierA);
+  const fixture = setup();
+  const tampered = structuredClone(fixture.barrierA);
   tampered.header.lastAcceptedSequence = 44;
-  const poisoned = new Map(barriers);
+  const poisoned = new Map(fixture.barriers);
   poisoned.set('device-lost-a', tampered);
 
-  assert.throws(() => assertPostRecoverySafeToResume({
-    plan,
-    deviceAuthorizationRecords: records,
-    currentTenantKeyEpoch: nextKeyEpoch,
-    activeRecoveryKeyId: recovery.recoveryKeyId,
-    recoveryCoverage: coverage,
+  assert.throws(() => assertPostRecoverySafeToResume(safeArgs(fixture, {
     revocationBarriers: poisoned
-  }), /invalid-revocation-barrier-signature/);
+  })), /invalid-revocation-barrier-signature/);
 });
