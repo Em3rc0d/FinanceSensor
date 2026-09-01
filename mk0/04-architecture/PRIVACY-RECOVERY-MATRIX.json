@@ -62,6 +62,21 @@
       "deletionTrigger": "TENANT_DELETE_OR_REVOKED_DEVICE_HISTORY_RETENTION_POLICY",
       "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
       "logging": "MINIMIZED_NO_FINANCIAL_CONTENT"
+    },
+    {
+      "id": "TRUSTED-CHECKPOINT-METADATA",
+      "name": "Signed tenant checkpoint metadata and independently retained checkpoint anchor",
+      "sensitivity": "HIGH",
+      "purpose": "Detect rollback, fork and append-only continuity violations relative to an independently trusted tenant checkpoint without exposing financial payload plaintext",
+      "source": "Authorized device checkpoint signer; independent anchor retained by a continuity device or user-held Recovery Kit",
+      "localRetention": "PERSIST_LATEST_TRUSTED_ANCHOR_AND_REQUIRED_CHECKPOINT_CHAIN_WINDOW",
+      "localProtection": "SIGNED_CHECKPOINT_METADATA; AUTHORITATIVE_ANCHOR_STORED_OUTSIDE_RELAY_ONLY_TRUST_DOMAIN",
+      "cloudPlaintext": "ALLOWED_MINIMIZED_SIGNED_SECURITY_METADATA_ONLY; CLOUD_COPY_IS_NOT_SOLE_TRUSTED_ANCHOR",
+      "e2eeSync": "NOT_REQUIRED_FOR_SIGNED_CHECKPOINT_ROUTING_METADATA; FINANCIAL_STATE_COMMITMENT_ONLY",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_CHECKPOINT_RETENTION_POLICY; RECOVERY_KIT_COPY_FOLLOWS_USER_HELD_RECOVERY_RETIREMENT",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED_NO_FINANCIAL_CONTENT_NO_FULL_ORIGIN_HEAD_DUMP"
     }
   ]
 }
