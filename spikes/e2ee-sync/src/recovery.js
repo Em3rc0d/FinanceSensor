@@ -95,7 +95,10 @@ export function validateRecoveryWrap({ package: wrapped, authorizingDeviceRecord
   if (wrapped.header.authorizingDeviceId !== authorizingDeviceRecord.deviceId) {
     throw new Error('recovery-authorizer-identity-mismatch');
   }
-  if (!isAuthorizedForEpoch(authorizingDeviceRecord, wrapped.header.keyEpoch)) {
+  if (authorizingDeviceRecord.tenantId !== wrapped.header.tenantId) {
+    throw new Error('recovery-authorizer-tenant-mismatch');
+  }
+  if (!isAuthorizedForEpoch(authorizingDeviceRecord, wrapped.header.keyEpoch, wrapped.header.tenantId)) {
     throw new Error('recovery-authorizer-not-authorized-for-epoch');
   }
 
@@ -322,7 +325,7 @@ export function assertPostRecoveryReadyForFutureSync({
     !activated ||
     activated.status !== 'ACTIVE' ||
     activated.authorizedFromEpoch !== nextKeyEpoch ||
-    !isAuthorizedForEpoch(activated, nextKeyEpoch)
+    !isAuthorizedForEpoch(activated, nextKeyEpoch, plan.tenantId)
   ) {
     throw new Error('post-recovery-new-device-not-authorized');
   }
@@ -333,7 +336,7 @@ export function assertPostRecoveryReadyForFutureSync({
       !record ||
       record.status !== 'REVOKED' ||
       record.revokedFromEpoch !== nextKeyEpoch ||
-      isAuthorizedForEpoch(record, nextKeyEpoch)
+      isAuthorizedForEpoch(record, nextKeyEpoch, plan.tenantId)
     ) {
       throw new Error(`post-recovery-lost-device-not-revoked:${expectedRevocation.deviceId}`);
     }
