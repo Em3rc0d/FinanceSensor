@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   GMAIL_READONLY_SCOPE,
   createPkcePair,
@@ -239,4 +240,18 @@ test('OAUTH-012 Gmail 401 invalidates local short token without hidden retry', a
   assert.deepEqual(await gmail.listMessages({ after: '2026-08-01T00:00:00Z', maxResults: 1 }), []);
   assert.equal(gmailCalls, 2);
   assert.equal(refreshCalls, 2);
+});
+
+test('OAUTH-013 CI bearer probe cannot become custodian of long-lived OAuth authority', () => {
+  const workflow = readFileSync(new URL('../../../.github/workflows/gmail-live-spike.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /FINANCESENSOR_GMAIL_ACCESS_TOKEN/);
+  for (const forbidden of [
+    'FINANCESENSOR_GMAIL_REFRESH_TOKEN',
+    'GOOGLE_CLIENT_SECRET',
+    'OAUTH_CLIENT_SECRET',
+    'FINANCESENSOR_AUTHORIZATION_CODE',
+    'FINANCESENSOR_CODE_VERIFIER'
+  ]) {
+    assert.equal(workflow.includes(forbidden), false, `${forbidden} must remain outside CI`);
+  }
 });
