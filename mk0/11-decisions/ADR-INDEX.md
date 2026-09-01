@@ -39,6 +39,7 @@ Supersedes / superseded by
 | ADR-012 | Analytics/telemetry privacy boundary | PROPOSED | Q-004 |
 | ADR-013 | Minimum supported Android baseline | OPEN | device matrix evidence |
 | ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
+| ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED | Q-005 physical anchor/witness evidence |
 
 ## ADR-014 evidence boundary
 
@@ -61,6 +62,30 @@ Evidence:
 - `../../spikes/e2ee-sync/test/recovery.test.js`
 
 It does not freeze the production HPKE/AEAD/signature implementation, platform key-store behavior, Recovery Kit UX or physical disaster recovery.
+
+## ADR-015 evidence boundary
+
+ADR-015 freezes only the **bounded anchor-relative anti-rollback semantics**:
+
+```text
+RELAY AS SOLE TRUST ANCHOR           REJECTED
+INDEPENDENT TRUSTED ANCHOR            REQUIRED FOR ROLLBACK CLAIM
+SIGNED APPEND-ONLY CONTINUITY         SPIKE-ACCEPTED
+ROLLBACK/FORK/GAP RELATIVE TO ANCHOR  FAIL CLOSED
+NO INDEPENDENT ANCHOR                 INDETERMINATE_FRESHNESS
+VALID ANCHORED HEAD                   CONSISTENT_FROM_ANCHOR
+GLOBAL-LATEST FRESHNESS               UNPROVEN
+```
+
+Evidence:
+
+- `ADR-015-TRUSTED-CHECKPOINT-ANTI-ROLLBACK.md`
+- `../04-architecture/TRUSTED-CHECKPOINT.md`
+- `../05-data-model/TRUSTED-CHECKPOINT-MODEL.md`
+- `../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
+- `../../spikes/e2ee-sync/test/checkpoint.test.js`
+
+It does not freeze a production Merkle/hash-chain implementation, independent witness/transparency service, platform protected anchor storage, Recovery Kit anchor refresh cadence or globally latest Byzantine freshness semantics.
 
 ## Decision discipline
 
