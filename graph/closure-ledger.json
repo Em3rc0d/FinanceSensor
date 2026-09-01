@@ -134,8 +134,15 @@
       "evidence": [
         "spikes/e2ee-sync/src/protocol.js",
         "spikes/e2ee-sync/src/scheduler.js",
+        "spikes/e2ee-sync/src/sequence.js",
         "spikes/e2ee-sync/test/protocol.test.js",
-        "spikes/e2ee-sync/test/scheduler.test.js"
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/05-data-model/SYNC-KEY-MODEL.md",
+        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md"
       ],
       "closureReceipt": null
     },
@@ -156,11 +163,18 @@
       "kind": "security",
       "title": "Security and privacy architecture",
       "status": "DRAFTED",
-      "artifacts": ["mk0/04-architecture/SECURITY-PRIVACY.md"],
+      "artifacts": [
+        "mk0/04-architecture/SECURITY-PRIVACY.md",
+        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md"
+      ],
       "dependsOn": ["Q-003", "Q-004", "Q-005"],
       "validates": ["DM-001", "G-MK0"],
       "revalidates": ["Q-003", "Q-004", "Q-005", "A-001"],
-      "evidence": [],
+      "evidence": [
+        "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "spikes/e2ee-sync/test/protocol.test.js"
+      ],
       "closureReceipt": null
     },
     {
@@ -171,12 +185,19 @@
       "artifacts": [
         "mk0/05-data-model/CORE-DATA-MODEL.md",
         "mk0/05-data-model/INVARIANTS.md",
-        "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"
+        "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md",
+        "mk0/05-data-model/SYNC-KEY-MODEL.md"
       ],
       "dependsOn": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
       "validates": ["WF-001", "G-MK0"],
       "revalidates": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
-      "evidence": ["spikes/canonical-resolver/test/economic-effect.test.js"],
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js"
+      ],
       "closureReceipt": null
     },
     {
@@ -225,14 +246,17 @@
       "status": "ACTIVE",
       "artifacts": [
         "spikes/e2ee-sync/src/protocol.js",
-        "spikes/e2ee-sync/src/scheduler.js"
+        "spikes/e2ee-sync/src/scheduler.js",
+        "spikes/e2ee-sync/src/sequence.js"
       ],
       "dependsOn": ["Q-005"],
       "validates": ["T-002"],
       "revalidates": ["Q-005", "DM-001", "SEC-001", "Q-004"],
       "evidence": [
         "spikes/e2ee-sync/test/protocol.test.js",
-        "spikes/e2ee-sync/test/scheduler.test.js"
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js"
       ],
       "closureReceipt": null
     },
@@ -244,6 +268,8 @@
       "artifacts": [
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
         ".github/workflows/mk0-foundation.yml"
       ],
       "dependsOn": ["Q-005", "S-002"],
