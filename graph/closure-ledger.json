@@ -129,13 +129,15 @@
       "evidence": [
         "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
         "tools/validate-privacy-matrix.mjs",
         "spikes/physical-ingress/src/privacy.js",
         "spikes/physical-ingress/src/vault.js",
         "spikes/physical-ingress/test/ingress.test.js",
         "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
         "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
-        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -147,7 +149,8 @@
       "artifacts": [
         "mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md",
         "mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md",
-        "mk0/04-architecture/PARASYMPATHETIC-SYNC.md"
+        "mk0/04-architecture/PARASYMPATHETIC-SYNC.md",
+        "mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md"
       ],
       "dependsOn": ["P-002"],
       "validates": ["A-001", "DM-001", "SEC-001", "S-002", "T-002", "G-MK0"],
@@ -156,15 +159,20 @@
         "spikes/e2ee-sync/src/protocol.js",
         "spikes/e2ee-sync/src/scheduler.js",
         "spikes/e2ee-sync/src/sequence.js",
+        "spikes/e2ee-sync/src/recovery.js",
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
         "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
         "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
         "mk0/05-data-model/SYNC-KEY-MODEL.md",
         "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -194,9 +202,13 @@
       "revalidates": ["Q-003", "Q-004", "Q-005", "A-001"],
       "evidence": [
         "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
         "spikes/e2ee-sync/test/protocol.test.js",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -222,7 +234,9 @@
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
         "spikes/e2ee-sync/test/lease-failure.test.js",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -272,12 +286,13 @@
     {
       "id": "S-002",
       "kind": "spike",
-      "title": "E2EE multi-device convergence and autonomic sync spike",
+      "title": "E2EE multi-device convergence, autonomic sync and recovery spike",
       "status": "ACTIVE",
       "artifacts": [
         "spikes/e2ee-sync/src/protocol.js",
         "spikes/e2ee-sync/src/scheduler.js",
-        "spikes/e2ee-sync/src/sequence.js"
+        "spikes/e2ee-sync/src/sequence.js",
+        "spikes/e2ee-sync/src/recovery.js"
       ],
       "dependsOn": ["Q-005"],
       "validates": ["T-002"],
@@ -287,28 +302,34 @@
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
         "spikes/e2ee-sync/test/lease-failure.test.js",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
     {
       "id": "T-002",
       "kind": "test",
-      "title": "E2EE sync and parasympathetic invariant suite",
+      "title": "E2EE sync, parasympathetic and recovery invariant suite",
       "status": "PASS",
       "artifacts": [
         "spikes/e2ee-sync/test/protocol.test.js",
         "spikes/e2ee-sync/test/scheduler.test.js",
         "spikes/e2ee-sync/test/sequence.test.js",
         "spikes/e2ee-sync/test/lease-failure.test.js",
-        ".github/workflows/mk0-foundation.yml"
+        "spikes/e2ee-sync/test/recovery.test.js",
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml"
       ],
       "dependsOn": ["Q-005", "S-002"],
       "validates": [],
       "revalidates": ["Q-005", "S-002", "DM-001", "SEC-001", "Q-004"],
       "evidence": [
         ".github/workflows/mk0-foundation.yml",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        ".github/workflows/heartbeat.yml",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
       ],
       "closureReceipt": null
     },
