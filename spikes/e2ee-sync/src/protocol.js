@@ -374,6 +374,7 @@ export function materializeDecodedEvents(decodedEvents) {
   const unique = new Map();
   const identityDigests = new Map();
   const sequenceOwners = new Map();
+  let materializationTenantId = null;
 
   for (const decoded of decodedEvents) {
     const eventId = decoded?.header?.eventId;
@@ -385,6 +386,9 @@ export function materializeDecodedEvents(decodedEvents) {
     if (!tenantId || !originDeviceId || !Number.isInteger(originDeviceSequence) || originDeviceSequence <= 0) {
       throw new Error('invalid-decoded-sync-origin');
     }
+
+    if (materializationTenantId == null) materializationTenantId = tenantId;
+    else if (tenantId !== materializationTenantId) throw new Error('mixed-tenant-materialization');
 
     const digest = decodedIdentityDigest(decoded);
     const existingDigest = identityDigests.get(eventId);
