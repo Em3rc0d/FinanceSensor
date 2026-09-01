@@ -16,7 +16,7 @@
       "id": "TR-FIN-TRANSFER",
       "source": "product",
       "invariants": ["FIN-004", "FIN-009"],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-001", "C-001", "DM-001", "T-001"],
       "tests": ["spikes/canonical-resolver/test/economic-effect.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
       "evidence": [
@@ -29,7 +29,7 @@
       "id": "TR-FIN-CARD",
       "source": "product",
       "invariants": ["FIN-005"],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-001", "DM-001", "T-001"],
       "tests": ["spikes/canonical-resolver/test/economic-effect.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
       "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
@@ -39,7 +39,7 @@
       "id": "TR-FIN-OFFSETS",
       "source": "product",
       "invariants": ["FIN-010"],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-001", "C-002", "DM-001", "T-001"],
       "tests": ["spikes/canonical-resolver/test/economic-effect.test.js"],
       "evidence": ["mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"],
@@ -49,7 +49,7 @@
       "id": "TR-FIN-IDEMPOTENCY",
       "source": "product",
       "invariants": ["FIN-007"],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-002", "S-001", "T-001"],
       "tests": [
         "spikes/canonical-resolver/test/fingerprinting.test.js",
@@ -129,7 +129,7 @@
       "id": "TR-TEN-SOURCE-ID",
       "source": "product",
       "invariants": ["TEN-004"],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-002", "S-001", "T-001"],
       "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js", "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js"],
       "evidence": [
@@ -222,7 +222,7 @@
         "INV-FIN-010",
         "INV-FIN-011"
       ],
-      "status": "PROVEN_AT_SPIKE",
+      "status": "PROVEN",
       "ownerNodes": ["Q-001", "Q-002", "S-001", "T-001"],
       "tests": [
         "spikes/canonical-resolver/test/resolver.test.js",
