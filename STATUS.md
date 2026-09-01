@@ -25,27 +25,59 @@ MK0 TEST STRATEGY          DRAFTED
 MK0 EVIDENCE               ACTIVE
 MK0 ADR SET                OPEN
 MK0 RELEASE GATES          DRAFTED
+REPOSITORY GOVERNANCE      OPEN
 
 BUILD_READY                NO
 ```
 
 ## Operational vital signs
 
-Latest physically recorded green ECG snapshot:
+Latest physically recorded nervous-system ECG:
 
 ```text
 CANONICAL RESOLVER         PASS — 88/88 tests
-CLOSURE GRAPH              PASS — structural validation
-PRIVACY DATA MATRIX        PASS — structural validation, model still DRAFT
+CLOSURE GRAPH              PASS
+ARTIFACT STATUS AUTHORITY  PASS — 9 declarations checked
+QUARRY ↔ LEDGER            PASS — 5/5 quarries coherent
+TRACEABILITY NETWORK       PASS — 66/66 invariants wired
+PRIVACY DATA MATRIX        PASS — 12 classes, model still DRAFT
 RECOVERY EQUIPMENT         PASS
 BUILD_READY                false
 ```
 
-Evidence: `mk0/10-evidence/EV-MK0-ECG-2026-09-01.md`.
+Evidence:
 
-A green test certificate does not automatically close the quarry that owns it.
+- `mk0/10-evidence/EV-MK0-ECG-2026-09-01.md`
+- `mk0/10-evidence/EV-MK0-NERVOUS-SYSTEM-2026-09-01.md`
 
-## P0 closure graph
+A green structural/test certificate does not automatically close the quarry or release invariant that owns it.
+
+## Invariant nervous system
+
+```text
+PRODUCT INVARIANTS          32
+DATA-MODEL INVARIANTS       34
+TOTAL WIRED                  66
+
+SPECIFIED                    37
+PARTIAL                      18
+PROVEN_AT_SPIKE              11
+PROVEN                        0
+
+OPEN CONTRADICTIONS           2
+```
+
+`PROVEN_AT_SPIKE` means bounded feasibility evidence exists. It is intentionally weaker than release-level `PROVEN`.
+
+`G-MK0` cannot close while any release-scope invariant remains below `PROVEN` or while an interrupting contradiction is still open.
+
+Machine-readable wiring:
+
+- `graph/traceability-matrix.json`
+- `tools/validate-traceability.mjs`
+- `graph/NERVOUS-SYSTEM.md`
+
+## Closure graph
 
 ```text
 Q-001 Canonical semantics          ACTIVE
@@ -61,13 +93,14 @@ A-001 Core architecture            DRAFTED
 SEC-001 Security/privacy arch      DRAFTED
 DM-001 Core data model             DRAFTED
 WF-001 Signature wireframes        DRAFTED
+OPS-001 Repository merge governance OPEN
 
 G-MK0 BUILD_READY                  BLOCKED
 ```
 
-## What changed during reverse validation
+## What reverse validation discovered
 
-The first resolver model exposed two upstream contradictions instead of hiding them:
+The resolver and downstream financial-state reasoning exposed two upstream contradictions instead of hiding them:
 
 1. `EXTERNAL_TRANSFER` is a movement mechanism, not enough information to call something income, expense or neutral.
 2. A linked refund/reversal must offset the original economic contribution; treating it as permanently zero-effect would overstate historical totals.
@@ -77,7 +110,7 @@ The candidate reconciliation is documented in:
 - `graph/CONTRADICTIONS.md`
 - `mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md`
 
-Executable tests now cover the candidate projection, but the contradictions remain formally OPEN until closure audit/receipts are produced.
+Executable tests now cover the candidate projection, but both contradictions remain formally `OPEN` until closure audit/receipts are produced.
 
 ## Gmail position
 
@@ -113,6 +146,23 @@ Gmail-derived generalized AI   forbidden
 
 Machine-readable contract: `mk0/04-architecture/PRIVACY-DATA-MATRIX.json`.
 
+## Repository governance position
+
+Repository inspection on 2026-09-01 found:
+
+```text
+main protected                  NO
+required status checks          NONE
+branch protection enforcement   OFF
+PR #1                           DRAFT / DO NOT MERGE
+```
+
+This is now tracked as `OPS-001` and is a physical dependency of `G-MK0`.
+
+The connected GitHub tooling available in this session can read branch protection but does not expose a write-capable protection/ruleset action. Therefore we do not claim the repository is enforced when it is not.
+
+Interim control: PR #1 remains draft and its title/body explicitly forbid merge until `G-MK0` closes.
+
 ## Critical path
 
 ```text
@@ -131,8 +181,12 @@ architecture reconciliation
 data-model reconciliation
         ↓
 signature UX reconciliation
+        +
+OPS-001 repository enforcement
         ↓
 closure audit
+        ↓
+all release-scope invariants PROVEN
         ↓
 BUILD_READY = YES
 ```
