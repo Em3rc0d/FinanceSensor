@@ -324,7 +324,7 @@ Historical device-held plaintext/key material cannot be retroactively erased by 
 
 ## 16. All-devices-lost recovery transition
 
-ADR-005 defines a separate disaster path.
+ADR-014 defines the disaster path.
 
 ```text
 recover epochs ≤ N locally with Recovery Kit
@@ -421,7 +421,7 @@ Do not freeze migrations for this model until:
 
 ```text
 Q-005 synthetic suite               PASS
-all-devices-lost ownership model    SPIKE-ACCEPTED
+all-devices-lost ownership model    SPIKE-ACCEPTED / ADR-014
 production crypto suite             REVIEWED
 recovery authentication gate        FROZEN
 recovery retention/deletion policy  FROZEN
