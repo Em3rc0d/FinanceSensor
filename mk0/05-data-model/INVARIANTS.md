@@ -131,6 +131,15 @@ After Recovery Key rotation, the retired Recovery Private Key cannot decrypt ten
 ### INV-SYNC-012
 Future-access revocation must prevent a revoked device from creating **newly admissible history under an old key epoch** after cutover. Before old-epoch envelopes from that origin are treated as immutable historical replay, a still-authorized authority must commit the exact accepted historical origin stream (or an equivalent reviewed append-only commitment). Post-cutover extension, substitution, sequence forks and unresolved gaps fail closed. Exact duplicate relay delivery and transport reordering of the already committed historical set remain harmless.
 
+### INV-SYNC-013
+Sync replay identity is immutable. Inside one tenant, one `event_id` can bind only one immutable decoded header/action, and one `(tenant_id, origin_device_id, origin_device_sequence)` slot can bind only one event identity. Exact delivery of the same event remains idempotent; divergent reuse of either identity fails closed rather than becoming last-write-wins.
+
+### INV-SYNC-014
+A materialized financial/sync state is tenant-isolated. One materialization pass cannot combine decoded domain actions from different tenants; cross-tenant input fails closed before canonical or correction state is projected.
+
+### INV-SYNC-015
+Conflict resolution is itself conflict-safe. Concurrent incompatible resolution actions over the same target/base revision produce a deterministic explicit meta-conflict rather than a hidden winner; a resolution that selects outside the known candidate set fails closed; equivalent concurrent resolutions selecting the same candidate converge idempotently.
+
 ## Security
 
 ### INV-SEC-001
