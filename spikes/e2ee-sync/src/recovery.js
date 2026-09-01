@@ -147,6 +147,84 @@ export function unwrapTenantEpochFromRecovery({
   return decrypt(wrappingKey, encrypted, utf8(stableJson(wrapped.header)));
 }
 
+export function assertRecoveryCoverage({ tenantId, recoveryKeyId, recoverableEpochs, packages }) {
+  if (!tenantId || !recoveryKeyId) throw new Error('recovery-coverage-context-required');
+  if (!Array.isArray(recoverableEpochs) || recoverableEpochs.length === 0) {
+    throw new Error('recoverable-epochs-required');
+  }
+  if (!Array.isArray(packages)) throw new Error('recovery-packages-required');
+
+  const expectedEpochs = [...new Set(recoverableEpochs)].sort((a, b) => a - b);
+  for (const epoch of expectedEpochs) {
+    if (!Number.isInteger(epoch) || epoch <= 0) throw new Error('invalid-recoverable-epoch');
+  }
+
+  const covered = new Set();
+  for (const wrapped of packages) {
+    const header = wrapped?.header ?? {};
+    if (header.tenantId !== tenantId) continue;
+    if (header.recoveryKeyId !== recoveryKeyId) continue;
+    if (expectedEpochs.includes(header.keyEpoch)) covered.add(header.keyEpoch);
+  }
+
+  const missing = expectedEpochs.filter(epoch => !covered.has(epoch));
+  if (missing.length > 0) {
+    throw new Error(`recovery-coverage-missing:${missing.join(',')}`);
+  }
+
+  return {
+    tenantId,
+    recoveryKeyId,
+    coveredEpochs: expectedEpochs
+  };
+}
+
+export function planPostRecoveryHardening({
+  tenantId,
+  recoveredThroughEpoch,
+  newDeviceId,
+  lostDeviceIds,
+  newRecoveryKeyId
+}) {
+  if (!tenantId || !newDeviceId || !newRecoveryKeyId) throw new Error('post-recovery-context-required');
+  if (!Number.isInteger(recoveredThroughEpoch) || recoveredThroughEpoch <= 0) {
+    throw new Error('invalid-recovered-through-epoch');
+  }
+  if (!Array.isArray(lostDeviceIds) || lostDeviceIds.length === 0) {
+    throw new Error('lost-device-set-required');
+  }
+
+  const revokedDeviceIds = [...new Set(lostDeviceIds)].sort();
+  if (revokedDeviceIds.includes(newDeviceId)) throw new Error('new-device-cannot-be-revoked');
+
+  const nextKeyEpoch = recoveredThroughEpoch + 1;
+  return {
+    tenantId,
+    recoveredThroughEpoch,
+    revokeDevices: revokedDeviceIds.map(deviceId => ({
+      deviceId,
+      status: 'REVOKED',
+      revokedFromEpoch: nextKeyEpoch,
+      reason: 'ALL_DEVICES_LOST_RECOVERY'
+    })),
+    activateDevice: {
+      deviceId: newDeviceId,
+      status: 'ACTIVE',
+      authorizedFromEpoch: nextKeyEpoch,
+      reason: 'ALL_DEVICES_LOST_RECOVERY'
+    },
+    rotateTenantKey: {
+      required: true,
+      nextKeyEpoch,
+      reason: 'ALL_DEVICES_LOST_RECOVERY'
+    },
+    rotateRecoveryKey: {
+      required: true,
+      newRecoveryKeyId
+    }
+  };
+}
+
 export function cloudRecoveryView(packageList, recoveryRecord) {
   return {
     recoveryKeyId: recoveryRecord.recoveryKeyId,
