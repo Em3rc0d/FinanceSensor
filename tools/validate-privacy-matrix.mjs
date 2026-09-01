@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const matrixPath = path.join(process.cwd(), 'mk0', '04-architecture', 'PRIVACY-DATA-MATRIX.json');
+const root = process.cwd();
+const basePath = path.join(root, 'mk0', '04-architecture', 'PRIVACY-DATA-MATRIX.json');
+const recoveryPath = path.join(root, 'mk0', '04-architecture', 'PRIVACY-RECOVERY-MATRIX.json');
 const requiredFields = [
   'id', 'name', 'sensitivity', 'purpose', 'source', 'localRetention',
   'localProtection', 'cloudPlaintext', 'e2eeSync', 'rawRetention',
@@ -10,20 +12,33 @@ const requiredFields = [
 ];
 
 const failures = [];
-const fail = (message) => failures.push(message);
+const fail = message => failures.push(message);
 
-if (!fs.existsSync(matrixPath)) {
-  console.error('PRIVACY_MATRIX_FAIL: matrix missing');
-  process.exit(1);
+for (const requiredPath of [basePath, recoveryPath]) {
+  if (!fs.existsSync(requiredPath)) {
+    console.error(`PRIVACY_MATRIX_FAIL: missing ${path.relative(root, requiredPath)}`);
+    process.exit(1);
+  }
 }
 
-const matrix = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
-const classes = Array.isArray(matrix.classes) ? matrix.classes : [];
-const byId = new Map();
+const base = JSON.parse(fs.readFileSync(basePath, 'utf8'));
+const recovery = JSON.parse(fs.readFileSync(recoveryPath, 'utf8'));
 
-if (matrix.defaultRule !== 'deny-unclassified-persistence') {
+if (base.defaultRule !== 'deny-unclassified-persistence') {
   fail('defaultRule must be deny-unclassified-persistence');
 }
+if (recovery.extends !== 'PRIVACY-DATA-MATRIX.json') {
+  fail('recovery matrix must explicitly extend PRIVACY-DATA-MATRIX.json');
+}
+if (recovery.schemaVersion !== base.schemaVersion) {
+  fail('recovery matrix schemaVersion must match base matrix');
+}
+
+const classes = [
+  ...(Array.isArray(base.classes) ? base.classes : []),
+  ...(Array.isArray(recovery.classes) ? recovery.classes : [])
+];
+const byId = new Map();
 
 for (const item of classes) {
   for (const field of requiredFields) {
@@ -37,13 +52,12 @@ for (const item of classes) {
   if (['CRITICAL', 'HIGH'].includes(item.sensitivity) && item.logging === 'ALLOW_ALL') {
     fail(`${item.id} cannot allow unrestricted logging`);
   }
-
   if (item.sensitivity === 'CRITICAL' && item.cloudPlaintext.startsWith('ALLOWED')) {
     fail(`${item.id} CRITICAL data cannot allow normal cloud plaintext`);
   }
 }
 
-const requireClass = (id) => {
+const requireClass = id => {
   const item = byId.get(id);
   if (!item) fail(`required privacy class ${id} missing`);
   return item;
@@ -119,6 +133,32 @@ if (diagnostics && diagnostics.logging !== 'ALLOWLIST_ONLY') {
   fail('diagnostic telemetry must use an allowlist-only logging policy');
 }
 
+const recoveryPrivate = requireClass('RECOVERY-PRIVATE-KEY');
+if (recoveryPrivate) {
+  if (recoveryPrivate.cloudPlaintext !== 'FORBIDDEN') fail('Recovery Private Key cloud plaintext must be FORBIDDEN');
+  if (recoveryPrivate.e2eeSync !== 'FORBIDDEN') fail('Recovery Private Key must never be synchronized');
+  if (recoveryPrivate.logging !== 'FORBIDDEN') fail('Recovery Private Key logging must be FORBIDDEN');
+  if (!recoveryPrivate.localRetention.includes('USER_HELD_OFFLINE')) {
+    fail('Recovery Private Key must be user-held offline after export');
+  }
+}
+
+const recoveryPublic = requireClass('RECOVERY-PUBLIC-KEY');
+if (recoveryPublic) {
+  if (recoveryPublic.cloudPlaintext !== 'ALLOWED_MINIMIZED') {
+    fail('Recovery Public Key may be cloud-visible only in minimized form');
+  }
+}
+
+const recoveryWrap = requireClass('RECOVERY-EPOCH-WRAP');
+if (recoveryWrap) {
+  if (recoveryWrap.cloudPlaintext !== 'WRAPPED_KEY_CIPHERTEXT_AND_MINIMUM_CONTEXT_ONLY') {
+    fail('Recovery epoch wrap may expose ciphertext + minimum context only');
+  }
+  if (!recoveryWrap.localProtection.includes('CIPHERTEXT')) fail('Recovery epoch wrap must remain ciphertext');
+  if (recoveryWrap.logging !== 'NO_KEY_MATERIAL') fail('Recovery epoch wrap logging must exclude key material');
+}
+
 if (failures.length > 0) {
   console.error('PRIVACY_MATRIX_FAIL');
   for (const issue of failures) console.error(`- ${issue}`);
@@ -127,4 +167,7 @@ if (failures.length > 0) {
 
 console.log('PRIVACY_MATRIX_PASS');
 console.log(`classes=${classes.length}`);
-console.log(`status=${matrix.status}`);
+console.log(`baseClasses=${base.classes.length}`);
+console.log(`recoveryClasses=${recovery.classes.length}`);
+console.log(`baseStatus=${base.status}`);
+console.log(`recoveryStatus=${recovery.status}`);
