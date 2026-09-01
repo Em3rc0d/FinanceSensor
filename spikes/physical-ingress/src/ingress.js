@@ -1,4 +1,10 @@
-import { evidenceToCandidate, resolveCandidates } from '../../canonical-resolver/src/resolver.js';
+import {
+  classifyCandidate,
+  resolveCandidates,
+  stableEvidenceKey,
+  normalizeMerchant,
+  candidateFingerprint
+} from '../../canonical-resolver/src/resolver.js';
 import { HistoryExpiredError } from './provider.js';
 
 const FINANCIAL_SUBJECT = /(compra|purchase|consumo|cargo|charged|abono|deposito|salary|sueldo|transfer|transferencia|refund|reembolso|devolucion|revers|anulad|comision|fee|tarjeta|card payment)/i;
@@ -38,7 +44,7 @@ export function extractFinancialEvidence(fullMessage) {
   const amount = parseAmount(fullMessage.body);
   if (!Number.isFinite(amount) || amount <= 0) return null;
   const subject = fullMessage.headers?.Subject ?? '';
-  return {
+  const evidence = {
     tenantId: 'tenant-ingress',
     sourceType: 'GMAIL',
     sourceMessageId: fullMessage.id,
@@ -52,11 +58,11 @@ export function extractFinancialEvidence(fullMessage) {
     confidence: 0.9,
     references: {}
   };
+  evidence.semanticType = classifyCandidate(evidence);
+  return evidence;
 }
 
 function durableEvidence(evidence) {
-  // Never persist raw subject/bodySnippet. Keep only the minimum fields required by
-  // the canonical resolver and provenance/idempotency contract.
   return {
     tenantId: evidence.tenantId,
     sourceType: evidence.sourceType,
@@ -66,9 +72,32 @@ function durableEvidence(evidence) {
     currency: evidence.currency,
     rawMerchant: evidence.rawMerchant,
     direction: evidence.direction,
+    semanticType: evidence.semanticType,
     confidence: evidence.confidence,
     references: evidence.references
   };
+}
+
+function toCandidate(item) {
+  const candidate = {
+    tenantId: item.tenantId,
+    evidenceIds: [stableEvidenceKey(item)],
+    sourceTypes: [item.sourceType],
+    accountId: null,
+    instrumentId: null,
+    amount: Math.abs(Number(item.amount)),
+    currency: item.currency,
+    flowDirection: item.direction ?? null,
+    occurredAt: item.occurredAt,
+    rawMerchant: item.rawMerchant ?? null,
+    merchantCanonical: normalizeMerchant(item.rawMerchant ?? ''),
+    semanticType: item.semanticType,
+    state: 'CANDIDATE',
+    confidence: item.confidence ?? 0.8,
+    references: item.references ?? {}
+  };
+  candidate.fingerprint = candidateFingerprint(candidate);
+  return candidate;
 }
 
 function defaultState() {
@@ -103,26 +132,12 @@ export class FinancialIngressEngine {
     this.now = now;
   }
 
-  _load() {
-    return this.vault.read() ?? defaultState();
-  }
-
-  _save(state) {
-    this.vault.write(state);
-  }
-
-  _requireAuth() {
-    this.credentials.requireToken();
-  }
+  _load() { return this.vault.read() ?? defaultState(); }
+  _save(state) { this.vault.write(state); }
+  _requireAuth() { this.credentials.requireToken(); }
 
   _rebuildCanonical(state) {
-    const candidates = state.evidence.map(item => evidenceToCandidate({
-      ...item,
-      // Durable state does not retain raw content; semantic fallback relies on direction.
-      subject: '',
-      bodySnippet: ''
-    }));
-    const result = resolveCandidates(candidates);
+    const result = resolveCandidates(state.evidence.map(toCandidate));
     state.canonical = result.canonical;
     state.review = result.review;
   }
@@ -133,13 +148,8 @@ export class FinancialIngressEngine {
       state.metrics.emailsChecked += 1;
       if (processed.has(id)) continue;
 
-      const metadata = this.provider.getMessage({
-        id,
-        format: 'METADATA',
-        metadataHeaders: ['From', 'Date', 'Subject']
-      });
+      const metadata = this.provider.getMessage({ id, format: 'METADATA', metadataHeaders: ['From', 'Date', 'Subject'] });
       state.metrics.metadataCalls += 1;
-
       if (!isLikelyFinancialMetadata(metadata.headers)) {
         processed.add(id);
         continue;
@@ -148,14 +158,11 @@ export class FinancialIngressEngine {
       const full = this.provider.getMessage({ id, format: 'FULL' });
       state.metrics.fullCalls += 1;
       state.metrics.fullMessagesFetched += 1;
-
       const extracted = extractFinancialEvidence(full);
       if (extracted) {
         state.evidence.push(durableEvidence(extracted));
         state.metrics.financialCandidates += 1;
       }
-
-      // Raw content is scoped to this iteration and never copied into durable state.
       processed.add(id);
     }
 
@@ -186,7 +193,6 @@ export class FinancialIngressEngine {
     this._requireAuth();
     const state = this._load();
     if (!state.historyCursor) return this.initialSync({ days: recoveryDays });
-
     let history;
     try {
       history = this.provider.listHistory({ startHistoryId: state.historyCursor });
@@ -198,7 +204,6 @@ export class FinancialIngressEngine {
       this._save(state);
       return this.initialSync({ days: recoveryDays });
     }
-
     const ids = history.history.map(item => ({ id: item.messageId }));
     this._processIds(ids, state);
     state.historyCursor = String(history.historyId);
