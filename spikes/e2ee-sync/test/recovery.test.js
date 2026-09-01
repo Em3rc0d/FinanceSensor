@@ -18,7 +18,7 @@ import {
 
 const tenantId = 'tenant-recovery';
 const authorizer = generateDeviceIdentity('device-a');
-const authorizerRecord = publicDeviceRecord(authorizer);
+const authorizerRecord = publicDeviceRecord(authorizer, { tenantId });
 const authorizerRecords = new Map([[authorizerRecord.deviceId, authorizerRecord]]);
 
 function wrap(epoch, root, recovery, signer = authorizer) {
@@ -134,7 +134,7 @@ test('REC-009 wrong authorizer record cannot validate a recovery wrap', () => {
   const root = generateTenantRootKey();
   const pkg = wrap(1, root, recovery);
   const impostor = generateDeviceIdentity('device-a');
-  const impostorRecord = publicDeviceRecord(impostor);
+  const impostorRecord = publicDeviceRecord(impostor, { tenantId });
   assert.throws(() => unwrapTenantEpochFromRecovery({
     package: pkg,
     recoveryIdentity: recovery,
@@ -217,6 +217,7 @@ test('REC-014 a device revoked for the target epoch cannot authorize a recovery 
   const recovery = generateRecoveryIdentity('recovery-revoked-authorizer');
   const pkg = wrap(2, generateTenantRootKey(), recovery);
   const revokedRecord = publicDeviceRecord(authorizer, {
+    tenantId,
     authorizedFromEpoch: 1,
     revokedFromEpoch: 2,
     status: 'REVOKED'
@@ -280,13 +281,15 @@ test('REC-018 future sync remains blocked until new epoch, new Recovery Key, new
   const nextKeyEpoch = 8;
   const newDevice = generateDeviceIdentity('device-recovered');
   const lostDeviceB = generateDeviceIdentity('device-b');
-  const newDeviceRecord = publicDeviceRecord(newDevice, { authorizedFromEpoch: nextKeyEpoch });
+  const newDeviceRecord = publicDeviceRecord(newDevice, { tenantId, authorizedFromEpoch: nextKeyEpoch });
   const lostRecordA = publicDeviceRecord(authorizer, {
+    tenantId,
     authorizedFromEpoch: 1,
     revokedFromEpoch: nextKeyEpoch,
     status: 'REVOKED'
   });
   const lostRecordB = publicDeviceRecord(lostDeviceB, {
+    tenantId,
     authorizedFromEpoch: 1,
     revokedFromEpoch: nextKeyEpoch,
     status: 'REVOKED'
@@ -331,7 +334,7 @@ test('REC-018 future sync remains blocked until new epoch, new Recovery Key, new
   }), /post-recovery-recovery-key-not-rotated/);
 
   const missingRevocation = new Map(completeRecords);
-  missingRevocation.set(lostRecordB.deviceId, publicDeviceRecord(lostDeviceB));
+  missingRevocation.set(lostRecordB.deviceId, publicDeviceRecord(lostDeviceB, { tenantId }));
   assert.throws(() => assertPostRecoveryReadyForFutureSync({
     plan,
     deviceAuthorizationRecords: missingRevocation,
