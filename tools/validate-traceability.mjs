@@ -138,7 +138,25 @@ for (const group of matrix.groups ?? []) {
   }
 }
 
-if (!ledgerNodes.has(matrix.releaseGate)) fail(`releaseGate ${matrix.releaseGate} does not exist in closure ledger`);
+const releaseGate = ledgerNodes.get(matrix.releaseGate);
+if (!releaseGate) {
+  fail(`releaseGate ${matrix.releaseGate} does not exist in closure ledger`);
+} else {
+  const releaseEvaluatingGreen = releaseGate.status === 'CLOSED' || ledger.buildReady === true;
+  if (releaseEvaluatingGreen) {
+    const notProven = (matrix.groups ?? []).filter(group => group.status !== 'PROVEN');
+    if (notProven.length > 0) {
+      fail(`release gate cannot close with non-PROVEN traceability groups: ${notProven.map(g => `${g.id}:${g.status}`).join(', ')}`);
+    }
+
+    const openContradictions = ledgerContradictions
+      .map(id => ledgerNodes.get(id))
+      .filter(node => node?.status !== 'CLOSED');
+    if (openContradictions.length > 0) {
+      fail(`release gate cannot close with unresolved contradictions: ${openContradictions.map(n => `${n.id}:${n.status}`).join(', ')}`);
+    }
+  }
+}
 
 if (failures.length > 0) {
   console.error('TRACEABILITY_FAIL');
@@ -156,4 +174,6 @@ console.log(`productInvariants=${productIds.length}`);
 console.log(`dataModelInvariants=${dmIds.length}`);
 console.log(`wiredInvariants=${seen.size}`);
 console.log(`contradictions=${ledgerContradictions.length}`);
+console.log(`releaseGate=${releaseGate?.status ?? 'MISSING'}`);
+console.log(`buildReady=${ledger.buildReady}`);
 console.log(`states=${JSON.stringify(counts)}`);
