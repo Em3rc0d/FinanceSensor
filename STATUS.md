@@ -32,8 +32,6 @@ BUILD_READY                NO
 
 ## Heart closure state
 
-The first canonical financial-truth cycle has completed formal closure audit:
-
 ```text
 C-001 External-transfer semantics     CLOSED
 C-002 Refund/reversal projection      CLOSED
@@ -41,18 +39,9 @@ Q-001 Canonical semantics             CLOSED
 Q-002 Fingerprinting/dedup            CLOSED
 ```
 
-Closure receipts:
-
-- `mk0/11-decisions/closure-receipts/C-001.md`
-- `mk0/11-decisions/closure-receipts/C-002.md`
-- `mk0/11-decisions/closure-receipts/Q-001.md`
-- `mk0/11-decisions/closure-receipts/Q-002.md`
-
-The nodes remain reopenable if later provider/device evidence contradicts their closed claims.
+The closed nodes remain reopenable if later provider/device evidence contradicts their claims.
 
 ## Financial heart evidence
-
-The closure-candidate resolver baseline passed:
 
 ```text
 CANONICAL RESOLVER           PASS — 98/98 tests
@@ -65,10 +54,6 @@ REPLAY DUPLICATE COUNT       0
 BENCHMARK DECISION ACCURACY  100%
 ```
 
-Thresholds were frozen before benchmark acceptance in `spikes/canonical-resolver/BENCHMARK-CONTRACT.md`.
-
-Evidence: `mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md`.
-
 ## Peripheral/autonomic evidence
 
 ```text
@@ -79,9 +64,53 @@ Q-005                        ACTIVE
 
 Q-005 remains deliberately open because production cryptography, physical Android/iOS key/background behavior and recovery still need physical evidence.
 
-## Invariant nervous system
+## Financial ingress / Gmail evidence
 
-After the heart closure and canonical invariant promotion:
+The source pipeline now has two explicitly separated evidence levels.
+
+### Level A — contractual harness
+
+```text
+PHYSICAL INGRESS HARNESS       PASS — 21/21 tests
+ASYNC PROVIDER CONTRACT        PASS
+METADATA-FIRST                 PASS
+FULL ONLY FOR CANDIDATES       PASS
+INCREMENTAL HISTORY MODEL      PASS
+HISTORY 404 RECOVERY           PASS
+RESTART / REPLAY               PASS
+RAW BODY DURABLE RETENTION     0
+RAW ATTACHMENT RETENTION       0
+PLAINTEXT FINANCIAL CLOUD      0 in harness
+TOKEN IN LOGS                  0 in harness
+T-003                          PASS
+S-003                          ACTIVE
+```
+
+Evidence: `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`.
+
+The implementation discovered and fixed an important privacy/correctness interaction: raw mail can be discarded only **after** its derived semantic meaning is captured in encrypted FinancialEvidence. Restart/replay therefore does not require keeping the original email body.
+
+### Level B — real Gmail provider
+
+Prepared but not executed:
+
+```text
+Gmail REST adapter             READY
+bounded messages.list          READY
+METADATA/FULL messages.get     READY
+history.list                   READY
+profile historyId              READY
+privacy-safe aggregate output  READY
+remote token revoke            READY
+gmail-live-spike workflow      READY
+
+CONTROLLED GOOGLE CREDENTIAL   MISSING
+REAL GMAIL EXECUTION           NOT RUN
+```
+
+No Gmail token/client secret/user mail is committed to the repository.
+
+## Invariant nervous system
 
 ```text
 PRODUCT INVARIANTS          34
@@ -97,16 +126,7 @@ REGISTERED CONTRADICTIONS     2
 OPEN CONTRADICTIONS           0
 ```
 
-`PROVEN` is used only for the bounded invariants whose owning heart nodes are now `CLOSED` and whose executable evidence is recorded. Q-005 properties remain `PROVEN_AT_SPIKE` where production/mobile evidence is still missing.
-
 `G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
-
-Machine-readable wiring:
-
-- `graph/closure-ledger.json`
-- `graph/traceability-matrix.json`
-- `tools/validate-closure-graph.mjs`
-- `tools/validate-traceability.mjs`
 
 ## Closure graph
 
@@ -131,65 +151,60 @@ S-001 Canonical resolver spike       ACTIVE
 T-001 Canonical resolver test        PASS
 S-002 Peripheral convergence spike   ACTIVE
 T-002 Peripheral/parasympathetic     PASS
+S-003 Physical ingress spike         ACTIVE
+T-003 Ingress/privacy suite          PASS
 OPS-001 Repository governance        OPEN
 
 G-MK0 BUILD_READY                    BLOCKED
 ```
 
-## Closed financial semantics
-
-### Movement mechanism != economic meaning
-
-```text
-external transfer + unresolved purpose
-→ REQUIRES_REVIEW
-→ authoritative income 0 / expense 0
-```
-
-Only explicit evidence or an auditable correction can resolve it to a compatible income, expense or neutral effect.
-
-### Relationship-aware bounded offsets
-
-```text
-purchase                expense +100
-refund #1               expense -40
-refund #2               expense -35
-remaining offset capacity        25
-refund #3 of 30         REQUIRES_REVIEW
-```
-
-Refunds/reversals cannot silently erase more economic value than the linked original event contributed.
-
-### Conservative identity
-
-```text
-exact replay                         → idempotent
-hard cross-artifact link + compatible → merge
-weak similarity                       → review
-hard contradiction                    → separate
-```
-
-Known tenant/currency/amount/direction/account/instrument/semantic contradictions block automatic identity.
-
 ## Gmail position
 
-Q-003 remains the next source-feasibility front:
+Current source-feasibility position:
 
 ```text
 minimum Gmail scope candidate      gmail.readonly
-metadata-first retrieval           feasible
-historyId incremental sync         feasible
+metadata-first retrieval           PROVEN IN CONTRACT HARNESS
+historyId incremental sync         PROVEN IN CONTRACT HARNESS
 Pub/Sub push required for MK0      no
+real Gmail REST adapter            implemented
+controlled live runner             prepared
 production OAuth verification      required
 security assessment applicability  still open for actual architecture
-physical Android OAuth spike       not executed yet
+real Gmail OAuth/API spike         BLOCKED ON CONTROLLED CREDENTIAL
 ```
 
 Research provenance: `research/GMAIL-2026-SOURCES.md`.
 
+Q-003 remains `ACTIVE`; synthetic/provider-contract evidence cannot substitute for a controlled real Gmail execution.
+
 ## Privacy position
 
-Q-004 still requires physical deletion/revocation and real source-lifecycle evidence. The machine-readable privacy matrix currently tracks 18 data classes and remains a DRAFT model.
+Q-004 has executable Level A evidence for:
+
+```text
+raw-content non-persistence
+local encrypted durable state
+content-free telemetry allowlist
+credential deletion on disconnect
+optional derived-state reset
+local tenant deletion
+request accounting
+restart/replay without raw mail
+```
+
+Still required before Q-004 closure:
+
+```text
+real Gmail lifecycle evidence
+real OAuth revocation evidence
+Android protected credential-store evidence
+real transport/storage inspection
+cloud deletion/backup semantics
+metadata leakage analysis
+```
+
+The machine-readable privacy matrix tracks 18 data classes and remains a DRAFT model.
 
 ## Q-005 remaining blockers
 
@@ -215,16 +230,14 @@ branch protection enforcement   OFF
 PR #1                           DRAFT / DO NOT MERGE
 ```
 
-`OPS-001` therefore remains an explicit dependency of `G-MK0`.
+`OPS-001` remains an explicit dependency of `G-MK0`.
 
 ## Critical path
 
-With the financial heart closed, the critical path advances to:
-
 ```text
-Q-003 physical Gmail feasibility
+Q-003 Level B controlled Gmail execution
         +
-Q-004 deletion/privacy evidence
+Q-004 real deletion/revocation/privacy inspection
         +
 Q-005 production crypto/recovery/mobile evidence
         ↓
