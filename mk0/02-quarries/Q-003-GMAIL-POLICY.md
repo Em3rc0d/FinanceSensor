@@ -10,302 +10,238 @@ Can a public FinanceSensor app obtain and retain the Gmail access required for i
 
 ## Current answer
 
-**Technically plausible, but not yet CLOSED for production.**
+**Technically plausible; provider contract proven; real Gmail execution still required before closure.**
 
-The Gmail API provides every primitive needed for the MK0 ingestion model: bounded message listing, staged metadata/full retrieval, incremental `historyId` synchronization and optional push notification. However, the access required for useful financial extraction is a **restricted Gmail scope**, which makes verification and privacy architecture part of the product feasibility—not paperwork to postpone until release.
+FinanceSensor now has two intentionally separated evidence levels:
+
+```text
+LEVEL A — CONTRACTUAL HARNESS      PASS
+LEVEL B — CONTROLLED REAL GMAIL    NOT EXECUTED
+```
+
+Level A proves the internal ingestion/privacy contract. It does not prove Google consent, real endpoint behavior or production approval.
 
 ## Authoritative findings
 
 ### F-003-01 — IMAP does not escape restricted-scope policy
 
-Google currently classifies all of the following as restricted Gmail scopes:
+Google currently classifies `https://mail.google.com/`, `gmail.readonly`, `gmail.metadata`, `gmail.modify` and related Gmail permissions as restricted scopes. `mail.google.com` includes IMAP/SMTP/POP3 use.
 
-```text
-https://mail.google.com/
-https://www.googleapis.com/auth/gmail.readonly
-https://www.googleapis.com/auth/gmail.metadata
-https://www.googleapis.com/auth/gmail.modify
-...
-```
-
-Google explicitly states that `https://mail.google.com/` includes IMAP, SMTP and POP3 usage.
-
-**Implication:** generic IMAP can remain an adapter for non-Gmail providers, but using IMAP for Gmail is not a policy bypass and must not be selected for that reason.
+**Implication:** IMAP remains useful as a generic non-Gmail adapter, not as a Gmail policy bypass.
 
 Sources:
-
 - https://support.google.com/cloud/answer/13464325
 - https://developers.google.com/identity/protocols/oauth2/scopes
 
-### F-003-02 — `gmail.metadata` is not enough for FinanceSensor MK0
+### F-003-02 — `gmail.metadata` is insufficient for MK0
 
-`gmail.metadata` can retrieve IDs, labels and headers, but cannot retrieve full or raw message bodies. More importantly, Gmail's `messages.list` documentation states that the `q` search parameter cannot be used when the API is accessed with `gmail.metadata`.
-
-FinanceSensor eventually needs to inspect financial message bodies and/or receipt content for amounts, merchants, card hints, order references and semantic evidence. Therefore `gmail.metadata` alone cannot establish the MK0 sensing objective.
+FinanceSensor must sometimes inspect selected financial message bodies to derive amount, merchant, semantic meaning and references. `gmail.metadata` cannot retrieve full/raw body data and also restricts query behavior.
 
 Sources:
-
 - https://developers.google.com/workspace/gmail/api/reference/rest/v1/Format
 - https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get
 - https://developers.google.com/workspace/gmail/api/guides/list-messages
 
-### F-003-03 — Candidate minimum MK0 scope is `gmail.readonly`
-
-Candidate scope:
+### F-003-03 — Minimum-scope candidate remains `gmail.readonly`
 
 ```text
 https://www.googleapis.com/auth/gmail.readonly
 ```
 
-Rationale:
+FinanceSensor MK0 reads but does not modify, send or delete Gmail messages.
 
-- FinanceSensor MK0 reads but does not modify, compose, delete or send Gmail messages.
-- `gmail.modify` and `https://mail.google.com/` provide unnecessary write/destructive capability.
-- `gmail.metadata` does not expose enough content for financial extraction.
-
-This remains a **candidate decision** until the physical OAuth/ingestion spike verifies the endpoint set and verification submission narrative.
-
-### F-003-04 — Retrieval can still be metadata-first even with `gmail.readonly`
-
-The permission scope and the amount of data retrieved per request are separate concerns.
-
-Candidate staged pipeline:
+### F-003-04 — Metadata-first retrieval is compatible with `gmail.readonly`
 
 ```text
 messages.list
-      ↓ IDs only
-messages.get(format=METADATA, selected headers)
-      ↓
-local cheap relevance filter
-      ↓ only financial candidates
-messages.get(format=FULL)
-      ↓
-local extraction
-      ↓
-discard unnecessary raw content
+      ↓ IDs
+messages.get(METADATA)
+      ↓ local relevance filter
+messages.get(FULL) only for candidates
+      ↓ local extraction
+raw content discarded
 ```
 
-`messages.get` supports `format=METADATA` and `metadataHeaders[]`, while `format=FULL` exposes parsed body data. Therefore FinanceSensor can request a read-only restricted permission while still minimizing bytes/content actually retrieved.
+### F-003-05 — Incremental synchronization is supported
 
-Source:
-
-- https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get
-
-### F-003-05 — Gmail supports incremental synchronization
-
-Google documents two sync modes:
-
-```text
-initial / recovery → full sync
-normal operation   → history.list partial sync
-```
-
-A recent `historyId` can be stored and used with `users.history.list` to fetch subsequent mailbox changes. Google notes that an invalid or expired history ID typically yields HTTP 404 and the client must perform a full sync again.
-
-**Implication:** FinanceSensor does not need to repeatedly rescan the entire mailbox.
+Google documents initial/full sync followed by `history.list` incremental sync. Expired/invalid history IDs can require a bounded recovery full sync.
 
 Sources:
-
 - https://developers.google.com/workspace/gmail/api/guides/sync
 - https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list
 
-### F-003-06 — Gmail push introduces cloud-visible mailbox metadata
+### F-003-06 — Pub/Sub push is not required for MK0
 
-Gmail push notifications require a Google Cloud Pub/Sub topic. The developer project must own/match the topic, and the decoded notification contains at least:
-
-```json
-{
-  "emailAddress": "user@example.com",
-  "historyId": "..."
-}
-```
-
-A watch must be renewed at least every seven days; Google recommends daily renewal.
-
-This matters because a strict “our cloud knows nothing about the mailbox” claim would be false if FinanceSensor uses the standard server-delivered Gmail push path.
-
-**Candidate MK0 decision:** do not make Pub/Sub push a prerequisite for MK0. Prove device-driven bounded/partial sync first. Re-evaluate push later as a latency/battery optimization with explicit metadata privacy accounting.
+Standard Gmail push introduces Google Cloud Pub/Sub and mailbox identity/history metadata at the cloud boundary. FinanceSensor therefore keeps push outside the MK0 critical path and favors device-driven eventual freshness first.
 
 Source:
-
 - https://developers.google.com/workspace/gmail/api/guides/push
 
-### F-003-07 — Public consumer production requires restricted-scope verification
+### F-003-07 — Public production requires restricted-scope verification
 
-Google requires additional OAuth verification for public apps requesting restricted scopes unless an exception applies. Development/testing/staging apps are exempt from mandatory verification, and personal-use apps under the stated limit can continue with unverified warnings, but this is not a commercial production strategy.
-
-Google also applies an unverified-app warning/user cap to unverified apps using risky scopes; current documentation describes a 100-user limit in relevant cases.
+Development/testing can use controlled exceptions, but a commercial public app cannot treat the unverified-app path/user cap as a launch strategy.
 
 Sources:
-
 - https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification
 - https://support.google.com/googleapi/answer/7454865
 - https://support.google.com/cloud/answer/13464323
 
-### F-003-08 — Third-party server access can trigger annual security assessment
+### F-003-08 — Security-assessment applicability remains architecture-dependent
 
-Google's current restricted-scope verification documentation states that an app requesting restricted data and having the ability to access that data **from or through a third-party server** must undergo a security assessment using Google's approved assessment process. Separate help documentation describes annual assessment/recertification requirements for affected apps.
-
-**Architecture implication:** keeping Gmail bodies and financial extraction on the authorized device is not merely a privacy preference; it may materially reduce the server-side restricted-data attack surface and compliance burden.
-
-**Important non-claim:** FinanceSensor does **not** yet claim that on-device-only handling guarantees exemption from a security assessment. The production design must be presented to Google and assessed against the rules in force when verification is submitted.
+Third-party-server access to restricted data can trigger Google-approved security assessment requirements. Keeping Gmail content on the authorized device narrows the server attack surface, but FinanceSensor does **not** claim this guarantees an exemption.
 
 Sources:
-
 - https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification
 - https://support.google.com/cloud/answer/13465431
 - https://support.google.com/cloud/answer/13463816
 
-### F-003-09 — FinanceSensor appears plausibly within an approved Gmail use family
+### F-003-09 — Intended use appears plausibly within user-benefit monitoring/reporting
 
-Google's Workspace developer policy currently lists as an approved Gmail category applications that use email information to provide **reporting or monitoring services for the benefit of users**, with examples such as itinerary automation and package/flight monitoring.
-
-FinanceSensor's intended use—extracting user-visible financial evidence from the user's own email to provide personal financial monitoring—appears conceptually adjacent to this approved family.
-
-**Important non-claim:** adjacency is not approval. Only Google's verification process can establish acceptance of the exact FinanceSensor product use case.
+FinanceSensor's use appears adjacent to Google's approved Gmail user-benefiting monitoring/reporting family, but actual acceptance must come from Google's verification process.
 
 Source:
-
 - https://developers.google.com/workspace/workspace-api-user-data-developer-policy
 
-### F-003-10 — Limited Use constrains future monetization and AI choices
-
-The current Workspace user-data policy requires Google-derived data to be used only for the appropriate user-facing feature and places strong limits on transfer and secondary use. It explicitly prohibits transferring, selling or using that data to determine creditworthiness or for lending, and restricts using Workspace user data to create/train/improve generalized AI/ML models beyond user-specific models for the appropriate feature.
-
-This is strategically important for FinanceSensor.
-
-**Implications:**
+### F-003-10 — Limited Use constrains future monetization/AI
 
 ```text
-NO ad targeting from Gmail-derived finance data
+NO Gmail-derived ad targeting
 NO sale to data brokers
-NO Gmail-derived credit scoring/lending decision engine
+NO Gmail-derived creditworthiness/lending decisions
 NO pooled Gmail corpus for generalized model training
 ```
 
-A future recommendation marketplace or financial-product monetization model must never silently repurpose Gmail-derived data.
-
 Source:
-
 - https://developers.google.com/workspace/workspace-api-user-data-developer-policy
 
-## Candidate endpoint/scope matrix
+## Endpoint/scope matrix
 
 | MK0 need | Endpoint / mode | Candidate scope | Decision |
 |---|---|---|---|
 | Enumerate bounded candidates | `messages.list` | `gmail.readonly` | REQUIRED candidate |
 | Retrieve selected headers | `messages.get?format=METADATA` | `gmail.readonly` | REQUIRED candidate |
-| Retrieve body for selected candidate | `messages.get?format=FULL` | `gmail.readonly` | REQUIRED candidate |
-| Incremental mailbox changes | `history.list` | `gmail.readonly` | REQUIRED candidate |
-| Push trigger | `users.watch` + Pub/Sub | restricted Gmail access + cloud infra | DEFER from MK0 critical path |
-| Modify labels/messages | `messages.modify` | `gmail.modify` | NOT REQUIRED |
-| Send mail | send endpoints | send/compose scope | NOT REQUIRED |
-| Delete mail | delete endpoints | broad scope | FORBIDDEN by MK0 product scope |
+| Retrieve selected body | `messages.get?format=FULL` | `gmail.readonly` | REQUIRED candidate |
+| Incremental changes | `history.list` | `gmail.readonly` | REQUIRED candidate |
+| Current history cursor | `users.getProfile` | `gmail.readonly` | REQUIRED candidate |
+| Push trigger | `users.watch` + Pub/Sub | restricted access + cloud | DEFER |
+| Modify messages | modify endpoints | `gmail.modify` | NOT REQUIRED |
+| Send mail | send endpoints | send/compose | NOT REQUIRED |
+| Delete mail | delete endpoints | broad scope | FORBIDDEN BY MK0 |
 
-## Candidate ingestion architecture
+## Level A — contractual ingress proof
 
-```text
-Gmail API
-   │ direct TLS from authorized device
-   ↓
-messages.list / history.list
-   ↓
-METADATA retrieval
-   ↓
-local relevance filter
-   ↓
-FULL only for likely financial messages
-   ↓
-local parser / classifier
-   ↓
-minimal FinancialEvidence
-   ↓
-canonical resolver
-   ↓
-encrypted local ledger
-```
+Implemented under `spikes/physical-ingress/`.
 
-The control plane receives connection health/routing metadata only as explicitly approved by the privacy model. Raw Gmail body/attachments are not part of normal cloud synchronization.
+Evidence:
+`mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
 
-## Verification package FinanceSensor must eventually possess
-
-Before a public Gmail launch, prepare at minimum:
+Observed:
 
 ```text
-public product home page
-privacy policy on verified domain
-clear Gmail-data disclosure
-OAuth consent screen matching real functionality
-minimum-scope justification
-demo/video of exact OAuth flow and user-facing feature
-terms/support contact
-Google Limited Use disclosure
-account deletion / data deletion behavior
-credential revocation behavior
-security architecture description
-restricted-data data-flow diagram
+21 / 21 PASS
+bounded 30/90-day listing          PASS
+metadata-first                     PASS
+FULL only for candidates           PASS
+incremental history model          PASS
+history 404 recovery               PASS
+restart/replay                     PASS
+idempotent reprocessing            PASS
+canonical resolver reuse           PASS
+raw body durable retention         0
+raw attachment retention           0
+plaintext financial cloud          0 in harness
+token in logs                      0 in harness
 ```
 
-Exact submission requirements can change and must be refreshed immediately before production verification.
+The ingress engine was converted to one async provider contract so synthetic and real Gmail adapters traverse the same code path.
 
-## Physical spike required
+## Level B — real Gmail path prepared
 
-Policy research is not sufficient to close this quarry.
+Implemented but **not executed**:
 
 ```text
-Google Cloud DEV project
-        ↓
-Android OAuth client
-        ↓
-gmail.readonly
-        ↓
-connect controlled test account
-        ↓
-list bounded 30/90 day history
-        ↓
-METADATA-first selection
-        ↓
-FULL candidate retrieval on device
-        ↓
-historyId incremental sync
-        ↓
-revoke authorization
-        ↓
-verify token/local-data cleanup
-        ↓
-measure requests, bytes, timings, retained content
+spikes/physical-ingress/src/gmail-rest-provider.js
+spikes/physical-ingress/live/run-gmail.mjs
+.github/workflows/gmail-live-spike.yml
 ```
 
-No production credentials or user data should be committed to this repository.
+Prepared capabilities:
+
+```text
+real Gmail REST Bearer auth
+bounded messages.list
+METADATA / FULL messages.get
+history.list
+profile historyId
+aggregate privacy-safe result output
+optional remote token revoke
+```
+
+The manual workflow is isolated behind environment `gmail-controlled-spike` and expects an ephemeral secret named `FINANCESENSOR_GMAIL_ACCESS_TOKEN`. No real credential belongs in the repository or chat transcript.
+
+## Remaining external gate
+
+Q-003 cannot close until a **controlled Google Cloud DEV project + controlled Gmail test account** grants the candidate `gmail.readonly` access and the live path is executed.
+
+That evidence must establish at least:
+
+```text
+REAL_OAUTH_CONSENT             PASS / FAIL
+REAL_MESSAGES_LIST             PASS / FAIL
+REAL_METADATA_GET              PASS / FAIL
+REAL_SELECTED_FULL_GET         PASS / FAIL
+REAL_HISTORY_CURSOR            PASS / FAIL
+REAL_INCREMENTAL_SYNC          PASS / FAIL
+REAL_REMOTE_REVOCATION         PASS / FAIL
+NO_SECRET_LOGGING              PASS / FAIL
+BOUNDED_REQUESTS               measured
+BYTES / TIMING                 measured
+```
+
+## Verification package still required before public launch
+
+- public product home page;
+- privacy policy on verified domain;
+- clear Gmail-data disclosure;
+- OAuth consent matching real functionality;
+- minimum-scope justification;
+- demo/video of exact OAuth flow and feature;
+- terms/support contact;
+- Limited Use disclosure;
+- account/data deletion behavior;
+- credential revocation behavior;
+- security architecture/data-flow diagram.
 
 ## Current decision
 
 ```text
 GMAIL_TECHNICAL_PRIMITIVES       PASS
 MINIMUM_SCOPE_CANDIDATE          gmail.readonly
-METADATA_FIRST_PIPELINE          FEASIBLE
-INCREMENTAL_SYNC                 FEASIBLE
+METADATA_FIRST_PIPELINE          PROVEN_AT_SPIKE
+INCREMENTAL_SYNC_MODEL           PROVEN_AT_SPIKE
+REAL_GMAIL_ADAPTER               READY / NOT EXECUTED
 PUSH_REQUIRED_FOR_MK0            NO
 PRODUCTION_OAUTH_VERIFICATION    REQUIRED
 PERMITTED_USE_FIT                PLAUSIBLE / NOT YET VERIFIED
 SECURITY_ASSESSMENT_APPLICABILITY OPEN
-PHYSICAL_ANDROID_OAUTH_SPIKE      NOT YET EXECUTED
+REAL_GMAIL_LIVE_SPIKE            BLOCKED ON CONTROLLED AUTHORIZATION
 
 GMAIL_FEASIBILITY                ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
 
-Q-003 closes only when all are true:
+Q-003 closes only when:
 
-- feature → exact Gmail endpoint/scope mapping is frozen;
-- production verification path is refreshed from authoritative sources;
-- security-assessment applicability is documented for the actual architecture;
+- exact endpoint/scope mapping is frozen;
+- policy path is refreshed before production verification;
+- security-assessment applicability is documented for actual architecture;
 - appropriate-use fit has no unresolved policy contradiction;
-- user consent/disclosure requirements are captured;
-- revocation/deletion flow is specified and physically tested;
-- metadata/full/history behavior is measured on a controlled Gmail account;
-- architecture is updated to avoid unnecessary access;
+- consent/disclosure requirements are captured;
+- controlled real OAuth + list/metadata/full/history path executes;
+- remote revoke behavior is observed;
+- request/byte/timing evidence is recorded;
+- Android protected credential handling is reconciled or explicitly scoped to Q-004/Q-005;
 - evidence artifact is stored under `mk0/10-evidence/`;
-- a closure receipt is issued;
-- explicit `GMAIL_FEASIBILITY PASS/FAIL` decision is recorded.
+- closure receipt is issued;
+- explicit `GMAIL_FEASIBILITY PASS/FAIL` is recorded.
