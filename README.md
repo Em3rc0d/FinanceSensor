@@ -2,6 +2,20 @@
 
 > **OBD-II for your finances.** A privacy-first financial sensing system that observes digital financial evidence, resolves it into trustworthy financial events, and explains what matters in language anyone can understand.
 
+## Current state
+
+**MK0 is in specification/research. Full implementation is intentionally blocked until the P0 quarries and feasibility spikes close.**
+
+- [Project status](STATUS.md)
+- [Product thesis](product/PRODUCT-THESIS.md)
+- [Product invariants](product/PRODUCT-INVARIANTS.md)
+- [Core data model](mk0/05-data-model/CORE-DATA-MODEL.md)
+- [Signature wireframes](mk0/06-wireframes/SIGNATURE-WIREFRAMES.md)
+- [Core architecture](mk0/04-architecture/CORE-ARCHITECTURE.md)
+- [MK0 plan](mk0/07-plan/MK0-PLAN.md)
+- [Active quarries](mk0/02-quarries/README.md)
+- [Competitive archaeology](research/MINING-001-COMPETITIVE-ARCHAEOLOGY.md)
+
 ## Product thesis
 
 FinanceSensor is **not** an expense tracker, accounting package, banking app, or financial chatbot.
@@ -37,6 +51,8 @@ The cloud coordinates. Devices observe and reason. The tenant owns the financial
 
 ```text
 FinanceSensor/
+├── README.md
+├── STATUS.md
 ├── product/
 │   ├── PRODUCT-THESIS.md
 │   ├── PRODUCT-INVARIANTS.md
@@ -44,6 +60,7 @@ FinanceSensor/
 │   ├── ROADMAP.md
 │   └── DECISION-LOG.md
 ├── research/
+│   ├── MINING-000-SOURCE-CONCEPT.md
 │   ├── MINING-001-COMPETITIVE-ARCHAEOLOGY.md
 │   └── SOURCES.md
 └── mk0/
@@ -61,6 +78,12 @@ FinanceSensor/
     ├── 11-decisions/
     └── 12-release/
 ```
+
+## Research ancestry
+
+The initial source concept — a “financial department in your pocket” with a single financial state, specialist responsibilities, reconciliation, recurring-spend auditing, evidence-backed alerts and a strict no-invented-data rule — is preserved in [`research/MINING-000-SOURCE-CONCEPT.md`](research/MINING-000-SOURCE-CONCEPT.md).
+
+FinanceSensor transforms that document-driven workflow into an automated, event-driven, mobile/edge architecture.
 
 ## MK0 objective
 
@@ -90,11 +113,12 @@ sync E2EE across devices
 show a no-scroll financial home
 ```
 
-### MK0 gates
+### MK0 build-entry gates
 
 ```text
 PRODUCT_DEFINITION       PASS
 MK0_SCOPE                FROZEN
+P0_QUARRIES              CLOSED
 TENANCY_MODEL            PASS
 FINANCIAL_MODEL          PASS
 EVENT_INVARIANTS         PASS
@@ -159,6 +183,7 @@ Failures route to their actual cause. We do not patch a domain-model problem wit
 3. Gmail/OAuth production feasibility.
 4. Email privacy and Limited Use constraints.
 5. Local-first / E2EE multi-device synchronization.
-6. MK0 signature UX.
+6. Low/mid Android feasibility.
+7. MK0 signature viewport validation.
 
 See [`mk0/02-quarries/README.md`](mk0/02-quarries/README.md) for the active research graph.
