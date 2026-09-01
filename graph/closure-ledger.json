@@ -104,11 +104,16 @@
       "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-003-GMAIL-POLICY.md"],
       "dependsOn": ["P-001"],
-      "validates": ["A-001", "SEC-001", "G-MK0"],
+      "validates": ["A-001", "SEC-001", "S-003", "T-003", "G-MK0"],
       "revalidates": ["P-001"],
       "evidence": [
         "mk0/02-quarries/Q-003-GMAIL-POLICY.md",
-        "research/GMAIL-2026-SOURCES.md"
+        "research/GMAIL-2026-SOURCES.md",
+        "spikes/physical-ingress/README.md",
+        "spikes/physical-ingress/src/provider.js",
+        "spikes/physical-ingress/src/ingress.js",
+        "spikes/physical-ingress/test/ingress.test.js",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -119,14 +124,18 @@
       "status": "ACTIVE",
       "artifacts": ["mk0/02-quarries/Q-004-EMAIL-PRIVACY.md"],
       "dependsOn": ["P-001", "P-002"],
-      "validates": ["A-001", "SEC-001", "G-MK0"],
+      "validates": ["A-001", "SEC-001", "S-003", "T-003", "G-MK0"],
       "revalidates": ["P-001", "P-002"],
       "evidence": [
         "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
         "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
         "tools/validate-privacy-matrix.mjs",
+        "spikes/physical-ingress/src/privacy.js",
+        "spikes/physical-ingress/src/vault.js",
+        "spikes/physical-ingress/test/ingress.test.js",
         "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
-        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
       ],
       "closureReceipt": null
     },
@@ -300,6 +309,47 @@
       "evidence": [
         ".github/workflows/mk0-foundation.yml",
         "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-003",
+      "kind": "spike",
+      "title": "Physical financial ingress contractual harness",
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/physical-ingress/README.md",
+        "spikes/physical-ingress/src/provider.js",
+        "spikes/physical-ingress/src/ingress.js",
+        "spikes/physical-ingress/src/vault.js",
+        "spikes/physical-ingress/src/privacy.js"
+      ],
+      "dependsOn": ["Q-003", "Q-004"],
+      "validates": ["T-003"],
+      "revalidates": ["Q-003", "Q-004", "Q-001", "Q-002", "A-001", "SEC-001"],
+      "evidence": [
+        "spikes/physical-ingress/test/ingress.test.js",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-003",
+      "kind": "test",
+      "title": "Physical ingress, recovery and privacy invariant suite",
+      "status": "PASS",
+      "artifacts": [
+        "spikes/physical-ingress/test/ingress.test.js",
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml"
+      ],
+      "dependsOn": ["Q-003", "Q-004", "S-003"],
+      "validates": [],
+      "revalidates": ["Q-003", "Q-004", "S-003", "Q-001", "Q-002", "A-001", "SEC-001"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
       ],
       "closureReceipt": null
     },
