@@ -1,7 +1,7 @@
 # ADR-014 — All-Devices-Lost Recovery Without a Server Master Key
 
-**Status:** SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED  
-**Owner:** Q-005  
+**Owner node:** Q-005 (`ACTIVE`)  
+**Decision maturity:** SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED  
 **Date:** 2026-09-01
 
 ## Context
@@ -207,4 +207,4 @@ PRODUCTION CRYPTO SUITE       OPEN
 
 ## Why this ADR is not release-grade `PROVEN`
 
-The spike proves the ownership and state-transition model only. Q-005 still requires reviewed production crypto, physical Android/iOS key behavior, real cloud authorization, recovery-kit handling and physical disaster-recovery evidence before release closure.
+The spike proves the ownership and state-transition model only. Q-005 remains `ACTIVE` and still requires reviewed production crypto, physical Android/iOS key behavior, real cloud authorization, recovery-kit handling and physical disaster-recovery evidence before release closure.
