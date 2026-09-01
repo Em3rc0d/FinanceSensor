@@ -233,6 +233,8 @@ Financial payload fields do not exist as relay plaintext columns.
 
 An origin envelope is accepted only if its origin record is authorized for `envelope.tenant_id + envelope.key_epoch`; a same-ID authorization record from another tenant is not sufficient.
 
+For a revoked origin, cryptographic validity under a historical epoch is **not sufficient** after cutover. Historical admissibility must also be proven against the revoked origin's authenticated cutover commitment.
+
 ## 9. DeviceSyncCheckpoint
 
 Device-local crash-safe operational state.
@@ -244,6 +246,7 @@ last_server_sequence_seen
 per_origin_contiguous_sequences
 missing_origin_ranges
 known_key_epochs
+known_revocation_barrier_ids
 pending_local_event_ids
 schema_version
 updated_at
@@ -264,7 +267,54 @@ updated_at
 
 Sequence allocation must be durable enough that app restart does not reuse an already-committed origin sequence.
 
-## 11. SyncConflict
+## 11. RevocationBarrier
+
+Signed authorization metadata freezing the exact accepted historical origin stream for one revoked device.
+
+Conceptual record:
+
+```text
+id
+tenant_id
+revoked_device_id
+revoked_from_key_epoch
+last_accepted_origin_sequence
+history_commitment
+commitment_algorithm_id
+authorizing_device_id
+authorizer_signature
+created_at
+status                ACTIVE | SUPERSEDED | INVALID
+```
+
+Load-bearing contract:
+
+```text
+revoked DeviceAuthorization belongs to tenant
+revoked_from_key_epoch matches barrier
+        +
+authorizer DeviceAuthorization belongs to same tenant
+        +
+authorizer is authorized at revoked_from_key_epoch
+        +
+authorizer != revoked device
+        +
+historical origin stream is contiguous through cutoff
+        +
+barrier signature validates
+        ↓
+AUTHENTICATED REVOCATION CUTOVER
+```
+
+The bounded spike commits an ordered canonical digest set of accepted historical envelopes. Production may use a reviewed hash chain, Merkle/checkpoint structure or equivalent append-only commitment.
+
+The barrier is **not financial truth** and contains no required financial plaintext. It is security-sensitive control-plane metadata governing whether historical envelopes from a revoked origin remain admissible.
+
+Exact relay duplicates and transport reordering of the committed historical set remain harmless. Post-cutover extension, sequence substitution, sequence forks and unresolved gaps fail closed.
+
+See `../04-architecture/REVOCATION-CUTOVER.md`.
+
+## 12. SyncConflict
 
 Deterministic record for non-commutative concurrent user actions.
 
@@ -284,7 +334,7 @@ resolved_at?
 
 Conflict candidates remain encrypted domain payload/state. The cloud relay need not interpret the conflict.
 
-## 12. DomainAction
+## 13. DomainAction
 
 Decrypted local representation of a sync payload.
 
@@ -307,7 +357,9 @@ The exact action catalogue remains subject to Q-001/Q-002/Q-005 reconciliation.
 
 Recovery-sensitive actions must not expose Recovery Private Key material.
 
-## 13. ProcessingLease
+A Revocation Barrier is modeled as signed control-plane authorization metadata rather than an ordinary encrypted financial `DomainAction` in the current spike.
+
+## 14. ProcessingLease
 
 Existing coordination record remains intentionally non-authoritative for correctness.
 
@@ -337,7 +389,7 @@ idempotent materialization
 
 A missing/expired/duplicated lease may waste work but must not duplicate economic truth.
 
-## 14. Autonomic runtime state
+## 15. Autonomic runtime state
 
 `RESTING`, `BACKOFF`, `WAITING_FOR_OS`, `WAITING_FOR_CONNECTIVITY`, battery flags and similar transient scheduler states are not automatically tenant-domain truth.
 
@@ -348,13 +400,16 @@ checkpoint
 pending work identity
 failure class / bounded retry metadata
 next provider-allowed attempt where required
+revocation cutover checkpoint where applicable
 ```
 
 Do not event-source every ephemeral scheduler transition.
 
-## 15. Revocation semantics
+## 16. Revocation semantics
 
-Normal device revocation:
+Normal device revocation is now a two-part contract.
+
+### Part A — future key authority
 
 ```text
 DeviceAuthorization B → REVOKED from epoch N+1
@@ -364,9 +419,26 @@ RecoveryEpochWrap N+1 → created for active Recovery Public Key
 SyncEnvelope N+1 → accepted only from devices authorized for same tenant + N+1
 ```
 
-Creation and consumption of `DeviceKeyWrap` both enforce the authorization window. Historical device-held plaintext/key material cannot be retroactively erased by this model.
+### Part B — historical admissibility cutover
 
-## 16. All-devices-lost recovery transition
+Because B may still own epoch N + its signing private key:
+
+```text
+accepted historical B envelopes
+        ↓
+resolve/fail any sequence gaps through chosen cutoff
+        ↓
+compute accepted-history commitment
+        ↓
+still-authorized device signs RevocationBarrier
+        ↓
+post-cutover B envelope is historical-admissible
+IFF it belongs to committed accepted history
+```
+
+Creation and consumption of `DeviceKeyWrap` both enforce the authorization window. Historical device-held plaintext/key material cannot be retroactively erased by this model, but retained historical keys do not grant permission to create newly admissible history after cutover.
+
+## 17. All-devices-lost recovery transition
 
 ADR-014 defines the disaster path.
 
@@ -386,16 +458,19 @@ RecoveryEpochWrap N+1 → new Recovery Public Key
         ↓
 authenticated RecoveryCoverage(N+1) = COVERED
         ↓
-post-recovery readiness predicate passes
+lower-level post-recovery readiness predicate passes
         ↓
-normal future sync resumes
+RevocationBarrier for every lost device
+signed by the newly authorized recovery device
+        ↓
+SAFE_TO_RESUME_FUTURE_SYNC
 ```
 
 The recovered device must not simply inherit the identity/private keys of a lost device.
 
-### Future-sync hardening gate
+### Lower-level hardening gate
 
-A recovery **plan** is not sufficient. Before future sync is considered ready, the executable state must prove all of:
+Before even considering the final cutover, executable state must prove all of:
 
 ```text
 current tenant key epoch = N+1
@@ -405,13 +480,26 @@ all declared lost devices are REVOKED from N+1
 N+1 has authenticated/non-ambiguous recovery coverage under the new Recovery Key
 ```
 
-Any missing condition fails closed.
+### Final load-bearing resume gate
 
-## 17. Recovery failure semantics
+The lower-level state is necessary but not sufficient. Final resume additionally requires:
+
+```text
+one authenticated RevocationBarrier
+for every declared lost device
+bound to tenant + lost device + N+1 + new recovery device authority
+```
+
+Any missing/tampered barrier fails closed.
+
+## 18. Recovery failure semantics
 
 ```text
 all devices lost + valid Recovery Kit + complete authenticated wraps
-→ recoverable in principle
+→ cryptographic recovery possible in principle
+
+recovery complete + missing lost-device RevocationBarrier
+→ future sync remains blocked by final cutover gate
 
 all devices lost + missing/invalid/ambiguous required epoch wrap
 → recovery coverage failure
@@ -422,7 +510,7 @@ all devices lost + Recovery Kit lost
 
 No logical `server_master_key` entity exists.
 
-## 18. Privacy ownership
+## 19. Privacy ownership
 
 The model maps to explicit privacy classes:
 
@@ -433,6 +521,7 @@ TENANT-KEY-WRAP
 RECOVERY-PRIVATE-KEY
 RECOVERY-PUBLIC-KEY
 RECOVERY-EPOCH-WRAP
+REVOCATION-CUTOVER-BARRIER
 KEY-EPOCH-METADATA
 CLOUD-E2EE-ENVELOPE
 SYNC-CHECKPOINT
@@ -440,7 +529,9 @@ SYNC-CHECKPOINT
 
 `RECOVERY-PRIVATE-KEY` is intentionally absent from ordinary cloud persistence and tenant E2EE synchronization.
 
-## 19. Deletion relationship
+`REVOCATION-CUTOVER-BARRIER` is allowed as minimized signed cloud metadata but is classified explicitly because it leaks device/cutover activity information.
+
+## 20. Deletion relationship
 
 Tenant deletion must cover, subject to final legal/security retention rules:
 
@@ -451,6 +542,7 @@ TenantKeyEpoch metadata
 DeviceKeyWrap ciphertext
 RecoveryKeyRecord public metadata
 RecoveryEpochWrap ciphertext
+RevocationBarrier metadata/signatures
 SyncEnvelope ciphertext
 local DeviceSyncCheckpoint
 local OriginSequenceState
@@ -460,7 +552,7 @@ transient imported Recovery Private Key material
 
 FinanceSensor cannot remotely delete a Recovery Kit copy the user exported outside the application. The UX/policy must state that limitation accurately.
 
-## 20. Executable recovery and key-authority evidence
+## 21. Executable recovery, revocation and key-authority evidence
 
 Current spike evidence binds:
 
@@ -470,47 +562,42 @@ INV-SYNC-008 cloud lacks recovery decryption authority
 INV-SYNC-009 recoverable epochs require authenticated, unique recovery coverage
 INV-SYNC-010 recovery hardening must be applied before future sync
 INV-SYNC-011 old Recovery Key cannot decrypt future-only epochs
+INV-SYNC-012 revoked-origin accepted history is frozen at authenticated cutover
 ```
 
 Load-bearing executable cases include:
 
 ```text
-KEY-001 authorizer identity binding
-KEY-002 revoked authorizer rejection
-KEY-003 recipient authorization re-check on unwrap
-KEY-004 cross-tenant origin authorization rejection
-KEY-005 cross-tenant key recipient rejection
-
-REC-013 recovery authorizer identity binding
-REC-014 revoked recovery authorizer rejection
-REC-015 tampered wrap cannot count as coverage
-REC-016 distinct authentic duplicate authority fails closed
-REC-017 exact duplicate delivery remains idempotent
-REC-018 post-recovery future-sync readiness gate
+KEY-001..KEY-005 tenant/epoch/identity key authority
+REC-001..REC-018 recovery ownership + lower-level hardening
+REV-001..REV-007 revocation cutover integrity
+REC-019..REC-022 final post-recovery cutover gate
 ```
 
 Evidence:
 
-`../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `../10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
 
 Current level: `PROVEN_AT_SPIKE` only.
 
-## 21. Physical-schema blockers
+## 22. Physical-schema blockers
 
 Do not freeze migrations for this model until:
 
 ```text
-Q-005 synthetic suite               PASS
-all-devices-lost ownership model    SPIKE-ACCEPTED / ADR-014
-production crypto suite             REVIEWED
-recovery authentication gate        FROZEN
-recovery retention/deletion policy  FROZEN
-metadata leakage threat model       PASS
-Android key storage                 PHYSICAL EVIDENCE
-Apple key storage                   PHYSICAL EVIDENCE
-physical recovery                   PHYSICAL EVIDENCE
-physical revocation/rotation        PHYSICAL EVIDENCE
-schema migration/replay policy      FROZEN
+Q-005 synthetic suite                    PASS
+all-devices-lost ownership model         SPIKE-ACCEPTED / ADR-014
+production crypto suite                  REVIEWED
+production revoked-origin commitment     REVIEWED
+recovery authentication gate             FROZEN
+recovery/cutover retention policy        FROZEN
+metadata leakage threat model            PASS
+Android key storage                      PHYSICAL EVIDENCE
+Apple key storage                        PHYSICAL EVIDENCE
+physical recovery                        PHYSICAL EVIDENCE
+physical revocation/rotation/cutover     PHYSICAL EVIDENCE
+schema migration/replay policy           FROZEN
 ```
 
 This document is a logical contract, not permission to implement unrestricted sync infrastructure.
