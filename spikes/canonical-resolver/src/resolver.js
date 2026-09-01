@@ -185,21 +185,19 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
     if (best) {
       const strongReference = sharedStrongReference(best, candidate);
       const independentSources = hasIndependentSources(best, candidate);
-      const crossSourceMergeEligible = strongReference || independentSources;
 
-      // Conservative rule: two distinct artifacts from the same source family are
-      // never silently collapsed only because amount/merchant/time happen to match.
-      // False merges corrupt financial truth more severely than temporary false splits.
-      if (crossSourceMergeEligible && bestScore >= autoMergeThreshold) {
+      // Automatic merging requires a hard cross-artifact link. Amount + merchant + time
+      // are useful for ranking but are not sufficient proof of economic identity.
+      if (strongReference && bestScore >= autoMergeThreshold) {
         best.evidenceIds = [...new Set([...best.evidenceIds, ...candidate.evidenceIds])];
         best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];
         best.confidence = Math.max(best.confidence, candidate.confidence, bestScore);
         continue;
       }
 
-      // Ambiguity is surfaced only when independent sources suggest the same event.
-      // Same-source distinct artifacts remain separate unless a strong reference links them.
-      if (crossSourceMergeEligible && bestScore >= reviewThreshold) {
+      // Independent sources may strongly suggest the same event but, without a hard link,
+      // ambiguity is surfaced instead of silently mutating financial truth.
+      if (independentSources && bestScore >= reviewThreshold) {
         review.push({ candidate, possibleCanonicalId: best.id, score: bestScore });
         continue;
       }
