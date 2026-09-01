@@ -39,7 +39,7 @@ Q-001 Canonical semantics             CLOSED
 Q-002 Fingerprinting/dedup            CLOSED
 ```
 
-The closed nodes remain reopenable if later provider/device evidence contradicts their claims.
+Closed nodes remain reopenable if later provider/device evidence contradicts their claims.
 
 ## Financial heart evidence
 
@@ -56,27 +56,33 @@ BENCHMARK DECISION ACCURACY  100%
 
 ## Q-005 load-bearing evidence
 
-Validated executable cutover commit: `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`.  
-Validated whole-organism architecture/documentation head: `fd7036a0fe60a7765e5a399130718c42adb9da95`.
+Validated knee-stress evidence: `mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`.
+Validated whole-organism head: `0898a60eb08244072d6e60b3b0932d215d82cbd6`.
 
 ```text
-E2EE / KEY / RECOVERY / REVOCATION / PNS   PASS — 62/62 tests
-RECOVERY OWNERSHIP + LOWER GATE             PASS — REC-001..018
-REVOCATION CUTOVER                          PASS — 7/7 tests
-POST-RECOVERY CUTOVER                       PASS — 4/4 tests
-KEY AUTHORITY LOAD TEST                     PASS — 5/5 tests
-T-002                                       PASS
-Q-005                                       ACTIVE
-ADR-014 RECOVERY OWNERSHIP                  SPIKE-ACCEPTED
-INV-SYNC-008..012                           PROVEN_AT_SPIKE
+E2EE / KEY / RECOVERY / REVOCATION / KNEE / PNS  PASS — 84/84 tests
+RECOVERY OWNERSHIP + LOWER GATE                    PASS — REC-001..018
+POST-RECOVERY CUTOVER                              PASS — REC-019..022
+REVOCATION CUTOVER                                 PASS — REV-001..007
+KEY AUTHORITY LOAD                                 PASS — KEY-001..005
+KNEE ADVERSARIAL CAMPAIGN                          PASS — 12 red assertions exposed then repaired
+SYNC REPLAY IDENTITY                               PASS IN TESTED MODEL
+ORIGIN SEQUENCE IDENTITY                           PASS IN TESTED MODEL
+TENANT-ISOLATED MATERIALIZATION                    PASS IN TESTED MODEL
+CONFLICT / META-CONFLICT SEMANTICS                 PASS IN TESTED MODEL
+T-002                                              PASS
+Q-005                                              ACTIVE
+ADR-014 RECOVERY OWNERSHIP                         SPIKE-ACCEPTED
+INV-SYNC-008..015                                  PROVEN_AT_SPIKE where wired
 ```
 
 Evidence:
 
 - `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
 - `mk0/10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
 
-The load-bearing audits now protect four adjacent contracts:
+The load-bearing audits now protect:
 
 ```text
 RECOVERY COVERAGE
@@ -102,32 +108,35 @@ REVOCATION CUTOVER
 
 POST-RECOVERY FINAL RESUME
   lower-level hardening is necessary but not final authority
-  one authenticated Revocation Barrier is required per lost device
-  missing/tampered barrier keeps future sync blocked
+  every lost device requires recovered-history evidence and an authenticated cutover barrier
+  active-at-recovery-epoch devices cannot disappear from the disaster inventory
+  missing/tampered/ambiguous cutover state keeps future sync blocked
+
+SYNC IDENTITY
+  event_id is immutable
+  (tenant, origin_device, sequence) is an immutable slot
+  exact duplicates are idempotent
+  divergent identity reuse fails closed
+  one materialization belongs to one tenant
+
+CONFLICT RESOLUTION
+  incompatible corrections become explicit conflict
+  incompatible resolutions become explicit meta-conflict
+  invalid resolution targets fail closed
+  equivalent same-choice resolutions converge
 ```
 
-The logical all-devices-lost ownership and stale-epoch cutover problems are no longer conceptually open at spike level:
+### Explicit Q-005 anti-rollback limit
+
+The knee campaign proved integrity of history that the recovering device can observe. It did **not** prove Byzantine availability/freshness.
 
 ```text
-SERVER MASTER KEY                  REJECTED
-PASSWORD-ONLY RECOVERY             REJECTED FOR MK0
-ASYMMETRIC RECOVERY KEY            ACCEPTED AT SPIKE LEVEL
-RECOVERY PRIVATE KEY               USER-HELD / OFFLINE
-PER-EPOCH RECOVERY WRAP            REQUIRED
-AUTHENTICATED COVERAGE             REQUIRED
-AMBIGUOUS COVERAGE                 FAIL CLOSED
-POST-RECOVERY DEVICE HARDENING     REQUIRED
-POST-RECOVERY TENANT ROTATION      REQUIRED
-POST-RECOVERY RECOVERY ROTATION    REQUIRED
-NEXT-EPOCH RECOVERY COVERAGE       REQUIRED
-LOWER-LEVEL READINESS GATE         REQUIRED
-REVOCATION BARRIER                 REQUIRED
-STALE-EPOCH POST-CUTOVER HISTORY   REJECTED
-UNRESOLVED CUTOVER GAP             FAIL CLOSED
-FINAL SAFE-TO-RESUME GATE          REQUIRED
+FIRST-SEEN COMPLETE-LOOKING PREFIX
+        !=
+PROOF THAT A RELAY DID NOT WITHHOLD A LATER PREFIX
 ```
 
-Q-005 remains open because production cryptography/history commitment, physical Android/iOS key/background behavior, real control-plane authorization, Recovery Kit handling, barrier persistence and physical disaster recovery still require evidence.
+A fresh recovery device with no independent trusted checkpoint cannot distinguish an older valid signed history from the latest valid history merely from signatures/hash commitments. `Q-005` therefore remains `ACTIVE`; Anti-Rollback / Trusted Checkpoint is the next bounded subproblem.
 
 ## Financial ingress / Gmail evidence
 
@@ -173,25 +182,23 @@ No Gmail token/client secret/user mail is committed to the repository.
 
 ## Invariant nervous system
 
-Validated Heartbeat result:
+Validated against head `0898a60eb08244072d6e60b3b0932d215d82cbd6`:
 
 ```text
 PRODUCT INVARIANTS          34
-DATA-MODEL INVARIANTS       43
-TOTAL WIRED                  77
+DATA-MODEL INVARIANTS       46
+TOTAL WIRED                  80
 
 SPECIFIED                    29
 PARTIAL                      18
-PROVEN_AT_SPIKE              15
+PROVEN_AT_SPIKE              18
 PROVEN                       15
 
 REGISTERED CONTRADICTIONS     2
 OPEN CONTRADICTIONS           0
 ```
 
-`INV-SYNC-008..012` are wired through `graph/traceability-recovery.json`. `INV-SYNC-012` is backed by `revocation.test.js` + `recovery-cutover.test.js` and the dedicated cutover evidence artifact.
-
-The `KEY-001..005` cases additionally strengthen executable support for already-wired `INV-TEN-005` and `INV-SYNC-003`; no release-grade state promotion is inferred from those tests alone.
+`INV-SYNC-008..015` are wired through `graph/traceability-recovery.json`. The knee campaign specifically adds executable evidence for immutable replay identity, origin-sequence identity, tenant-isolated materialization and conflict-safe resolution.
 
 `G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
 
@@ -212,8 +219,6 @@ RECOVERY-PUBLIC-KEY
 RECOVERY-EPOCH-WRAP
 REVOCATION-CUTOVER-BARRIER
 ```
-
-The Revocation Barrier is explicitly classified because it leaks security/activity metadata such as cutover epoch, device identity and last accepted origin sequence even though it does not expose financial payload plaintext.
 
 The privacy matrices remain design-level DRAFTs until physical storage/transport/deletion evidence exists.
 
@@ -243,9 +248,7 @@ OPS-001 Repository governance        OPEN
 G-MK0 BUILD_READY                    BLOCKED
 ```
 
-The authoritative ledger deliberately preserves these owner states. `PROVEN_AT_SPIKE` evidence does not promote Q-005/S-002 to `CLOSED`.
-
-Validated graph ECG:
+The authoritative ledger deliberately preserves these owner states. `PROVEN_AT_SPIKE` evidence does not promote `Q-005/S-002` to `CLOSED`.
 
 ```text
 GRAPH        PASS
@@ -267,8 +270,6 @@ security assessment applicability  still open for actual architecture
 real Gmail OAuth/API spike         BLOCKED ON CONTROLLED CREDENTIAL
 ```
 
-Q-003 remains `ACTIVE`; provider-contract evidence cannot substitute for a controlled real Gmail execution.
-
 ## Q-004 / privacy remaining proof
 
 ```text
@@ -280,12 +281,14 @@ real transport/storage inspection
 cloud deletion/backup semantics
 Recovery Kit export/import leakage testing
 Revocation Barrier storage/retention/deletion inspection
-metadata leakage analysis
+checkpoint/anchor metadata leakage analysis
 ```
 
 ## Q-005 remaining blockers
 
 ```text
+Anti-Rollback / Trusted Checkpoint semantics
+all-devices-lost independent freshness anchor
 reviewed production cryptographic construction/library
 exact production HPKE/AEAD/signature suite freeze
 reviewed production revoked-origin append-only commitment
@@ -307,7 +310,7 @@ side-channel / penetration-test review
 metadata leakage analysis
 ```
 
-The logical recovery ownership, authenticated coverage, tenant-scoped key authority, stale-epoch cutover and final post-recovery resume semantics are **not** on this blocker list anymore; they are decided/tested at bounded spike level.
+The logical recovery ownership, authenticated coverage, tenant-scoped key authority, stale-epoch cutover, final post-recovery resume semantics, replay identity and tenant-isolated materialization are no longer conceptual blockers at bounded spike level.
 
 ## Repository governance position
 
@@ -322,36 +325,38 @@ PR #1                           DRAFT / DO NOT MERGE
 
 ## Whole-organism ECG baseline
 
-Validated whole-organism architecture/documentation head `fd7036a0fe60a7765e5a399130718c42adb9da95`:
+Validated head `0898a60eb08244072d6e60b3b0932d215d82cbd6`:
 
 ```text
-CANONICAL RESOLVER                    98 / 98 PASS
-E2EE / KEY / RECOVERY / REVOCATION   62 / 62 PASS
-PHYSICAL INGRESS                      21 / 21 PASS
-CLOSURE GRAPH                         PASS
-ARTIFACT STATUS AUTHORITY             PASS
-QUARRY STATUS                         PASS
-TRACEABILITY                          PASS — 77 / 77 WIRED
-PRIVACY MATRIX                        PASS — 22 CLASSES
-RECOVERY EQUIPMENT GUARD              PASS
-HEARTBEAT                             PASS
-MK0 FOUNDATION                        3 / 3 JOBS PASS
-BUILD_READY                           false
+CANONICAL RESOLVER                                  98 / 98 PASS
+E2EE / KEY / RECOVERY / REVOCATION / KNEE / PNS    84 / 84 PASS
+PHYSICAL INGRESS                                    21 / 21 PASS
+CLOSURE GRAPH                                       PASS
+ARTIFACT STATUS AUTHORITY                           PASS
+QUARRY STATUS                                       PASS
+TRACEABILITY                                        PASS — 80 / 80 WIRED
+PRIVACY MATRIX                                      PASS — 22 CLASSES
+RECOVERY EQUIPMENT GUARD                            PASS
+HEARTBEAT                                           PASS
+MK0 FOUNDATION                                      3 / 3 JOBS PASS
+BUILD_READY                                         false
 ```
 
 Observed workflow evidence:
 
 ```text
-Heartbeat push run       33534911199   SUCCESS
-MK0 Foundation PR run    33534907666   SUCCESS
-MK0 Foundation push      SUCCESS
+Heartbeat push run       33538703822   SUCCESS
+MK0 Foundation push      33538703894   SUCCESS
+MK0 Foundation PR run    33538701834   SUCCESS
 ```
 
-This is a bounded spike/documentation baseline, not a release-grade security approval.
+This is a bounded spike/documentation baseline, not release-grade security approval.
 
 ## Critical path
 
 ```text
+Q-005 Anti-Rollback / Trusted Checkpoint
+        +
 Q-003 Level B controlled Gmail execution
         +
 Q-004 real deletion/revocation/privacy inspection
