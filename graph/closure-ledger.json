@@ -222,14 +222,26 @@
       "closureReceipt": null
     },
     {
+      "id": "OPS-001",
+      "kind": "operations",
+      "title": "Repository merge governance",
+      "status": "OPEN",
+      "artifacts": ["ops/MERGE-GATE.md"],
+      "dependsOn": [],
+      "validates": ["G-MK0"],
+      "revalidates": [],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
       "id": "G-MK0",
       "kind": "gate",
       "title": "MK0 BUILD_READY",
       "status": "BLOCKED",
       "artifacts": ["mk0/12-release/RELEASE-GATES.md", "STATUS.md"],
-      "dependsOn": ["Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001"],
+      "dependsOn": ["Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001", "OPS-001"],
       "validates": [],
-      "revalidates": ["P-001", "P-002", "Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001"],
+      "revalidates": ["P-001", "P-002", "Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001", "OPS-001"],
       "evidence": [],
       "closureReceipt": null
     }
