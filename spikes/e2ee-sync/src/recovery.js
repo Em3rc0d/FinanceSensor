@@ -342,6 +342,18 @@ export function assertPostRecoveryReadyForFutureSync({
     }
   }
 
+  // ALL_DEVICES_LOST_RECOVERY is intentionally stricter than ordinary
+  // multi-device operation. Before future sync resumes, no undeclared legacy
+  // tenant device may still have authority at the new epoch. Otherwise a
+  // forgotten device could survive outside the explicit revocation plan.
+  for (const [deviceId, record] of deviceAuthorizationRecords.entries()) {
+    if (deviceId === plan.activateDevice.deviceId) continue;
+    if (record?.tenantId !== plan.tenantId) continue;
+    if (isAuthorizedForEpoch(record, nextKeyEpoch, plan.tenantId)) {
+      throw new Error(`post-recovery-unexpected-device-still-authorized:${deviceId}`);
+    }
+  }
+
   if (
     !recoveryCoverage ||
     recoveryCoverage.tenantId !== plan.tenantId ||
