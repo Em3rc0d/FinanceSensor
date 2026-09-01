@@ -12,6 +12,14 @@ export const EventType = Object.freeze({
   UNKNOWN: 'UNKNOWN'
 });
 
+export const EffectState = Object.freeze({
+  RESOLVED: 'RESOLVED',
+  NEUTRAL: 'NEUTRAL',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REQUIRES_LINK: 'REQUIRES_LINK',
+  OFFSET: 'OFFSET'
+});
+
 const normalizeText = (value = '') => String(value ?? '')
   .normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -193,8 +201,6 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
       const independentSources = hasIndependentSources(best, candidate);
       const merchantCompatible = merchantsCompatibleForReview(best, candidate);
 
-      // Automatic merging requires a hard cross-artifact link. Amount + merchant + time
-      // are useful for ranking but are not sufficient proof of economic identity.
       if (strongReference && bestScore >= autoMergeThreshold) {
         best.evidenceIds = [...new Set([...best.evidenceIds, ...candidate.evidenceIds])];
         best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];
@@ -202,9 +208,6 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
         continue;
       }
 
-      // Independent sources may strongly suggest the same event but, without a hard link,
-      // ambiguity is surfaced instead of silently mutating financial truth. Different known
-      // merchants are not treated as the same candidate merely because amount/time match.
       if (independentSources && merchantCompatible && bestScore >= reviewThreshold) {
         review.push({ candidate, possibleCanonicalId: best.id, score: bestScore });
         continue;
@@ -221,21 +224,61 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
   return { canonical, review };
 }
 
-export function economicContribution(event) {
+function zeroEffect(state) {
+  return { income: 0, expense: 0, state };
+}
+
+function centsEqual(a, b) {
+  return Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
+}
+
+export function projectEconomicEffect(event, { linkedContribution = null } = {}) {
   const amount = Math.abs(Number(event.amount));
+
   switch (event.semanticType) {
     case EventType.EXPENSE:
     case EventType.FEE:
-      return { income: 0, expense: amount };
+      return { income: 0, expense: amount, state: EffectState.RESOLVED };
+
     case EventType.INCOME:
-      return { income: amount, expense: 0 };
+      return { income: amount, expense: 0, state: EffectState.RESOLVED };
+
     case EventType.INTERNAL_TRANSFER:
     case EventType.CARD_PAYMENT:
+      return zeroEffect(EffectState.NEUTRAL);
+
     case EventType.EXTERNAL_TRANSFER:
-    case EventType.REVERSAL:
-    case EventType.REFUND:
     case EventType.UNKNOWN:
+      return zeroEffect(EffectState.REQUIRES_REVIEW);
+
+    case EventType.REFUND: {
+      const originalExpense = Math.abs(Number(linkedContribution?.expense ?? 0));
+      if (originalExpense <= 0) return zeroEffect(EffectState.REQUIRES_LINK);
+      if (amount - originalExpense > 0.005) return zeroEffect(EffectState.REQUIRES_REVIEW);
+      return { income: 0, expense: -amount, state: EffectState.OFFSET };
+    }
+
+    case EventType.REVERSAL: {
+      if (!linkedContribution) return zeroEffect(EffectState.REQUIRES_LINK);
+      const originalIncome = Number(linkedContribution.income ?? 0);
+      const originalExpense = Number(linkedContribution.expense ?? 0);
+      const originalMagnitude = Math.max(Math.abs(originalIncome), Math.abs(originalExpense));
+      if (originalMagnitude <= 0 || !centsEqual(originalMagnitude, amount)) {
+        return zeroEffect(EffectState.REQUIRES_REVIEW);
+      }
+      return {
+        income: -originalIncome,
+        expense: -originalExpense,
+        state: EffectState.OFFSET
+      };
+    }
+
     default:
-      return { income: 0, expense: 0 };
+      return zeroEffect(EffectState.REQUIRES_REVIEW);
   }
+}
+
+export function economicContribution(event, context = {}) {
+  const effect = projectEconomicEffect(event, context);
+  return { income: effect.income, expense: effect.expense };
 }
