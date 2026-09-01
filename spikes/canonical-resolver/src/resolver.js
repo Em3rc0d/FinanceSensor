@@ -12,7 +12,7 @@ export const EventType = Object.freeze({
   UNKNOWN: 'UNKNOWN'
 });
 
-const normalizeText = (value = '') => value
+const normalizeText = (value = '') => String(value ?? '')
   .normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase()
