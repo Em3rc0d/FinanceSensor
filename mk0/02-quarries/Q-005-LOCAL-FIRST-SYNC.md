@@ -9,7 +9,7 @@ How can several authorized phones share one tenant's financial truth while the c
 
 ## Current finding
 
-Q-005 is two coupled distributed-system problems:
+Q-005 is three coupled systems that must agree:
 
 ```text
 PERIPHERAL NERVOUS SYSTEM
@@ -30,15 +30,23 @@ PARASYMPATHETIC SYSTEM
   battery/resource constraints
   safe interruption
   checkpointing
-  recovery
+
+RECOVERY SYSTEM
+  all-devices-lost recovery
+  user-held Recovery Kit
+  recovery-wrap coverage
+  post-recovery revocation
+  tenant epoch rotation
+  Recovery Key rotation
 ```
 
-Neither can be postponed to implementation. A secure protocol that constantly wakes the phone is unhealthy; a battery-friendly sync that can silently corrupt financial state is unacceptable.
+None can be postponed to unrestricted implementation. A secure protocol that constantly wakes the phone is unhealthy; a battery-friendly sync that silently corrupts financial state is unacceptable; a convenient recovery path that gives the server a decryption master key violates the product thesis.
 
-Detailed candidate contracts:
+Detailed contracts:
 
 - `../04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md`
 - `../04-architecture/PARASYMPATHETIC-SYNC.md`
+- `../11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
 
 ## Target model
 
@@ -55,6 +63,20 @@ Device B
 Equivalent financial state
 ```
 
+Recovery adds a separate authority path:
+
+```text
+Tenant Key Epoch N
+   ├─ wrap → Device A
+   ├─ wrap → Device B
+   └─ wrap → Recovery Public Key
+
+Recovery Private Key
+   └─ user-held Recovery Kit only
+```
+
+The cloud may store public recovery metadata and ciphertext wraps but not recovery decryption authority.
+
 ## Core ownership model
 
 - `Tenant` owns financial truth.
@@ -62,31 +84,38 @@ Equivalent financial state
 - `Connection` belongs to Tenant.
 - A device may temporarily execute a Connection through a `ProcessingLease`.
 - A lease reduces duplicate work but is never a correctness mechanism.
+- Recovery authority is independent from normal device authority.
 
-## Candidate cryptographic model
+## Cryptographic model
 
 ```text
 Tenant Root Key epoch N
 ├─ domain-separated Sync key
 ├─ domain-separated Ledger key
 ├─ domain-separated Evidence key
-└─ Backup/recovery key — future separate decision
+├─ device-specific wrapped packages
+└─ recovery wrap to active Recovery Public Key
 
 Device
 ├─ encryption keypair
 └─ signing keypair
+
+Recovery
+├─ Recovery Public Key   cloud-visible minimized metadata
+└─ Recovery Private Key  user-held offline Recovery Kit
 ```
 
-Production key wrapping must use an audited reviewed construction/library such as an HPKE implementation rather than the feasibility spike's hand-composed primitives.
+The Node spike uses hand-composed primitives only to prove protocol properties. Production key wrapping/recovery must use a reviewed construction/library such as HPKE; the spike is **not** production cryptography.
 
 Standards/research inputs:
 
 - RFC 9180 — HPKE: https://www.rfc-editor.org/info/rfc9180/
-- NIST SP 800-38D — GCM/GMAC: https://csrc.nist.gov/pubs/sp/800/38/d/final
+- NIST SP 800-38D — GCM/GMAC: https://csrc.nist.gov/pubs/800/38/d/final
+- `research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md`
 
-The final cryptographic suite remains ADR/security-review work.
+The final production suite remains security-review work.
 
-## Candidate sync envelope
+## Sync envelope
 
 Cloud-visible routing metadata should remain minimal:
 
@@ -118,7 +147,7 @@ insight/opportunity
 
 Metadata leakage such as timing, ciphertext size and device identity still belongs in the threat model.
 
-## Device enrollment candidate
+## Device enrollment
 
 ```text
 B generates device keypairs locally
@@ -138,7 +167,7 @@ B replays encrypted history from checkpoint
 
 No silent enrollment.
 
-## Device revocation candidate
+## Device revocation
 
 ```text
 revoke B
@@ -147,7 +176,9 @@ control plane denies future B authorization
    ↓
 remaining trusted device creates epoch N+1
    ↓
-N+1 wrapped only for remaining devices
+N+1 wrapped only for remaining authorized devices
+   ↓
+recovery wrap created for N+1
    ↓
 future envelopes use N+1
 ```
@@ -173,15 +204,6 @@ Relay/server order can be used for pagination, but **must not become financial c
 
 FinanceSensor uses domain-specific conflict semantics.
 
-Example concurrent offline correction:
-
-```text
-A: transaction X → FOOD, base revision 3
-B: transaction X → TRANSPORT, base revision 3
-```
-
-Candidate behavior:
-
 ```text
 same target + same base revision + incompatible values
         ↓
@@ -196,14 +218,14 @@ The conflict object itself is deterministic, so devices still converge while wai
 
 ## Processing leases
 
-If Pixel and iPhone both can execute the same Gmail connection:
+If two phones can execute the same source connection:
 
 ```text
-connection-123
+connection
     ↓
-Device A claims short lease
+one device claims short lease
     ↓
-A performs bounded source processing
+bounded source processing
     ↓
 lease released/expires
 ```
@@ -236,15 +258,9 @@ Primary rule:
 EVENTUAL FRESHNESS > FAKE REAL-TIME
 ```
 
-Android WorkManager and Apple's BackgroundTasks APIs support OS-cooperative, constrained background execution. FinanceSensor should use those platform mechanisms instead of maintaining permanent wake/poll loops.
+Android WorkManager and Apple's BackgroundTasks APIs are the target OS-cooperative mechanisms rather than permanent wake/poll loops.
 
-Sources:
-
-- https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work
-- https://developer.apple.com/documentation/BackgroundTasks
-- https://developer.apple.com/documentation/backgroundtasks/bgprocessingtask
-
-## Backoff candidate
+## Backoff
 
 Transient failures:
 
@@ -255,56 +271,95 @@ delay   = random(0, ceiling)
 
 No busy retries while offline. Authentication failure transitions to reconnect/`NEEDS_AUTH`, not infinite retry.
 
-## Recovery questions still open
+## All-devices-lost recovery decision
 
-1. What happens when all authorized devices are lost?
-2. Is zero-knowledge recovery required in v1?
-3. Can recovery be optional with an explicit trade-off?
-4. How long are historical tenant key epochs retained on authorized devices?
-5. How do encrypted backups interact with app deletion/account deletion?
-6. How are schema migrations replayed across long-offline devices?
-7. Which audited HPKE/AEAD/signature implementation will be selected on Android/iOS?
-
-These questions prevent Q-005 closure even if the synthetic convergence spike passes.
-
-## Physical feasibility spike
-
-Create a bounded two-device model that demonstrates protocol properties without production claims:
+The logical ownership model is now decided at spike level through ADR-005:
 
 ```text
-Device A identity
-Device B identity
-        ↓
-Tenant Root Key epoch 1
-        ↓
-wrap independently to A and B
-        ↓
-create encrypted/signed domain envelopes
-        ↓
-opaque relay store
-        ↓
-replay in different delivery order
-        ↓
-state digest A == state digest B
+SERVER MASTER KEY         REJECTED
+PASSWORD-ONLY RECOVERY    REJECTED FOR MK0
+ASYMMETRIC RECOVERY KEY   ACCEPTED AT SPIKE LEVEL
+PRIVATE RECOVERY KEY      USER-HELD / OFFLINE
+PER-EPOCH RECOVERY WRAP   REQUIRED
 ```
 
-Required adversarial cases:
+Recovery coverage is explicit:
 
 ```text
-wrong-device key unwrap
-wrapper tamper
-envelope ciphertext tamper
-signature tamper
-duplicate replay
-sequence gap
-revoked device after key rotation
-cross-tenant envelope
-concurrent correction conflict
-explicit conflict resolution
-offline scheduler
-low-battery heavy-work deferral
-bounded backoff
+recoverable epoch
+  ↓
+matching tenant + recovery key id + epoch wrap exists
+  ↓
+RECOVERY-COVERED
 ```
+
+After disaster recovery:
+
+```text
+restore through epoch N
+        ↓
+new device authorized from N+1
+lost devices revoked from N+1
+new tenant epoch N+1 required
+new Recovery Key required
+        ↓
+future sync resumes
+```
+
+If all devices and the Recovery Kit are lost, cryptographic recovery is intentionally impossible. No hidden server bypass is permitted.
+
+Evidence:
+
+`../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+
+## Current executable evidence
+
+Validated bounded suite:
+
+```text
+E2EE / PERIPHERAL / RECOVERY / PNS   40 / 40 PASS
+RECOVERY                             12 / 12 PASS
+```
+
+Recovery cases include:
+
+```text
+cloud without private recovery authority
+wrong recovery key
+multi-epoch restore
+public-key-only non-decryptability
+context binding
+tamper rejection
+all-devices-lost restore
+Recovery Key rotation
+historical authorizer validation
+no-kit no-backdoor state
+coverage completeness
+post-recovery revocation + epoch/recovery rotation plan
+```
+
+The following data-model invariants are now `PROVEN_AT_SPIKE`:
+
+```text
+INV-SYNC-008
+INV-SYNC-009
+INV-SYNC-010
+INV-SYNC-011
+```
+
+## Remaining recovery/crypto questions
+
+The conceptual all-devices-lost ownership question is no longer open. Remaining questions are physical/production questions:
+
+1. Which reviewed HPKE/AEAD/signature implementation and exact suite will be frozen for Android/iOS?
+2. How long are historical tenant key epochs and recovery wraps retained?
+3. How do encrypted backups interact with app deletion/account deletion?
+4. How are schema migrations replayed across long-offline devices?
+5. How is Recovery Kit export/import protected from clipboard, screenshot, backup and accidental cloud-sync leakage?
+6. What account-authentication/re-authentication gate is required before serving recovery wraps?
+7. How are physical post-recovery revocation and rotation demonstrated on Android/iOS?
+
+These questions still prevent Q-005 closure.
 
 ## Evidence levels
 
@@ -322,28 +377,30 @@ PROVEN
   release-grade physical implementation + platform/security evidence + closed owner nodes
 ```
 
-Passing the Node spike may only promote selected sync invariants to `PROVEN_AT_SPIKE`.
+Node evidence can only promote bounded properties to `PROVEN_AT_SPIKE`.
 
 ## Finding
 
-Multi-device support turns local privacy into a combined cryptography + distributed-state + mobile-runtime problem. "Encrypted database + cloud backup" is not a sufficient architecture.
+Multi-device support turns local privacy into a combined cryptography + distributed-state + mobile-runtime + recovery problem. "Encrypted database + cloud backup" is not a sufficient architecture.
 
 ## Current decision
 
 ```text
-TENANT_KEY_EPOCHS              CANDIDATE
-PER_DEVICE_KEY_WRAPPING        REQUIRED
-DEVICE_ORIGIN_SIGNATURE        REQUIRED CANDIDATE
-OPAQUE_CLOUD_ENVELOPES         REQUIRED
-DUPLICATE_REPLAY               MUST BE IDEMPOTENT
+TENANT_KEY_EPOCHS               ACCEPTED LOGICAL MODEL
+PER_DEVICE_KEY_WRAPPING         REQUIRED
+DEVICE_ORIGIN_SIGNATURE         REQUIRED CANDIDATE
+OPAQUE_CLOUD_ENVELOPES          REQUIRED
+DUPLICATE_REPLAY                MUST BE IDEMPOTENT
 GLOBAL_LWW_FINANCIAL_STATE      REJECTED
 DOMAIN_CONFLICT_RECORD          CANDIDATE
 REVOCATION_MEANING              FUTURE ACCESS
 PERMANENT_BACKGROUND_POLLING    REJECTED
 OS_COOPERATIVE_SCHEDULING       REQUIRED
 OFFLINE_IS_ERROR                NO
-ALL_DEVICES_LOST_RECOVERY       OPEN
+ALL_DEVICES_LOST_RECOVERY       SPIKE-ACCEPTED / ADR-005
+SERVER_MASTER_KEY               REJECTED
 PRODUCTION_CRYPTO_SUITE         OPEN / SECURITY REVIEW REQUIRED
+PHYSICAL_MOBILE_RECOVERY        OPEN
 
 MULTI_DEVICE_DESIGN             ACTIVE / NOT CLOSED
 ```
@@ -357,15 +414,18 @@ Q-005 closes only when:
 - device enrollment/revocation sequence frozen;
 - future-access revocation physically demonstrated;
 - event ordering/conflict semantics frozen;
-- lost-device and all-devices-lost behavior explicitly documented;
+- all-devices-lost behavior remains reconciled with ADR-005;
+- recovery coverage and post-recovery hardening are physically demonstrated;
 - encrypted sync prototype demonstrates two-device convergence;
 - duplicate delivery and lease failure remain economically idempotent;
 - cloud inspection confirms no required financial plaintext;
-- Android background behavior is physically measured;
-- iOS background/expiration behavior is physically measured;
+- cloud inspection confirms no Recovery Private Key/plain tenant key authority;
+- Android key storage/background behavior is physically measured;
+- iOS key storage/background/expiration behavior is physically measured;
+- Recovery Kit export/import leakage controls are physically tested;
 - parasympathetic backoff/offline/resource rules are tested;
-- Q-004 privacy matrix is reconciled with metadata leakage/key retention;
+- Q-004 privacy matrices are reconciled with metadata leakage/key retention/deletion;
 - SEC-001 and DM-001 are revalidated;
-- evidence artifact stored under `mk0/10-evidence/`;
+- release-grade evidence artifacts are stored under `mk0/10-evidence/`;
 - closure receipt issued;
 - `MULTI_DEVICE_DESIGN PASS` and `PRIVACY_MODEL PASS` evidence produced.
