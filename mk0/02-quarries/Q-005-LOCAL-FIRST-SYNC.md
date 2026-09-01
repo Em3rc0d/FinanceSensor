@@ -9,42 +9,44 @@ How can several authorized phones share one tenant's financial truth while the c
 
 ## Current finding
 
-Q-005 is three coupled systems that must agree:
+Q-005 is a coupled system of four load-bearing concerns:
 
 ```text
 PERIPHERAL NERVOUS SYSTEM
-  tenant-scoped device authorization
+  tenant-scoped + epoch-scoped device authority
   tenant keys
-  authenticated device-key wrapping
+  authenticated key wrapping
   encrypted envelopes
-  signatures
-  replay
+  immutable replay identity
   convergence
   revocation
-  authenticated revocation cutover
-  conflict semantics
+  authenticated cutover
 
 PARASYMPATHETIC SYSTEM
   rest
-  background scheduling
+  OS-cooperative background execution
   backoff
   offline tolerance
-  battery/resource constraints
-  safe interruption
-  checkpointing
+  battery/resource limits
+  crash-safe checkpointing
 
 RECOVERY SYSTEM
   all-devices-lost recovery
   user-held Recovery Kit
-  authenticated/non-ambiguous recovery coverage
-  post-recovery revocation
-  tenant epoch rotation
-  Recovery Key rotation
+  authenticated RecoveryCoverage
+  tenant/recovery-key rotation
+  complete lost-device inventory
   revoked-origin history freeze
-  fail-closed future-sync resume gate
+  final safe-to-resume gate
+
+DISTRIBUTED CONFLICT SYSTEM
+  no global last-write-wins
+  explicit correction conflicts
+  explicit resolution conflicts
+  tenant-isolated materialization
 ```
 
-None can be postponed to unrestricted implementation. A secure protocol that constantly wakes the phone is unhealthy; a battery-friendly sync that silently corrupts financial state is unacceptable; a convenient recovery path that gives the server a decryption master key violates the product thesis.
+A secure protocol that corrupts state under replay is unacceptable. A convergent protocol that exposes financial plaintext is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A battery-friendly scheduler that relaxes correctness is unacceptable.
 
 Detailed contracts:
 
@@ -53,108 +55,29 @@ Detailed contracts:
 - `../04-architecture/REVOCATION-CUTOVER.md`
 - `../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
 
-## Target model
+## Ownership model
 
 ```text
-Device A
-  ↓ canonical/domain action
-  ↓ encrypt + sign locally
-Cloud opaque envelope relay
-  ↓
-Device B
-  ↓ verify tenant + origin authorization + epoch
-  ↓ decrypt locally
-  ↓ replay/materialize
-Equivalent financial state
-```
-
-Recovery adds a separate authority path:
-
-```text
-Tenant Key Epoch N
-   ├─ wrap → authorized Device A in Tenant T / Epoch N
-   ├─ wrap → authorized Device B in Tenant T / Epoch N
-   └─ wrap → Recovery Public Key
-
-Recovery Private Key
-   └─ user-held Recovery Kit only
-```
-
-The cloud may store public recovery metadata and ciphertext wraps but not recovery decryption authority.
-
-## Core ownership model
-
-- `Tenant` owns financial truth.
-- `Device` is an execution identity, not a tenant.
-- `DeviceAuthorization` is tenant-scoped and epoch-scoped.
-- Matching `device_id` alone does not grant authority in another tenant.
-- `Connection` belongs to Tenant.
-- A device may temporarily execute a Connection through a `ProcessingLease`.
-- A lease reduces duplicate work but is never a correctness mechanism.
-- Recovery authority is independent from normal device authority.
-
-## Cryptographic model
-
-```text
-Tenant Root Key epoch N
-├─ domain-separated Sync key
-├─ domain-separated Ledger key
-├─ domain-separated Evidence key
-├─ device-specific wrapped packages
-└─ recovery wrap to active Recovery Public Key
-
-Device
-├─ encryption keypair
-└─ signing keypair
-
-Recovery
-├─ Recovery Public Key   cloud-visible minimized metadata
-└─ Recovery Private Key  user-held offline Recovery Kit
-```
-
-The Node spike uses hand-composed primitives only to prove protocol properties. Production key wrapping/recovery must use a reviewed construction/library such as HPKE; the spike is **not** production cryptography.
-
-Standards/research inputs:
-
-- RFC 9180 — HPKE: https://www.rfc-editor.org/info/rfc9180/
-- NIST SP 800-38D — GCM/GMAC: https://csrc.nist.gov/pubs/800/38/d/final
-- `research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md`
-
-The final production suite remains security-review work.
-
-## Device-key authority contract
-
-The load-bearing key path rejects authority by coincidence.
-
-```text
-DeviceKeyWrap(Tenant T, Epoch N)
+Tenant owns financial truth
         ↓
-recipient identity matches header
-recipient authorization belongs to T and covers N
-        +
-authorizer identity matches header
-authorizer authorization belongs to T and covers N
-        +
-signature/context integrity passes
+Device is an execution identity
         ↓
-key may be consumed
+DeviceAuthorization is tenant + epoch scoped
+        ↓
+Connection belongs to Tenant
+        ↓
+ProcessingLease only coordinates work
 ```
 
-The spike explicitly rejects:
+`Device != Tenant` remains non-negotiable.
 
-```text
-wrong authorizer identity
-revoked authorizer at target epoch
-revoked recipient at unwrap time
-cross-tenant origin authorization
-cross-tenant key recipient authorization
-```
+A valid device signature or matching `device_id` is not sufficient authority. The identity must be authorized for the same tenant and key epoch.
 
-This is exercised by `KEY-001..KEY-005`.
+## Cloud / edge contract
 
-## Sync envelope
+The cloud is an opaque relay/control plane, not the holder of financial truth.
 
-Cloud-visible routing metadata should remain minimal:
+Cloud-visible routing metadata may include minimized fields such as:
 
 ```text
 event_id
@@ -163,111 +86,154 @@ origin_device_id
 origin_device_sequence
 key_epoch
 schema_version
-created_at / relay sequence
-ciphertext framing + byte length
+created_at / relay order
+ciphertext framing + size
 signature
 ```
 
-Financial semantics live inside ciphertext.
-
-Cloud does not need plaintext:
+The normal sync path does not require plaintext:
 
 ```text
 amount
 merchant
 category
-currency tied to event
+financial event type
 email subject/body
-financial event kind
 insight/opportunity
+Tenant Root Key
+Recovery Private Key
 ```
 
-Metadata leakage such as timing, ciphertext size and device identity still belongs in the threat model.
+E2EE does not mean zero metadata. Timing, device membership, epoch rotation and ciphertext sizes remain part of the privacy threat model.
 
-Envelope origin authority is checked against the same tenant and epoch as the envelope. A public-key/device record associated with another tenant cannot authorize it.
+## Key authority
 
-## Device enrollment
+The bounded spike enforces:
 
 ```text
-B generates device keypairs locally
-        ↓
-B registers public keys/pairing request
-        ↓
-A verifies B through explicit user gesture/fingerprint
-        ↓
-Tenant-scoped DeviceAuthorization(B) created
-        ↓
-A wraps current tenant root-key epoch to B
-only while A and B are both authorized for Tenant T / Epoch N
-        ↓
-A signs authorization/wrap context
-        ↓
-B rechecks its own Tenant T / Epoch N authorization
-        ↓
-B verifies + unwraps locally
-        ↓
-B replays encrypted history from checkpoint
+VALID KEY AUTHORITY =
+  exact authorizer identity
++ exact recipient identity
++ same tenant
++ authorized key epoch
++ valid authorization window
++ authenticated context/signature
 ```
 
-No silent enrollment and no device-global authorization shortcut.
+`KEY-001..005` cover identity binding, revoked-authorizer rejection, recipient re-check, cross-tenant origin rejection and cross-tenant key-recipient rejection.
+
+Production key wrapping remains subject to a reviewed implementation/library. The Node composition is feasibility evidence, not production cryptography.
+
+## Immutable sync identity
+
+The knee stress campaign demonstrated that replay identity must not behave like a mutable map slot.
+
+The current spike rule is:
+
+```text
+same event_id
++ same immutable header/action
+→ exact retry / idempotent
+
+same event_id
++ different immutable header/action
+→ FAIL CLOSED
+```
+
+A second identity axis is also frozen:
+
+```text
+(tenant_id, origin_device_id, origin_device_sequence)
+→ exactly one event identity
+```
+
+Two distinct event IDs cannot occupy the same origin sequence for one tenant/device, even when their economic payloads happen to be identical.
+
+Equal sequence numbers on **different** origin devices remain independent.
+
+This is `INV-SYNC-013`.
+
+## Tenant-isolated materialization
+
+One materialization pass belongs to one tenant.
+
+```text
+Tenant A decoded actions
+        +
+Tenant B decoded actions
+        ↓
+MIXED TENANT INPUT
+        ↓
+FAIL CLOSED
+```
+
+A caller cannot accidentally or maliciously combine two tenants into one canonical/correction projection.
+
+This is `INV-SYNC-014`.
+
+## Conflict semantics
+
+FinanceSensor rejects global last-write-wins for user financial truth.
+
+### Concurrent corrections
+
+```text
+same target
++ same base revision
++ incompatible values
+        ↓
+CATEGORY_CORRECTION_CONFLICT
+        ↓
+no hidden winner
+```
+
+### Concurrent resolutions
+
+The stress campaign found that conflict **resolution** must itself be conflict-safe.
+
+```text
+two resolutions
++ same target/base revision
++ different selected corrections
+        ↓
+CATEGORY_RESOLUTION_CONFLICT
+        ↓
+no hidden winner
+```
+
+A resolution pointing outside the known candidate set becomes `CATEGORY_RESOLUTION_INVALID` and does not mutate authoritative category state.
+
+Multiple concurrent resolutions selecting the same correction are retry-equivalent and converge.
+
+This is `INV-SYNC-015`.
 
 ## Device revocation
 
-Basic future-key revocation remains:
+Basic future-key revocation is necessary but insufficient:
 
 ```text
 revoke B from N+1
-   ↓
-control plane denies future B authorization
-   ↓
-remaining trusted device creates epoch N+1
-   ↓
-N+1 wrapped only for remaining authorized devices
-   ↓
-recovery wrap created for N+1
-   ↓
-future envelopes use N+1
+        ↓
+rotate Tenant Root Key to N+1
+        ↓
+B cannot receive N+1
 ```
 
-But this is **not sufficient by itself** while B still possesses epoch N material.
-
-### Stale-epoch injection problem
-
-A revoked/lost device may still possess:
-
-```text
-Tenant Root Key N
-+
-its device signing private key
-```
-
-Without an authenticated cutover it could fabricate a new envelope *after* revocation while labeling it as old epoch N. A receiver that retains N for historical replay cannot safely infer that a cryptographically valid old-epoch envelope was actually created before revocation.
+A lost device may still possess epoch N material and its signing private key. Without a cutover, it could create a cryptographically valid envelope later while labeling it as historical epoch N.
 
 Therefore:
 
 ```text
 VALID OLD SIGNATURE + OLD KEY
         ≠
-POST-CUTOVER AUTHORITY
+POST-CUTOVER HISTORICAL AUTHORITY
 ```
 
-### Revocation Barrier
+## Revocation Barrier
 
-The accepted historical origin stream must be frozen by a still-authorized authority:
+Before old-epoch envelopes from a revoked origin are accepted as immutable history, a still-authorized authority freezes the accepted historical stream.
 
-```text
-validate accepted historical envelopes for B
-        ↓
-require contiguous origin sequence through cutoff
-        ↓
-canonical envelope digests
-        ↓
-history commitment
-        ↓
-signed Revocation Barrier
-```
-
-The barrier binds:
+Candidate barrier binds:
 
 ```text
 tenant_id
@@ -276,88 +242,99 @@ revoked_from_epoch
 last_accepted_origin_sequence
 history_commitment
 authorizing_device_id
+signature
 ```
 
-After cutover, an old-epoch envelope from B remains admissible only as part of that exact committed historical set (or a reviewed production-equivalent commitment).
-
-The spike proves:
+The bounded model requires:
 
 ```text
-REV-001 reorder + exact duplicate delivery is harmless
-REV-002 post-cutover old-epoch extension is rejected
-REV-003 historical sequence substitution is rejected
-REV-004 cutoff/history tampering invalidates the barrier
-REV-005 revoked device cannot authorize its own barrier
-REV-006 cross-tenant cutover authority is rejected
-REV-007 unresolved origin gaps fail closed
+contiguous origin sequence
+unique event_id semantics
+unique origin sequence semantics
+valid historical signatures
+epoch < revocation epoch
+exact history commitment
 ```
 
-Architecture contract:
-
-`../04-architecture/REVOCATION-CUTOVER.md`
-
-Evidence:
-
-`../10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
-
-### Explicit non-claim
-
-Revocation cannot make a device forget old plaintext/key material it already possessed. The MK0 property is **future-access revocation plus frozen accepted history**, not remote historical erasure.
-
-A malicious relay can still withhold historical envelopes. The barrier protects integrity, not Byzantine availability.
-
-## Replay / ordering
-
-Every origin device owns a monotonic sequence.
+It rejects:
 
 ```text
-Device A: 1, 2, 3...
-Device B: 1, 2, 3...
+post-cutover old-epoch extension
+historical substitution
+sequence forks
+event_id reuse
+known sequence gaps
+cross-tenant authority
+revoked-device self-cutover
+barrier tampering
 ```
 
-Duplicate `event_id` is idempotent.
+Exact duplicate delivery and transport reordering of the already committed set remain harmless.
 
-Relay/server order can be used for pagination, but **must not become financial conflict truth** merely because one packet arrived later.
+This is `INV-SYNC-012`.
 
-At revocation cutover, a supposedly complete historical prefix cannot be certified across a known sequence gap.
+## All-devices-lost recovery
 
-## Conflict model
-
-FinanceSensor uses domain-specific conflict semantics.
+ADR-014 remains the logical decision:
 
 ```text
-same target + same base revision + incompatible values
+SERVER MASTER KEY         REJECTED
+PASSWORD-ONLY RECOVERY    REJECTED FOR MK0
+ASYMMETRIC RECOVERY KEY   SPIKE-ACCEPTED
+Recovery Private Key      USER-HELD / OFFLINE
+PER-EPOCH RECOVERY WRAP   REQUIRED
+```
+
+RecoveryCoverage is not inferred merely because ciphertext exists. It requires authenticated tenant/epoch/Recovery-Key/authorizer binding and one non-ambiguous distinct authority for the declared epoch.
+
+## Complete lost-device inventory
+
+The knee campaign added a stronger recovery rule:
+
+> Every tenant device that still had authority at the **last recovered epoch** must be explicitly accounted for in the all-devices-lost plan.
+
+A device cannot disappear from the lost set merely because its authorization record was already edited to `REVOKED` from `N+1`.
+
+Before resuming future sync:
+
+```text
+new device ACTIVE from N+1
+all devices active at recovered epoch accounted for
+all declared lost devices REVOKED from N+1
+no undeclared tenant device authorized at N+1
+Tenant Root Key rotated to N+1
+Recovery Key rotated
+N+1 RecoveryCoverage valid
+recovered history evidence present per lost device
+Revocation Barrier valid per lost device
+barrier commitment matches recovered history
         ↓
-CONFLICT
-        ↓
-no hidden winner
-        ↓
-explicit resolution action
+SAFE_TO_RESUME_FUTURE_SYNC
 ```
 
-The conflict object itself is deterministic, so devices still converge while waiting for resolution.
+A hardening plan is not the same thing as applied/verified hardening.
 
-## Processing leases
+## Recovery barrier retries and ambiguity
 
-If two phones can execute the same source connection:
+A barrier signature contains non-semantic framing such as creation time/signature randomness. The gate therefore distinguishes package identity from **semantic cutover authority**.
 
 ```text
-connection
-    ↓
-one device claims short lease
-    ↓
-bounded source processing
-    ↓
-lease released/expires
+same tenant/device/epoch/sequence/history/authorizer
++ re-signed/retried packages
+→ one semantic authority
+
+multiple distinct authentic semantic commitments
+→ AMBIGUOUS
+→ FAIL CLOSED
 ```
 
-If the lease fails, idempotency/fingerprinting must still protect economic truth.
+The stress suite exercised 32 equivalent re-signed barriers without creating false ambiguity.
 
 ## Parasympathetic model
 
-The sync engine is not an infinite polling service.
+The sync engine does not permanently poll.
 
-Candidate states:
+Candidate runtime states remain:
 
 ```text
 RESTING
@@ -379,181 +356,111 @@ Primary rule:
 EVENTUAL FRESHNESS > FAKE REAL-TIME
 ```
 
-Android WorkManager and Apple's BackgroundTasks APIs are the target OS-cooperative mechanisms rather than permanent wake/poll loops.
+Android WorkManager and Apple BackgroundTasks remain the intended OS-cooperative direction. Low battery or unavailable network may defer work; they may not disable encryption, authorization, provenance, idempotency or conflict safety.
 
-## Backoff
+## Knee stress campaign
 
-Transient failures:
+Dedicated evidence:
+
+`../10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
+
+The campaign deliberately introduced adversarial assertions before fixes.
+
+Observed red → green progression:
 
 ```text
-ceiling = min(cap, base * 2^attempt)
-delay   = random(0, ceiling)
+Wave 1   62 / 67 PASS  → 67 / 67 PASS
+Wave 2   72 / 74 PASS  → weaknesses repaired
+Wave 3   75 / 77 PASS  → 77 / 77 PASS
+Wave 4   78 / 80 PASS  → 80 / 80 PASS
+Wave 5   83 / 84 PASS  → 84 / 84 PASS
 ```
 
-No busy retries while offline. Authentication failure transitions to reconnect/`NEEDS_AUTH`, not infinite retry.
+The five waves exposed **12 red assertions** that earlier green suites did not protect.
 
-## All-devices-lost recovery decision
-
-The logical ownership model is decided at spike level through ADR-014:
+Load cases included:
 
 ```text
-SERVER MASTER KEY         REJECTED
-PASSWORD-ONLY RECOVERY    REJECTED FOR MK0
-ASYMMETRIC RECOVERY KEY   ACCEPTED AT SPIKE LEVEL
-PRIVATE RECOVERY KEY      USER-HELD / OFFLINE
-PER-EPOCH RECOVERY WRAP   REQUIRED
+16 signed historical sequence-fork positions
+64-envelope history
+reverse-order history replay
+triple exact delivery replay
+32 equivalent re-signed Revocation Barriers
+epochs 1..7 historical vs epoch 8 cutover
+same event_id divergent content
+same sequence divergent event identities
+mixed-tenant materialization
+concurrent incompatible conflict resolutions
+invalid resolution target
+concurrent same-choice resolution retries
 ```
 
-Recovery coverage is stronger than “a wrap exists”:
+Final validated executable head:
+
+`d09a420532d0f02ba904fec401932919065e66cc`
 
 ```text
-recoverable epoch
-  ↓
-matching tenant + Recovery Key id + epoch
-  ↓
-exact authorizer identity
-  ↓
-authorizer authorized for same tenant + epoch
-  ↓
-framing/signature authentic
-  ↓
-exactly one distinct authentic authority
-  ↓
-RECOVERY-COVERED
+E2EE / KEY / RECOVERY / REVOCATION / KNEE / PNS   84 / 84 PASS
+CANONICAL RESOLVER                                  PASS
+PHYSICAL INGRESS                                    PASS
+MK0 FOUNDATION                                     3 / 3 PASS
 ```
 
-Exact relay duplicates of the same package remain idempotent. A tampered package cannot count as coverage. Multiple **distinct authentic** packages for the same declared epoch are treated as ambiguous and fail closed until explicitly reconciled.
-
-## Post-recovery future-sync gate
-
-The lower-level hardening state proves:
+## Current `PROVEN_AT_SPIKE` Q-005 invariants
 
 ```text
-restore through epoch N
-        ↓
-new device authorized from N+1
-lost devices revoked from N+1
-new tenant epoch N+1 applied
-new Recovery Key applied
-N+1 recovery coverage authenticated
+INV-SYNC-008  cloud lacks recovery decryption authority
+INV-SYNC-009  authenticated/non-ambiguous recovery coverage
+INV-SYNC-010  post-recovery hardening before future sync
+INV-SYNC-011  Recovery Key rotation isolates future epochs
+INV-SYNC-012  frozen revoked-origin historical admissibility
+INV-SYNC-013  immutable replay + origin sequence identity
+INV-SYNC-014  tenant-isolated materialization
+INV-SYNC-015  conflict-resolution conflict safety
 ```
 
-`REC-018` proves this lower-level predicate.
+These are bounded synthetic properties, not release-grade `PROVEN`.
 
-However, this audit demonstrated that this state is still not sufficient to resume normal sync because lost devices may retain historical keys/signing keys.
+## Critical non-claim: malicious relay withholding
 
-The load-bearing final gate is:
+Signatures and history commitments protect integrity of **observed** state. They do not prove Byzantine availability.
 
-```text
-LOWER-LEVEL POST-RECOVERY HARDENING
-        +
-AUTHENTICATED REVOCATION BARRIER FOR EVERY LOST DEVICE
-        ↓
-SAFE_TO_RESUME_FUTURE_SYNC
-```
-
-This is exercised by:
+A malicious relay that withholds an envelope a fresh recovery device has never seen, while also withholding the evidence that would reveal the later prefix, may make an older complete-looking prefix appear to be all that exists.
 
 ```text
-REC-019 lower-level hardening is not final resume authority
-REC-020 every lost-device barrier verified → safe resume
-REC-021 one missing barrier → blocked
-REC-022 tampered barrier → blocked
-```
-
-The newly recovered device may authorize the barriers from N+1 because it is a fresh identity that has locally recovered and validated the accepted historical state. It does not inherit a lost device identity.
-
-If all devices and the Recovery Kit are lost, cryptographic recovery is intentionally impossible. No hidden server bypass is permitted.
-
-Evidence:
-
-- `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
-- `../10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
-
-## Current executable evidence
-
-Validated bounded suite on executable commit `0d4f3b2cbf57dee811480268bab19d2ee3a5a101`:
-
-```text
-E2EE / KEY / RECOVERY / REVOCATION / PNS   62 / 62 PASS
-REVOCATION CUTOVER                           7 / 7 PASS
-POST-RECOVERY CUTOVER                        4 / 4 PASS
-MK0 FOUNDATION                               3 / 3 PASS
-```
-
-Recovery/key/revocation cases now include:
-
-```text
-KEY-001..005 tenant/epoch/identity key authority
-REC-001..018 recovery ownership, coverage and lower-level hardening
-REV-001..007 stale-epoch cutover integrity
-REC-019..022 final post-recovery cutover safety gate
-```
-
-The following data-model invariants are `PROVEN_AT_SPIKE` for their bounded claims:
-
-```text
-INV-SYNC-008
-INV-SYNC-009
-INV-SYNC-010
-INV-SYNC-011
-INV-SYNC-012
-```
-
-The strengthened tenant/key-authority behavior also gives additional executable support to `INV-TEN-005` and `INV-SYNC-003`; release-grade `PROVEN` is not claimed.
-
-## Remaining recovery/crypto questions
-
-The conceptual all-devices-lost ownership and stale-epoch cutover questions are no longer open at logical/spike level. Remaining questions are physical/production questions:
-
-1. Which reviewed HPKE/AEAD/signature implementation and exact suite will be frozen for Android/iOS?
-2. Which reviewed append-only/history-commitment representation will replace the spike digest-set commitment?
-3. How long are historical tenant key epochs, recovery wraps and revocation barriers retained?
-4. How do encrypted backups interact with app deletion/account deletion?
-5. How are schema migrations replayed across long-offline devices and revocation cutovers?
-6. How is Recovery Kit export/import protected from clipboard, screenshot, backup and accidental cloud-sync leakage?
-7. What account-authentication/re-authentication gate is required before serving recovery wraps and cutover metadata?
-8. How are physical post-recovery revocation, barrier creation and rotation demonstrated on Android/iOS?
-9. How is the tenant-scoped authorization state enforced by the real control plane rather than only by the local spike registry?
-10. How does a real client freeze a secure contiguous historical prefix when the relay is unavailable or withholding data?
-
-These questions still prevent Q-005 closure.
-
-## Evidence levels
-
-```text
-SPECIFIED
-  documented only
-
-PARTIAL
-  structural validation / incomplete physical proof
-
-PROVEN_AT_SPIKE
-  synthetic executable model proves bounded property
-
-PROVEN
-  release-grade physical implementation + platform/security evidence + closed owner nodes
-```
-
-Node evidence can only promote bounded properties to `PROVEN_AT_SPIKE`.
-
-## Finding
-
-Multi-device support turns local privacy into a combined cryptography + distributed-state + mobile-runtime + recovery problem. "Encrypted database + cloud backup" is not a sufficient architecture.
-
-The load-bearing lesson is now:
-
-```text
-CRYPTOGRAPHIC VALIDITY
+FIRST-SEEN COMPLETE-LOOKING PREFIX
         ≠
-AUTHORIZATION VALIDITY
-        ≠
-HISTORICAL ADMISSIBILITY
-        ≠
-RECOVERY RESUME SAFETY
+PROOF OF NO WITHHELD LATER PREFIX
 ```
 
-All four must agree before post-revocation state is trusted.
+Closing that stronger property requires a separately reviewed anti-rollback/transparency/trusted-checkpoint design. Candidate directions include a locally protected monotonic checkpoint that survives recovery, a user-held recovery commitment, or another independently authenticated transparency mechanism.
+
+No candidate is frozen yet.
+
+## Remaining blockers
+
+Q-005 stays `ACTIVE` until physical/production evidence closes at least:
+
+```text
+reviewed production HPKE/AEAD/signature implementation
+reviewed production append-only history commitment
+anti-rollback / relay-withholding trust-anchor decision
+Android ↔ iOS cryptographic interoperability
+Android Keystore / StrongBox evidence
+Apple Keychain / Secure Enclave evidence
+real control-plane tenant authorization
+real recovery-wrap/barrier retrieval authorization
+real barrier persistence + retention/deletion
+crash/restart atomicity at cutover
+long-offline / network-partition behavior
+Recovery Kit export/import leakage controls
+physical all-devices-lost recovery
+physical post-recovery revocation/rotation/cutover
+metadata leakage analysis
+penetration / side-channel review
+```
+
+A malicious relay may still withhold data. Q-005 does not claim Byzantine availability.
 
 ## Current decision
 
@@ -562,54 +469,28 @@ TENANT_KEY_EPOCHS                 ACCEPTED LOGICAL MODEL
 TENANT-SCOPED DEVICE AUTH         REQUIRED / SPIKE-TESTED
 PER_DEVICE_KEY_WRAPPING           REQUIRED
 KEY-WRAP AUTHORITY RECHECK        REQUIRED / SPIKE-TESTED
-DEVICE_ORIGIN_SIGNATURE           REQUIRED CANDIDATE
-OPAQUE_CLOUD_ENVELOPES            REQUIRED
-DUPLICATE_REPLAY                  MUST BE IDEMPOTENT
-GLOBAL_LWW_FINANCIAL_STATE        REJECTED
-DOMAIN_CONFLICT_RECORD            CANDIDATE
-REVOCATION_MEANING                FUTURE ACCESS + FROZEN ACCEPTED HISTORY
-REVOCATION_BARRIER                REQUIRED / SPIKE-TESTED
+OPAQUE CLOUD ENVELOPES            REQUIRED
+EVENT_ID MUTABLE SLOT             REJECTED
+ORIGIN SEQUENCE REUSE             REJECTED
+MIXED-TENANT MATERIALIZATION      REJECTED
+GLOBAL LWW FINANCIAL STATE        REJECTED
+RESOLUTION LWW                    REJECTED
+EXPLICIT RESOLUTION META-CONFLICT REQUIRED / SPIKE-TESTED
+REVOCATION MEANING                FUTURE ACCESS + FROZEN ACCEPTED HISTORY
+REVOCATION BARRIER                REQUIRED / SPIKE-TESTED
 UNRESOLVED CUTOVER GAP            FAIL CLOSED
-PERMANENT_BACKGROUND_POLLING      REJECTED
-OS_COOPERATIVE_SCHEDULING         REQUIRED
-OFFLINE_IS_ERROR                  NO
-ALL_DEVICES_LOST_RECOVERY         SPIKE-ACCEPTED / ADR-014
-RECOVERY-COVERAGE AMBIGUITY       FAIL CLOSED
-POST-RECOVERY LOWER-LEVEL GATE    REQUIRED / SPIKE-TESTED
-POST-RECOVERY FINAL CUTOVER GATE  REQUIRED / SPIKE-TESTED
-SERVER_MASTER_KEY                 REJECTED
-PRODUCTION_CRYPTO_SUITE           OPEN / SECURITY REVIEW REQUIRED
-PRODUCTION HISTORY COMMITMENT     OPEN / REVIEW REQUIRED
-PHYSICAL_MOBILE_RECOVERY          OPEN
+ALL-DEVICES-LOST RECOVERY         SPIKE-ACCEPTED / ADR-014
+POST-RECOVERY FINAL GATE          REQUIRED / SPIKE-TESTED
+BYZANTINE RELAY AVAILABILITY      NOT CLAIMED
+ANTI-ROLLBACK TRUST ANCHOR        OPEN
+PRODUCTION CRYPTO                 OPEN
+PHYSICAL MOBILE RECOVERY          OPEN
 
 MULTI_DEVICE_DESIGN               ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
 
-Q-005 closes only when:
+Q-005 closes only when the logical spike evidence is replaced/supplemented by release-grade proof for production cryptography, tenant authorization, real mobile key storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected anti-rollback/relay-withholding contract.
 
-- key hierarchy and epoch model selected/reviewed;
-- audited production key-wrap/AEAD/signature implementation chosen;
-- reviewed production revoked-origin commitment representation chosen;
-- tenant-scoped device authorization enforced by the real control plane;
-- device enrollment/revocation/cutover sequence frozen;
-- future-access revocation and stale-epoch injection resistance physically demonstrated;
-- event ordering/conflict semantics frozen;
-- all-devices-lost behavior remains reconciled with ADR-014;
-- recovery coverage and post-recovery final cutover gate are physically demonstrated;
-- encrypted sync prototype demonstrates two-device convergence;
-- duplicate delivery and lease failure remain economically idempotent;
-- cloud inspection confirms no required financial plaintext;
-- cloud inspection confirms no Recovery Private Key/plain tenant key authority;
-- Android key storage/background behavior is physically measured;
-- iOS key storage/background/expiration behavior is physically measured;
-- Android↔iOS cryptographic interoperability is demonstrated;
-- Recovery Kit export/import leakage controls are physically tested;
-- revocation-barrier metadata leakage/retention/deletion are physically tested;
-- parasympathetic backoff/offline/resource rules are tested;
-- Q-004 privacy matrices are reconciled with metadata leakage/key retention/deletion;
-- SEC-001 and DM-001 are revalidated;
-- release-grade evidence artifacts are stored under `mk0/10-evidence/`;
-- closure receipt issued;
-- `MULTI_DEVICE_DESIGN PASS` and `PRIVACY_MODEL PASS` evidence produced.
+`PROVEN_AT_SPIKE ≠ PROVEN`.
