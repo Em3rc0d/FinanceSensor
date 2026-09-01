@@ -12,6 +12,15 @@ export const EventType = Object.freeze({
   UNKNOWN: 'UNKNOWN'
 });
 
+export const EconomicEffect = Object.freeze({
+  EXPENSE: 'EXPENSE',
+  INCOME: 'INCOME',
+  NEUTRAL: 'NEUTRAL',
+  OFFSET_EXPENSE: 'OFFSET_EXPENSE',
+  OFFSET_INCOME: 'OFFSET_INCOME',
+  UNKNOWN: 'UNKNOWN'
+});
+
 export const EffectState = Object.freeze({
   RESOLVED: 'RESOLVED',
   NEUTRAL: 'NEUTRAL',
@@ -28,6 +37,8 @@ const normalizeText = (value = '') => String(value ?? '')
   .trim();
 
 const canonicalNumber = (value) => Object.is(Number(value), -0) ? 0 : Number(value);
+const sameKnownValue = (a, b) => !a || !b || a === b;
+const knownConflict = (a, b) => Boolean(a && b && a !== b);
 
 export function normalizeMerchant(raw = '') {
   return normalizeText(raw)
@@ -47,6 +58,7 @@ export function stableEvidenceKey(evidence) {
     evidence.subject,
     evidence.amount,
     evidence.currency,
+    evidence.direction,
     evidence.occurredAt,
     evidence.rawMerchant
   ].map(v => String(v ?? '')).join('|');
@@ -62,6 +74,7 @@ export function candidateFingerprint(candidate) {
     candidate.accountId || candidate.instrumentId || 'unknown-source',
     Number(candidate.amount).toFixed(2),
     candidate.currency,
+    candidate.flowDirection || 'UNKNOWN',
     normalizeMerchant(candidate.merchantCanonical || candidate.rawMerchant),
     candidate.semanticType,
     bucket
@@ -100,6 +113,7 @@ export function evidenceToCandidate(evidence) {
     instrumentId: evidence.instrumentId ?? null,
     amount: Math.abs(Number(evidence.amount)),
     currency: evidence.currency,
+    flowDirection: evidence.direction ?? null,
     occurredAt: evidence.occurredAt,
     rawMerchant: evidence.rawMerchant ?? null,
     merchantCanonical: normalizeMerchant(evidence.rawMerchant ?? ''),
@@ -155,6 +169,9 @@ export function matchScore(a, b) {
   if (a.currency !== b.currency) return 0;
   if (Number(a.amount).toFixed(2) !== Number(b.amount).toFixed(2)) return 0;
   if (!compatibleSemantics(a, b)) return 0;
+  if (knownConflict(a.flowDirection, b.flowDirection)) return 0;
+  if (knownConflict(a.accountId, b.accountId)) return 0;
+  if (knownConflict(a.instrumentId, b.instrumentId)) return 0;
 
   let score = 0.45;
 
@@ -234,7 +251,36 @@ function centsEqual(a, b) {
   return Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
 }
 
-export function projectEconomicEffect(event, { linkedContribution = null } = {}) {
+function resolvedMovementEffect(event, resolvedEconomicEffect) {
+  const amount = Math.abs(Number(event.amount));
+  const direction = event.flowDirection ?? null;
+
+  switch (resolvedEconomicEffect) {
+    case EconomicEffect.EXPENSE:
+      if (direction && direction !== 'OUT') return zeroEffect(EffectState.REQUIRES_REVIEW);
+      return { income: 0, expense: amount, state: EffectState.RESOLVED };
+    case EconomicEffect.INCOME:
+      if (direction && direction !== 'IN') return zeroEffect(EffectState.REQUIRES_REVIEW);
+      return { income: amount, expense: 0, state: EffectState.RESOLVED };
+    case EconomicEffect.NEUTRAL:
+      return zeroEffect(EffectState.NEUTRAL);
+    case EconomicEffect.UNKNOWN:
+    case null:
+    case undefined:
+      return zeroEffect(EffectState.REQUIRES_REVIEW);
+    default:
+      return zeroEffect(EffectState.REQUIRES_REVIEW);
+  }
+}
+
+export function projectEconomicEffect(
+  event,
+  {
+    linkedContribution = null,
+    resolvedEconomicEffect = event.economicEffect ?? null,
+    alreadyAppliedOffsets = { income: 0, expense: 0 }
+  } = {}
+) {
   const amount = Math.abs(Number(event.amount));
 
   switch (event.semanticType) {
@@ -251,17 +297,30 @@ export function projectEconomicEffect(event, { linkedContribution = null } = {})
 
     case EventType.EXTERNAL_TRANSFER:
     case EventType.UNKNOWN:
-      return zeroEffect(EffectState.REQUIRES_REVIEW);
+      return resolvedMovementEffect(event, resolvedEconomicEffect);
 
     case EventType.REFUND: {
       const originalExpense = Math.abs(Number(linkedContribution?.expense ?? 0));
       if (originalExpense <= 0) return zeroEffect(EffectState.REQUIRES_LINK);
-      if (amount - originalExpense > 0.005) return zeroEffect(EffectState.REQUIRES_REVIEW);
+
+      const previouslyOffset = Math.max(0, Math.abs(Number(alreadyAppliedOffsets.expense ?? 0)));
+      const remainingExpense = Math.max(0, canonicalNumber(originalExpense - previouslyOffset));
+
+      if (remainingExpense <= 0) return zeroEffect(EffectState.REQUIRES_REVIEW);
+      if (amount - remainingExpense > 0.005) return zeroEffect(EffectState.REQUIRES_REVIEW);
+
       return { income: 0, expense: canonicalNumber(-amount), state: EffectState.OFFSET };
     }
 
     case EventType.REVERSAL: {
       if (!linkedContribution) return zeroEffect(EffectState.REQUIRES_LINK);
+
+      const previousIncomeOffset = Math.abs(Number(alreadyAppliedOffsets.income ?? 0));
+      const previousExpenseOffset = Math.abs(Number(alreadyAppliedOffsets.expense ?? 0));
+      if (previousIncomeOffset > 0 || previousExpenseOffset > 0) {
+        return zeroEffect(EffectState.REQUIRES_REVIEW);
+      }
+
       const originalIncome = Number(linkedContribution.income ?? 0);
       const originalExpense = Number(linkedContribution.expense ?? 0);
       const originalMagnitude = Math.max(Math.abs(originalIncome), Math.abs(originalExpense));
