@@ -116,6 +116,18 @@ When connectivity or an OS background execution window is unavailable, pending s
 ### INV-SYNC-007
 Battery/storage/resource constraints may defer noncritical heavy work but must never silently relax financial-correctness, provenance, encryption or idempotency rules.
 
+### INV-SYNC-008
+The cloud control/relay plane cannot recover a retained tenant root-key epoch from recovery metadata and recovery-wrap ciphertext alone; the Recovery Private Key is never cloud plaintext and is never synchronized as ordinary tenant state.
+
+### INV-SYNC-009
+Every tenant key epoch declared recoverable after all authorized devices are lost must have an authenticated recovery wrap bound to the same tenant, key epoch and Recovery Key identity before that epoch can be considered recovery-covered.
+
+### INV-SYNC-010
+Successful all-devices-lost recovery must establish a newly authorized device state and rotate the tenant to a fresh key epoch before normal future synchronization resumes; recovery is not permission to silently reactivate lost devices.
+
+### INV-SYNC-011
+After Recovery Key rotation, the retired Recovery Private Key cannot decrypt tenant epochs that were created and wrapped only to the new Recovery Public Key.
+
 ## Security
 
 ### INV-SEC-001
