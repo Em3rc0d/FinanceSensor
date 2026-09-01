@@ -146,6 +146,12 @@ An independently retained `TrustedCheckpointAnchor` defines the minimum accepted
 ### INV-SYNC-017
 Checkpoint authenticity and append-only consistency must never be represented as proof of globally latest state. Without an independent trusted checkpoint anchor or separately reviewed witness, the result is `INDETERMINATE_FRESHNESS`; even a valid chain extending an anchor may establish `CONSISTENT_FROM_ANCHOR` while `latestGlobalFreshness` remains `UNPROVEN` because an unseen later tail may have been withheld.
 
+### INV-SYNC-018
+An independent witness may advance a pseudonymous checkpoint stream only through authenticated monotonic continuity: first sequence `1` with no parent, then exactly `N+1` with `previous_checkpoint_hash` equal to the witness's remembered head. Rollback, same-sequence hash equivocation, sequence gaps, parent mismatch and witness/log binding confusion fail closed; exact retry of the same semantic checkpoint remains idempotent.
+
+### INV-SYNC-019
+Witness evidence must never be represented as stronger than the evidence actually observed. A valid witness ahead of the relay yields `RELAY_BEHIND_WITNESS`; same-sequence valid witness disagreement yields `WITNESS_DIVERGENCE`; unavailable or insufficient independent evidence yields an explicit unconfirmed state and must never silently fall back to trusting the relay. Any quorum threshold used by a spike is not automatically a production truth rule, and witness participation requires per-witness opaque identifiers rather than a stable real tenant identifier.
+
 ## Security
 
 ### INV-SEC-001
