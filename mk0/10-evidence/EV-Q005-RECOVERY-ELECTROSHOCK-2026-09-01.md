@@ -193,6 +193,16 @@ BUILD_READY false
 
 No `CLOSED` or release-grade `PROVEN` state is inferred from a synthetic spike.
 
+## ADR identity correction
+
+The pre-existing ADR index already reserved `ADR-005` for transaction fingerprint/resolver strategy. Recovery therefore uses the unique identifier:
+
+```text
+ADR-014 — All-Devices-Lost Recovery Without a Server Master Key
+```
+
+The duplicate experimental filename was removed; CI guards against its reintroduction.
+
 ## What this evidence does NOT prove
 
 - reviewed production HPKE implementation correctness;
@@ -212,7 +222,7 @@ No `CLOSED` or release-grade `PROVEN` state is inferred from a synthetic spike.
 ## Closure effect
 
 ```text
-ADR-005 ownership model             SPIKE-ACCEPTED
+ADR-014 ownership model             SPIKE-ACCEPTED
 INV-SYNC-008..011                   PROVEN_AT_SPIKE
 ALL_DEVICES_LOST_RECOVERY_DESIGN    DECIDED AT LOGICAL/SPIKE LEVEL
 PHYSICAL_RECOVERY                   OPEN
