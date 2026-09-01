@@ -57,8 +57,8 @@
       "source": "product",
       "invariants": ["PRIV-001", "PRIV-002"],
       "status": "PARTIAL",
-      "ownerNodes": ["Q-004", "Q-005", "SEC-001"],
-      "tests": ["tools/validate-privacy-matrix.mjs"],
+      "ownerNodes": ["Q-004", "Q-005", "SEC-001", "T-002"],
+      "tests": ["tools/validate-privacy-matrix.mjs", "spikes/e2ee-sync/test/protocol.test.js"],
       "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
       "mapsTo": ["INV-SEC-002", "INV-SEC-003"]
     },
@@ -86,9 +86,9 @@
       "id": "TR-PRIV-REVOCATION",
       "source": "product",
       "invariants": ["PRIV-005"],
-      "status": "SPECIFIED",
-      "ownerNodes": ["Q-005", "SEC-001"],
-      "tests": [],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-005", "SEC-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/protocol.test.js"],
       "evidence": [],
       "mapsTo": ["INV-SYNC-003"]
     },
@@ -116,9 +116,9 @@
       "id": "TR-TEN-CONVERGENCE",
       "source": "product",
       "invariants": ["TEN-005"],
-      "status": "SPECIFIED",
-      "ownerNodes": ["Q-005", "DM-001"],
-      "tests": [],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-005", "DM-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/protocol.test.js", "spikes/e2ee-sync/test/lease-failure.test.js"],
       "evidence": [],
       "mapsTo": ["INV-SYNC-002", "INV-SYNC-004", "INV-SYNC-005"]
     },
@@ -143,16 +143,25 @@
       "mapsTo": []
     },
     {
-      "id": "TR-DEVICE",
+      "id": "TR-DEVICE-CAPABILITY",
       "source": "product",
-      "invariants": ["DEV-001", "DEV-002", "DEV-003"],
+      "invariants": ["DEV-001", "DEV-002"],
       "status": "SPECIFIED",
       "ownerNodes": ["A-001", "WF-001"],
       "tests": [],
       "evidence": [],
       "mapsTo": []
     },
-
+    {
+      "id": "TR-DEVICE-FRESHNESS",
+      "source": "product",
+      "invariants": ["DEV-003"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-005", "A-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/scheduler.test.js"],
+      "evidence": [],
+      "mapsTo": ["INV-SYNC-006", "INV-SYNC-007"]
+    },
     {
       "id": "TR-DM-TEN",
       "source": "data-model",
@@ -216,10 +225,15 @@
     {
       "id": "TR-DM-SYNC",
       "source": "data-model",
-      "invariants": ["INV-SYNC-001", "INV-SYNC-002", "INV-SYNC-003", "INV-SYNC-004", "INV-SYNC-005"],
-      "status": "SPECIFIED",
-      "ownerNodes": ["Q-005", "DM-001", "SEC-001"],
-      "tests": [],
+      "invariants": ["INV-SYNC-001", "INV-SYNC-002", "INV-SYNC-003", "INV-SYNC-004", "INV-SYNC-005", "INV-SYNC-006", "INV-SYNC-007"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-005", "DM-001", "SEC-001", "S-002", "T-002"],
+      "tests": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js"
+      ],
       "evidence": [],
       "mapsTo": []
     },
@@ -228,8 +242,8 @@
       "source": "data-model",
       "invariants": ["INV-SEC-001", "INV-SEC-002", "INV-SEC-003", "INV-SEC-004"],
       "status": "PARTIAL",
-      "ownerNodes": ["Q-004", "Q-005", "SEC-001"],
-      "tests": ["tools/validate-privacy-matrix.mjs"],
+      "ownerNodes": ["Q-004", "Q-005", "SEC-001", "T-002"],
+      "tests": ["tools/validate-privacy-matrix.mjs", "spikes/e2ee-sync/test/protocol.test.js"],
       "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
       "mapsTo": []
     }
