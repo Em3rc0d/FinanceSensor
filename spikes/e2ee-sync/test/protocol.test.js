@@ -23,8 +23,8 @@ function setup() {
   const tenantId = 'tenant-alpha';
   const deviceA = generateDeviceIdentity('device-a');
   const deviceB = generateDeviceIdentity('device-b');
-  const recordA = publicDeviceRecord(deviceA);
-  const recordB = publicDeviceRecord(deviceB);
+  const recordA = publicDeviceRecord(deviceA, { tenantId });
+  const recordB = publicDeviceRecord(deviceB, { tenantId });
   const authorized = new Map([
     [recordA.deviceId, recordA],
     [recordB.deviceId, recordB]
@@ -41,18 +41,30 @@ test('tenant root key can be independently wrapped to two authorized devices', (
     keyEpoch: 1,
     tenantRootKey: rootKey,
     recipientDeviceRecord: recordA,
-    authorizingDevice: deviceA
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
   });
   const wrappedB = wrapTenantRootKey({
     tenantId,
     keyEpoch: 1,
     tenantRootKey: rootKey,
     recipientDeviceRecord: recordB,
-    authorizingDevice: deviceA
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
   });
 
-  const unwrappedA = unwrapTenantRootKey({ package: wrappedA, recipientDevice: deviceA, authorizingDeviceRecord: recordA });
-  const unwrappedB = unwrapTenantRootKey({ package: wrappedB, recipientDevice: deviceB, authorizingDeviceRecord: recordA });
+  const unwrappedA = unwrapTenantRootKey({
+    package: wrappedA,
+    recipientDevice: deviceA,
+    recipientDeviceRecord: recordA,
+    authorizingDeviceRecord: recordA
+  });
+  const unwrappedB = unwrapTenantRootKey({
+    package: wrappedB,
+    recipientDevice: deviceB,
+    recipientDeviceRecord: recordB,
+    authorizingDeviceRecord: recordA
+  });
 
   assert.deepEqual(unwrappedA, rootKey);
   assert.deepEqual(unwrappedB, rootKey);
@@ -66,11 +78,17 @@ test('a wrapped tenant key cannot be opened by the wrong device identity', () =>
     keyEpoch: 1,
     tenantRootKey: rootKey,
     recipientDeviceRecord: recordB,
-    authorizingDevice: deviceA
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
   });
 
   assert.throws(
-    () => unwrapTenantRootKey({ package: wrappedB, recipientDevice: deviceA, authorizingDeviceRecord: recordA }),
+    () => unwrapTenantRootKey({
+      package: wrappedB,
+      recipientDevice: deviceA,
+      recipientDeviceRecord: recordA,
+      authorizingDeviceRecord: recordA
+    }),
     /wrong-recipient-device/
   );
 });
@@ -82,12 +100,18 @@ test('tampering with a wrapped tenant key is detected before use', () => {
     keyEpoch: 1,
     tenantRootKey: rootKey,
     recipientDeviceRecord: recordB,
-    authorizingDevice: deviceA
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
   });
   const tampered = { ...wrapped, ciphertext: flipBase64url(wrapped.ciphertext) };
 
   assert.throws(
-    () => unwrapTenantRootKey({ package: tampered, recipientDevice: deviceB, authorizingDeviceRecord: recordA }),
+    () => unwrapTenantRootKey({
+      package: tampered,
+      recipientDevice: deviceB,
+      recipientDeviceRecord: recordB,
+      authorizingDeviceRecord: recordA
+    }),
     /invalid-key-wrap-signature/
   );
 });
@@ -243,7 +267,12 @@ test('sequence inspection detects a missing origin-device range without decrypti
 
 test('revocation moves future sync to a new key epoch unavailable to the revoked device', () => {
   const { tenantId, deviceA, deviceB, recordA, rootKey: epoch1 } = setup();
-  const recordBRevoked = publicDeviceRecord(deviceB, { authorizedFromEpoch: 1, revokedFromEpoch: 2, status: 'REVOKED' });
+  const recordBRevoked = publicDeviceRecord(deviceB, {
+    tenantId,
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: 2,
+    status: 'REVOKED'
+  });
   const epoch2 = generateTenantRootKey();
 
   assert.throws(
@@ -252,7 +281,8 @@ test('revocation moves future sync to a new key epoch unavailable to the revoked
       keyEpoch: 2,
       tenantRootKey: epoch2,
       recipientDeviceRecord: recordBRevoked,
-      authorizingDevice: deviceA
+      authorizingDevice: deviceA,
+      authorizingDeviceRecord: recordA
     }),
     /recipient-not-authorized-for-epoch/
   );
@@ -277,15 +307,22 @@ test('revocation moves future sync to a new key epoch unavailable to the revoked
   );
 
   // Explicit non-claim: epoch-1 material already possessed by B is not magically erased.
+  const historicalRecordB = publicDeviceRecord(deviceB, { tenantId });
   const oldWrap = wrapTenantRootKey({
     tenantId,
     keyEpoch: 1,
     tenantRootKey: epoch1,
-    recipientDeviceRecord: publicDeviceRecord(deviceB),
-    authorizingDevice: deviceA
+    recipientDeviceRecord: historicalRecordB,
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
   });
   assert.deepEqual(
-    unwrapTenantRootKey({ package: oldWrap, recipientDevice: deviceB, authorizingDeviceRecord: recordA }),
+    unwrapTenantRootKey({
+      package: oldWrap,
+      recipientDevice: deviceB,
+      recipientDeviceRecord: historicalRecordB,
+      authorizingDeviceRecord: recordA
+    }),
     epoch1
   );
 });
@@ -382,4 +419,101 @@ test('an explicit conflict-resolution action converges to the selected user corr
   assert.equal(Object.keys(stateA.conflicts).length, 0);
   assert.deepEqual(stateA.categoryState['c-target'], { categoryId: 'FOOD', revision: 1 });
   assert.equal(stateDigest(stateA), stateDigest(stateB));
+});
+
+test('KEY-001 authorizer identity cannot be impersonated inside a signed key-wrap header', () => {
+  const { tenantId, deviceA, deviceB, recordA, recordB, rootKey } = setup();
+  const wrapped = wrapTenantRootKey({
+    tenantId,
+    keyEpoch: 1,
+    tenantRootKey: rootKey,
+    recipientDeviceRecord: recordB,
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
+  });
+
+  assert.throws(() => unwrapTenantRootKey({
+    package: wrapped,
+    recipientDevice: deviceB,
+    recipientDeviceRecord: recordB,
+    authorizingDeviceRecord: recordB
+  }), /authorizer-identity-mismatch/);
+});
+
+test('KEY-002 revoked authorizer cannot create a tenant-key wrap for its revoked epoch', () => {
+  const { tenantId, deviceA, deviceB, recordB, rootKey } = setup();
+  const revokedAuthorizer = publicDeviceRecord(deviceA, {
+    tenantId,
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: 2,
+    status: 'REVOKED'
+  });
+
+  assert.throws(() => wrapTenantRootKey({
+    tenantId,
+    keyEpoch: 2,
+    tenantRootKey: rootKey,
+    recipientDeviceRecord: publicDeviceRecord(deviceB, { tenantId, authorizedFromEpoch: 1 }),
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: revokedAuthorizer
+  }), /authorizer-not-authorized-for-epoch/);
+});
+
+test('KEY-003 recipient authorization is rechecked when consuming a tenant-key wrap', () => {
+  const { tenantId, deviceA, deviceB, recordA, recordB, rootKey } = setup();
+  const wrapped = wrapTenantRootKey({
+    tenantId,
+    keyEpoch: 1,
+    tenantRootKey: rootKey,
+    recipientDeviceRecord: recordB,
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
+  });
+  const revokedRecipient = publicDeviceRecord(deviceB, {
+    tenantId,
+    authorizedFromEpoch: 1,
+    revokedFromEpoch: 1,
+    status: 'REVOKED'
+  });
+
+  assert.throws(() => unwrapTenantRootKey({
+    package: wrapped,
+    recipientDevice: deviceB,
+    recipientDeviceRecord: revokedRecipient,
+    authorizingDeviceRecord: recordA
+  }), /recipient-not-authorized-for-epoch/);
+});
+
+test('KEY-004 cross-tenant authorization record cannot authorize an origin envelope', () => {
+  const { tenantId, deviceA, rootKey } = setup();
+  const envelope = createEncryptedEnvelope({
+    tenantId,
+    keyEpoch: 1,
+    tenantRootKey: rootKey,
+    originDevice: deviceA,
+    originDeviceSequence: 1,
+    eventId: 'evt-cross-tenant-auth',
+    action: { type: 'NOOP' }
+  });
+  const wrongTenantRecord = publicDeviceRecord(deviceA, { tenantId: 'tenant-other' });
+
+  assert.throws(() => decryptEnvelope({
+    envelope,
+    tenantRootKey: rootKey,
+    authorizedDeviceRecords: new Map([[deviceA.deviceId, wrongTenantRecord]])
+  }), /origin-device-not-authorized-for-epoch/);
+});
+
+test('KEY-005 cross-tenant recipient authorization cannot receive a tenant key', () => {
+  const { tenantId, deviceA, deviceB, recordA, rootKey } = setup();
+  const crossTenantRecipient = publicDeviceRecord(deviceB, { tenantId: 'tenant-other' });
+
+  assert.throws(() => wrapTenantRootKey({
+    tenantId,
+    keyEpoch: 1,
+    tenantRootKey: rootKey,
+    recipientDeviceRecord: crossTenantRecipient,
+    authorizingDevice: deviceA,
+    authorizingDeviceRecord: recordA
+  }), /recipient-tenant-mismatch/);
 });
