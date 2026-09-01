@@ -54,92 +54,33 @@ REPLAY DUPLICATE COUNT       0
 BENCHMARK DECISION ACCURACY  100%
 ```
 
-## Q-005 peripheral / recovery / knee / checkpoint state
+Financial semantics remain relationship-aware: transfer mechanism does not invent economic effect; refund/reversal offsets require explicit linkage and cannot silently exceed original contribution.
 
-Validated executable anti-rollback head:
+## Q-005 distributed nervous system
 
-`dbfd21c01be7352087ce4bf2a06a8922b68c8c8c`
-
-Validated reconciled architecture/ADR pre-status head:
-
-`ba1d3058f9f3ac8e754ac8add7c1cb426513a263`
+Current distributed suite:
 
 ```text
 E2EE / KEY / RECOVERY / REVOCATION /
-KNEE / CHECKPOINT / PNS              98 / 98 PASS
-
-RECOVERY OWNERSHIP + LOWER GATE       REC-001..018 PASS
-POST-RECOVERY CUTOVER                 REC-019..022 PASS
-REVOCATION CUTOVER                    REV-001..007 PASS
-KEY AUTHORITY                         KEY-001..005 PASS
-KNEE ADVERSARIAL CAMPAIGN             12 red assertions exposed/repaired
-ANTI-ROLLBACK CAMPAIGN                ARB-001..014 PASS
-ANTI-ROLLBACK RED ASSERTIONS           8 exposed/repaired
-
-T-002                                 PASS
-Q-005                                 ACTIVE
-ADR-014 RECOVERY                      SPIKE-ACCEPTED
-ADR-015 TRUSTED CHECKPOINT            SPIKE-ACCEPTED
+KNEE / CHECKPOINT / WITNESS / PNS      116 / 116 PASS
 ```
 
-Evidence:
-
-- `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
-- `mk0/10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
-- `mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
-- `mk0/10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
-
-### Load-bearing contracts now demonstrated at bounded spike level
+Bounded executable contracts include:
 
 ```text
-DEVICE KEY AUTHORITY
-  tenant + epoch + identity scoped
-  cross-tenant/revoked authority rejected
-
+TENANT + EPOCH DEVICE AUTHORITY
 RECOVERY COVERAGE
-  signed + tenant/epoch/key-bound
-  tampered wrap cannot count
-  ambiguity fails closed
-  exact duplicate is idempotent
-
 REVOCATION CUTOVER
-  future key revocation + frozen accepted history
-  stale-epoch extension/substitution rejected
-  gaps/forks fail closed
-
-POST-RECOVERY RESUME
-  new device + tenant rotation + Recovery Key rotation
-  next-epoch recovery coverage
-  every lost device explicitly inventoried
-  authenticated cutover barrier per lost device
-
-SYNC IDENTITY
-  event_id immutable
-  (tenant, origin_device, sequence) immutable
-  divergent identity reuse fails closed
-
-TENANT MATERIALIZATION
-  one materialization belongs to one tenant
-  mixed-tenant input fails closed
-
-CONFLICT RESOLUTION
-  incompatible corrections → CONFLICT
-  incompatible resolutions → META-CONFLICT
-  invalid resolution target → fail closed
-
-TRUSTED CHECKPOINT
-  independent anchor is minimum accepted state
-  rollback behind anchor → fail closed
-  same-sequence equivocation → fail closed
-  sequence gap / signed fast-forward → fail closed
-  previous-hash mismatch → fail closed
-  cross-tenant checkpoint advance → fail closed
-  exact checkpoint duplicate → idempotent
+POST-RECOVERY RESUME GATE
+IMMUTABLE SYNC IDENTITY
+TENANT-ISOLATED MATERIALIZATION
+CONFLICT-SAFE CORRECTION/RESOLUTION
+TRUSTED CHECKPOINT ANTI-ROLLBACK
+OPAQUE INDEPENDENT WITNESS FRESHNESS
+PARASYMPATHETIC BACKGROUND BEHAVIOR
 ```
 
-### Q-005 freshness boundary
-
-FinanceSensor now explicitly separates:
+Key law:
 
 ```text
 AUTHENTICITY
@@ -151,111 +92,190 @@ APPEND-ONLY CONSISTENCY
 GLOBAL FRESHNESS
 ```
 
-A valid checkpoint chain extending an independent anchor proves only:
+### Trusted checkpoint / opaque witness
 
-```text
-CONSISTENT_FROM_ANCHOR
-```
-
-It does **not** prove that the relay supplied the newest checkpoint that ever existed.
+Anchor-only semantics remain honest:
 
 ```text
 no independent anchor
 → INDETERMINATE_FRESHNESS
 
-valid anchored chain
+valid chain extending anchor
 → CONSISTENT_FROM_ANCHOR
 → latestGlobalFreshness = UNPROVEN
 ```
 
-If all trusted devices are lost and the newest independent Recovery Kit/witness anchor is `N`, a relay may still withhold a valid unseen tail `N+1..M`. The client can refuse rollback before/fork at `N`; it cannot infer that `M` does not exist.
+The opaque witness layer adds an independent freshness signal without giving the witness financial plaintext or a stable real tenant identity.
 
-Therefore the conceptual anchor-relative anti-rollback problem is spike-accepted, while the **production independent witness/freshness strategy remains open**.
+Witness campaign:
+
+```text
+INITIAL WEAK BASELINE        109 / 116 PASS
+EXPECTED FAILURES              7
+FINAL DISTRIBUTED SUITE      116 / 116 PASS
+```
+
+The seven exposed protections were rollback, same-sequence fork, sequence gap, wrong previous hash, witness-ahead-of-relay, same-sequence witness divergence and cross-binding witness confusion.
+
+```text
+one valid witness ahead of relay
+→ RELAY_BEHIND_WITNESS
+→ freshness not confirmed
+
+valid same-sequence witness divergence
+→ explicit equivocation / fail safe
+
+zero reachable witnesses
+→ never fall back to trusting relay freshness
+```
+
+Q-005 remains `ACTIVE`: these are spike-level properties, not production witness/crypto/mobile proof.
+
+Evidence includes:
+
+- `mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
+- `mk0/10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
 
 ## Gmail / financial ingress
 
-### Level A — contractual harness
+### Level A — contractual ingress + OAuth boundary
+
+Observed reconciled evidence head:
+
+`5035906dbe6cd652c6b9e5f5b530d7e45fc3187c`
 
 ```text
-PHYSICAL INGRESS HARNESS       21 / 21 PASS
-ASYNC PROVIDER CONTRACT        PASS
-METADATA-FIRST                 PASS
-FULL ONLY FOR CANDIDATES       PASS
-INCREMENTAL HISTORY MODEL      PASS
-HISTORY 404 RECOVERY           PASS
-RESTART / REPLAY               PASS
-RAW BODY DURABLE RETENTION     0
-RAW ATTACHMENT RETENTION       0
-PLAINTEXT FINANCIAL CLOUD      0 in harness
-TOKEN IN LOGS                  0 in harness
-T-003                          PASS
-S-003                          ACTIVE
+PHYSICAL INGRESS              44 / 44 PASS
+ASYNC PROVIDER CONTRACT       PASS
+METADATA-FIRST                PASS
+FULL ONLY FOR CANDIDATES      PASS
+INCREMENTAL HISTORY MODEL     PASS
+HISTORY 404 RECOVERY          PASS
+RESTART / REPLAY              PASS
+REAL-SHAPE SANITIZED PARSER   PASS
+MIME DESCRIPTORS              PASS
+RAW ATTACHMENT AUTO-FETCH     0
+RAW BODY DURABLE RETENTION    0
+PLAINTEXT FINANCIAL CLOUD     0 in harness
+AUTH SECRET IN TESTED LOGS    0
+T-003                         PASS
+S-003                         ACTIVE
 ```
 
-Evidence: `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`.
-
-### Level B — real Gmail
+OAuth-specific contract:
 
 ```text
-Gmail REST adapter             READY
-bounded messages.list          READY
-METADATA/FULL messages.get     READY
-history.list                   READY
-profile historyId              READY
-privacy-safe aggregate output  READY
-remote token revoke            READY
-gmail-live-spike workflow      READY
-
-CONTROLLED GOOGLE CREDENTIAL   MISSING
-REAL GMAIL EXECUTION           NOT RUN
+PKCE S256                          PASS
+STATE BINDING                      PASS
+EXACT gmail.readonly SCOPE         PASS
+BROADER GMAIL SCOPE SET            REJECTED
+CLIENT SECRET IN PUBLIC EXCHANGE   0
+LOCAL LONG-LIVED AUTHORITY         PASS AT CONTRACT LEVEL
+SHORT-TOKEN CACHE                  PASS
+CONCURRENT REFRESH COALESCING      PASS
+401 CACHE INVALIDATION             PASS
+401 HIDDEN SAME-CALL RETRY         0
+REFRESH AUTHORITY → GMAIL          0
+CI AS LONG-LIVED OAUTH AUTHORITY   REJECTED / GUARDED
 ```
 
-No Gmail credential or user mail is committed to the repository.
+Evidence:
+
+- `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
+- `mk0/10-evidence/EV-Q003-OAUTH-CLIENT-CONTRACT-2026-09-01.md`
+
+### Level B — real Gmail provider
+
+Executed 2026-09-01 through an already-authorized Gmail engineering connection.
+
+```text
+REAL PROVIDER CONNECTION       PASS
+REAL MESSAGE IDS               RECEIVED
+REAL TRANSACTIONAL METADATA    RECEIVED
+REAL TRANSACTIONAL BODY        RECEIVED
+REAL MIME STRUCTURE            RECEIVED
+REAL RAW GMAIL CONTENT IN REPO 0
+REAL FINANCIAL LITERALS IN CI  0
+```
+
+The live sample exposed real parser weaknesses before production: localized thousands/decimal formatting, merchant provenance and operation-reference extraction. Those were converted into sanitized fixtures and repaired.
+
+Evidence:
+
+`mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
+
+The engineering connector's authority is not repurposed as FinanceSensor product authority.
+
+### Level C — FinanceSensor-owned OAuth identity
+
+```text
+GMAIL REST ADAPTER                 READY
+OAUTH PKCE/STATE CONTRACT          READY / TESTED
+DEVICE-LOCAL CREDENTIAL BROKER     READY / TESTED
+LEVEL-C EXECUTION PACKET           READY
+FINANCESENSOR-OWNED DEV OAUTH ID   EXTERNAL PRECONDITION
+INTERACTIVE FINANCESENSOR CONSENT  NOT EXECUTED
+LEVEL C                            NOT PASSED
+```
+
+Execution contract:
+
+`spikes/physical-ingress/OWNED-OAUTH-EXECUTION.md`
+
+ADR:
+
+`mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
+
+GitHub Actions is intentionally only a **Gmail Bearer Reachability Spike**. It is not allowed to become custodian of long-lived Gmail OAuth authority merely to automate the experiment.
+
+No Google Cloud administration connector/plugin is available in the current engineering environment, so creation/ownership of the FinanceSensor DEV OAuth identity and interactive consent remain an external physical boundary rather than a code gap.
 
 ## Invariant nervous system
 
-Observed Heartbeat on `ba1d3058f9f3ac8e754ac8add7c1cb426513a263`:
+Latest observed reconciled nervous-system metrics:
 
 ```text
 PRODUCT INVARIANTS          34
-DATA-MODEL INVARIANTS       48
-TOTAL WIRED                  82
+DATA-MODEL INVARIANTS       50
+TOTAL WIRED                  84
 
 SPECIFIED                    29
 PARTIAL                      18
-PROVEN_AT_SPIKE              20
+PROVEN_AT_SPIKE              22
 PROVEN                       15
 
 REGISTERED CONTRADICTIONS     2
 OPEN CONTRADICTIONS           0
 ```
 
-`INV-SYNC-008..017` are wired through `graph/traceability-recovery.json` for their bounded claims.
+`INV-SYNC-008..019` are wired through the base/recovery traceability network for their bounded claims.
 
 `G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
 
 ## Privacy nervous system
 
 ```text
-BASE DATA CLASSES             18
+BASE DATA CLASSES             19
 RECOVERY/REVOCATION/CHECKPOINT 5
-TOTAL PRIVACY CLASSES         23
+TOTAL PRIVACY CLASSES         24
 PRIVACY MATRIX ECG            PASS
 ```
 
-Additional sensitive classes:
+The additional witness class is constrained to minimized pseudonymous commitment metadata; financial plaintext and stable real tenant identity are outside its accepted visibility.
+
+Gmail OAuth credentials remain critical local authority:
 
 ```text
-RECOVERY-PRIVATE-KEY
-RECOVERY-PUBLIC-KEY
-RECOVERY-EPOCH-WRAP
-REVOCATION-CUTOVER-BARRIER
-TRUSTED-CHECKPOINT-METADATA
+CLOUD PLAINTEXT       FORBIDDEN
+NORMAL E2EE SYNC      FORBIDDEN_MK0
+LOGGING               FORBIDDEN
+LOCAL PROTECTION      OS-PROTECTED CREDENTIAL STORE TARGET
 ```
 
-The cloud may hold minimized signed checkpoint security metadata, but **a cloud-only checkpoint copy is forbidden from being the sole trusted anti-rollback anchor**.
-
-Privacy matrices remain design-level DRAFTs until physical storage/transport/deletion evidence exists.
+Privacy matrices remain design-level DRAFTs until physical platform storage/transport/deletion evidence exists.
 
 ## Closure graph
 
@@ -275,9 +295,9 @@ DM-001 Core data model               DRAFTED
 WF-001 Signature wireframes          DRAFTED
 S-001 Canonical resolver spike       ACTIVE
 T-001 Canonical resolver test        PASS
-S-002 E2EE/PNS/recovery spike        ACTIVE
-T-002 E2EE/PNS/recovery suite        PASS
-S-003 Physical ingress spike         ACTIVE
+S-002 E2EE/PNS/recovery/witness      ACTIVE
+T-002 Distributed suite              PASS
+S-003 Physical ingress/OAuth spike   ACTIVE
 T-003 Ingress/privacy suite          PASS
 OPS-001 Repository governance        OPEN
 G-MK0 BUILD_READY                    BLOCKED
@@ -289,37 +309,93 @@ NODES        21
 BUILD_READY  false
 ```
 
-`PROVEN_AT_SPIKE` does not promote Q-005/S-002/SEC-001/DM-001 to closed states.
+Last observed graph state distribution:
+
+```text
+PASS       5
+CLOSED     4
+ACTIVE     6
+DRAFTED    4
+OPEN       1
+BLOCKED    1
+```
+
+## Whole-organism ECG
+
+Latest fully observed evidence family before this STATUS reconciliation:
+
+```text
+CANONICAL RESOLVER                                  98 / 98 PASS
+E2EE / KEY / RECOVERY / REVOCATION /
+KNEE / CHECKPOINT / WITNESS / PNS                  116 / 116 PASS
+PHYSICAL INGRESS / OAUTH                            44 / 44 PASS
+CLOSURE GRAPH                                       PASS — 21 nodes
+ARTIFACT STATUS AUTHORITY                           PASS
+QUARRY STATUS                                       PASS — 5
+TRACEABILITY                                        PASS — 84 / 84 WIRED
+PRIVACY MATRIX                                      PASS — 24 CLASSES
+RECOVERY EQUIPMENT GUARD                            PASS
+HEARTBEAT                                           SUCCESS
+MK0 FOUNDATION                                      3 / 3 JOBS PASS
+BUILD_READY                                         false
+```
+
+The STATUS reconciliation commit itself must pass the same ECG before becoming the new authoritative observed head.
+
+## Q-003 remaining blocker
+
+```text
+CONTROLLED FINANCESENSOR GOOGLE CLOUD DEV OAUTH IDENTITY
+        ↓
+CONTROLLED TEST USER
+        ↓ exact gmail.readonly consent
+SUPPORTED CLIENT CALLBACK + STATE + PKCE
+        ↓
+PROTECTED EDGE CREDENTIAL AUTHORITY
+        ↓ short bearer
+GmailRestProvider
+        ↓
+list → METADATA → selected FULL → history/incremental
+        ↓
+401 / reauthorization observation
+        ↓
+revoke/disconnect
+        ↓
+old authority denied
+        ↓
+LEVEL C PASS / FAIL
+```
+
+Until this executes, Q-003 remains `ACTIVE`.
 
 ## Q-004 remaining physical proof
 
 ```text
-real Gmail lifecycle/revocation
+FinanceSensor-owned Gmail lifecycle/revocation
 Android protected credential/key storage
 Apple protected credential/key storage
 real transport/storage inspection
 cloud deletion/backup semantics
 Recovery Kit leakage testing
 Revocation Barrier retention/deletion
-Trusted Checkpoint metadata leakage
+Trusted Checkpoint / witness metadata leakage
 trusted-anchor deletion/retirement semantics
 ```
 
 ## Q-005 remaining blockers
 
 ```text
-production independent witness/freshness decision
-Recovery Kit checkpoint-anchor refresh semantics
+production independent witness deployment/ownership decision
+Recovery Kit checkpoint/witness refresh semantics
 reviewed production checkpoint/append-only construction
 atomic crash-safe checkpoint + anchor advancement
 reviewed production HPKE/AEAD/signature suite
 Android ↔ iOS cryptographic interoperability
 Android Keystore/StrongBox physical evidence
 iOS Keychain/Secure Enclave physical evidence
-protected mobile checkpoint-anchor storage
+protected mobile anchor storage
 real control-plane tenant authorization
-real recovery-wrap/checkpoint retrieval authorization
-real Revocation Barrier persistence
+real recovery/checkpoint/witness authorization
 network partition / long-offline recovery
 crash/restart persistence around cutover/checkpoint
 real WorkManager / BackgroundTasks behavior
@@ -327,23 +403,9 @@ physical all-devices-lost recovery
 physical post-recovery revocation/rotation/cutover
 Recovery Kit export/import leakage controls
 recovery re-authentication gate
-recovery/checkpoint/barrier retention/deletion policy
+retention/deletion policy
 side-channel / penetration-test review
 metadata leakage analysis
-```
-
-The following are no longer conceptual blockers at bounded spike level:
-
-```text
-recovery ownership
-authenticated recovery coverage
-tenant-scoped key authority
-stale-epoch revocation cutover
-post-recovery final resume semantics
-immutable replay/origin identity
-tenant-isolated materialization
-conflict-safe resolution
-anchor-relative rollback/fork/gap detection
 ```
 
 ## Repository governance
@@ -357,46 +419,14 @@ PR #1                           DRAFT / DO NOT MERGE
 
 `OPS-001` remains a dependency of `G-MK0`.
 
-## Whole-organism observed pre-status ECG
-
-Head `ba1d3058f9f3ac8e754ac8add7c1cb426513a263`:
-
-```text
-CANONICAL RESOLVER                                  98 / 98 PASS
-E2EE / KEY / RECOVERY / REVOCATION /
-KNEE / CHECKPOINT / PNS                             98 / 98 PASS
-PHYSICAL INGRESS                                    21 / 21 PASS
-CLOSURE GRAPH                                       PASS
-ARTIFACT STATUS AUTHORITY                           PASS — 10 declarations
-QUARRY STATUS                                       PASS — 5
-TRACEABILITY                                        PASS — 82 / 82 WIRED
-PRIVACY MATRIX                                      PASS — 23 CLASSES
-RECOVERY EQUIPMENT GUARD                            PASS
-HEARTBEAT                                           SUCCESS
-MK0 FOUNDATION                                      3 / 3 JOBS PASS
-BUILD_READY                                         false
-```
-
-Observed runs:
-
-```text
-Heartbeat push      33542584043  SUCCESS
-MK0 Foundation PR   33542590293  SUCCESS
-MK0 Foundation push SUCCESS
-```
-
-The current STATUS commit must itself pass the same ECG before becoming the final reconciled baseline.
-
 ## Critical path
 
 ```text
-Q-005 production witness/freshness + physical checkpoint anchor
+Q-003 FINANCESENSOR-OWNED OAUTH LEVEL C
         +
-Q-003 Level B controlled Gmail execution
+Q-004 REAL CREDENTIAL/DELETION/PRIVACY EVIDENCE
         +
-Q-004 real deletion/revocation/privacy inspection
-        +
-Q-005 production crypto + mobile/recovery evidence
+Q-005 PRODUCTION WITNESS + CRYPTO + MOBILE EVIDENCE
         ↓
 A-001 + SEC-001 reconciliation
         ↓
