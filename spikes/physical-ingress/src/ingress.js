@@ -142,20 +142,20 @@ export class FinancialIngressEngine {
     state.review = result.review;
   }
 
-  _processIds(ids, state) {
+  async _processIds(ids, state) {
     const processed = new Set(state.processedSourceIds);
     for (const { id } of ids) {
       state.metrics.emailsChecked += 1;
       if (processed.has(id)) continue;
 
-      const metadata = this.provider.getMessage({ id, format: 'METADATA', metadataHeaders: ['From', 'Date', 'Subject'] });
+      const metadata = await this.provider.getMessage({ id, format: 'METADATA', metadataHeaders: ['From', 'Date', 'Subject'] });
       state.metrics.metadataCalls += 1;
       if (!isLikelyFinancialMetadata(metadata.headers)) {
         processed.add(id);
         continue;
       }
 
-      const full = this.provider.getMessage({ id, format: 'FULL' });
+      const full = await this.provider.getMessage({ id, format: 'FULL' });
       state.metrics.fullCalls += 1;
       state.metrics.fullMessagesFetched += 1;
       const extracted = extractFinancialEvidence(full);
@@ -171,31 +171,33 @@ export class FinancialIngressEngine {
     return state;
   }
 
-  initialSync({ days = 90 } = {}) {
+  async initialSync({ days = 90 } = {}) {
     this._requireAuth();
     const state = this._load();
     const after = new Date(this.now().getTime() - days * 86400000).toISOString();
-    const ids = this.provider.listMessages({ after });
+    const ids = await this.provider.listMessages({ after });
     state.metrics.listCalls += 1;
-    this._processIds(ids, state);
-    state.historyCursor = String(this.provider.currentHistoryId ?? state.historyCursor ?? '1');
+    await this._processIds(ids, state);
+    state.historyCursor = this.provider.getCurrentHistoryId
+      ? String(await this.provider.getCurrentHistoryId())
+      : String(this.provider.currentHistoryId ?? state.historyCursor ?? '1');
     this._save(state);
     this.telemetry.emit('ingress.initial.complete', {
       checkedCount: ids.length,
       candidateCount: state.metrics.financialCandidates,
       canonicalCount: state.canonical.length,
-      durationClass: 'synthetic'
+      durationClass: 'bounded'
     });
     return structuredClone(state);
   }
 
-  incrementalSync({ recoveryDays = 90 } = {}) {
+  async incrementalSync({ recoveryDays = 90 } = {}) {
     this._requireAuth();
     const state = this._load();
     if (!state.historyCursor) return this.initialSync({ days: recoveryDays });
     let history;
     try {
-      history = this.provider.listHistory({ startHistoryId: state.historyCursor });
+      history = await this.provider.listHistory({ startHistoryId: state.historyCursor });
       state.metrics.historyCalls += 1;
     } catch (error) {
       if (!(error instanceof HistoryExpiredError) && error?.code !== 404) throw error;
@@ -205,7 +207,7 @@ export class FinancialIngressEngine {
       return this.initialSync({ days: recoveryDays });
     }
     const ids = history.history.map(item => ({ id: item.messageId }));
-    this._processIds(ids, state);
+    await this._processIds(ids, state);
     state.historyCursor = String(history.historyId);
     this._save(state);
     this.telemetry.emit('ingress.incremental.complete', {
