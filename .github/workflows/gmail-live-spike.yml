@@ -1,0 +1,44 @@
+name: Gmail Live Ingress Spike
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Bounded Gmail history window in days'
+        required: true
+        default: '30'
+      revoke_after:
+        description: 'Revoke the controlled OAuth token after evidence collection'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  gmail-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: gmail-controlled-spike
+    defaults:
+      run:
+        working-directory: spikes/physical-ingress
+    env:
+      FINANCESENSOR_GMAIL_ACCESS_TOKEN: ${{ secrets.FINANCESENSOR_GMAIL_ACCESS_TOKEN }}
+      FINANCESENSOR_GMAIL_DAYS: ${{ inputs.days }}
+      FINANCESENSOR_GMAIL_REVOKE: ${{ inputs.revoke_after && '1' || '0' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refuse missing live credential
+        run: test -n "$FINANCESENSOR_GMAIL_ACCESS_TOKEN"
+
+      - name: Run controlled Gmail ingress
+        run: npm run live:gmail
