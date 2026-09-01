@@ -225,7 +225,7 @@ Financial semantics should remain inside ciphertext unless a later requirement d
 
 ## 6. Recovery security requirements
 
-ADR-005 is accepted at the logical/spike level:
+ADR-014 is accepted at the logical/spike level:
 
 ```text
 SERVER MASTER KEY          REJECTED
@@ -389,9 +389,9 @@ penetration-test results
 
 ```text
 SEC-001 remains DRAFTED
-Q-005 recovery ownership model is SPIKE-ACCEPTED
+Q-005 recovery ownership model is SPIKE-ACCEPTED under ADR-014
 Q-004 privacy model includes recovery classes
-DM-001 must include recovery records/relationships
+DM-001 includes recovery records/relationships
 production crypto decision remains OPEN
 physical mobile evidence remains OPEN
 ```
