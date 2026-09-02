@@ -228,23 +228,48 @@ Evidence:
 
 The whole interactive execution took approximately 323.548 seconds, but this is not per-endpoint latency evidence.
 
-### Q-003 after Level C PASS
+### Q-003 after Level C PASS + production-policy refresh
 
 Q-003 remains `ACTIVE`, not because Gmail technical feasibility is still doubtful, but because its production closure contract is intentionally larger than the DEV proof.
 
+The 2026-09-02 provider-policy refresh froze a stricter server boundary and converted the production-verification work into an explicit package:
+
 ```text
-LEVEL C PHYSICAL EXECUTION                 PASS
-SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE  OPEN
-REQUEST PAYLOAD BYTE ACCOUNTING            OPEN
-PER-ENDPOINT LATENCY EVIDENCE              OPEN
-ANDROID/IOS PROTECTED CREDENTIAL HANDLING  OPEN / may delegate to proven security gate
-PUBLIC RESTRICTED-SCOPE VERIFICATION       OPEN
-SECURITY-ASSESSMENT APPLICABILITY          OPEN
-PRODUCTION CONSENT/DISCLOSURE PACKAGE      OPEN
-Q-003                                      ACTIVE
+LEVEL C PHYSICAL EXECUTION                    PASS
+SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE     OPEN
+REQUEST PAYLOAD BYTE ACCOUNTING               OPEN
+PER-ENDPOINT LATENCY EVIDENCE                 OPEN
+ANDROID/IOS PROTECTED CREDENTIAL HANDLING     OPEN / may delegate to proven security gate
+PUBLIC RESTRICTED-SCOPE VERIFICATION          OPEN / provider execution required
+SECURITY-ASSESSMENT ARCHITECTURE BOUNDARY     FROZEN
+SECURITY-ASSESSMENT PROVIDER DETERMINATION    OPEN
+PRODUCTION VERIFICATION PACKAGE               DRAFTED
+PUBLICATION + PRODUCTION DEMO                  OPEN
+Q-003                                         ACTIVE
 ```
 
 Important: the observed `tokenRefresh=1` in v7 is the deliberate post-revoke denial check. It does not prove a successful physical refresh after access-token expiry.
+
+New policy artifacts:
+
+- `mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
+- `mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md`
+- `mk0/10-evidence/EV-Q003-PRODUCTION-POLICY-REFRESH-2026-09-02.md`
+- `tools/validate-gmail-production-policy.mjs`
+
+The accepted production-policy boundary is intentionally fail-closed:
+
+```text
+GMAIL OAUTH AUTHORITY ON SERVER              FORBIDDEN
+SERVER-SIDE Gmail API CALLS                  FORBIDDEN
+RAW Gmail SERVER PROCESSING                  FORBIDDEN
+GENERALIZED Gmail-DERIVED MODEL TRAINING     FORBIDDEN
+E2EE OPAQUE RELAY                            ALLOWED BY ARCHITECTURE
+E2EE RELAY => ASSESSMENT EXEMPT              NOT PROVEN
+GOOGLE ASSESSMENT APPLICABILITY              PROVIDER DETERMINATION REQUIRED
+```
+
+`PACKAGE DRAFTED != GOOGLE APPROVED`.
 
 ## Privacy nervous system
 
@@ -264,7 +289,7 @@ P-001 Product thesis                 PASS
 P-002 Product invariants             PASS
 Q-001 Canonical semantics            CLOSED
 Q-002 Fingerprinting/dedup           CLOSED
-Q-003 Gmail feasibility              ACTIVE  ← Level C PASS, production closure open
+Q-003 Gmail feasibility              ACTIVE  ← Level C PASS; production/provider gates open
 Q-004 Email privacy                  ACTIVE
 Q-005 E2EE multi-device sync         ACTIVE
 C-001 External-transfer semantics    CLOSED
@@ -289,31 +314,37 @@ NODES        21
 BUILD_READY  false
 ```
 
-`graph/closure-ledger.json` remains authoritative for node states. Q-003 state is unchanged (`ACTIVE`), therefore no graph-state mutation is justified solely by the v7 Level C PASS.
+`graph/closure-ledger.json` remains authoritative for node states. Q-003 state is unchanged (`ACTIVE`), therefore no graph-state mutation is justified by Level C or the production-policy package alone.
 
 ## Current Q-003 critical path
 
 ```text
 LEVEL C v7 PHYSICAL PASS
         ↓
-freeze sanitized evidence                 DONE
+freeze sanitized evidence                      DONE
         ↓
-successful real refresh before revoke     OPEN
+production policy/server boundary              FROZEN
         ↓
-bytes + per-endpoint latency              OPEN
+production verification package structure      DRAFTED
         ↓
-protected production credential boundary  OPEN / Q-004/SEC linkage
+successful real refresh before revoke          OPEN
         ↓
-restricted-scope verification package     OPEN
+bytes + per-endpoint latency                   OPEN
         ↓
-policy/security-assessment decision        OPEN
+protected production credential boundary       OPEN / Q-004/SEC linkage
+        ↓
+publish disclosures + production demo          OPEN
+        ↓
+Google restricted-scope verification           OPEN
+        ↓
+Google assessment applicability determination  OPEN
         ↓
 Q-003 closure receipt
 ```
 
 Q-004 and Q-005 remain independent blockers.
 
-## GitHub Actions budget / CI operating mode
+## GitHub Actions / self-hosted CI operating mode
 
 User billing state observed 2026-09-02:
 
@@ -324,16 +355,52 @@ Actions billable usage        $0 after current discounts
 next included-minute reset    ~29 days
 ```
 
-Operating rule until reset or an explicit budget/runner decision:
+The active FinanceSensor CI path no longer relies on GitHub-hosted compute:
 
 ```text
-DO NOT trigger GitHub Actions for routine reconciliation.
-DOCUMENTATION/EVIDENCE commits use [skip ci].
-DO NOT infer CI green from skipped CI.
-LOCAL VALIDATION PASS != GITHUB CI PASS.
+ACTIVE RUNNER LABELS          self-hosted + linux + x64 + financesensor
+ACTIVE ubuntu-latest PATHS    0
+WORKFLOW SECRET REFERENCES    forbidden by CI policy guard
+REAL Gmail/OAuth IN CI        forbidden
 ```
 
-The earlier `runner_id=0 / steps=[]` failures are not treated as product-test failures; they occurred after the included Actions capacity was exhausted.
+A live routing pulse on 2026-09-02 created jobs with the exact required labels, but GitHub reported:
+
+```text
+JOB STATUS       queued
+RUNNER ID        null
+RUNNER NAME      null
+STEPS            []
+```
+
+Therefore:
+
+```text
+SELF-HOSTED WORKFLOW ROUTING        PASS
+NO HOSTED FALLBACK                  PASS BY CONFIGURATION
+PHYSICAL FINANCESENSOR RUNNER       NOT SERVING THE OBSERVED JOB
+CI GREEN                            NOT CLAIMED
+```
+
+The connector available to this project cannot read the repository runner-registration endpoint, so the observed state does not distinguish `registered but offline` from `not registered`. That distinction remains a physical infrastructure fact to prove.
+
+Operating law:
+
+```text
+RUNNER OFFLINE/MISSING -> JOB QUEUES
+DO NOT FALL BACK TO ubuntu-latest
+SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
+SKIPPED CI != GREEN CI
+LOCAL VALIDATION PASS != GITHUB CI PASS
+```
+
+Documentation/evidence-only reconciliation may continue using `[skip ci]` while the physical runner is unavailable, but executable changes are not called CI-green until the dedicated runner actually completes the heartbeat.
+
+Self-hosted CI invariants:
+
+- `ops/SELF-HOSTED-RUNNER.md`
+- `tools/validate-ci-runner-policy.mjs`
+- `.github/workflows/heartbeat.yml`
 
 ## Repository governance
 
@@ -342,14 +409,15 @@ main protected                  NO
 required status checks          NONE
 branch protection enforcement   OFF
 PR #1                           DRAFT / DO NOT MERGE
-Actions routine execution       PAUSED UNTIL BUDGET DECISION/RESET
+active CI routing               DEDICATED SELF-HOSTED LABELS
+physical runner execution       NOT YET PROVEN
 ```
 
 `OPS-001` remains a dependency of `G-MK0`.
 
 ## Take-the-Hummer rule
 
-**Do not begin unrestricted product implementation yet.** Level C passing removes a major Q-003 uncertainty, but Q-003/Q-004/Q-005 and G-MK0 remain open.
+**Do not begin unrestricted product implementation yet.** Level C passing and the production-policy refresh remove major Q-003 uncertainty, but Q-003/Q-004/Q-005 and G-MK0 remain open.
 
 ## Governing rules
 
@@ -364,9 +432,12 @@ SKIPPED CI != GREEN CI
 LOCAL VALIDATION PASS != GITHUB CI PASS
 EXECUTION_COMPLETE != LEVEL_C_PASS
 LEVEL_C_PASS != Q-003_CLOSED
+PACKAGE_DRAFTED != GOOGLE_APPROVED
 CURRENT MAILBOX HISTORY != DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
 DELIVERED TO INBOX != IMMEDIATELY SEARCHABLE BY Gmail q
 LEVEL-C HARNESS != PRODUCTION ONBOARDING
 PROVIDER ASSUMPTION != PROVIDER EVIDENCE
+PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION
 DESKTOP DEV CREDENTIAL != MOBILE CONFIDENTIAL SECRET
+SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
 ```
