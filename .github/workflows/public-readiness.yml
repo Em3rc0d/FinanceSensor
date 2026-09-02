@@ -1,0 +1,59 @@
+name: FinanceSensor Public Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - '.github/workflows/**'
+      - '.gitignore'
+      - 'SECURITY.md'
+      - 'tools/audit-public-history.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - 'spikes/physical-ingress/live/**'
+      - 'ops/**'
+
+permissions:
+  contents: read
+
+jobs:
+  public-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Current-tree public exposure guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .gitignore
+          test -f SECURITY.md
+          grep -q '^\.env$' .gitignore
+          grep -q '^\*credentials\*\.json$' .gitignore
+          grep -q '^client_secret\*\.json$' .gitignore
+          grep -q '^\*\.pem$' .gitignore
+          grep -q '^financesensor-level-c-result\.json$' .gitignore
+          ! grep -R -E -n --exclude-dir=.git --exclude='*.md' --exclude='.gitignore' '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .
+
+      - name: Public CI trust-boundary guard
+        run: node tools/validate-ci-runner-policy.mjs
+
+      - name: Full reachable-history secret audit
+        run: node tools/audit-public-history.mjs
+
+      - name: Public readiness summary
+        run: |
+          echo 'FINANCESENSOR_PUBLIC_READINESS=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Current tree and complete reachable Git history passed the sanitized exposure audit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Active CI is constrained to ephemeral GitHub-hosted runners with contents:read.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Real Gmail/OAuth authority remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
