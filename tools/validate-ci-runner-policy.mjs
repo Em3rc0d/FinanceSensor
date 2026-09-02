@@ -10,6 +10,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'package-level-c-helper.yml',
   'public-readiness.yml',
   'mobile-shell.yml',
+  'mobile-gmail-connection.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
@@ -100,6 +101,28 @@ if (workflowFiles.includes('mobile-shell.yml')) {
   }
 }
 
+// The Android Gmail connection workflow may compile a real native provider bridge,
+// but hosted CI remains forbidden from executing user OAuth or receiving Gmail data.
+if (workflowFiles.includes('mobile-gmail-connection.yml')) {
+  const text = read('mobile-gmail-connection.yml');
+  const requiredMarkers = [
+    'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT',
+    'EXACT_SCOPE=gmail.readonly',
+    'APP_REFRESH_TOKEN_CUSTODY=0',
+    'DART_BEARER_CUSTODY=0',
+    'OFFLINE_ACCESS_REQUESTED=0',
+    'REAL_OAUTH_EXECUTED_BY_CI=0',
+    'REAL_GMAIL_EXECUTED_BY_CI=0',
+    'BUILD_READY=NO',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('mobile-gmail-connection.yml', `connection CI boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i.test(text)) {
+    fail('mobile-gmail-connection.yml', 'connection workflow may compile the bridge but may not acquire real Gmail/OAuth authority');
+  }
+}
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!workflowFiles.includes(file)) {
     fail(file, 'registered retired workflow is missing');
@@ -141,4 +164,6 @@ console.log('CRON_DEPENDENCIES=0');
 console.log('MOBILE_SHELL_REAL_GMAIL=0');
 console.log('MOBILE_SHELL_REAL_OAUTH=0');
 console.log('MOBILE_SHELL_REAL_FINANCIAL_DATA=0');
+console.log('MOBILE_GMAIL_CONNECTION_REAL_OAUTH_EXECUTED_BY_CI=0');
+console.log('MOBILE_GMAIL_CONNECTION_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
