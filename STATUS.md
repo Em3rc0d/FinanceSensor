@@ -72,54 +72,9 @@ PHYSICAL INGRESS / OAUTH CONTRACTS     53 / 53 PASS
 CANONICAL RESOLVER                      98 / 98 PASS
 ```
 
-Current architectural law:
-
-```text
-METADATA-FIRST                         PASS
-FULL ONLY FOR CANDIDATES               PASS
-INCREMENTAL HISTORY MODEL              PASS
-MESSAGE-DERIVED historyId ANCHOR       PASS
-BOUNDED RECENT-INBOX BOOTSTRAP         PASS
-RAW ATTACHMENT AUTO-FETCH              0
-RAW BODY DURABLE RETENTION             0
-PLAINTEXT FINANCIAL CLOUD              0 in harness
-AUTH SECRET IN TESTED LOGS             0
-```
-
-### Level C physical proof
-
-FinanceSensor-owned OAuth Level C v7 physically passed on the controlled local edge. Sanitized evidence is stored at:
-
-`mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
-
-Key proof:
-
-```text
-REAL CONSENT                         PASS
-EXACT SCOPE                          gmail.readonly
-STATE BINDING                        PASS
-PKCE S256                            PASS
-TOKEN EXCHANGE                       HTTP 200
-PROFILE IDENTITY                     PASS
-SYNC ANCHOR SOURCE                   MESSAGE_HISTORY_ID
-RECENT INBOX ANCHOR WINDOW           PASS
-ANCHOR ESTABLISHED                   PASS
-INCREMENTAL HISTORY                  PASS
-PURCHASE METADATA                    PASS
-PRODUCTION METADATA GATE             PASS
-SELECTED FULL                        PASS
-EXTRACTION                           PASS
-REPLAY                               PASS
-PROVIDER REVOKE                      PASS
-OLD REFRESH AUTHORITY                DENIED
-LEVEL C                              PASS
-```
-
-Sanitized evidence counters remain zero for raw Gmail content, financial plaintext, auth secrets, credential paths, mailbox identity, message IDs and unrelated Subjects.
-
 ### Q-003 closure state
 
-Q-003 remains `ACTIVE`. Level C proves DEV feasibility; it does not close the production/provider contract.
+Q-003 remains `ACTIVE`. Level C v7 proves DEV feasibility; it does not close the production/provider contract.
 
 ```text
 LEVEL C PHYSICAL EXECUTION                    PASS
@@ -128,29 +83,9 @@ REQUEST PAYLOAD BYTE ACCOUNTING               OPEN
 PER-ENDPOINT LATENCY EVIDENCE                 OPEN
 ANDROID/IOS PROTECTED CREDENTIAL HANDLING     OPEN
 PUBLIC RESTRICTED-SCOPE VERIFICATION          OPEN
-SECURITY-ASSESSMENT ARCHITECTURE BOUNDARY     FROZEN
 SECURITY-ASSESSMENT PROVIDER DETERMINATION    OPEN
-PRODUCTION VERIFICATION PACKAGE               DRAFTED
 Q-003                                         ACTIVE
 ```
-
-Production-policy law:
-
-```text
-GMAIL OAUTH AUTHORITY ON SERVER              FORBIDDEN
-SERVER-SIDE Gmail API CALLS                  FORBIDDEN
-RAW Gmail SERVER PROCESSING                  FORBIDDEN
-GENERALIZED Gmail-DERIVED MODEL TRAINING     FORBIDDEN
-E2EE OPAQUE RELAY                            ALLOWED BY ARCHITECTURE
-E2EE RELAY => ASSESSMENT EXEMPT              NOT PROVEN
-GOOGLE ASSESSMENT APPLICABILITY              PROVIDER DETERMINATION REQUIRED
-```
-
-Relevant artifacts:
-
-- `mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
-- `mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md`
-- `tools/validate-gmail-production-policy.mjs`
 
 ## Privacy boundary
 
@@ -160,100 +95,30 @@ GITHUB_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
 CI_FIXTURES != REAL_FINANCIAL_DATA
 ```
 
-Gmail OAuth credentials, refresh/access tokens, authorization codes, real Gmail content and real financial plaintext are forbidden from repository and CI custody. Real Gmail Level-C execution remains LOCAL EDGE ONLY.
+Real Gmail/OAuth authority and real financial plaintext remain LOCAL EDGE ONLY.
 
-Root public-safety controls include:
+## Public certification
 
-- `.gitignore` blocking common credential, result, private-key and local-runner files;
-- `SECURITY.md` documenting the public trust boundary;
-- CI-side public exposure pattern guards;
-- no active workflow references `${{ secrets.* }}`;
-- no current branch-head self-hosted route;
-- a fail-closed whole-history auditor.
+FinanceSensor completed the private→public transition on 2026-09-02. The default-branch public-readiness gate executed as designed. An initial detector hit was traced to the explicit synthetic test fixture `desktop-local-client-secret`; the detector was narrowed only for that exact reviewed fixture, not weakened globally.
 
-OAuth client IDs are public identifiers, not secrets. OAuth client secrets and provider authority remain confidential.
-
-## GitHub Actions — public-safe operating mode
-
-FinanceSensor now operates as a public repository using ephemeral standard GitHub-hosted runners:
+Subsequent full-repository audits passed across all current branch heads and complete reachable Git history.
 
 ```text
-ACTIVE RUNNER                  ubuntu-latest
-ACTIVE SELF-HOSTED PATHS       0
-WORKFLOW SECRET REFERENCES     0 / forbidden
-REAL Gmail/OAuth IN CI         forbidden
-CI PERMISSIONS                 contents: read
+REPOSITORY VISIBILITY                  PUBLIC
+CURRENT TREE PUBLIC EXPOSURE GUARD     PASS
+CURRENT BRANCH-HEAD CI POLICY          PASS
+SELF-HOSTED ROUTES                     0
+secrets.* REFERENCES                   0
+pull_request_target                    0
+BINARY BLOBS SKIPPED                   0
+OVERSIZED OBJECTS SKIPPED              0
+PUBLIC HISTORY AUDIT                   PASS
+MATCHED SECRET VALUES PRINTED          0
+PUBLIC READINESS                       PASS
+PUBLIC_CERTIFIED                       YES
 ```
 
-The prior dedicated WSL self-hosted design is retired for active FinanceSensor workflows. Its historical evidence remains documentation only.
-
-```text
-PUBLIC REPO + PERSISTENT WORKSTATION RUNNER  FORBIDDEN
-PUBLIC REPO + EPHEMERAL HOSTED CI             ACCEPTED
-```
-
-See `ops/SELF-HOSTED-RUNNER.md` for the migrated runner trust contract.
-
-## Closure graph
-
-```text
-P-001 Product thesis                 PASS
-P-002 Product invariants             PASS
-Q-001 Canonical semantics            CLOSED
-Q-002 Fingerprinting/dedup           CLOSED
-Q-003 Gmail feasibility              ACTIVE
-Q-004 Email privacy                  ACTIVE
-Q-005 E2EE multi-device sync         ACTIVE
-C-001 External-transfer semantics    CLOSED
-C-002 Refund/reversal projection     CLOSED
-A-001 Core architecture              DRAFTED
-SEC-001 Security/privacy arch        DRAFTED
-DM-001 Core data model               DRAFTED
-WF-001 Signature wireframes          DRAFTED
-S-001 Canonical resolver spike       ACTIVE
-T-001 Canonical resolver test        PASS
-S-002 E2EE/PNS/recovery/witness      ACTIVE
-T-002 Distributed suite              PASS
-S-003 Physical ingress/OAuth spike   ACTIVE
-T-003 Ingress/privacy suite          PASS
-OPS-001 Repository governance        OPEN
-G-MK0 BUILD_READY                    BLOCKED
-```
-
-```text
-GRAPH        PASS
-NODES        21
-BUILD_READY  false
-```
-
-## Public-readiness state
-
-FinanceSensor completed the private→public transition on 2026-09-02. The default-branch `public` event triggered `FinanceSensor Public Readiness` as designed.
-
-The first post-public run correctly failed closed on one `OAUTH_SECRET_ENV` detector hit in `spikes/physical-ingress/test/oauth-native-contract.test.js`. Inspection proved the matched value was the explicit synthetic fixture `desktop-local-client-secret` paired with the synthetic client ID `1234567890-example.apps.googleusercontent.com`; it was not provider authority or a real credential. The auditor was then narrowed with an exact reviewed-fixture allowlist rather than weakening the detector class.
-
-Subsequent full-repository audits passed after detector correction, branch reconciliation and public README alignment.
-
-```text
-REPOSITORY VISIBILITY                       PUBLIC
-CURRENT TREE PUBLIC EXPOSURE GUARD           PASS
-CURRENT BRANCH-HEAD CI POLICY                PASS
-SELF-HOSTED ROUTES                           0
-secrets.* REFERENCES                         0
-pull_request_target                          0
-BINARY BLOBS SKIPPED                         0
-OVERSIZED OBJECTS SKIPPED                    0
-PUBLIC HISTORY AUDIT                         PASS
-MATCHED SECRET VALUES PRINTED                0
-PUBLIC READINESS                             PASS
-PUBLIC_CERTIFIED                             YES
-```
-
-The versioned ledger intentionally records only stable certification properties, not Git object totals. Exact object counts are run evidence and are authoritative only in the latest successful `FinanceSensor Public Readiness` execution.
-
-The certification is fail-closed: any future matching credential class, binary historical blob, oversized historical object, self-hosted branch-head workflow route, `${{ secrets.* }}` reference or `pull_request_target` use prevents a clean public-readiness result.
-
-Law:
+Exact Git object totals are intentionally not stored in this versioned ledger. They are run evidence and the latest successful `FinanceSensor Public Readiness` execution is authoritative for them.
 
 ```text
 PUBLIC_CERTIFIED != BUILD_READY
@@ -270,12 +135,11 @@ main protected                       NO — pending GitHub branch-protection con
 required status checks               NONE — pending protection configuration
 branch protection enforcement        OFF — pending protection configuration
 PR #1                                DRAFT / DO NOT MERGE
-jett behind main                     0 after reconciliation
 active CI routing                    ubuntu-latest
 real Gmail execution                 LOCAL EDGE ONLY
 ```
 
-The connected GitHub integration can read branch protection but does not expose a branch-protection/ruleset write action. Therefore protection is kept explicitly OPEN rather than falsely recorded as configured.
+The connected GitHub integration can read branch protection but does not expose a branch-protection/ruleset write action. Therefore protection remains explicitly OPEN rather than falsely recorded as configured.
 
 `OPS-001` remains a dependency of `G-MK0`; public certification does not close product governance or release gates.
 
