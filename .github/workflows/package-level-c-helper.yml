@@ -19,59 +19,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v3 runner before packaging
+      - name: Verify controlled v4 runner before packaging
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "loopbackRootRedirect: true" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "clientSecretPersistedByRunner: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "clientSecretWrittenToEvidence: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          grep -q "clientSecretCloudCopies: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
-          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "loopbackRootRedirect: true" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "syntheticMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "levelCPass = coreProbePassed()" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          grep -q "owned-oauth-level-c-v4.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
+          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
           ! grep -q "GOOGLE_CLIENT_SECRET" .github/workflows/gmail-live-spike.yml
           ! grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" .github/workflows/gmail-live-spike.yml
 
       - name: Build helper directory
         run: |
-          mkdir -p FinanceSensor-Level-C-v3/spikes
-          cp -R spikes/physical-ingress FinanceSensor-Level-C-v3/spikes/
-          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v3/spikes/
-          cat > FinanceSensor-Level-C-v3/START-HERE.txt <<'EOF'
-          FinanceSensor Gmail Level C v3 — controlled DEV probe
+          mkdir -p FinanceSensor-Level-C-v4/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C-v4/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v4/spikes/
+          cat > FinanceSensor-Level-C-v4/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C v4 — strict controlled DEV proof
 
           PRECONDITION
-          Download the OAuth Desktop client credentials JSON for "FinanceSensor DEV Level-C"
-          directly from Google Cloud. Keep that JSON on this computer. Do not upload or paste it.
+          Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on this computer.
+          Do not upload or paste it.
 
           1. Open: spikes\physical-ingress\live\RUN-FINANCESENSOR-LEVEL-C.cmd
-          2. Windows asks you to select the downloaded Google OAuth credentials JSON.
-          3. The browser opens locally.
-          4. Click "Authorize FinanceSensor DEV" and use ONLY the configured test Gmail account.
-          5. After authorization, send one harmless synthetic test email using the text shown locally.
-          6. Run the bounded history-only probe, then revoke access.
+          2. Select the Google OAuth Desktop credentials JSON in the Windows picker.
+          3. Authorize only the configured Gmail test account.
+          4. After authorization, send exactly the harmless synthetic message shown locally.
+             Its subject contains a fresh proof marker generated only for this run.
+          5. Run the bounded history-only probe. One retry is allowed if Gmail propagation is delayed.
+          6. Revoke access and verify the old refresh authority is denied.
           7. Upload ONLY financesensor-level-c-result.json to ChatGPT.
 
-          Do not upload OAuth tokens, Google credential JSON, client secrets, authorization codes,
-          PKCE values, Gmail message bodies, or real financial data.
+          v4 proof law:
+          EXECUTION_COMPLETE does not imply LEVEL_C_PASS.
+          LEVEL_C_PASS requires OAuth + history + metadata + exact synthetic marker + production
+          metadata gate + one FULL + extraction + replay + provider revocation + denied refresh.
 
-          v3 boundaries:
-          - Google-issued Desktop client credential is read locally and kept only in process memory
-          - credential file path and contents are never written to result evidence
-          - Desktop loopback root redirect only: http://127.0.0.1:<ephemeral-port>
+          Privacy/request boundaries:
           - no historical messages.list sweep
           - max 5 post-authorization changed messages per attempt
           - max 1 FULL fetch
           - max 2 bounded probe attempts
-          - OAuth error diagnostics are allowlisted codes only
+          - proof marker is not written to evidence
+          - credential path/content, tokens, codes, PKCE verifier and client secret are not written to evidence
           EOF
 
       - name: Upload helper
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceSensor-Level-C-v3-Windows
-          path: FinanceSensor-Level-C-v3
+          name: FinanceSensor-Level-C-v4-Windows
+          path: FinanceSensor-Level-C-v4
           if-no-files-found: error
           retention-days: 7
