@@ -144,12 +144,20 @@ jobs:
       - name: Connection APK evidence
         working-directory: spikes/mobile-shell
         run: |
-          test -f build/app/outputs/flutter-apk/app-debug.apk
-          sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
-          stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
-          test -f "$HOME/.android/debug.keystore"
-          ANDROID_DEBUG_SHA1="$(keytool -list -v -alias androiddebugkey -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android 2>/dev/null | sed -n 's/^[[:space:]]*SHA1: //p' | head -1)"
-          test -n "$ANDROID_DEBUG_SHA1"
+          set -euo pipefail
+          APK='build/app/outputs/flutter-apk/app-debug.apk'
+          test -f "$APK"
+          sha256sum "$APK" | tee "$APK.sha256"
+          stat -c 'APK_BYTES=%s' "$APK"
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner -perm -u+x -print | sort -V | tail -1)"
+          test -n "$APKSIGNER"
+          RAW_SHA1="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-1 digest: //p' | head -1)"
+          test -n "$RAW_SHA1"
+          ANDROID_DEBUG_SHA1="$(printf '%s' "$RAW_SHA1" | tr '[:lower:]' '[:upper:]' | sed 's/://g' | sed 's/../&:/g;s/:$//')"
+          test "$(printf '%s' "$ANDROID_DEBUG_SHA1" | tr -cd ':' | wc -c)" -eq 19
+
           echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1"
           echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
           echo 'FINANCESENSOR_ANDROID_GMAIL_CONNECTION_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
