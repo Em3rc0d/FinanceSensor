@@ -19,7 +19,7 @@
 
 ## Public repository trust boundary
 
-FinanceSensor is structured so that the repository can be public without becoming the trusted financial runtime.
+FinanceSensor is public, but the repository is not the trusted financial runtime.
 
 ```text
 PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
@@ -29,7 +29,9 @@ CI_FIXTURES != REAL_FINANCIAL_DATA
 
 Active CI uses ephemeral GitHub-hosted runners with `contents: read`. Real Gmail consent, OAuth credentials/tokens, real Gmail content and real financial plaintext remain **LOCAL EDGE ONLY** and are forbidden from CI/repository custody.
 
-The root `.gitignore`, [`SECURITY.md`](SECURITY.md), CI routing validator and public-exposure guard provide defense-in-depth. OAuth client IDs are public identifiers; OAuth client secrets, authorization codes and tokens are confidential authority.
+The public transition was guarded by a fail-closed full-history audit. Current branch-head workflows contain no self-hosted route, no `${{ secrets.* }}` reference and no `pull_request_target`; the reachable-history audit completed without skipped binary or oversized objects and without a detected real credential class.
+
+OAuth client IDs are public identifiers, not secrets. OAuth client secrets, authorization codes and tokens are confidential authority.
 
 ## Product thesis
 
