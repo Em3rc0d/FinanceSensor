@@ -25,7 +25,7 @@ Supersedes / superseded by
 
 | ADR | Decision | Status | Remaining evidence / blocker |
 |---|---|---|---|
-| ADR-001 | Tenant as financial ownership boundary | PROPOSED | Q-009 review |
+| ADR-001 | Tenant as financial ownership boundary | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL TENANT ISOLATION REQUIRED | RLS/adversarial tenant-isolation evidence |
 | ADR-002 | Cloud Control Plane + Edge Data Plane | PROPOSED | Q-004/Q-005 closure |
 | ADR-003 | Gmail provider adapter vs generic IMAP-first | PROPOSED | Q-003 closure |
 | ADR-004 | Canonical event taxonomy | BLOCKED | legacy ADR formalization; Q-001 already CLOSED |
@@ -78,6 +78,32 @@ PLAINTEXT SQLITE FALLBACK          FORBIDDEN
 
 This is an **implementation decision baseline**, not a declaration that Q-003/Q-004/Q-005 are closed.
 
+## ADR-001 evidence boundary
+
+ADR-001 freezes the conceptual ownership/authorization boundary without claiming physical RLS isolation:
+
+```text
+USER                                PRODUCT AUTHENTICATION IDENTITY
+TENANT                              FINANCIAL OWNERSHIP + ISOLATION BOUNDARY
+MEMBERSHIP                          USER AUTHORIZATION INTO TENANT
+DEVICE                              CRYPTOGRAPHIC / EXECUTION AUTHORITY
+CONNECTION                          TENANT-OWNED SOURCE CONFIGURATION
+USER != TENANT                      REQUIRED
+DEVICE != TENANT                    REQUIRED
+CONNECTION != TENANT                REQUIRED
+TENANT_ID == USER_ID                FORBIDDEN AS SCHEMA INVARIANT
+PHYSICAL RLS ISOLATION              OPEN
+```
+
+Evidence/decision:
+
+- `ADR-001-TENANT-FINANCIAL-OWNERSHIP-BOUNDARY.md`
+- `ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md`
+- `../05-data-model/CORE-DATA-MODEL.md`
+- `../../graph/build-readiness.json`
+
+Acceptance closes the build-entry tenancy-design decision. It does not close real cross-tenant isolation testing.
+
 ## ADR-006 evidence boundary
 
 ADR-006 resolves local encrypted persistence:
@@ -111,10 +137,10 @@ IOS SECURITY BRIDGE               SWIFT
 LOCAL DATABASE                    SQLITE + SQLCIPHER under ADR-006
 LONG-LIVED OAUTH CUSTODY IN DART  FORBIDDEN
 LONG-LIVED PRIVATE KEYS IN DART   FORBIDDEN
-DATABASE DEK CUSTODY IN DART       FORBIDDEN
-EXPORTABLE SECURITY FALLBACK       FORBIDDEN
-ANDROID MINIMUM                    API 31 under ADR-013
-WEB/DESKTOP PRODUCT SCOPE          NOT CREATED BY FLUTTER CAPABILITY
+DATABASE DEK CUSTODY IN DART      FORBIDDEN
+EXPORTABLE SECURITY FALLBACK      FORBIDDEN
+ANDROID MINIMUM                   API 31 under ADR-013
+WEB/DESKTOP PRODUCT SCOPE         NOT CREATED BY FLUTTER CAPABILITY
 ```
 
 Evidence/decision:
@@ -194,11 +220,11 @@ Evidence:
 
 ```text
 RELAY AS SOLE TRUST ANCHOR           REJECTED
-INDEPENDENT TRUSTED ANCHOR            REQUIRED FOR ROLLBACK CLAIM
-SIGNED APPEND-ONLY CONTINUITY         SPIKE-ACCEPTED
-ROLLBACK/FORK/GAP RELATIVE TO ANCHOR  FAIL CLOSED
-NO INDEPENDENT ANCHOR                 INDETERMINATE_FRESHNESS
-GLOBAL-LATEST FRESHNESS               UNPROVEN
+INDEPENDENT TRUSTED ANCHOR           REQUIRED FOR ROLLBACK CLAIM
+SIGNED APPEND-ONLY CONTINUITY        SPIKE-ACCEPTED
+ROLLBACK/FORK/GAP RELATIVE TO ANCHOR FAIL CLOSED
+NO INDEPENDENT ANCHOR                INDETERMINATE_FRESHNESS
+GLOBAL-LATEST FRESHNESS              UNPROVEN
 ```
 
 Evidence:
@@ -217,10 +243,10 @@ FINANCIAL PLAINTEXT AT WITNESS        FORBIDDEN
 FINANCIAL CIPHERTEXT AT WITNESS       FORBIDDEN
 PER-WITNESS OPAQUE LOG ID             REQUIRED
 CONFIGURED WITNESSES                  3
-CONFIRMATION QUORUM                   2 OF 3
+CONFIRMATION QUORUM                    2 OF 3
 MINIMUM FAILURE DOMAINS               2
 MINIMUM RELAY-INDEPENDENT WITNESS     1
-VALID CONTRADICTION                    CANNOT BE VOTED AWAY
+VALID CONTRADICTION                   CANNOT BE VOTED AWAY
 ```
 
 Evidence/decision:
