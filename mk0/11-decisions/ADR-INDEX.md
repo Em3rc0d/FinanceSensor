@@ -49,8 +49,9 @@ Supersedes / superseded by
 | ADR-022 | Production opaque witness topology and quorum | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL DEPLOYMENT REQUIRED | Q-005 witness deployment/failure evidence |
 | ADR-023 | Disconnect, tenant deletion and backup semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VERIFICATION REQUIRED | Q-004/Q-005 cloud/mobile/backup evidence |
 | ADR-024 | Recovery Kit checkpoint-anchor refresh semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VALIDATION REQUIRED | Q-005 physical recovery/export evidence |
+| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK OPEN | ADR-009 + ADR-013 physical mobile evidence |
 
-**Next available ADR:** `ADR-025`.
+**Next available ADR:** `ADR-026`.
 
 ## ADR-014 evidence boundary
 
@@ -183,7 +184,7 @@ RAW Gmail PROCESSING ON SERVER               FORBIDDEN
 GENERALIZED AI TRAINING FROM Gmail DATA      FORBIDDEN
 E2EE OPAQUE RELAY                            ALLOWED BY ARCHITECTURE
 E2EE RELAY => GOOGLE ASSESSMENT EXEMPT       NOT PROVEN
-GOOGLE APPLICABILITY DETERMINATION            REQUIRED BEFORE PUBLIC LAUNCH
+GOOGLE APPLICABILITY DETERMINATION           REQUIRED BEFORE PUBLIC LAUNCH
 ```
 
 Evidence/plan:
@@ -238,6 +239,33 @@ POST-RECOVERY N+1 CUTOVER       NEW KIT REQUIRED
 OLD KIT AFTER ROTATION          HISTORICAL-ONLY
 SAFE_TO_RESUME                  REQUIRES NEW KIT EXPORT + INTEGRITY + CUSTODY
 ```
+
+## ADR-025 evidence boundary
+
+ADR-025 freezes **product-surface direction**, not the mobile implementation stack or physical mobile behavior.
+
+```text
+PRIMARY PRODUCT                 MOBILE APPLICATION
+FIRST PHYSICAL PRODUCT TARGET   ANDROID
+REQUIRED PRODUCTION TARGET      IOS
+WEB                             FUTURE COMPANION OPTION
+DESKTOP                         NO FIRST-CLASS PRODUCT COMMITMENT
+MOBILE BI                       ACCEPTED PRODUCT LANGUAGE
+DESKTOP BI SHRUNK TO PHONE      REJECTED
+SYNTHETIC PRODUCT LAB           ALLOWED FOR UX VALIDATION
+PRODUCT LAB                     CANNOT CLOSE Q-003/Q-004/Q-005
+IMPLEMENTATION STACK            OPEN UNDER ADR-009
+ANDROID BASELINE                OPEN UNDER ADR-013
+```
+
+Evidence/design:
+
+- `ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md`
+- `../03-design/PRODUCT-DESIGN.md`
+- `../../product/ROADMAP.md`
+- `../../product/labs/mobile-bi/README.md`
+- `../../product/labs/mobile-bi/index.html`
+- `../../tools/validate-mobile-product-lab.mjs`
 
 ## Decision discipline
 
