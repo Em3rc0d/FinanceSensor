@@ -1,13 +1,13 @@
 # ADR-025 — Mobile-first product surface
 
-**Status:** ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK OPEN  
+**Status:** ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009  
 **Date:** 2026-09-02
 
 ## Context
 
-FinanceSensor is a personal financial sensing product designed around data that is discovered, reconstructed and explained close to the user. The current product contracts already assume ordinary smartphones, bottom navigation, protected device-local credentials, local financial processing and multi-device authorization.
+FinanceSensor is a personal financial sensing product designed around data that is discovered, reconstructed and explained close to the user. The product contracts assume ordinary smartphones, bottom navigation, protected device-local credentials, local financial processing and multi-device authorization.
 
-Recent Product Lab work explored a desktop-style BI dashboard. The information density and chart language were useful, but the desktop surface itself conflicts with the product's existing interaction and trust assumptions.
+Product Lab work explored a desktop-style BI dashboard. The information density and chart language were useful, but the desktop surface itself conflicts with the product's interaction and trust assumptions.
 
 This ADR removes that ambiguity.
 
@@ -16,7 +16,7 @@ This ADR removes that ambiguity.
 - the user's financial state should be understandable in seconds;
 - Gmail authorization and financial plaintext remain device-local by default;
 - Android/iOS protected credential custody is a production requirement;
-- the primary product should work on ordinary smartphones, including compact Android devices;
+- the primary product should work on ordinary supported smartphones;
 - Financial Sensor needs ambient, frequent use rather than occasional analyst-style sessions;
 - charts and BI-style summaries are valuable, but must not become a desktop dashboard shrunk onto a phone;
 - desktop currently exists as an engineering proof boundary, not a product identity;
@@ -41,7 +41,7 @@ Product priority:
 
 ### 2. Android-first does not mean Android-only
 
-Android is the first physical target because MK0 explicitly requires evidence on ordinary smartphones and because the minimum supported Android baseline still needs a device-matrix spike.
+Android is the first physical target. ADR-013 now freezes the MK0 Android minimum at API 31 / Android 12, with physical device-matrix validation still required.
 
 The architecture remains cross-platform at domain/protocol level. Platform-specific custody, protected keys and OAuth behavior are proven separately.
 
@@ -116,20 +116,37 @@ A synthetic mobile Product Lab is explicitly allowed before `BUILD_READY=YES` wh
 - the lab cannot close Q-003/Q-004/Q-005;
 - the lab exists only to validate information architecture, viewport behavior, language and interaction.
 
+## Resolved implementation direction
+
+ADR-009 now selects the MK0 product stack:
+
+```text
+UI / NAVIGATION / VIEW STATE     Flutter / Dart
+ANDROID SECURITY BRIDGE          Kotlin
+IOS SECURITY BRIDGE              Swift
+LOCAL STORE                      SQLite + SQLCipher under ADR-006
+ANDROID MINIMUM                  API 31 under ADR-013
+CONTROL PLANE                    Supabase under ADR-010
+```
+
+These implementation decisions do not convert the product into physical proof. Real Android/iOS credential custody, protected crypto, encrypted-storage behavior and cloud isolation remain closure evidence.
+
 ## Consequences
 
 Positive:
 
-- product identity is now unambiguous;
+- product identity is unambiguous;
 - wireframes, mobile OAuth, protected-key requirements and runtime assumptions point in the same direction;
 - BI richness can evolve without turning FinanceSensor into a desktop analytics tool;
-- Android physical testing has a direct product surface to validate.
+- Android physical testing has a direct product surface to validate;
+- the framework, Android baseline, encrypted local storage and initial control-plane provider are no longer open architecture choices.
 
 Cost:
 
 - dense analytical views must be redesigned rather than reused directly from desktop BI patterns;
 - responsive web parity is not an MK0 requirement;
-- the implementation stack remains intentionally open until ADR-009 is resolved.
+- API 31 intentionally excludes older Android devices;
+- platform-specific security bridges still require Kotlin/Swift engineering and physical validation.
 
 ## Security/privacy impact
 
@@ -149,7 +166,7 @@ Analytical depth is delivered through drill-down, not infinite Home cards.
 
 Before production implementation is considered ready:
 
-- compact Android viewport test;
+- API-31 compact/lower-envelope Android viewport/performance test;
 - mainstream Android viewport test;
 - large Android/iPhone-class viewport test;
 - OS text-scaling test;
@@ -158,20 +175,20 @@ Before production implementation is considered ready:
 - no-scroll Sensor Overview proof;
 - physical Android protected-credential evidence;
 - physical iOS protected-credential evidence;
-- mobile crypto interoperability evidence.
+- mobile crypto interoperability evidence;
+- encrypted SQLCipher local-store evidence;
+- control-plane tenant-isolation and backup/deletion evidence.
 
 ## Explicit non-decisions
 
-ADR-025 does **not** select:
+ADR-025 itself does not redefine the implementation choices now owned by:
 
-- Flutter;
-- React Native;
-- Kotlin Multiplatform;
-- native Kotlin + Swift;
-- Compose Multiplatform;
-- a web/PWA production client.
+- ADR-009 — Flutter + native security bridge;
+- ADR-006 — SQLite + SQLCipher encrypted persistence;
+- ADR-013 — Android API 31 minimum;
+- ADR-010 — Supabase control plane.
 
-Those choices remain under ADR-009 and require platform evidence.
+Web/PWA production scope remains a future decision.
 
 ## Governing law
 
@@ -180,4 +197,5 @@ MOBILE_FIRST != MOBILE_ONLY
 BI_RICHNESS != DESKTOP_DASHBOARD
 SYNTHETIC_PRODUCT_LAB != PRODUCTION_PROOF
 GMAIL_CONNECTIVITY_PROVEN != MOBILE_OAUTH_CLOSED
+IMPLEMENTATION_DIRECTION_RESOLVED != PHYSICAL_PRODUCT_PROVEN
 ```
