@@ -1,13 +1,6 @@
 name: Package Gmail Level C Helper
 
 on:
-  push:
-    branches:
-      - jett/mk0-foundation
-    paths:
-      - '.github/workflows/package-level-c-helper.yml'
-      - 'spikes/physical-ingress/**'
-      - 'spikes/canonical-resolver/**'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +8,8 @@ permissions:
 
 jobs:
   package:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, financesensor]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -57,28 +51,10 @@ jobs:
           FinanceSensor Gmail Level C v7 — search-index-independent message-history anchor proof
 
           PRECONDITION
-          Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on this computer.
-          Do not upload or paste it.
+          Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on the controlled edge computer.
+          Never copy it into this self-hosted CI runner.
 
-          1. Open: spikes\physical-ingress\live\RUN-FINANCESENSOR-LEVEL-C.cmd
-          2. Select the Google OAuth Desktop credentials JSON in the Windows picker.
-          3. Authorize only the configured Gmail test account.
-          4. FinanceSensor shows the exact authorized Gmail address locally.
-          5. Send the FIRST harmless synthetic anchor email shown on screen to that exact address.
-             Prefer a different sender account. Wait until the anchor is visibly present in INBOX.
-          6. Click "establish supported sync anchor". FinanceSensor does NOT use Gmail Search q.
-             It lists at most 5 recent INBOX message IDs and reads Subject metadata locally only,
-             until the exact synthetic anchor is identified. At most two anchor attempts are allowed.
-             The sync baseline is the anchor MESSAGE historyId, not /profile.historyId.
-          7. Send the SECOND synthetic purchase email shown on screen. Wait until it is visible.
-          8. Run the bounded history probe. One retry is allowed for propagation.
-          9. Revoke access and verify the old refresh authority is denied.
-          10. Upload ONLY financesensor-level-c-result.json to ChatGPT.
-
-          v7 sync law:
-          /profile identifies the authorized mailbox but is NOT used as startHistoryId.
-          Gmail Search indexing is not used as a bootstrap dependency.
-          history.list starts from a recent MESSAGE historyId, matching Gmail partial-sync guidance.
+          This workflow packages the already-audited helper only. Gmail authorization and real-provider execution remain LOCAL EDGE ONLY.
 
           Privacy/request boundaries:
           - no historical mailbox sweep
@@ -92,9 +68,7 @@ jobs:
           - Gmail address, anchor/purchase markers, message IDs, content, tokens, codes,
             PKCE verifier, credential path and client secret are not written to evidence
 
-          LEVEL_C_PASS requires:
-          OAuth + state + message-derived anchor + filtered messageAdded + candidate metadata gate +
-          one FULL + extraction + replay + provider revocation + denied refresh authority.
+          SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
           EOF
 
       - name: Upload helper
