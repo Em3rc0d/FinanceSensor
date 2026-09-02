@@ -79,7 +79,9 @@ GLOBAL FRESHNESS
 
 ### Level A — contractual ingress + OAuth boundary
 
-Current contract family is green, including:
+Current ingress/OAuth contract family is green. The exact historical `45/45` count is no longer used as the current authority because additional sync-anchor regressions were added after that measurement.
+
+Validated contract areas include:
 
 ```text
 ASYNC PROVIDER CONTRACT                     PASS
@@ -89,9 +91,10 @@ CASE-INSENSITIVE MAIL HEADER LOOKUP         PASS
 INCREMENTAL HISTORY MODEL                   PASS
 HISTORY 404 RECOVERY                        PASS
 GMAIL PROFILE CONTRACT                      PASS
-OFFICIAL messageAdded HISTORY QUERY         PASS
-UNFILTERED HISTORY DIAGNOSTIC CONTRACT      PASS
-EMPTY HISTORY ZERO-CHANGE CONTRACT          PASS
+messageAdded HISTORY QUERY                  PASS
+HISTORY DIAGNOSTIC COUNTS                   PASS
+TARGETED SYNC-ANCHOR QUERY                  PASS
+MESSAGE-DERIVED historyId ANCHOR            PASS AT CONTRACT LEVEL
 RESTART / REPLAY                            PASS
 REAL-SHAPE SANITIZED PARSER                 PASS
 MIME DESCRIPTORS                            PASS
@@ -177,7 +180,7 @@ Evidence:
 
 #### v3 — OAuth/Gmail path physically crossed; candidate gap
 
-v3 proved real consent, token exchange, Gmail profile/history access and revocation, but did not fetch a FULL synthetic message. It also exposed two harness defects that were repaired:
+v3 proved real consent, token exchange, Gmail profile/history access and revocation, but did not fetch a FULL synthetic message. It exposed two harness defects that were repaired:
 
 ```text
 mail headers must be case-insensitive
@@ -189,8 +192,6 @@ Evidence:
 `mk0/10-evidence/EV-Q003-LEVEL-C-V3-PARTIAL-2026-09-02.md`
 
 #### v4 — strict PASS law; history gap isolated
-
-Sanitized physical result:
 
 ```text
 REAL CONSENT                         PASS
@@ -206,88 +207,144 @@ PROVIDER REVOKE                      PASS
 REFRESH AUTHORITY AFTER REVOKE       DENIED
 EXECUTION COMPLETE                   true
 LEVEL C PASS                         FAIL
-RESULT                               LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS
 ```
-
-Privacy counters remained zero for Gmail content, financial plaintext, secrets, credential path, proof marker and pre-authorization mailbox sweep.
-
-Because `metadata = 0`, v4 failed **before** metadata classification. The run cannot distinguish mailbox propagation, wrong mailbox/recipient or a different history observation. Those possibilities are not guessed.
 
 Evidence:
 
 `mk0/10-evidence/EV-Q003-LEVEL-C-V4-HISTORY-GAP-2026-09-02.md`
 
-#### v5 — prepared / CI-validated diagnostic boundary
+#### v5 — physical mailbox/history diagnosis
 
-v5 adds diagnosis without broadening Gmail scope or scanning the mailbox:
+The v5 execution removed the remaining recipient/propagation ambiguity.
+
+Sanitized aggregate result:
 
 ```text
-Google Desktop credential JSON
-        ↓ local-only selection
-state + PKCE + root loopback
-        ↓
-Google token endpoint
-        ↓
-/profile
-        ↓
-show exact authorized Gmail address LOCALLY ONLY
-        ↓
-user sends fresh synthetic inbound message to exact address
-        ↓
-/profile again BEFORE history.list
-        ↓
-current historyId == baseline?
-    YES → stop; no history.list spent
-    NO  → filtered messageAdded history
-        ↓
-messageAdded IDs?
-    YES → METADATA → exact marker → production gate → ≤1 FULL
-    NO  → one unfiltered diagnostic history request
-          aggregate event-family counts only
-          diagnostic path CANNOT produce LEVEL_C_PASS
-        ↓
+REAL CONSENT                         PASS
+STATE BINDING                        PASS
+TOKEN EXCHANGE                       HTTP 200
+AUTHORIZED MAILBOX SHOWN LOCALLY     PASS
+POST-SEND PROFILE CHECK              PASS
+MAILBOX HISTORY ADVANCED             PASS
+messages.list                        0
+FILTERED HISTORY RECORDS             0
+FILTERED messageAdded                0
+UNFILTERED DIAGNOSTIC USED           true
+UNFILTERED HISTORY RECORDS           0
+METADATA                             0
+FULL                                 0
+PROVIDER REVOKE                      PASS
+OLD REFRESH AUTHORITY                DENIED
+EXECUTION COMPLETE                   true
+LEVEL C PASS                         FAIL
+```
+
+The message was visibly present in the exact mailbox that `/profile` reported, and the mailbox's current history position advanced. Therefore the unresolved variable was no longer destination or propagation.
+
+The contradiction was architectural: the harness had been using `/profile.historyId` as the bootstrap `history.list.startHistoryId`.
+
+Current Gmail API documentation defines the required provenance more narrowly: `startHistoryId` should be obtained from the `historyId` of a message, thread, or previous history-list response.
+
+New law:
+
+```text
+CURRENT MAILBOX HISTORY POSITION
+        !=
+DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
+```
+
+Evidence:
+
+`mk0/10-evidence/EV-Q003-LEVEL-C-V5-PROFILE-HISTORY-ANCHOR-MISMATCH-2026-09-02.md`
+
+Decision:
+
+`mk0/11-decisions/ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md`
+
+#### v6 — message-derived partial-sync anchor / READY FOR PHYSICAL RUN
+
+v6 no longer uses `/profile.historyId` as `startHistoryId`.
+
+```text
+OAuth
+  ↓
+/profile → identify exact authorized mailbox only
+  ↓
+FIRST harmless synthetic anchor email
+  ↓
+targeted messages.list by random anchor marker
+  maxResults = 1
+  ↓
+messages.get(METADATA, Subject only)
+  ↓
+anchor MESSAGE.historyId
+  ↓
+SECOND synthetic purchase email
+  ↓
+history.list(startHistoryId = anchor MESSAGE.historyId,
+             historyTypes = messageAdded)
+  ↓
+≤ 5 changed IDs
+  ↓
+METADATA → exact purchase marker → production metadata gate
+  ↓
+≤ 1 FULL
+  ↓
+financial extraction
+  ↓
 replay
-        ↓
-revoke
-        ↓
-old refresh authority denied
+  ↓
+revoke → old refresh denied
 ```
 
-v5 privacy/request boundaries:
+The single targeted `messages.list` capability is deliberately reintroduced **only for the synthetic anchor**. It is not a historical mailbox scan and does not change the product's privacy direction.
+
+v6 runner hard caps:
 
 ```text
-messages.list                          0
-pre-authorization mailbox sweep       0
-max changed IDs / attempt             5
-max FULL                              1
-max attempts                          2
-authorized mailbox in result          0
-message IDs in result                 0
-proof marker in result                0
-Gmail content in result               0
-credential path/content in result     0
-OAuth/token secrets in result         0
+ANCHOR LOOKUP ATTEMPTS              <= 2
+ANCHOR list maxResults               = 1 per attempt
+HISTORY PROBE ATTEMPTS              <= 2
+CHANGED IDS INSPECTED               <= 5 per probe attempt
+FULL FETCHES                        <= 1
+HISTORICAL MAILBOX SWEEP              0
+/profile.historyId AS startHistoryId  0
 ```
 
-`LEVEL_C_PASS` requires the **normal filtered `messageAdded` path**. Diagnostic fallback can explain a mismatch but cannot upgrade the gate.
-
-Validated lineage:
+Privacy result exclusions remain:
 
 ```text
-v5 runner/launcher head    ac4d8630da92aa576371b84330d1d209cc48a69d
-Heartbeat                  SUCCESS — run 33589139375
-Foundation push            SUCCESS — run 33589139359
-Foundation PR              SUCCESS — run 33589142240
-
-v5 packaging head          26092596708465399799b6c6f4a3fccfa91f0aef
-Package helper             SUCCESS — run 33589158915
-Foundation push            SUCCESS — run 33589158925
-Foundation PR              SUCCESS — run 33589162143
+authorized Gmail address    0
+anchor marker               0
+purchase marker             0
+message IDs                 0
+Gmail raw content           0
+financial plaintext         0
+credential path/content     0
+OAuth/token secrets         0
 ```
 
-The intermediate packaging run on `ac4d…` failed because the still-v4 packaging guard rejected the newly switched v5 launcher. That red was corrected by updating the packaging workflow; the final v5 package run is green.
+Important boundary:
 
-Q-003 remains **ACTIVE**.
+```text
+LEVEL-C SYNTHETIC ANCHOR HARNESS
+        !=
+PRODUCTION INITIAL-SYNC UX
+```
+
+Production onboarding/sync remains a separate design decision.
+
+Validated v6 runner head:
+
+```text
+878c61734f79d9a6b3f676ae2d55bfbb7f5b756a
+Heartbeat          SUCCESS — 33590311958
+Foundation push    SUCCESS — 33590312015
+Foundation PR      SUCCESS — 33590314688
+Package helper     SUCCESS — 33590311989
+```
+
+Q-003 remains **ACTIVE** until the v6 normal path completes physically and its sanitized result is audited.
 
 ## Privacy nervous system
 
@@ -335,17 +392,17 @@ BUILD_READY  false
 ## Current Q-003 critical path
 
 ```text
-LEVEL C v5
+LEVEL C v6
         ↓
-exact authorized mailbox proven locally
+exact authorized mailbox identity
         ↓
-mailbox history advancement observed
+message-derived supported sync anchor
         ↓
-FILTERED messageAdded
+filtered messageAdded
         ↓
 METADATA
         ↓
-exact synthetic marker + production gate
+exact synthetic purchase marker + production gate
         ↓
 1 FULL
         ↓
@@ -355,9 +412,9 @@ replay
         ↓
 revoke + denied old refresh
         ↓
-LEVEL_C_PASS
+LEVEL_C_PASS candidate
         ↓
-audit evidence
+audit sanitized evidence
         ↓
 Q-003 closure decision
 ```
@@ -389,7 +446,9 @@ PROVEN_AT_SPIKE ≠ PROVEN
 DOCUMENTED ≠ VERIFIED
 GREEN CI ≠ BUILD_READY
 EXECUTION_COMPLETE ≠ LEVEL_C_PASS
-HTTP history.list success ≠ observed messageAdded event
+PROVIDER FIELD NAME SIMILARITY ≠ SEMANTIC INTERCHANGEABILITY
+CURRENT MAILBOX HISTORY ≠ DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
+LEVEL-C HARNESS ≠ PRODUCTION ONBOARDING
 PROVIDER ASSUMPTION ≠ PROVIDER EVIDENCE
 DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET
 ```
