@@ -1,6 +1,6 @@
 # FinanceSensor — Self-Hosted Runner Contract
 
-**Status:** DRAFTED / infrastructure boundary frozen  
+**Status:** ROUTING FROZEN / PHYSICAL RUNNER EXECUTION PENDING  
 **Target:** dedicated WSL Linux runner for private-repository CI
 
 ## Topology
@@ -38,6 +38,31 @@ runs-on: [self-hosted, linux, x64, financesensor]
 
 A generic `self-hosted` label alone is insufficient because it could route FinanceSensor work onto an unrelated runner.
 
+## Current physical state
+
+A real GitHub scheduling pulse on 2026-09-02 created FinanceSensor jobs with the exact required label set, but the observed Heartbeat job remained:
+
+```text
+status       queued
+runner_id    null
+runner_name  null
+steps        []
+```
+
+Therefore:
+
+```text
+SELF-HOSTED ROUTING       PASS BY CONFIGURATION
+PHYSICAL RUNNER ASSIGNED  NOT OBSERVED
+CI GREEN                  NOT CLAIMED
+```
+
+The available GitHub connector cannot read the repository runner-registration endpoint, so this evidence does not distinguish `registered but offline` from `not registered`.
+
+Evidence:
+
+- `mk0/10-evidence/EV-CI-SELF-HOSTED-ROUTING-2026-09-02.md`
+
 ## Trust boundary
 
 ```text
@@ -66,22 +91,54 @@ The runner must never receive or persist:
 
 Real Gmail Level-C execution remains on the controlled local edge runtime, outside CI.
 
+The existing Vigia repo-scoped runner is not a substitute for the FinanceSensor runner. FinanceSensor must not exploit ambient `gh`, SSH or personal credentials from the normal/Vigia WSL to bootstrap itself through CI.
+
 ## Workflow policy
 
-### Active on the FinanceSensor runner
+### Automatic ECG
 
-- `MK0 Foundation`
-- `FinanceSensor Heartbeat`
-- `Package Gmail Level C Helper` — manual only
+- `FinanceSensor Heartbeat` — the single automatic project ECG on repository activity.
 
-### Forbidden on the FinanceSensor runner
+It runs:
 
-- historical `Gmail Bearer Reachability Spike`;
-- any workflow requiring real Gmail bearer or refresh authority;
-- interactive OAuth authorization;
-- production financial-data processing.
+```text
+canonical resolver
+E2EE / recovery / witness
+physical ingress / privacy
+Level C v8 syntax + static safety
+closure graph
+artifact/quarry status authority
+traceability
+privacy matrices
+CI routing policy
+Gmail production-policy guard
+recovery/status equipment guards
+```
 
-The Gmail bearer reachability workflow is retained only as historical evidence and is hard-disabled.
+### Manual diagnostics/package
+
+- `MK0 Foundation` — manual diagnostic suite only;
+- `Package Gmail Level C Helper` — manual packaging only.
+
+This avoids duplicating the same three test suites through simultaneous push + PR workflows on a single workstation runner.
+
+### Retired / forbidden
+
+- historical `Gmail Bearer Reachability Spike` is hard-disabled;
+- any workflow requiring real Gmail bearer or refresh authority is forbidden;
+- interactive OAuth authorization is forbidden in CI;
+- production financial-data processing is forbidden in CI.
+
+## Executable routing guard
+
+`tools/validate-ci-runner-policy.mjs` fails if:
+
+- an active workflow does not use exactly `[self-hosted, linux, x64, financesensor]`;
+- an active workflow references `ubuntu-latest`;
+- an active workflow references `${{ secrets.* }}`;
+- an active workflow introduces cron scheduling;
+- an unknown workflow appears without being registered in the CI policy;
+- the retired Gmail workflow loses its hard-disable guard.
 
 ## Workstation scheduling law
 
@@ -92,7 +149,8 @@ Therefore:
 - Heartbeat has no cron schedule;
 - jobs are triggered by repository activity or explicit manual dispatch;
 - an offline runner may leave jobs queued until the WSL runner becomes available;
-- no job should rely on wall-clock execution at a particular hour.
+- no job should rely on wall-clock execution at a particular hour;
+- Heartbeat uses concurrency cancellation so stale pulses do not accumulate indefinitely.
 
 ## Workspace isolation
 
@@ -134,7 +192,7 @@ No Docker volume should mount personal Windows/WSL credential directories.
 
 ## GitHub-hosted usage
 
-FinanceSensor should not fall back silently to `ubuntu-latest` while the private-repository included-minute allowance is exhausted.
+FinanceSensor must not fall back silently to `ubuntu-latest` while the private-repository included-minute allowance is exhausted.
 
 The active CI workflows therefore require the custom `financesensor` self-hosted label.
 
@@ -145,6 +203,17 @@ RUNNER LABEL MISSING -> JOB DOES NOT FALL BACK
 
 This is intentional.
 
+## Physical activation gate
+
+The runner boundary becomes physically proven only when a current Heartbeat completes on an assigned runner and the job evidence identifies a compatible self-hosted execution.
+
+Until then:
+
+```text
+ROUTING_READY != RUNNER_ONLINE
+QUEUED != GREEN
+```
+
 ## Governing rules
 
 ```text
@@ -153,5 +222,8 @@ CI FIXTURES != REAL FINANCIAL DATA
 RUNNER LABEL MATCH != AUTHORIZATION TO HOLD SECRETS
 PRIVATE REPO != SAFE RUNNER BY DEFAULT
 CLEAN WORKSPACE != CLEAN HOST
+VIGIA RUNNER != FINANCESENSOR RUNNER
+AMBIENT PERSONAL CREDENTIALS != BOOTSTRAP MECHANISM
 SKIPPED CI != GREEN CI
+QUEUED CI != GREEN CI
 ```
