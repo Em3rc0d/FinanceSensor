@@ -2,8 +2,10 @@ name: FinanceSensor Public Readiness
 
 on:
   workflow_dispatch:
+  public:
   push:
     branches:
+      - main
       - jett/mk0-foundation
     paths:
       - '.github/workflows/**'
@@ -27,6 +29,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch every branch and tag explicitly
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --force --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -45,8 +53,44 @@ jobs:
           grep -q '^financesensor-level-c-result\.json$' .gitignore
           ! grep -R -E -n --exclude-dir=.git --exclude='*.md' --exclude='.gitignore' '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .
 
-      - name: Public CI trust-boundary guard
-        run: node tools/validate-ci-runner-policy.mjs
+      - name: Current branch-head CI trust-boundary guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          failure=0
+          while IFS= read -r ref; do
+            case "$ref" in
+              refs/remotes/origin/HEAD) continue ;;
+            esac
+
+            while IFS= read -r workflow; do
+              [ -n "$workflow" ] || continue
+              text="$(git show "$ref:$workflow")"
+
+              if printf '%s\n' "$text" | grep -Eqi 'runs-on:[^#]*(self-hosted|\[[^]]*self-hosted)'; then
+                echo "FORBIDDEN_SELF_HOSTED ref=$ref workflow=$workflow" >&2
+                failure=1
+              fi
+
+              if printf '%s\n' "$text" | grep -Eq '\$\{\{[[:space:]]*secrets\.'; then
+                echo "FORBIDDEN_WORKFLOW_SECRET_REFERENCE ref=$ref workflow=$workflow" >&2
+                failure=1
+              fi
+
+              if printf '%s\n' "$text" | grep -Eq '^[[:space:]]*pull_request_target[[:space:]]*:'; then
+                echo "FORBIDDEN_PULL_REQUEST_TARGET ref=$ref workflow=$workflow" >&2
+                failure=1
+              fi
+
+              if printf '%s\n' "$text" | grep -q 'runs-on:' && ! printf '%s\n' "$text" | grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$'; then
+                echo "MISSING_CONTENTS_READ ref=$ref workflow=$workflow" >&2
+                failure=1
+              fi
+            done < <(git ls-tree -r --name-only "$ref" -- .github/workflows | grep -E '\.ya?ml$' || true)
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin)
+
+          [ "$failure" -eq 0 ]
+          echo 'FINANCESENSOR_BRANCH_HEAD_CI_POLICY=PASS'
 
       - name: Full reachable-history secret audit
         run: node tools/audit-public-history.mjs
@@ -54,6 +98,6 @@ jobs:
       - name: Public readiness summary
         run: |
           echo 'FINANCESENSOR_PUBLIC_READINESS=PASS' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Current tree and complete reachable Git history passed the sanitized exposure audit.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Active CI is constrained to ephemeral GitHub-hosted runners with contents:read.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Current tree, all current branch-head CI definitions and complete reachable Git history passed the sanitized exposure audit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No current branch routes CI to self-hosted runners, references repository secrets, or uses pull_request_target.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail/OAuth authority remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
