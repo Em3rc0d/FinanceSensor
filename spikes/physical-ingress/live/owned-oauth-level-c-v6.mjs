@@ -18,6 +18,7 @@ const HOST = '127.0.0.1';
 const MAX_MESSAGES = 5;
 const MAX_FULL_MESSAGES = 1;
 const MAX_PROBE_ATTEMPTS = 2;
+const MAX_ANCHOR_ATTEMPTS = 2;
 const MAX_ANCHOR_LIST_RESULTS = 1;
 const RESULT_FILE = 'financesensor-level-c-result.json';
 
@@ -39,6 +40,7 @@ let authorizedMailbox = null;
 let baselineHistoryId = null;
 let authorizationComplete = false;
 let anchorEstablished = false;
+let anchorAttempts = 0;
 let probeAttempts = 0;
 let server;
 
@@ -51,6 +53,7 @@ const evidence = {
     maxChangedMessagesPerAttempt: MAX_MESSAGES,
     maxFullMessages: MAX_FULL_MESSAGES,
     maxProbeAttempts: MAX_PROBE_ATTEMPTS,
+    maxAnchorAttempts: MAX_ANCHOR_ATTEMPTS,
     initialHistoricalSweep: false,
     messagesListUsed: true,
     messagesListMode: 'TARGETED_SYNTHETIC_ANCHOR_ONLY',
@@ -115,6 +118,7 @@ const evidence = {
     tokenRefresh: 0,
     revoke: 0
   },
+  anchorAttempts: 0,
   probeAttempts: 0,
   executionComplete: false,
   levelCPass: 'PENDING',
@@ -191,14 +195,17 @@ async function exchangeAuthorizationCode(code) {
 async function establishMessageHistoryAnchor() {
   if (!authorizationComplete) throw new Error('AUTHORIZATION_NOT_COMPLETE');
   if (anchorEstablished) return 'ANCHOR_READY';
+  if (anchorAttempts >= MAX_ANCHOR_ATTEMPTS) throw new Error('ANCHOR_ATTEMPT_LIMIT_REACHED');
 
+  anchorAttempts += 1;
+  evidence.anchorAttempts = anchorAttempts;
   const provider = new GmailRestProvider({ accessToken });
   const query = `subject:"${anchorSubject}" newer_than:1d`;
   evidence.requests.list += 1;
   const found = await provider.listMessages({ query, maxResults: MAX_ANCHOR_LIST_RESULTS });
   if (found.length !== 1) {
     evidence.gmail.targetedAnchorSearch = found.length === 0 ? 'NOT_FOUND' : 'AMBIGUOUS';
-    evidence.result = 'ANCHOR_NOT_READY';
+    evidence.result = anchorAttempts < MAX_ANCHOR_ATTEMPTS ? 'ANCHOR_NOT_READY' : 'ANCHOR_PARTIAL_ATTEMPT_LIMIT';
     await persist();
     return evidence.result;
   }
@@ -277,6 +284,7 @@ async function runProbe() {
     return evidence.result;
   }
 
+  if (evidence.requests.full >= MAX_FULL_MESSAGES) throw new Error('FULL_FETCH_LIMIT_REACHED');
   evidence.requests.full += 1;
   const full = await provider.getMessage({ id: selectedId, format: 'FULL' });
   evidence.gmail.selectedFull = 'PASS';
@@ -386,7 +394,7 @@ async function start() {
 
       if (url.pathname === '/') {
         if (!requireSession(url)) return sendHtml(res, 403, 'FinanceSensor Level C', '<p>Invalid local session.</p>');
-        return sendHtml(res, 200, 'FinanceSensor — Gmail Level C v6', `<p>Provider-conformant message-history anchor, one targeted synthetic anchor search, no historical mailbox sweep, ≤${MAX_MESSAGES} changed IDs per attempt, ≤${MAX_FULL_MESSAGES} FULL.</p><p><a class="button" href="/authorize?s=${encodeURIComponent(sessionSecret)}">Authorize FinanceSensor DEV</a></p>`);
+        return sendHtml(res, 200, 'FinanceSensor — Gmail Level C v6', `<p>Provider-conformant message-history anchor, one targeted synthetic anchor search per attempt, no historical mailbox sweep, ≤${MAX_ANCHOR_ATTEMPTS} anchor attempts, ≤${MAX_MESSAGES} changed IDs per probe attempt, ≤${MAX_FULL_MESSAGES} FULL.</p><p><a class="button" href="/authorize?s=${encodeURIComponent(sessionSecret)}">Authorize FinanceSensor DEV</a></p>`);
       }
 
       if (url.pathname === '/authorize') {
@@ -408,7 +416,10 @@ async function start() {
         if (!requireSession(url)) return sendHtml(res, 403, 'FinanceSensor Level C', '<p>Invalid local session.</p>');
         const status = await establishMessageHistoryAnchor();
         if (status !== 'ANCHOR_READY') {
-          return sendHtml(res, 200, 'Synthetic anchor not ready', `<p class="warn">FinanceSensor could not identify exactly one anchor yet. Confirm the anchor is visible, wait a few seconds, then try once more.</p><form method="post" action="/anchor?s=${encodeURIComponent(sessionSecret)}"><button>Retry anchor lookup</button></form>`);
+          if (anchorAttempts < MAX_ANCHOR_ATTEMPTS) {
+            return sendHtml(res, 200, 'Synthetic anchor not ready', `<p class="warn">FinanceSensor could not identify exactly one anchor yet. Confirm the anchor is visible, wait a few seconds, then use the one allowed retry.</p><form method="post" action="/anchor?s=${encodeURIComponent(sessionSecret)}"><button>Retry anchor lookup once</button></form>`);
+          }
+          return sendHtml(res, 200, 'Anchor attempt limit reached', `<p class="warn">The two bounded anchor lookups completed without establishing a unique message-history anchor. No additional anchor request will be made in this run.</p><form method="post" action="/revoke?s=${encodeURIComponent(sessionSecret)}"><button>Revoke FinanceSensor DEV and finish safely</button></form>`);
         }
         return sendHtml(res, 200, 'Supported sync anchor established', `<p class="ok">The baseline now comes from the historyId of the synthetic anchor MESSAGE, as required by Gmail partial-sync semantics.</p><p>Now send the financial synthetic test email to:</p><p><strong>${escapeHtml(authorizedMailbox)}</strong></p><pre>Subject: ${escapeHtml(purchaseSubject)}\n\n${escapeHtml(purchaseBody)}</pre><p>Wait until this second message is visibly present, then continue.</p><form method="post" action="/probe?s=${encodeURIComponent(sessionSecret)}"><button>The purchase message is visible — run bounded history probe</button></form>`);
       }
