@@ -6,15 +6,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> pumpAt(WidgetTester tester, Size size) async {
-    await tester.binding.setSurfaceSize(size);
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
     await tester.pumpWidget(const FinanceSensorApp());
     await tester.pumpAndSettle();
   }
-
-  tearDown(() async {
-    final binding = TestWidgetsFlutterBinding.instance;
-    await binding.setSurfaceSize(null);
-  });
 
   testWidgets('compact Android-class viewport renders Home without framework errors', (tester) async {
     await pumpAt(tester, const Size(360, 800));
@@ -44,7 +44,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Movimiento'), findsOneWidget);
-    expect(find.text('-S/ 18.70'), findsOneWidget);
+    // The source row intentionally remains behind the modal sheet; the amount can exist twice.
+    expect(find.text('-S/ 18.70'), findsWidgets);
     expect(find.text('evidencia sintética'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -62,7 +63,8 @@ void main() {
 
     await tester.tap(find.text('Oportunidad'));
     await tester.pumpAndSettle();
-    expect(find.text('~S/75'), findsOneWidget);
+    // The source signal remains mounted behind the sheet; the amount can exist twice.
+    expect(find.text('~S/75'), findsWidgets);
     expect(find.text('dato sintético'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
