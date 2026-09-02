@@ -12,10 +12,10 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo FinanceSensor Gmail Level C v3 - controlled local probe
+echo FinanceSensor Gmail Level C v4 - controlled local proof
 echo -------------------------------------------------------
 echo Select the Google OAuth Desktop credentials JSON downloaded from Google Cloud.
-echo The file contents will stay local and will never be printed or copied to evidence.
+echo The file contents stay local and are never printed or copied to evidence.
 echo.
 
 set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
@@ -32,11 +32,11 @@ if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
 
 echo.
 echo Credential selected locally. Browser consent will open automatically.
-echo No credential, token or Gmail content will be printed or saved by the runner.
 echo No historical mailbox list will run.
 echo Maximum changed messages per attempt: 5; maximum FULL fetch: 1.
+echo Level C PASS is emitted only if FULL + extraction + replay + revocation all pass.
 echo.
-node live\owned-oauth-level-c-v3.mjs
+node live\owned-oauth-level-c-v4.mjs
 
 set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
 echo.
