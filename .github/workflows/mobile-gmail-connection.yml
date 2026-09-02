@@ -10,6 +10,7 @@ on:
       - 'spikes/mobile-shell/native/android/**'
       - 'spikes/mobile-shell/test/connection_ui_test.dart'
       - 'tools/validate-android-gmail-bridge.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
       - 'mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md'
       - '.github/workflows/mobile-gmail-connection.yml'
 
@@ -151,11 +152,28 @@ jobs:
           stat -c 'APK_BYTES=%s' "$APK"
 
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner -perm -u+x -print | sort -V | tail -1)"
-          test -n "$APKSIGNER"
-          RAW_SHA1="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-1 digest: //p' | head -1)"
+          APKSIGNER="$(find -L "$SDK_ROOT/build-tools" -name apksigner -print 2>/dev/null | sort -V | tail -1 || true)"
+          RAW_SHA1=''
+
+          if [ -n "$APKSIGNER" ]; then
+            chmod +x "$APKSIGNER" || true
+            echo "APK_SIGNER_TOOL=$(basename "$(dirname "$APKSIGNER")")/apksigner"
+            CERT_INFO="$("$APKSIGNER" verify --print-certs "$APK" 2>&1 || true)"
+            printf '%s\n' "$CERT_INFO" | grep -Ei 'Signer #[0-9]+ certificate (SHA-256|SHA-1|MD5) digest:' || true
+            RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | sed -n -E 's/^Signer #[0-9]+ certificate SHA-?1 digest:[[:space:]]*//Ip' | head -1)"
+          fi
+
+          if [ -z "$RAW_SHA1" ]; then
+            echo 'APKSIGNER_SHA1_PARSE=FALLBACK_TO_KEYTOOL'
+            CERT_INFO="$(keytool -printcert -jarfile "$APK" 2>&1 || true)"
+            printf '%s\n' "$CERT_INFO" | grep -E 'SHA1:|SHA-1:' || true
+            RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | sed -n -E 's/^[[:space:]]*SHA-?1:[[:space:]]*//Ip' | head -1)"
+          fi
+
           test -n "$RAW_SHA1"
-          ANDROID_DEBUG_SHA1="$(printf '%s' "$RAW_SHA1" | tr '[:lower:]' '[:upper:]' | sed 's/://g' | sed 's/../&:/g;s/:$//')"
+          HEX_SHA1="$(printf '%s' "$RAW_SHA1" | tr '[:lower:]' '[:upper:]' | tr -cd '0-9A-F')"
+          test "${#HEX_SHA1}" -eq 40
+          ANDROID_DEBUG_SHA1="$(printf '%s' "$HEX_SHA1" | sed 's/../&:/g;s/:$//')"
           test "$(printf '%s' "$ANDROID_DEBUG_SHA1" | tr -cd ':' | wc -c)" -eq 19
 
           echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1"
