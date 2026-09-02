@@ -13,42 +13,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v7 runner before packaging
+      - name: Verify controlled v8 runner before packaging
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "MAX_ANCHOR_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "MAX_ANCHOR_WINDOW_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "messagesListMode: 'BOUNDED_RECENT_INBOX_WINDOW'" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "gmailSearchQueryUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "anchorLabelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "profileHistoryUsedAsStartHistoryId: false" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "syncAnchorSource: 'MESSAGE_HISTORY_ID'" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "labelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "maxResults: MAX_ANCHOR_WINDOW_MESSAGES" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "ANCHOR_ATTEMPT_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "FULL_FETCH_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "startHistoryId: baselineHistoryId" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "anchorMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "recentUnrelatedSubjectWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          grep -q "owned-oauth-level-c-v7.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
-          ! grep -q "baselineHistoryId = profile.historyId" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          ! grep -q "subject:\\"" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
-          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "schemaVersion: 8" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "MAX_ANCHOR_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "MAX_ANCHOR_WINDOW_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "messagesListMode: 'BOUNDED_RECENT_INBOX_WINDOW'" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "gmailSearchQueryUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "anchorLabelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "profileHistoryUsedAsStartHistoryId: false" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "syncAnchorSource: 'MESSAGE_HISTORY_ID'" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "labelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "maxResults: MAX_ANCHOR_WINDOW_MESSAGES" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "ANCHOR_ATTEMPT_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "FULL_FETCH_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "startHistoryId: baselineHistoryId" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "successfulRefreshBeforeRevoke" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "refreshedBearerGmailUse" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "HTTP_BODY_BYTES_AND_FULL_RESPONSE_ELAPSED_MS" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "payloadContentWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "urlQueryValuesWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "rawHttpPayloadWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "requestUrlQueryWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "anchorMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "recentUnrelatedSubjectWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "bestEffortRevokeWithoutPass" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "LEVEL_C_V8_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          grep -q "owned-oauth-level-c-v8.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
+          ! grep -q "baselineHistoryId = profile.historyId" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          ! grep -q "subject:\\"" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
           ! grep -q "GOOGLE_CLIENT_SECRET" .github/workflows/gmail-live-spike.yml
           ! grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" .github/workflows/gmail-live-spike.yml
 
       - name: Build helper directory
         run: |
-          mkdir -p FinanceSensor-Level-C-v7/spikes
-          cp -R spikes/physical-ingress FinanceSensor-Level-C-v7/spikes/
-          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v7/spikes/
-          cat > FinanceSensor-Level-C-v7/START-HERE.txt <<'EOF'
-          FinanceSensor Gmail Level C v7 — search-index-independent message-history anchor proof
+          mkdir -p FinanceSensor-Level-C-v8/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C-v8/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v8/spikes/
+          cat > FinanceSensor-Level-C-v8/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C v8 — bounded Gmail proof + refresh + network evidence
 
           PRECONDITION
           Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on the controlled edge computer.
@@ -65,8 +74,15 @@ jobs:
           - max 5 post-anchor changed message IDs inspected per history-probe attempt
           - max 1 FULL fetch in the entire run
           - max 2 bounded history-probe attempts
+          - successful real refresh is required before provider revoke
+          - refreshed bearer must successfully access Gmail before revoke
+          - post-revoke refresh authority must be denied
+          - endpoint telemetry contains only sanitized classes, counts, body byte totals,
+            response byte totals, elapsed milliseconds and HTTP status aggregates
+          - URL query values and raw HTTP payloads are not written to evidence
           - Gmail address, anchor/purchase markers, message IDs, content, tokens, codes,
             PKCE verifier, credential path and client secret are not written to evidence
+          - post-authorization failure paths attempt provider revoke before clearing local authority
 
           SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
           EOF
@@ -74,7 +90,7 @@ jobs:
       - name: Upload helper
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceSensor-Level-C-v7-Windows
-          path: FinanceSensor-Level-C-v7
+          name: FinanceSensor-Level-C-v8-Windows
+          path: FinanceSensor-Level-C-v8
           if-no-files-found: error
           retention-days: 7
