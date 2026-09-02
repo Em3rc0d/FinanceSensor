@@ -9,6 +9,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'heartbeat.yml',
   'package-level-c-helper.yml',
   'public-readiness.yml',
+  'mobile-shell.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
@@ -80,6 +81,25 @@ for (const file of ACTIVE_WORKFLOWS) {
   }
 }
 
+// The mobile shell workflow is allowed only as a synthetic build surface.
+// Registration here must never become permission to execute real provider authority.
+if (workflowFiles.includes('mobile-shell.yml')) {
+  const text = read('mobile-shell.yml');
+  const requiredMarkers = [
+    'flutter build apk --debug',
+    'REAL_GMAIL=0',
+    'REAL_OAUTH=0',
+    'REAL_FINANCIAL_DATA=0',
+    'BUILD_READY=NO',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('mobile-shell.yml', `synthetic build boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i.test(text)) {
+    fail('mobile-shell.yml', 'mobile shell workflow may not acquire real Gmail/OAuth authority');
+  }
+}
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!workflowFiles.includes(file)) {
     fail(file, 'registered retired workflow is missing');
@@ -118,4 +138,7 @@ console.log('RUNNER_ROUTE=ubuntu-latest');
 console.log('ACTIVE_SELF_HOSTED_PATHS=0');
 console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
+console.log('MOBILE_SHELL_REAL_GMAIL=0');
+console.log('MOBILE_SHELL_REAL_OAUTH=0');
+console.log('MOBILE_SHELL_REAL_FINANCIAL_DATA=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
