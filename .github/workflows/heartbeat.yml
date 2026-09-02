@@ -12,12 +12,16 @@ on:
       - 'spikes/e2ee-sync/**'
       - 'spikes/physical-ingress/**'
       - '.github/workflows/heartbeat.yml'
+      - '.github/workflows/mk0-foundation.yml'
+      - '.github/workflows/package-level-c-helper.yml'
       - 'ops/**'
       - 'graph/**'
       - 'tools/**'
       - 'product/**'
       - 'mk0/**'
       - 'research/**'
+      - '.gitignore'
+      - 'SECURITY.md'
 
 permissions:
   contents: read
@@ -28,7 +32,7 @@ concurrency:
 
 jobs:
   vital-signs:
-    runs-on: [self-hosted, linux, x64, financesensor]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -71,11 +75,22 @@ jobs:
       - name: Privacy boundary ECG
         run: node tools/validate-privacy-matrix.mjs
 
-      - name: CI runner routing boundary ECG
+      - name: Public CI routing boundary ECG
         run: node tools/validate-ci-runner-policy.mjs
 
       - name: Gmail production policy ECG
         run: node tools/validate-gmail-production-policy.mjs
+
+      - name: Public exposure guard
+        run: |
+          test -f .gitignore
+          test -f SECURITY.md
+          grep -q '^\.env$' .gitignore
+          grep -q '^\*credentials\*\.json$' .gitignore
+          grep -q '^client_secret\*\.json$' .gitignore
+          grep -q '^\*\.pem$' .gitignore
+          grep -q '^financesensor-level-c-result\.json$' .gitignore
+          ! grep -R -E -n --exclude-dir=.git --exclude='*.md' --exclude='.gitignore' '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .
 
       - name: Guard recovery equipment
         run: |
@@ -119,16 +134,8 @@ jobs:
       - name: Heartbeat summary
         run: |
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Peripheral E2EE, recovery and parasympathetic scheduler invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Physical ingress and privacy-boundary invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Level C v8 syntax + static safety invariants are responding; this does not claim physical Gmail execution.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Closure graph is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Artifact status declarations agree with the authoritative ledger.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Quarry Markdown states match the closure ledger.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'All declared product/data-model invariants are wired into the nervous system.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Privacy base + recovery data-handling matrices are structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'CI routing remains pinned to the dedicated FinanceSensor self-hosted runner and contains no active GitHub-hosted fallback.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Recovery equipment and ADR identity are present and uniquely wired.' >> "$GITHUB_STEP_SUMMARY"
