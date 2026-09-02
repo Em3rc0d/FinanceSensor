@@ -162,18 +162,20 @@ CI_FIXTURES != REAL_FINANCIAL_DATA
 
 Gmail OAuth credentials, refresh/access tokens, authorization codes, real Gmail content and real financial plaintext are forbidden from repository and CI custody. Real Gmail Level-C execution remains LOCAL EDGE ONLY.
 
-Root public-safety controls now include:
+Root public-safety controls include:
 
 - `.gitignore` blocking common credential, result, private-key and local-runner files;
 - `SECURITY.md` documenting the public trust boundary;
-- CI-side public exposure pattern guard;
-- no active workflow references `${{ secrets.* }}`.
+- CI-side public exposure pattern guards;
+- no active workflow references `${{ secrets.* }}`;
+- no current branch-head self-hosted route;
+- a fail-closed whole-history auditor.
 
 OAuth client IDs are public identifiers, not secrets. OAuth client secrets and provider authority remain confidential.
 
 ## GitHub Actions — public-safe operating mode
 
-FinanceSensor is prepared for public CI using ephemeral standard GitHub-hosted runners:
+FinanceSensor now operates as a public repository using ephemeral standard GitHub-hosted runners:
 
 ```text
 ACTIVE RUNNER                  ubuntu-latest
@@ -183,7 +185,7 @@ REAL Gmail/OAuth IN CI         forbidden
 CI PERMISSIONS                 contents: read
 ```
 
-The prior dedicated WSL self-hosted design is retired for active FinanceSensor workflows before public exposure. Its historical evidence remains documentation only.
+The prior dedicated WSL self-hosted design is retired for active FinanceSensor workflows. Its historical evidence remains documentation only.
 
 ```text
 PUBLIC REPO + PERSISTENT WORKSTATION RUNNER  FORBIDDEN
@@ -226,72 +228,60 @@ BUILD_READY  false
 
 ## Public-readiness state
 
-The pre-publication surface is now closed without promoting product gates or merging MK0 into `main`.
+FinanceSensor completed the private→public transition on 2026-09-02. The default-branch `public` event triggered `FinanceSensor Public Readiness` as designed.
 
-`main` contains the minimum default-branch publication controls required before exposure:
+The first post-public run correctly failed closed on one `OAUTH_SECRET_ENV` detector hit in `spikes/physical-ingress/test/oauth-native-contract.test.js`. Inspection proved the matched value was the explicit synthetic fixture `desktop-local-client-secret` paired with the synthetic client ID `1234567890-example.apps.googleusercontent.com`; it was not provider authority or a real credential. The auditor was then narrowed with an exact reviewed-fixture allowlist rather than weakening the detector class.
 
-- root `.gitignore`;
-- root `SECURITY.md`;
-- a public trust-boundary section in `README.md`;
-- `tools/audit-public-history.mjs`;
-- `.github/workflows/public-readiness.yml`.
+A clean rerun passed, followed by a second clean certification pass after branch reconciliation so that the reachable refs included the reconciliation commit.
 
-The public-readiness workflow listens to GitHub's `public` repository event from the default branch. On the private→public transition it explicitly fetches every branch and tag, checks all current branch-head workflow definitions, and scans every reachable text blob plus commit/tag object for credential classes. Binary or oversized objects make the audit `INCOMPLETE`; they cannot silently pass.
-
-Manual pre-publication review also established:
+Final observed certification evidence:
 
 ```text
-KNOWN REAL SECRET LEAK                     NOT FOUND
-KNOWN REAL GMAIL LEAK                      NOT FOUND
-KNOWN REAL FINANCIAL PLAINTEXT LEAK        NOT FOUND
-WORKFLOW_DISPATCH RUNS                     0
-REAL GMAIL LIVE WORKFLOW EXECUTIONS        0
-OAUTH NEGATIVE PROBES                      SYNTHETIC ONLY
-OLDEST ACTIONS RUNNER INSPECTED            GITHUB-HOSTED
-SENSITIVE ACTION LOGS INSPECTED            PASS
-CURRENT BRANCH-HEAD SELF-HOSTED ROUTES     0
-CURRENT BRANCH-HEAD secrets.* REFERENCES   0
+REPOSITORY VISIBILITY                       PUBLIC
+CURRENT TREE PUBLIC EXPOSURE GUARD           PASS
+CURRENT BRANCH-HEAD CI POLICY                PASS
+SELF-HOSTED ROUTES                           0
+secrets.* REFERENCES                         0
+pull_request_target                          0
+PUBLIC HISTORY TEXT BLOBS SCANNED            411
+PUBLIC HISTORY COMMITS SCANNED               425
+PUBLIC HISTORY TAGS SCANNED                  0
+BINARY BLOBS SKIPPED                         0
+OVERSIZED OBJECTS SKIPPED                    0
+PUBLIC HISTORY AUDIT                         PASS
+MATCHED SECRET VALUES PRINTED                0
+PUBLIC READINESS                             PASS
+PUBLIC_CERTIFIED                             YES
 ```
 
-The automated whole-history certification still cannot execute while the repository is private because the private GitHub-hosted Actions quota is exhausted. This is a runtime/billing condition, not a code failure. The gate is therefore armed to execute automatically when the repository becomes public.
-
-```text
-DEFAULT-BRANCH PUBLIC HARDENING             PASS
-CURRENT TREE PUBLIC-SAFETY CONTROLS         PASS
-ACTIVE PUBLIC CI ROUTING                    PASS BY CONFIGURATION
-SENSITIVE HISTORICAL SURFACE REVIEW         PASS
-PUBLIC TRANSITION AUTO-AUDIT                ARMED
-WHOLE-HISTORY AUTOMATED CERTIFICATION       PENDING PUBLIC EVENT
-PRE_PUBLICATION_READY                       YES
-PUBLIC_CERTIFIED                            NO UNTIL AUTO-AUDIT PASS
-REPOSITORY VISIBILITY                       PRIVATE
-```
+The certification is fail-closed: any future matching credential class, binary historical blob, oversized historical object, self-hosted branch-head workflow route, `${{ secrets.* }}` reference or `pull_request_target` use prevents a clean public-readiness result.
 
 Law:
 
 ```text
-PRE_PUBLICATION_READY != PUBLIC_CERTIFIED
-QUOTA_BLOCKED AUDIT != AUDIT FAILURE
-PUBLIC EVENT PASS => PUBLIC_CERTIFIED
+PUBLIC_CERTIFIED != BUILD_READY
+GREEN PUBLIC AUDIT != PRODUCT CLOSURE
+PUBLIC REPOSITORY != TRUSTED FINANCIAL RUNTIME
 ```
 
 ## Repository governance
 
 ```text
 main default-branch hardening        PASS
-main protected                       NO — private-plan limitation
-required status checks               NONE — arm after public audit
-branch protection enforcement        OFF — arm after public audit
+public history certification         PASS
+main protected                       NO — pending GitHub branch-protection configuration
+required status checks               NONE — pending protection configuration
+branch protection enforcement        OFF — pending protection configuration
 PR #1                                DRAFT / DO NOT MERGE
 jett behind main                     0 after reconciliation
 active CI routing                    ubuntu-latest
 real Gmail execution                 LOCAL EDGE ONLY
 ```
 
-GitHub branch protection/rulesets are deliberately not represented as closed while the repository remains private and the current plan rejects that configuration. They are a post-visibility governance action, not a reason to merge MK0 early.
+The connected GitHub integration can read branch protection but does not expose a branch-protection/ruleset write action. Therefore protection is kept explicitly OPEN rather than falsely recorded as configured.
 
-`OPS-001` remains a dependency of `G-MK0`.
+`OPS-001` remains a dependency of `G-MK0`; public certification does not close product governance or release gates.
 
 ## Take-the-Hummer rule
 
-**Do not begin unrestricted product implementation yet.** Q-003/Q-004/Q-005 and G-MK0 remain open. Public-readiness hardening changes repository exposure safety; it does not change product closure state.
+**Do not begin unrestricted product implementation yet.** Q-003/Q-004/Q-005 and G-MK0 remain open. Public certification changes repository exposure safety; it does not change product closure state.
