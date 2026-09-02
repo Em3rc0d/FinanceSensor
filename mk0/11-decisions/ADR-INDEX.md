@@ -33,7 +33,7 @@ Supersedes / superseded by
 | ADR-006 | Local persistence/encryption technology | OPEN | device spike/security review |
 | ADR-007 | Sync event model and ordering | BLOCKED | Q-005 |
 | ADR-008 | E2EE key hierarchy and production crypto | BLOCKED | Q-005/security review |
-| ADR-009 | Mobile implementation stack | OPEN | low-end Android spike |
+| ADR-009 | Mobile implementation stack | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL MOBILE VALIDATION REQUIRED | ADR-013 + Q-003/Q-005 mobile evidence |
 | ADR-010 | Control-plane runtime/cloud platform | OPEN | architecture + cost evaluation |
 | ADR-011 | Classification stack | OPEN | extraction/resolver spike |
 | ADR-012 | Analytics/telemetry privacy boundary | PROPOSED | Q-004 |
@@ -49,9 +49,36 @@ Supersedes / superseded by
 | ADR-022 | Production opaque witness topology and quorum | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL DEPLOYMENT REQUIRED | Q-005 witness deployment/failure evidence |
 | ADR-023 | Disconnect, tenant deletion and backup semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VERIFICATION REQUIRED | Q-004/Q-005 cloud/mobile/backup evidence |
 | ADR-024 | Recovery Kit checkpoint-anchor refresh semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VALIDATION REQUIRED | Q-005 physical recovery/export evidence |
-| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK OPEN | ADR-009 + ADR-013 physical mobile evidence |
+| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009 | ADR-013 physical mobile evidence |
 
 **Next available ADR:** `ADR-026`.
+
+## ADR-009 evidence boundary
+
+ADR-009 resolves the mobile framework choice while preserving native ownership of security-sensitive operations.
+
+```text
+PRODUCT UI / VIEW STATE          FLUTTER / DART
+ANDROID SECURITY BRIDGE          KOTLIN
+IOS SECURITY BRIDGE              SWIFT
+LOCAL DATABASE FAMILY            SQLITE
+EXACT ENCRYPTED SQLITE DRIVER     OPEN UNDER ADR-006
+LONG-LIVED OAUTH CUSTODY IN DART  FORBIDDEN
+LONG-LIVED PRIVATE KEYS IN DART   FORBIDDEN
+EXPORTABLE SECURITY FALLBACK      FORBIDDEN
+ANDROID MINIMUM BASELINE           OPEN UNDER ADR-013
+WEB/DESKTOP PRODUCT SCOPE          NOT CREATED BY FLUTTER CAPABILITY
+```
+
+Evidence/decision:
+
+- `ADR-009-MOBILE-IMPLEMENTATION-STACK.md`
+- `ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
+- `ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md`
+- `ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md`
+- `../../tools/validate-mobile-stack.mjs`
+
+The framework decision does not convert mobile behavior into physical proof. Android/iOS credential custody and protected crypto remain open gates.
 
 ## ADR-014 evidence boundary
 
@@ -242,7 +269,7 @@ SAFE_TO_RESUME                  REQUIRES NEW KIT EXPORT + INTEGRITY + CUSTODY
 
 ## ADR-025 evidence boundary
 
-ADR-025 freezes **product-surface direction**, not the mobile implementation stack or physical mobile behavior.
+ADR-025 freezes **product-surface direction**, not physical mobile behavior.
 
 ```text
 PRIMARY PRODUCT                 MOBILE APPLICATION
@@ -254,7 +281,7 @@ MOBILE BI                       ACCEPTED PRODUCT LANGUAGE
 DESKTOP BI SHRUNK TO PHONE      REJECTED
 SYNTHETIC PRODUCT LAB           ALLOWED FOR UX VALIDATION
 PRODUCT LAB                     CANNOT CLOSE Q-003/Q-004/Q-005
-IMPLEMENTATION STACK            OPEN UNDER ADR-009
+IMPLEMENTATION STACK            RESOLVED BY ADR-009
 ANDROID BASELINE                OPEN UNDER ADR-013
 ```
 
