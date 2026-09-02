@@ -69,6 +69,9 @@ jobs:
       - name: CI runner routing boundary ECG
         run: node tools/validate-ci-runner-policy.mjs
 
+      - name: Gmail production policy ECG
+        run: node tools/validate-gmail-production-policy.mjs
+
       - name: Guard recovery equipment
         run: |
           test -f STATUS.md
@@ -86,11 +89,14 @@ jobs:
           test -f mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
           test -f mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          test -f mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
+          test -f mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
           test -f tools/validate-ci-runner-policy.mjs
+          test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
           grep -q 'FINANCIAL_TRUTH' ops/VITALS.md
           grep -q 'SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE' ops/SELF-HOSTED-RUNNER.md
@@ -99,6 +105,7 @@ jobs:
           grep -q 'PRODUCT INVARIANT' graph/NERVOUS-SYSTEM.md
           grep -q 'only authoritative source' graph/STATUS-AUTHORITY.md
           grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          grep -q 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION' mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
           ! grep -R -q 'ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY' STATUS.md graph mk0 product research spikes tools ops --exclude='ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md'
 
@@ -114,5 +121,6 @@ jobs:
           echo 'All declared product/data-model invariants are wired into the nervous system.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Privacy base + recovery data-handling matrices are structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
           echo 'CI routing remains pinned to the dedicated FinanceSensor self-hosted runner and contains no active GitHub-hosted fallback.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Recovery equipment and ADR identity are present and uniquely wired.' >> "$GITHUB_STEP_SUMMARY"
