@@ -39,14 +39,18 @@ Supersedes / superseded by
 | ADR-012 | Analytics/telemetry privacy boundary | PROPOSED | Q-004 |
 | ADR-013 | Minimum supported Android baseline | OPEN | device matrix evidence |
 | ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
-| ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED | Q-005 physical anchor/witness evidence |
-| ADR-016 | Opaque independent witness freshness | SPIKE-ACCEPTED / PRODUCTION WITNESS POLICY OPEN | Q-005 witness deployment/physical evidence |
+| ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical anchor/witness evidence |
+| ADR-016 | Opaque independent witness freshness | SPIKE-ACCEPTED / PRODUCTION POLICY RESOLVED BY ADR-022 | Q-005 physical witness evidence |
 | ADR-017 | Gmail mobile OAuth boundary | SPIKE-ACCEPTED / DESKTOP LEVEL-C PHYSICAL PASS / MOBILE PRODUCTION OPEN | Q-003/Q-004 mobile credential evidence |
 | ADR-018 | Gmail partial-sync anchor provenance | ACCEPTED FOR LEVEL-C HARNESS / PRODUCTION INITIAL-SYNC OPEN | Q-003 production onboarding |
 | ADR-019 | Gmail bootstrap without Search-index dependency | ACCEPTED FOR LEVEL-C HARNESS / PRODUCTION INITIAL-SYNC OPEN | Q-003 production onboarding |
 | ADR-020 | Gmail restricted-data server boundary | ACCEPTED FOR MK0 ARCHITECTURE / GOOGLE APPLICABILITY DETERMINATION REQUIRED | Q-003/Q-004 production verification |
+| ADR-021 | Mobile production crypto profile | ACCEPTED FOR PHYSICAL VALIDATION / NOT YET PRODUCTION-PROVEN | Q-005 mobile interop/protected-key evidence |
+| ADR-022 | Production opaque witness topology and quorum | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL DEPLOYMENT REQUIRED | Q-005 witness deployment/failure evidence |
+| ADR-023 | Disconnect, tenant deletion and backup semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VERIFICATION REQUIRED | Q-004/Q-005 cloud/mobile/backup evidence |
+| ADR-024 | Recovery Kit checkpoint-anchor refresh semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VALIDATION REQUIRED | Q-005 physical recovery/export evidence |
 
-**Next available ADR:** `ADR-021`.
+**Next available ADR:** `ADR-025`.
 
 ## ADR-014 evidence boundary
 
@@ -68,7 +72,7 @@ Evidence:
 - `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/recovery.test.js`
 
-It does not freeze the production HPKE/AEAD/signature implementation, platform key-store behavior, Recovery Kit UX or physical disaster recovery.
+It does not freeze the production HPKE/AEAD/signature implementation, platform key-store behavior, Recovery Kit UX or physical disaster recovery. ADR-021 and ADR-024 now narrow those previously open design branches without promoting them to physical proof.
 
 ## ADR-015 evidence boundary
 
@@ -92,25 +96,31 @@ Evidence:
 - `../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/checkpoint.test.js`
 
-## ADR-016 evidence boundary
+## ADR-016 / ADR-022 evidence boundary
 
-ADR-016 adds an **independent opaque witness** as a stronger freshness signal without moving financial truth outside the edge.
+ADR-016 adds an **independent opaque witness** as a stronger freshness signal without moving financial truth outside the edge. ADR-022 now freezes the first production topology and quorum policy.
 
 ```text
-REAL TENANT ID AT WITNESS             FORBIDDEN BY CANDIDATE CONTRACT
+REAL TENANT ID AT WITNESS             FORBIDDEN
 FINANCIAL PLAINTEXT AT WITNESS        FORBIDDEN
+FINANCIAL CIPHERTEXT AT WITNESS       FORBIDDEN
 PER-WITNESS OPAQUE LOG ID             REQUIRED
+CONFIGURED WITNESSES                  3
+CONFIRMATION QUORUM                   2 OF 3
+MINIMUM FAILURE DOMAINS               2
+MINIMUM RELAY-INDEPENDENT WITNESS     1
 ROLLBACK/FORK/GAP/PARENT MISMATCH     FAIL CLOSED
 WITNESS AHEAD OF RELAY                RELAY_BEHIND_WITNESS
 VALID SAME-SEQUENCE DIVERGENCE        WITNESS_DIVERGENCE
 INSUFFICIENT INDEPENDENT EVIDENCE     EXPLICITLY UNCONFIRMED
 SILENT FALLBACK TO RELAY              REJECTED
-2-OF-3 SPIKE THRESHOLD                NOT A PRODUCTION DECISION
+VALID CONTRADICTION                    CANNOT BE VOTED AWAY
 ```
 
-Evidence:
+Evidence/decision:
 
 - `ADR-016-OPAQUE-WITNESS-FRESHNESS.md`
+- `ADR-022-PRODUCTION-WITNESS-QUORUM.md`
 - `../04-architecture/WITNESS-FRESHNESS.md`
 - `../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/witness.test.js`
@@ -180,6 +190,54 @@ Evidence/plan:
 
 - `ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
 - `../07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md`
+
+## ADR-021 evidence boundary
+
+ADR-021 freezes the **first production interoperability profile**, not physical mobile proof.
+
+```text
+HPKE             RFC 9180 BASE MODE
+KEM              DHKEM(P-256, HKDF-SHA256)
+KDF              HKDF-SHA256
+WRAP AEAD        AES-128-GCM
+DEVICE SIGNING   ECDSA P-256 + SHA-256 PROFILE
+DOMAIN AEAD      AES-256-GCM + HKDF-SHA256 SUBKEYS
+PROTECTED KEYS   REQUIRED
+NODE SPIKE       NOT PRODUCTION CRYPTO
+```
+
+Evidence/plan:
+
+- `ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md`
+- `../../research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md`
+- `../07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md`
+
+## ADR-023 evidence boundary
+
+ADR-023 separates provider disconnect, Gmail-derived erase and tenant deletion.
+
+```text
+DISCONNECT GMAIL                 REVOKE AUTHORITY + RETAIN USER DERIVED STATE
+DISCONNECT + ERASE               EXPLICIT DESTRUCTIVE OPERATION
+DELETE TENANT                    CRYPTO-SHRED + CLOUD/WITNESS DELETE
+BACKUP RESTORE                   MUST NOT RESURRECT AUTHORITY
+BACKUP MAX PHYSICAL RETENTION    <= 35 DAYS
+```
+
+The backup ceiling is an architecture requirement; actual provider behavior still requires physical/documentary evidence.
+
+## ADR-024 evidence boundary
+
+ADR-024 freezes Recovery Kit refresh semantics:
+
+```text
+RECOVERY KIT ANCHOR             MINIMUM TRUSTED ANCHOR, NOT GLOBAL LATEST
+REFRESH EVERY CHECKPOINT        REJECTED
+RECOVERY KEY ROTATION           NEW KIT REQUIRED
+POST-RECOVERY N+1 CUTOVER       NEW KIT REQUIRED
+OLD KIT AFTER ROTATION          HISTORICAL-ONLY
+SAFE_TO_RESUME                  REQUIRES NEW KIT EXPORT + INTEGRITY + CUSTODY
+```
 
 ## Decision discipline
 
