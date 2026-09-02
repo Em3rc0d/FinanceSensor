@@ -97,40 +97,27 @@ CI_FIXTURES != REAL_FINANCIAL_DATA
 
 Real Gmail/OAuth authority and real financial plaintext remain LOCAL EDGE ONLY.
 
-## Public certification
+## Public-readiness state
 
-FinanceSensor completed the private→public transition on 2026-09-02. The default-branch public-readiness gate executed as designed. An initial detector hit was traced to the explicit synthetic test fixture `desktop-local-client-secret`; the detector was narrowed only for that exact reviewed fixture, not weakened globally.
+FinanceSensor is public. Public-readiness is enforced by `.github/workflows/public-readiness.yml` and `tools/audit-public-history.mjs`.
 
-Subsequent full-repository audits passed across all current branch heads and complete reachable Git history.
+The versioned status ledger does not persist a historical-scan PASS or Git object totals because both are properties of a specific repository snapshot. Their authoritative evidence is the latest `FinanceSensor Public Readiness` execution for the current refs.
 
-```text
-REPOSITORY VISIBILITY                  PUBLIC
-CURRENT TREE PUBLIC EXPOSURE GUARD     PASS
-CURRENT BRANCH-HEAD CI POLICY          PASS
-SELF-HOSTED ROUTES                     0
-secrets.* REFERENCES                   0
-pull_request_target                    0
-BINARY BLOBS SKIPPED                   0
-OVERSIZED OBJECTS SKIPPED              0
-PUBLIC HISTORY AUDIT                   PASS
-MATCHED SECRET VALUES PRINTED          0
-PUBLIC READINESS                       PASS
-PUBLIC_CERTIFIED                       YES
-```
-
-Exact Git object totals are intentionally not stored in this versioned ledger. They are run evidence and the latest successful `FinanceSensor Public Readiness` execution is authoritative for them.
+Stable repository laws:
 
 ```text
+PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
+SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
+REAL Gmail/OAuth IN CI = FORBIDDEN
+REAL FINANCIAL PLAINTEXT IN CI = FORBIDDEN
 PUBLIC_CERTIFIED != BUILD_READY
 GREEN PUBLIC AUDIT != PRODUCT CLOSURE
-PUBLIC REPOSITORY != TRUSTED FINANCIAL RUNTIME
 ```
 
 ## Repository governance
 
 ```text
 main default-branch hardening        PASS
-public history certification         PASS
 main protected                       NO — pending GitHub branch-protection configuration
 required status checks               NONE — pending protection configuration
 branch protection enforcement        OFF — pending protection configuration
@@ -141,8 +128,8 @@ real Gmail execution                 LOCAL EDGE ONLY
 
 The connected GitHub integration can read branch protection but does not expose a branch-protection/ruleset write action. Therefore protection remains explicitly OPEN rather than falsely recorded as configured.
 
-`OPS-001` remains a dependency of `G-MK0`; public certification does not close product governance or release gates.
+`OPS-001` remains a dependency of `G-MK0`; public repository safety does not close product governance or release gates.
 
 ## Take-the-Hummer rule
 
-**Do not begin unrestricted product implementation yet.** Q-003/Q-004/Q-005 and G-MK0 remain open. Public certification changes repository exposure safety; it does not change product closure state.
+**Do not begin unrestricted product implementation yet.** Q-003/Q-004/Q-005 and G-MK0 remain open.
