@@ -89,7 +89,7 @@ test('GMAIL-MIME-001 FULL message returns attachment descriptors without downloa
   assert.equal(provider.calls.filter(call => call.path.includes('/attachments/')).length, 0);
 });
 
-test('GMAIL-ANCHOR-002 bounded bootstrap can list only recent INBOX IDs without Gmail search q', async () => {
+test('GMAIL-BOOTSTRAP-001 bounded bootstrap can list only recent INBOX IDs without Gmail search q', async () => {
   let seenUrl;
   const provider = new GmailRestProvider({
     accessToken: 'safe-test-token',
