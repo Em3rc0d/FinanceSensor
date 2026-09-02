@@ -58,16 +58,12 @@ Financial semantics remain relationship-aware: transfer mechanism does not inven
 
 ## Q-005 distributed nervous system
 
-Current distributed suite:
-
 ```text
 E2EE / KEY / RECOVERY / REVOCATION /
 KNEE / CHECKPOINT / WITNESS / PNS      116 / 116 PASS
 ```
 
-Bounded executable contracts include tenant/epoch device authority, recovery coverage, revocation cutover, post-recovery resume gating, immutable sync identity, tenant-isolated materialization, conflict-safe correction, trusted-checkpoint anti-rollback, opaque witness freshness and parasympathetic background behavior.
-
-Key law:
+Q-005 remains `ACTIVE`: bounded spike evidence is not release-grade production/mobile/crypto/witness proof.
 
 ```text
 AUTHENTICITY
@@ -79,33 +75,35 @@ APPEND-ONLY CONSISTENCY
 GLOBAL FRESHNESS
 ```
 
-Q-005 remains `ACTIVE`: these are spike-level properties, not production witness/crypto/mobile proof.
-
 ## Gmail / financial ingress
 
 ### Level A — contractual ingress + OAuth boundary
 
-Latest validated contract family:
+Current contract family is green, including:
 
 ```text
-PHYSICAL INGRESS / OAUTH         45 / 45 PASS
-ASYNC PROVIDER CONTRACT          PASS
-METADATA-FIRST                   PASS
-FULL ONLY FOR CANDIDATES         PASS
-INCREMENTAL HISTORY MODEL        PASS
-HISTORY 404 RECOVERY             PASS
-RESTART / REPLAY                 PASS
-REAL-SHAPE SANITIZED PARSER      PASS
-MIME DESCRIPTORS                 PASS
-RAW ATTACHMENT AUTO-FETCH        0
-RAW BODY DURABLE RETENTION       0
-PLAINTEXT FINANCIAL CLOUD        0 in harness
-AUTH SECRET IN TESTED LOGS       0
-T-003                            PASS
-S-003                            ACTIVE
+ASYNC PROVIDER CONTRACT                     PASS
+METADATA-FIRST                              PASS
+FULL ONLY FOR CANDIDATES                    PASS
+CASE-INSENSITIVE MAIL HEADER LOOKUP         PASS
+INCREMENTAL HISTORY MODEL                   PASS
+HISTORY 404 RECOVERY                        PASS
+GMAIL PROFILE CONTRACT                      PASS
+OFFICIAL messageAdded HISTORY QUERY         PASS
+UNFILTERED HISTORY DIAGNOSTIC CONTRACT      PASS
+EMPTY HISTORY ZERO-CHANGE CONTRACT          PASS
+RESTART / REPLAY                            PASS
+REAL-SHAPE SANITIZED PARSER                 PASS
+MIME DESCRIPTORS                            PASS
+RAW ATTACHMENT AUTO-FETCH                   0
+RAW BODY DURABLE RETENTION                  0
+PLAINTEXT FINANCIAL CLOUD                   0 in harness
+AUTH SECRET IN TESTED LOGS                  0
+T-003                                       PASS
+S-003                                       ACTIVE
 ```
 
-OAuth contract now distinguishes the controlled Google Desktop DEV proof client from the future production Android/iOS client:
+OAuth boundary:
 
 ```text
 PKCE S256                                      PASS
@@ -113,7 +111,7 @@ STATE BINDING                                  PASS
 EXACT gmail.readonly SCOPE                     PASS
 BROADER GMAIL SCOPE SET                        REJECTED
 DESKTOP CREDENTIAL JSON EXACT-CLIENT CHECK     PASS
-DESKTOP CLIENT SECRET AT GOOGLE TOKEN ENDPOINT PASS AT CONTRACT LEVEL
+DESKTOP CLIENT SECRET AT GOOGLE TOKEN ENDPOINT PHYSICALLY REQUIRED/OBSERVED
 DESKTOP CLIENT SECRET → GMAIL                  0
 DESKTOP CLIENT SECRET → CI/CLOUD/EVIDENCE      0
 LOCAL LONG-LIVED AUTHORITY                     PASS AT CONTRACT LEVEL
@@ -125,15 +123,9 @@ REFRESH AUTHORITY → GMAIL                      0
 CI AS LONG-LIVED OAUTH AUTHORITY               REJECTED / GUARDED
 ```
 
-Evidence:
-
-- `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
-- `mk0/10-evidence/EV-Q003-OAUTH-CLIENT-CONTRACT-2026-09-01.md`
-- `mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md`
+`DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET`.
 
 ### Level B — real Gmail provider
-
-Executed 2026-09-01 through an already-authorized Gmail engineering connection.
 
 ```text
 REAL PROVIDER CONNECTION       PASS
@@ -145,17 +137,15 @@ REAL RAW GMAIL CONTENT IN REPO 0
 REAL FINANCIAL LITERALS IN CI  0
 ```
 
-The live sample exposed real parser weaknesses before production: localized thousands/decimal formatting, merchant provenance and operation-reference extraction. Those were converted into sanitized fixtures and repaired.
-
 Evidence:
 
 `mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
 
-The engineering connector's authority is not repurposed as FinanceSensor product authority.
+The engineering connector authority is not product OAuth authority.
 
-### Level C — FinanceSensor-owned OAuth identity
+### Level C — FinanceSensor-owned OAuth
 
-External setup is now physically present:
+External DEV setup is physically present:
 
 ```text
 FINANCESENSOR GOOGLE CLOUD DEV PROJECT      READY / OBSERVED
@@ -166,131 +156,138 @@ REQUESTED SCOPE                             gmail.readonly ONLY
 DESKTOP OAUTH CLIENT                        FinanceSensor DEV Level-C
 ```
 
-Two controlled FinanceSensor-owned authorization attempts have executed and failed closed **before any Gmail API read**.
-
-#### Attempt 1 — v1
+#### v1 / v2 — fail-closed token exchange
 
 ```text
-STATE CALLBACK                    PASS
-TOKEN EXCHANGE                    HTTP 400
-REAL GMAIL API REQUESTS           0
-RESULT                            FAIL / TOKEN_EXCHANGE_HTTP_400
+v1  state callback PASS → token HTTP 400             → Gmail calls 0
+v2  state callback PASS → INVALID_REQUEST HTTP 400   → Gmail calls 0
 ```
 
-#### Attempt 2 — v2
-
-v2 tightened privacy before retrying: root loopback redirect, no `messages.list`, history-only after authorization, max 5 changed messages/attempt, max 1 FULL and max 2 attempts.
-
-```text
-STATE CALLBACK                    PASS
-LOOPBACK ROOT REDIRECT            true
-TOKEN EXCHANGE                    HTTP 400 / INVALID_REQUEST
-PROFILE / LIST / METADATA / FULL  0 / 0 / 0 / 0
-HISTORY                           0
-PRE-AUTH MAILBOX SWEEP            0
-RESULT                            FAIL / TOKEN_EXCHANGE_INVALID_REQUEST
-```
-
-#### Root-cause isolation
-
-A temporary synthetic negative OAuth diagnostic used only the public Client ID, a deliberately fake authorization code and a valid-form verifier. It used no real Gmail grant, no real secret and made no Gmail request.
-
-It reproduced `invalid_request`. A second diagnostic safely captured Google's provider description:
+Synthetic negative provider diagnostics isolated Google's observed response:
 
 ```text
 client_secret is missing.
 ```
 
-This physically invalidated the earlier assumption that the controlled Desktop DEV exchange could operate with the Client ID alone.
+That physically invalidated the earlier Client-ID-only Desktop DEV assumption. ADR-017 and the runner were corrected so the Google-issued Desktop installed-client credential is selected locally and never enters repo/CI/cloud/evidence.
 
-The conclusion is deliberately narrow:
+Evidence:
+
+`mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md`
+
+#### v3 — OAuth/Gmail path physically crossed; candidate gap
+
+v3 proved real consent, token exchange, Gmail profile/history access and revocation, but did not fetch a FULL synthetic message. It also exposed two harness defects that were repaired:
 
 ```text
-GOOGLE DESKTOP DEV CLIENT
-→ provider requires its Google-issued installed-client credential at token exchange
-
-PRODUCTION ANDROID / IOS
-→ must NOT treat an embedded client_secret as a meaningful confidential boundary
+mail headers must be case-insensitive
+EXECUTION_COMPLETE != LEVEL_C_PASS
 ```
 
-`DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET`.
+Evidence:
 
-The one-off intentionally failing diagnostic workflow was removed after its run IDs and result were frozen into evidence.
+`mk0/10-evidence/EV-Q003-LEVEL-C-V3-PARTIAL-2026-09-02.md`
 
-#### Level-C v3 — ready for next controlled execution
+#### v4 — strict PASS law; history gap isolated
 
-Runner:
-
-`spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs`
-
-Execution packet:
-
-`spikes/physical-ingress/OWNED-OAUTH-EXECUTION.md`
-
-ADR:
-
-`mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
-
-v3 boundary:
+Sanitized physical result:
 
 ```text
-Google-downloaded Desktop credentials JSON
-        ↓ local Windows file picker
-exact installed.client_id validation
+REAL CONSENT                         PASS
+STATE BINDING                        PASS
+TOKEN EXCHANGE                       HTTP 200
+PROFILE HISTORY CURSOR               PASS
+messages.list                        0 / SKIPPED BY DESIGN
+history.list                         2
+METADATA                             0
+FULL                                 0
+SYNTHETIC MARKER                     NOT FOUND
+PROVIDER REVOKE                      PASS
+REFRESH AUTHORITY AFTER REVOKE       DENIED
+EXECUTION COMPLETE                   true
+LEVEL C PASS                         FAIL
+RESULT                               LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS
+```
+
+Privacy counters remained zero for Gmail content, financial plaintext, secrets, credential path, proof marker and pre-authorization mailbox sweep.
+
+Because `metadata = 0`, v4 failed **before** metadata classification. The run cannot distinguish mailbox propagation, wrong mailbox/recipient or a different history observation. Those possibilities are not guessed.
+
+Evidence:
+
+`mk0/10-evidence/EV-Q003-LEVEL-C-V4-HISTORY-GAP-2026-09-02.md`
+
+#### v5 — prepared / CI-validated diagnostic boundary
+
+v5 adds diagnosis without broadening Gmail scope or scanning the mailbox:
+
+```text
+Google Desktop credential JSON
+        ↓ local-only selection
+state + PKCE + root loopback
         ↓
-client_id + client_secret held in process memory only
-        ↓ state + PKCE S256
 Google token endpoint
-        ↓ short bearer only
-GmailRestProvider
         ↓
-profile historyId
+/profile
         ↓
-post-authorization history.list only
+show exact authorized Gmail address LOCALLY ONLY
         ↓
-≤ 5 changed messages / attempt
+user sends fresh synthetic inbound message to exact address
         ↓
-METADATA
+/profile again BEFORE history.list
         ↓
-≤ 1 selected FULL
+current historyId == baseline?
+    YES → stop; no history.list spent
+    NO  → filtered messageAdded history
         ↓
-replay observation
+messageAdded IDs?
+    YES → METADATA → exact marker → production gate → ≤1 FULL
+    NO  → one unfiltered diagnostic history request
+          aggregate event-family counts only
+          diagnostic path CANNOT produce LEVEL_C_PASS
+        ↓
+replay
         ↓
 revoke
         ↓
-old refresh authority must be denied
+old refresh authority denied
 ```
 
-v3 explicitly records:
+v5 privacy/request boundaries:
 
 ```text
-MESSAGES_LIST_USED                    false
-PRE-AUTHORIZATION_MAILBOX_SWEEP       0
-CLIENT_SECRET_PERSISTED_BY_RUNNER     0
-CLIENT_SECRET_WRITTEN_TO_EVIDENCE     0
-CLIENT_SECRET_CLOUD_COPIES            0
-CREDENTIAL_PATH_WRITTEN_TO_RESULT     0
+messages.list                          0
+pre-authorization mailbox sweep       0
+max changed IDs / attempt             5
+max FULL                              1
+max attempts                          2
+authorized mailbox in result          0
+message IDs in result                 0
+proof marker in result                0
+Gmail content in result               0
+credential path/content in result     0
+OAuth/token secrets in result         0
 ```
 
-Level C is **not passed yet**. The product-owned Gmail data plane has not yet completed profile/history/METADATA/FULL/replay/revocation on the corrected v3 boundary.
+`LEVEL_C_PASS` requires the **normal filtered `messageAdded` path**. Diagnostic fallback can explain a mismatch but cannot upgrade the gate.
 
-## Invariant nervous system
+Validated lineage:
 
 ```text
-PRODUCT INVARIANTS          34
-DATA-MODEL INVARIANTS       50
-TOTAL WIRED                  84
+v5 runner/launcher head    ac4d8630da92aa576371b84330d1d209cc48a69d
+Heartbeat                  SUCCESS — run 33589139375
+Foundation push            SUCCESS — run 33589139359
+Foundation PR              SUCCESS — run 33589142240
 
-SPECIFIED                    29
-PARTIAL                      18
-PROVEN_AT_SPIKE              22
-PROVEN                       15
-
-REGISTERED CONTRADICTIONS     2
-OPEN CONTRADICTIONS           0
+v5 packaging head          26092596708465399799b6c6f4a3fccfa91f0aef
+Package helper             SUCCESS — run 33589158915
+Foundation push            SUCCESS — run 33589158925
+Foundation PR              SUCCESS — run 33589162143
 ```
 
-`G-MK0` cannot close while release-scope invariants remain below `PROVEN`.
+The intermediate packaging run on `ac4d…` failed because the still-v4 packaging guard rejected the newly switched v5 launcher. That red was corrected by updating the packaging workflow; the final v5 package run is green.
+
+Q-003 remains **ACTIVE**.
 
 ## Privacy nervous system
 
@@ -301,7 +298,7 @@ TOTAL PRIVACY CLASSES            24
 PRIVACY MATRIX ECG               PASS
 ```
 
-Gmail OAuth authority remains local-sensitive material. Desktop DEV client credential, refresh authority and bearer tokens are forbidden from normal cloud custody, GitHub evidence and financial telemetry. Privacy matrices remain design-level DRAFT until physical platform storage/transport/deletion evidence exists.
+Gmail OAuth authority remains local-sensitive material. Desktop credential, refresh authority and bearer tokens are forbidden from normal cloud custody, GitHub evidence and financial telemetry. Privacy matrices remain design-level DRAFT until physical platform storage/transport/deletion evidence exists.
 
 ## Closure graph
 
@@ -335,94 +332,37 @@ NODES        21
 BUILD_READY  false
 ```
 
-## Whole-organism ECG
-
-Latest validated code/runner family:
+## Current Q-003 critical path
 
 ```text
-CANONICAL RESOLVER                                  98 / 98 PASS
-E2EE / KEY / RECOVERY / REVOCATION /
-KNEE / CHECKPOINT / WITNESS / PNS                  116 / 116 PASS
-PHYSICAL INGRESS / OAUTH                            45 / 45 PASS
-CLOSURE GRAPH                                       PASS — 21 nodes
-ARTIFACT STATUS AUTHORITY                           PASS
-QUARRY STATUS                                       PASS — 5
-TRACEABILITY                                        PASS — 84 / 84 WIRED
-PRIVACY MATRIX                                      PASS — 24 CLASSES
-RECOVERY EQUIPMENT GUARD                            PASS
-HEARTBEAT                                           SUCCESS
-BUILD_READY                                         false
+LEVEL C v5
+        ↓
+exact authorized mailbox proven locally
+        ↓
+mailbox history advancement observed
+        ↓
+FILTERED messageAdded
+        ↓
+METADATA
+        ↓
+exact synthetic marker + production gate
+        ↓
+1 FULL
+        ↓
+financial extraction
+        ↓
+replay
+        ↓
+revoke + denied old refresh
+        ↓
+LEVEL_C_PASS
+        ↓
+audit evidence
+        ↓
+Q-003 closure decision
 ```
 
-Heartbeat run on v3 code head `b30f2872f8829af749c7dfb195651e9b1af55e75`: `33579244640` — SUCCESS.
-
-The final reconciliation head after freezing evidence and retiring the temporary diagnostic workflow is `0d2e724d4e449f917ec318eede504debe68ae54a`; MK0 Foundation passed on both push and PR before this STATUS update.
-
-## Q-003 remaining blocker
-
-```text
-LOCAL SELECTION OF GOOGLE DESKTOP CREDENTIAL JSON
-        ↓
-CONTROLLED TEST USER
-        ↓ exact gmail.readonly consent
-STATE + PKCE + ROOT LOOPBACK CALLBACK
-        ↓
-LOCAL DESKTOP CREDENTIAL + REFRESH AUTHORITY
-        ↓ short bearer only
-GmailRestProvider
-        ↓
-profile historyId
-        ↓
-history → METADATA → selected FULL → replay
-        ↓
-revoke
-        ↓
-old refresh authority denied
-        ↓
-LEVEL C PASS / FAIL
-```
-
-Until the corrected v3 path executes successfully, Q-003 remains `ACTIVE`.
-
-## Q-004 remaining physical proof
-
-```text
-FinanceSensor-owned Gmail lifecycle/revocation
-Android protected credential/key storage
-Apple protected credential/key storage
-real transport/storage inspection
-cloud deletion/backup semantics
-Recovery Kit leakage testing
-Revocation Barrier retention/deletion
-Trusted Checkpoint / witness metadata leakage
-trusted-anchor deletion/retirement semantics
-```
-
-## Q-005 remaining blockers
-
-```text
-production independent witness deployment/ownership decision
-Recovery Kit checkpoint/witness refresh semantics
-reviewed production checkpoint/append-only construction
-atomic crash-safe checkpoint + anchor advancement
-reviewed production HPKE/AEAD/signature suite
-Android ↔ iOS cryptographic interoperability
-Android Keystore/StrongBox physical evidence
-iOS Keychain/Secure Enclave physical evidence
-protected mobile anchor storage
-real control-plane tenant authorization
-real recovery/checkpoint/witness authorization
-network partition / long-offline recovery
-crash/restart persistence around cutover/checkpoint
-real WorkManager / BackgroundTasks behavior
-physical all-devices-lost recovery
-physical post-recovery revocation/rotation/cutover
-Recovery Kit export/import leakage controls
-recovery re-authentication gate
-retention/deletion policy
-side-channel / penetration-test review
-metadata leakage analysis
-```
+Q-004 and Q-005 remain independent blockers even if Level C passes.
 
 ## Repository governance
 
@@ -434,30 +374,6 @@ PR #1                           DRAFT / DO NOT MERGE
 ```
 
 `OPS-001` remains a dependency of `G-MK0`.
-
-## Critical path
-
-```text
-Q-003 FINANCESENSOR-OWNED OAUTH LEVEL C v3
-        +
-Q-004 REAL CREDENTIAL/DELETION/PRIVACY EVIDENCE
-        +
-Q-005 PRODUCTION WITNESS + CRYPTO + MOBILE EVIDENCE
-        ↓
-A-001 + SEC-001 reconciliation
-        ↓
-DM-001 reconciliation/freeze
-        ↓
-WF-001 signature UX reconciliation
-        +
-OPS-001 repository enforcement
-        ↓
-closure audit
-        ↓
-all release-scope invariants PROVEN
-        ↓
-BUILD_READY = YES
-```
 
 ## Take-the-Hummer rule
 
@@ -472,6 +388,8 @@ CLOSED ≠ IMMUTABLE
 PROVEN_AT_SPIKE ≠ PROVEN
 DOCUMENTED ≠ VERIFIED
 GREEN CI ≠ BUILD_READY
+EXECUTION_COMPLETE ≠ LEVEL_C_PASS
+HTTP history.list success ≠ observed messageAdded event
 PROVIDER ASSUMPTION ≠ PROVIDER EVIDENCE
 DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET
 ```
