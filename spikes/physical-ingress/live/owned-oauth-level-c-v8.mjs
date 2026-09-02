@@ -501,6 +501,30 @@ function networkEvidencePassed() {
     endpoint.other.count === 0;
 }
 
+async function bestEffortRevokeWithoutPass(result = 'STOPPED_BEFORE_PASS') {
+  evidence.levelCPass = 'FAIL';
+  evidence.result = result;
+  if (refreshToken) {
+    try {
+      evidence.requests.revoke += 1;
+      const revoke = await instrumentedFetch('https://oauth2.googleapis.com/revoke', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ token: refreshToken }).toString()
+      });
+      evidence.revocation.providerAcceptedRevoke = revoke.ok ? 'PASS' : `HTTP_${revoke.status}`;
+    } catch {
+      evidence.revocation.providerAcceptedRevoke = 'BEST_EFFORT_REVOKE_FAILED';
+    }
+  } else {
+    evidence.revocation.providerAcceptedRevoke = 'NO_REFRESH_AUTHORITY_OBTAINED';
+  }
+  evidence.executionComplete = true;
+  evidence.executionFinishedAt = new Date().toISOString();
+  cleanSensitiveMemory();
+  await persist();
+}
+
 async function revokeAndVerify() {
   if (!refreshToken) throw new Error('NO_REFRESH_AUTHORITY');
   if (evidence.oauth.successfulRefreshBeforeRevoke !== 'PASS' || evidence.oauth.refreshedBearerGmailUse !== 'PASS') {
@@ -547,10 +571,11 @@ async function start() {
   try {
     await loadDesktopCredential();
   } catch (error) {
-    evidence.result = 'FAIL';
     evidence.failureCode = String(error?.message ?? 'DESKTOP_CREDENTIAL_LOAD_FAILED').slice(0, 120);
-    cleanSensitiveMemory();
-    await persist().catch(() => {});
+    await bestEffortRevokeWithoutPass('FAIL').catch(async () => {
+      cleanSensitiveMemory();
+      await persist().catch(() => {});
+    });
     return;
   }
 
@@ -605,7 +630,7 @@ async function start() {
           if (anchorAttempts < MAX_ANCHOR_ATTEMPTS) {
             return sendHtml(res, 200, 'Synthetic anchor not in recent Inbox window yet', `<p class="warn">FinanceSensor inspected only the bounded recent INBOX window and did not find the exact synthetic anchor. Confirm it is visible in Inbox, wait a few seconds, then use the one allowed retry.</p><form method="post" action="/anchor?s=${encodeURIComponent(sessionSecret)}"><button>Retry bounded Inbox anchor lookup once</button></form>`);
           }
-          return sendHtml(res, 200, 'Anchor attempt limit reached', `<p class="warn">The two bounded recent-INBOX anchor lookups completed without establishing a unique message-history anchor. No additional anchor request will be made in this run.</p><form method="post" action="/revoke-without-pass?s=${encodeURIComponent(sessionSecret)}"><button>Stop local proof</button></form>`);
+          return sendHtml(res, 200, 'Anchor attempt limit reached', `<p class="warn">The two bounded recent-INBOX anchor lookups completed without establishing a unique message-history anchor. No additional anchor request will be made in this run.</p><form method="post" action="/revoke-without-pass?s=${encodeURIComponent(sessionSecret)}"><button>Revoke FinanceSensor DEV and stop safely</button></form>`);
         }
         return sendHtml(res, 200, 'Supported sync anchor established', `<p class="ok">The baseline now comes from the historyId of the synthetic anchor MESSAGE, without depending on Gmail Search indexing.</p><p>Now send the financial synthetic test email to:</p><p><strong>${escapeHtml(authorizedMailbox)}</strong></p><pre>Subject: ${escapeHtml(purchaseSubject)}\n\n${escapeHtml(purchaseBody)}</pre><p>Wait until this second message is visibly present, then continue.</p><form method="post" action="/probe?s=${encodeURIComponent(sessionSecret)}"><button>The purchase message is visible — run bounded history probe</button></form>`);
       }
@@ -628,26 +653,36 @@ async function start() {
 
       if (url.pathname === '/revoke-without-pass' && req.method === 'POST') {
         if (!requireSession(url)) return sendHtml(res, 403, 'FinanceSensor Level C', '<p>Invalid local session.</p>');
-        evidence.result = 'STOPPED_BEFORE_CORE_PASS';
-        evidence.executionComplete = true;
-        evidence.executionFinishedAt = new Date().toISOString();
-        cleanSensitiveMemory();
-        await persist();
-        return sendHtml(res, 200, 'FinanceSensor Level C v8 stopped', `<p>The bounded proof stopped without claiming PASS. Sanitized partial evidence was written to <code>${RESULT_FILE}</code>.</p>`);
+        await bestEffortRevokeWithoutPass('STOPPED_BEFORE_CORE_PASS');
+        return sendHtml(res, 200, 'FinanceSensor Level C v8 stopped safely', `<p>No PASS was claimed. Best-effort provider revocation ran before local authority was cleared. Sanitized partial evidence was written to <code>${RESULT_FILE}</code>.</p>`);
       }
 
       return sendHtml(res, 404, 'FinanceSensor Level C', '<p>Not found.</p>');
     } catch (error) {
-      evidence.result = 'FAIL';
       evidence.failureCode = String(error?.message ?? 'UNCLASSIFIED').slice(0, 120);
-      await persist().catch(() => {});
-      return sendHtml(res, 500, 'FinanceSensor Level C — stopped safely', `<p>The probe stopped: <code>${escapeHtml(evidence.failureCode)}</code>.</p><p>No secret is shown here.</p>`);
+      await bestEffortRevokeWithoutPass('FAIL').catch(async () => {
+        cleanSensitiveMemory();
+        await persist().catch(() => {});
+      });
+      return sendHtml(res, 500, 'FinanceSensor Level C — stopped safely', `<p>The probe stopped: <code>${escapeHtml(evidence.failureCode)}</code>.</p><p>No PASS was claimed. If OAuth authority had been obtained, best-effort revocation was attempted before clearing local memory.</p>`);
     }
   });
 
   server.listen(0, HOST, () => openBrowser(`http://${HOST}:${server.address().port}/?s=${encodeURIComponent(sessionSecret)}`));
 }
 
-process.on('SIGINT', async () => { cleanSensitiveMemory(); await persist().catch(() => {}); process.exit(130); });
-process.on('SIGTERM', async () => { cleanSensitiveMemory(); await persist().catch(() => {}); process.exit(143); });
+process.on('SIGINT', async () => {
+  await bestEffortRevokeWithoutPass('INTERRUPTED').catch(async () => {
+    cleanSensitiveMemory();
+    await persist().catch(() => {});
+  });
+  process.exit(130);
+});
+process.on('SIGTERM', async () => {
+  await bestEffortRevokeWithoutPass('TERMINATED').catch(async () => {
+    cleanSensitiveMemory();
+    await persist().catch(() => {});
+  });
+  process.exit(143);
+});
 await start();
