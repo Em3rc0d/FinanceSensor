@@ -68,6 +68,9 @@ jobs:
           node --check tools/build-p1-sanitized-receipt.mjs
           node tools/validate-p1-sanitized-receipt.mjs
 
+      - name: Mobile Product Lab ECG
+        run: node tools/validate-mobile-product-lab.mjs
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -119,9 +122,12 @@ jobs:
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
           test -f mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
+          test -f mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
           test -f mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md
           test -f mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
+          test -f product/labs/mobile-bi/README.md
+          test -f product/labs/mobile-bi/index.html
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
@@ -132,6 +138,7 @@ jobs:
           test -f tools/validate-physical-campaign.mjs
           test -f tools/build-p1-sanitized-receipt.mjs
           test -f tools/validate-p1-sanitized-receipt.mjs
+          test -f tools/validate-mobile-product-lab.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -143,6 +150,7 @@ jobs:
           grep -q 'only authoritative source' graph/STATUS-AUTHORITY.md
           grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           grep -q 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION' mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
+          grep -q 'FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION' mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
           ! grep -R -q 'ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY' STATUS.md graph mk0 product research spikes tools ops --exclude='ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md'
 
@@ -152,6 +160,7 @@ jobs:
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Mobile Product Lab is synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
