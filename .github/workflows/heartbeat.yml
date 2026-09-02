@@ -2,8 +2,6 @@ name: FinanceSensor Heartbeat
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 6 * * *'
   push:
     branches:
       - main
@@ -30,7 +28,7 @@ concurrency:
 
 jobs:
   vital-signs:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, financesensor]
     timeout-minutes: 10
     steps:
       - name: Checkout
