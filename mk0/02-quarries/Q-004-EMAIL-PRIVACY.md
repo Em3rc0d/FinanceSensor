@@ -267,11 +267,16 @@ A production UI may claim a zero only when the real runtime/network/storage evid
 
 ## Machine-readable inventory
 
-- `mk0/04-architecture/PRIVACY-DATA-MATRIX.json` currently contains **19 base data classes**.
-- `mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json` adds **5 recovery/checkpoint classes**.
-- combined validator scope: **24 classes** at this snapshot.
+The deny-by-default inventory is now split by concern:
 
-Both matrices remain `DRAFT`. ADR-023 introduces a bounded deletion tombstone/receipt concept that must be reconciled into the machine-readable inventory before Q-004 can close; `deny-unclassified-persistence` remains the default law.
+- `mk0/04-architecture/PRIVACY-DATA-MATRIX.json` — **19 base data classes**;
+- `mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json` — **5 recovery/checkpoint classes**;
+- `mk0/04-architecture/PRIVACY-DELETION-MATRIX.json` — **1 deletion resurrection-barrier class**;
+- combined validator scope: **25 classes** at this snapshot.
+
+The ADR-023 deletion tombstone is now classified rather than becoming an untracked persistence exception. `tools/validate-privacy-matrix.mjs` requires it to remain minimized, bounded, non-E2EE-dependent and explicitly tied to the backup/restoration safety window.
+
+All three matrices remain `DRAFT` because classification completeness and physical behavior are separate properties. `deny-unclassified-persistence` remains the default law.
 
 ## Physical closure campaign
 
@@ -310,7 +315,9 @@ GENERALIZED_AI_TRAINING          FORBIDDEN FOR GMAIL-DERIVED DATA
 DISCONNECT_DEFAULT               RETAIN DERIVED USER HISTORY
 EXPLICIT GMAIL-DERIVED ERASE     REQUIRED UX PATH
 TENANT_DELETE                    CRYPTO-SHRED + CLOUD/WITNESS DELETE
+DELETION_TOMBSTONE               MINIMIZED + BOUNDED RESURRECTION BARRIER
 BACKUP_RETENTION_CEILING         35 DAYS
+MACHINE_READABLE_DATA_CLASSES    25 VALIDATED BY CONTRACT
 LEVEL_A_PRIVACY_HARNESS          PASS
 LEVEL_B/PRODUCTION LIFECYCLE     PHYSICAL EVIDENCE OPEN
 
