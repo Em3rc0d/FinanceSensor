@@ -14,7 +14,8 @@ permissions:
 
 jobs:
   canonical-resolver:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, financesensor]
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: spikes/canonical-resolver
@@ -31,7 +32,8 @@ jobs:
         run: npm test
 
   e2ee-sync:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, financesensor]
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: spikes/e2ee-sync
@@ -48,7 +50,8 @@ jobs:
         run: npm test
 
   physical-ingress:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, financesensor]
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: spikes/physical-ingress
