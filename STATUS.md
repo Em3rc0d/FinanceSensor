@@ -232,7 +232,7 @@ FinanceSensor completed the private→public transition on 2026-09-02. The defau
 
 The first post-public run correctly failed closed on one `OAUTH_SECRET_ENV` detector hit in `spikes/physical-ingress/test/oauth-native-contract.test.js`. Inspection proved the matched value was the explicit synthetic fixture `desktop-local-client-secret` paired with the synthetic client ID `1234567890-example.apps.googleusercontent.com`; it was not provider authority or a real credential. The auditor was then narrowed with an exact reviewed-fixture allowlist rather than weakening the detector class.
 
-The final certified reachable-ref audit, after main/jett reconciliation and public README alignment, observed:
+Subsequent full-repository audits passed after detector correction, branch reconciliation and public README alignment.
 
 ```text
 REPOSITORY VISIBILITY                       PUBLIC
@@ -241,9 +241,6 @@ CURRENT BRANCH-HEAD CI POLICY                PASS
 SELF-HOSTED ROUTES                           0
 secrets.* REFERENCES                         0
 pull_request_target                          0
-PUBLIC HISTORY TEXT BLOBS SCANNED            415
-PUBLIC HISTORY COMMITS SCANNED               431
-PUBLIC HISTORY TAGS SCANNED                  0
 BINARY BLOBS SKIPPED                         0
 OVERSIZED OBJECTS SKIPPED                    0
 PUBLIC HISTORY AUDIT                         PASS
@@ -251,6 +248,8 @@ MATCHED SECRET VALUES PRINTED                0
 PUBLIC READINESS                             PASS
 PUBLIC_CERTIFIED                             YES
 ```
+
+Exact object counters are intentionally not persisted here: editing this file creates another Git object and would make a stored counter self-referential/stale. The authoritative counts are emitted by the latest successful `FinanceSensor Public Readiness` run.
 
 The certification is fail-closed: any future matching credential class, binary historical blob, oversized historical object, self-hosted branch-head workflow route, `${{ secrets.* }}` reference or `pull_request_target` use prevents a clean public-readiness result.
 
