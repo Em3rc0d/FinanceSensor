@@ -7,11 +7,13 @@ import {
   createAuthorizationRequest,
   validateAuthorizationResponse,
   buildTokenExchangeRequest,
+  parseDesktopCredentialsJson,
   LocalOAuthCredentialProvider
 } from '../src/oauth-native-contract.js';
 import { GmailRestProvider } from '../src/gmail-rest-provider.js';
 
 const CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+const CLIENT_SECRET = 'desktop-local-client-secret';
 const REDIRECT_URI = 'https://example.invalid/oauth/callback';
 
 test('OAUTH-001 PKCE uses S256 and generates a verifier within RFC bounds', () => {
@@ -65,9 +67,10 @@ test('OAUTH-005 provider denial becomes explicit authorization error', () => {
   ), /access_denied/i);
 });
 
-test('OAUTH-006 token exchange uses PKCE and never sends a client secret', () => {
+test('OAUTH-006 Desktop DEV token exchange binds PKCE plus the Google-issued local client credential', () => {
   const request = buildTokenExchangeRequest({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     redirectUri: REDIRECT_URI,
     code: 'auth-code',
     codeVerifier: 'B'.repeat(64)
@@ -77,16 +80,17 @@ test('OAUTH-006 token exchange uses PKCE and never sends a client secret', () =>
   const params = new URLSearchParams(request.body);
   assert.equal(params.get('grant_type'), 'authorization_code');
   assert.equal(params.get('client_id'), CLIENT_ID);
+  assert.equal(params.get('client_secret'), CLIENT_SECRET);
   assert.equal(params.get('redirect_uri'), REDIRECT_URI);
   assert.equal(params.get('code'), 'auth-code');
   assert.equal(params.get('code_verifier'), 'B'.repeat(64));
-  assert.equal(params.has('client_secret'), false);
 });
 
-test('OAUTH-007 refresh credential authority remains local and yields only short-lived access tokens', async () => {
+test('OAUTH-007 refresh credential authority remains local and uses the Desktop credential only at token endpoint', async () => {
   const calls = [];
   const provider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: 'refresh-local-only',
     fetchImpl: async (url, init) => {
       calls.push({ url: String(url), body: String(init.body) });
@@ -102,14 +106,17 @@ test('OAUTH-007 refresh credential authority remains local and yields only short
   const params = new URLSearchParams(calls[0].body);
   assert.equal(params.get('refresh_token'), 'refresh-local-only');
   assert.equal(params.get('client_id'), CLIENT_ID);
-  assert.equal(params.has('client_secret'), false);
-  assert.equal(JSON.stringify(provider).includes('refresh-local-only'), false);
+  assert.equal(params.get('client_secret'), CLIENT_SECRET);
+  const serialized = JSON.stringify(provider);
+  assert.equal(serialized.includes('refresh-local-only'), false);
+  assert.equal(serialized.includes(CLIENT_SECRET), false);
 });
 
 test('OAUTH-008 repeated access-token reads reuse one unexpired refresh result', async () => {
   let refreshCalls = 0;
   const provider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: 'refresh-local-only',
     now: () => 1_000_000,
     fetchImpl: async () => {
@@ -130,6 +137,7 @@ test('OAUTH-009 explicit unauthorized signal invalidates cache but does not refr
   let refreshCalls = 0;
   const provider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: 'refresh-local-only',
     now: () => 1_000_000,
     fetchImpl: async () => {
@@ -155,6 +163,7 @@ test('OAUTH-010 concurrent token demand coalesces to one refresh request', async
   const gate = new Promise(resolve => { release = resolve; });
   const provider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: 'refresh-local-only',
     now: () => 1_000_000,
     fetchImpl: async () => {
@@ -174,13 +183,14 @@ test('OAUTH-010 concurrent token demand coalesces to one refresh request', async
   assert.equal(refreshCalls, 1);
 });
 
-test('OAUTH-011 Gmail receives only the short-lived bearer; refresh authority never crosses provider boundary', async () => {
+test('OAUTH-011 Gmail receives only the short-lived bearer; neither refresh nor Desktop client credential crosses provider boundary', async () => {
   const REFRESH = 'refresh-never-crosses';
   const ACCESS = 'short-only-crosses';
   const oauthCalls = [];
   const gmailCalls = [];
   const credentialProvider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: REFRESH,
     fetchImpl: async (url, init) => {
       oauthCalls.push({ url: String(url), body: String(init.body) });
@@ -206,8 +216,10 @@ test('OAUTH-011 Gmail receives only the short-lived bearer; refresh authority ne
   assert.equal(gmailCalls.length, 1);
   assert.equal(gmailCalls[0].authorization, `Bearer ${ACCESS}`);
   assert.equal(JSON.stringify(gmailCalls).includes(REFRESH), false);
+  assert.equal(JSON.stringify(gmailCalls).includes(CLIENT_SECRET), false);
   assert.equal(JSON.stringify(gmail.calls).includes(REFRESH), false);
   assert.equal(JSON.stringify(gmail.calls).includes(ACCESS), false);
+  assert.equal(JSON.stringify(gmail.calls).includes(CLIENT_SECRET), false);
 });
 
 test('OAUTH-012 Gmail 401 invalidates local short token without hidden retry', async () => {
@@ -215,6 +227,7 @@ test('OAUTH-012 Gmail 401 invalidates local short token without hidden retry', a
   let gmailCalls = 0;
   const credentialProvider = new LocalOAuthCredentialProvider({
     clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
     refreshToken: 'refresh-local-only',
     fetchImpl: async () => {
       refreshCalls += 1;
@@ -242,7 +255,7 @@ test('OAUTH-012 Gmail 401 invalidates local short token without hidden retry', a
   assert.equal(refreshCalls, 2);
 });
 
-test('OAUTH-013 CI bearer probe cannot become custodian of long-lived OAuth authority', () => {
+test('OAUTH-013 CI bearer probe cannot become custodian of long-lived OAuth authority or Desktop credential', () => {
   const workflow = readFileSync(new URL('../../../.github/workflows/gmail-live-spike.yml', import.meta.url), 'utf8');
   assert.match(workflow, /FINANCESENSOR_GMAIL_ACCESS_TOKEN/);
   for (const forbidden of [
@@ -250,8 +263,37 @@ test('OAUTH-013 CI bearer probe cannot become custodian of long-lived OAuth auth
     'GOOGLE_CLIENT_SECRET',
     'OAUTH_CLIENT_SECRET',
     'FINANCESENSOR_AUTHORIZATION_CODE',
-    'FINANCESENSOR_CODE_VERIFIER'
+    'FINANCESENSOR_CODE_VERIFIER',
+    'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH'
   ]) {
     assert.equal(workflow.includes(forbidden), false, `${forbidden} must remain outside CI`);
   }
+});
+
+test('OAUTH-014 Desktop credentials JSON is accepted only for the exact expected installed client', () => {
+  const raw = JSON.stringify({
+    installed: {
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: 'https://oauth2.googleapis.com/token'
+    }
+  });
+
+  assert.deepEqual(parseDesktopCredentialsJson(raw, { expectedClientId: CLIENT_ID }), {
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET
+  });
+
+  assert.throws(() => parseDesktopCredentialsJson(raw, {
+    expectedClientId: 'different.apps.googleusercontent.com'
+  }), /does not match expected/i);
+
+  assert.throws(() => parseDesktopCredentialsJson(JSON.stringify({
+    installed: { client_id: CLIENT_ID }
+  }), { expectedClientId: CLIENT_ID }), /client_secret is required/i);
+
+  assert.throws(() => parseDesktopCredentialsJson('{not-json', {
+    expectedClientId: CLIENT_ID
+  }), /invalid/i);
 });
