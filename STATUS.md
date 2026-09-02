@@ -249,7 +249,7 @@ PUBLIC READINESS                             PASS
 PUBLIC_CERTIFIED                             YES
 ```
 
-Exact object counters are deliberately not persisted in this versioned ledger. The authoritative counts and complete execution record are emitted by the latest successful `FinanceSensor Public Readiness` run.
+The versioned ledger intentionally records only stable certification properties, not Git object totals. Exact object counts are run evidence and are authoritative only in the latest successful `FinanceSensor Public Readiness` execution.
 
 The certification is fail-closed: any future matching credential class, binary historical blob, oversized historical object, self-hosted branch-head workflow route, `${{ secrets.* }}` reference or `pull_request_target` use prevents a clean public-readiness result.
 
