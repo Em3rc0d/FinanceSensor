@@ -19,37 +19,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v6 runner before packaging
+      - name: Verify controlled v7 runner before packaging
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "MAX_ANCHOR_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "MAX_ANCHOR_LIST_RESULTS = 1" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "messagesListMode: 'TARGETED_SYNTHETIC_ANCHOR_ONLY'" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "profileHistoryUsedAsStartHistoryId: false" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "syncAnchorSource: 'MESSAGE_HISTORY_ID'" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "maxResults: MAX_ANCHOR_LIST_RESULTS" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "ANCHOR_ATTEMPT_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "FULL_FETCH_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "startHistoryId: baselineHistoryId" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "anchorMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          grep -q "owned-oauth-level-c-v6.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
-          ! grep -q "baselineHistoryId = profile.historyId" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
-          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "MAX_ANCHOR_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "MAX_ANCHOR_WINDOW_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "messagesListMode: 'BOUNDED_RECENT_INBOX_WINDOW'" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "gmailSearchQueryUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "anchorLabelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "profileHistoryUsedAsStartHistoryId: false" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "syncAnchorSource: 'MESSAGE_HISTORY_ID'" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "labelIds: \['INBOX'\]" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "maxResults: MAX_ANCHOR_WINDOW_MESSAGES" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "ANCHOR_ATTEMPT_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "FULL_FETCH_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "startHistoryId: baselineHistoryId" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "anchorMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "recentUnrelatedSubjectWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          grep -q "owned-oauth-level-c-v7.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
+          ! grep -q "baselineHistoryId = profile.historyId" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          ! grep -q "subject:\\"" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
+          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v7.mjs
           ! grep -q "GOOGLE_CLIENT_SECRET" .github/workflows/gmail-live-spike.yml
           ! grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" .github/workflows/gmail-live-spike.yml
 
       - name: Build helper directory
         run: |
-          mkdir -p FinanceSensor-Level-C-v6/spikes
-          cp -R spikes/physical-ingress FinanceSensor-Level-C-v6/spikes/
-          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v6/spikes/
-          cat > FinanceSensor-Level-C-v6/START-HERE.txt <<'EOF'
-          FinanceSensor Gmail Level C v6 — provider-conformant message-history anchor proof
+          mkdir -p FinanceSensor-Level-C-v7/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C-v7/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v7/spikes/
+          cat > FinanceSensor-Level-C-v7/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C v7 — search-index-independent message-history anchor proof
 
           PRECONDITION
           Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on this computer.
@@ -60,25 +65,27 @@ jobs:
           3. Authorize only the configured Gmail test account.
           4. FinanceSensor shows the exact authorized Gmail address locally.
           5. Send the FIRST harmless synthetic anchor email shown on screen to that exact address.
-             Prefer a different sender account. Wait until the anchor is visibly present.
-          6. Click "establish supported sync anchor". FinanceSensor performs a targeted
-             messages.list search with maxResults=1 and then METADATA Subject-only verification.
-             At most two anchor lookups are permitted in the whole run.
+             Prefer a different sender account. Wait until the anchor is visibly present in INBOX.
+          6. Click "establish supported sync anchor". FinanceSensor does NOT use Gmail Search q.
+             It lists at most 5 recent INBOX message IDs and reads Subject metadata locally only,
+             until the exact synthetic anchor is identified. At most two anchor attempts are allowed.
              The sync baseline is the anchor MESSAGE historyId, not /profile.historyId.
           7. Send the SECOND synthetic purchase email shown on screen. Wait until it is visible.
           8. Run the bounded history probe. One retry is allowed for propagation.
           9. Revoke access and verify the old refresh authority is denied.
           10. Upload ONLY financesensor-level-c-result.json to ChatGPT.
 
-          v6 sync law:
+          v7 sync law:
           /profile identifies the authorized mailbox but is NOT used as startHistoryId.
+          Gmail Search indexing is not used as a bootstrap dependency.
           history.list starts from a recent MESSAGE historyId, matching Gmail partial-sync guidance.
 
           Privacy/request boundaries:
           - no historical mailbox sweep
-          - max 2 targeted synthetic-anchor list searches, maxResults=1 each
-          - anchor list query contains only a random synthetic marker
-          - anchor verification reads Subject metadata only; never body
+          - no Gmail Search q for anchor acquisition
+          - max 2 recent-INBOX list calls, maxResults=5 each
+          - max 5 recent Subject metadata reads per anchor attempt; kept in local memory only
+          - unrelated recent Subjects are not written to evidence
           - max 5 post-anchor changed message IDs inspected per history-probe attempt
           - max 1 FULL fetch in the entire run
           - max 2 bounded history-probe attempts
@@ -93,7 +100,7 @@ jobs:
       - name: Upload helper
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceSensor-Level-C-v6-Windows
-          path: FinanceSensor-Level-C-v6
+          name: FinanceSensor-Level-C-v7-Windows
+          path: FinanceSensor-Level-C-v7
           if-no-files-found: error
           retention-days: 7
