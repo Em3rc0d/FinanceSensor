@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "nodeId": "Q-003",
+  "nodeStateRequired": "ACTIVE",
+  "buildReadyRequired": false,
+  "asOf": "2026-09-02",
+  "proofBoundary": {
+    "levelCv7": "PHYSICAL_PASS",
+    "levelCv8": "HARNESS_READY_PHYSICAL_OPEN",
+    "productionVerification": "OPEN",
+    "securityAssessmentProviderDetermination": "OPEN"
+  },
+  "artifacts": [
+    {
+      "path": "mk0/02-quarries/Q-003-GMAIL-POLICY.md",
+      "role": "authoritative quarry contract"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md",
+      "role": "OAuth authority boundary"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md",
+      "role": "message-derived sync anchor"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-019-GMAIL-BOOTSTRAP-WITHOUT-SEARCH-INDEX.md",
+      "role": "search-index-independent bootstrap"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md",
+      "role": "restricted-data server boundary"
+    },
+    {
+      "path": "mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md",
+      "role": "public production verification plan"
+    },
+    {
+      "path": "spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs",
+      "role": "next controlled physical proof harness"
+    },
+    {
+      "path": "tools/validate-level-c-v8.mjs",
+      "role": "v8 static safety guard"
+    },
+    {
+      "path": "tools/validate-gmail-production-policy.mjs",
+      "role": "production-policy fail-closed guard"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md",
+      "proof": "REAL_PROVIDER_REACHABILITY_PASS",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md",
+      "proof": "OAUTH_ADAPTER_CONTRACT_PASS",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md",
+      "proof": "DESKTOP_DEV_CREDENTIAL_BEHAVIOR_OBSERVED",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md",
+      "proof": "LEVEL_C_V7_PHYSICAL_PASS",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-PRODUCTION-POLICY-REFRESH-2026-09-02.md",
+      "proof": "PRODUCTION_POLICY_PATH_NARROWED",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-LEVEL-C-V8-HARNESS-READY-2026-09-02.md",
+      "proof": "LEVEL_C_V8_HARNESS_READY_PHYSICAL_OPEN",
+      "closesQ003": false
+    }
+  ],
+  "openPhysicalGates": [
+    "SUCCESSFUL_PRE_REVOKE_REFRESH",
+    "REFRESHED_BEARER_GMAIL_USE",
+    "REQUEST_RESPONSE_BODY_BYTE_EVIDENCE",
+    "PER_ENDPOINT_CLASS_LATENCY_EVIDENCE",
+    "PRODUCTION_PLATFORM_PROTECTED_CREDENTIAL_HANDLING",
+    "PRODUCTION_DISCONNECT_DELETION_EVIDENCE"
+  ],
+  "openProviderGates": [
+    "GOOGLE_RESTRICTED_SCOPE_VERIFICATION",
+    "GOOGLE_SECURITY_ASSESSMENT_APPLICABILITY_DETERMINATION",
+    "CASA_OR_APPROVED_ASSESSMENT_IF_REQUIRED"
+  ],
+  "forbiddenPromotions": [
+    "LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED",
+    "LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS",
+    "PACKAGE_DRAFTED=>GOOGLE_APPROVED",
+    "OPAQUE_E2EE_RELAY=>SECURITY_ASSESSMENT_EXEMPT"
+  ]
+}
