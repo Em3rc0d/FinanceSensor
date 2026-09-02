@@ -101,7 +101,7 @@ void main() {
 
     expect(find.text('Oportunidad'), findsWidgets);
     expect(find.text('~S/75'), findsWidgets);
-    expect(find.text('dato sintético'), findsOneWidget);
+    expect(find.text('impacto potencial · dato sintético'), findsOneWidget);
     expect(find.text('Crear un límite'), findsOneWidget);
 
     for (final Finder critical in <Finder>[
@@ -174,7 +174,7 @@ void main() {
     await tester.tap(find.text('Oportunidad'));
     await tester.pumpAndSettle();
     expect(find.text('~S/75'), findsWidgets);
-    expect(find.text('dato sintético'), findsOneWidget);
+    expect(find.text('impacto potencial · dato sintético'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
