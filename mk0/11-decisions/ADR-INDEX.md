@@ -41,9 +41,12 @@ Supersedes / superseded by
 | ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
 | ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PRODUCTION WITNESS DECISION REQUIRED | Q-005 physical anchor/witness evidence |
 | ADR-016 | Opaque independent witness freshness | SPIKE-ACCEPTED / PRODUCTION WITNESS POLICY OPEN | Q-005 witness deployment/physical evidence |
-| ADR-017 | Gmail mobile OAuth boundary | PROPOSED / CONTRACT TESTED / CONTROLLED AUTHORIZATION REQUIRED | Q-003/Q-004 controlled OAuth + mobile credential evidence |
+| ADR-017 | Gmail mobile OAuth boundary | SPIKE-ACCEPTED / DESKTOP LEVEL-C PHYSICAL PASS / MOBILE PRODUCTION OPEN | Q-003/Q-004 mobile credential evidence |
+| ADR-018 | Gmail partial-sync anchor provenance | ACCEPTED FOR LEVEL-C HARNESS / PRODUCTION INITIAL-SYNC OPEN | Q-003 production onboarding |
+| ADR-019 | Gmail bootstrap without Search-index dependency | ACCEPTED FOR LEVEL-C HARNESS / PRODUCTION INITIAL-SYNC OPEN | Q-003 production onboarding |
+| ADR-020 | Gmail restricted-data server boundary | ACCEPTED FOR MK0 ARCHITECTURE / GOOGLE APPLICABILITY DETERMINATION REQUIRED | Q-003/Q-004 production verification |
 
-**Next available ADR:** `ADR-018`.
+**Next available ADR:** `ADR-021`.
 
 ## ADR-014 evidence boundary
 
@@ -114,7 +117,7 @@ Evidence:
 
 ## ADR-017 evidence boundary
 
-ADR-017 freezes the current **Gmail authorization ownership boundary**, not a completed production OAuth deployment.
+ADR-017 freezes the current **Gmail authorization ownership boundary**, not a completed production mobile OAuth deployment.
 
 ```text
 MINIMUM SCOPE CANDIDATE            gmail.readonly
@@ -125,16 +128,58 @@ SHORT-LIVED TOKEN PROVIDER         CONTRACT TESTED
 OOB COPY/PASTE                     REJECTED
 AUTO ATTACHMENT BYTE DOWNLOAD      REJECTED
 REAL PROVIDER REACHABILITY         PASS
-FINANCESENSOR-OWNED OAUTH CONSENT  NOT YET EXECUTED
+DESKTOP DEV LEVEL-C CONSENT        PHYSICAL PASS
+DESKTOP DEV TOKEN EXCHANGE         PHYSICAL PASS
+PROVIDER REVOCATION                PHYSICAL PASS
+PRODUCTION MOBILE CREDENTIAL       OPEN
 ```
 
 Evidence:
 
 - `ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
+- `../10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
 - `../10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
 - `../10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md`
 - `../../spikes/physical-ingress/test/gmail-rest-provider.test.js`
 - `../../spikes/physical-ingress/test/real-provider-shape.test.js`
+
+## ADR-018 / ADR-019 evidence boundary
+
+These ADRs freeze the **controlled Level-C synchronization bootstrap**, not production onboarding.
+
+```text
+/profile.historyId AS BOOTSTRAP ANCHOR       REJECTED
+MESSAGE.historyId PROVENANCE                 REQUIRED
+IMMEDIATE Gmail Search q DEPENDENCY          REJECTED
+BOUNDED RECENT-INBOX SUBJECT WINDOW          LEVEL-C ACCEPTED
+HISTORICAL MAILBOX SWEEP                     REJECTED FOR HARNESS
+LEVEL-C HARNESS                              != PRODUCTION INITIAL-SYNC UX
+```
+
+Evidence:
+
+- `ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md`
+- `ADR-019-GMAIL-BOOTSTRAP-WITHOUT-SEARCH-INDEX.md`
+- `../10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
+
+## ADR-020 evidence boundary
+
+ADR-020 freezes the **server capability boundary** for Gmail restricted data while refusing to invent a provider exemption.
+
+```text
+GMAIL OAUTH AUTHORITY ON SERVER              FORBIDDEN
+SERVER-SIDE Gmail API CALLS                  FORBIDDEN
+RAW Gmail PROCESSING ON SERVER               FORBIDDEN
+GENERALIZED AI TRAINING FROM Gmail DATA      FORBIDDEN
+E2EE OPAQUE RELAY                            ALLOWED BY ARCHITECTURE
+E2EE RELAY => GOOGLE ASSESSMENT EXEMPT       NOT PROVEN
+GOOGLE APPLICABILITY DETERMINATION            REQUIRED BEFORE PUBLIC LAUNCH
+```
+
+Evidence/plan:
+
+- `ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
+- `../07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md`
 
 ## Decision discipline
 
