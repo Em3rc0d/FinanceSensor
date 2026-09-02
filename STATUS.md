@@ -226,27 +226,69 @@ BUILD_READY  false
 
 ## Public-readiness state
 
-Current branch tree is sanitized for normal public-source operation: active CI no longer targets the user's workstation, common secret/local artifacts are ignored, real-provider execution remains outside CI, and security boundaries are documented.
+The pre-publication surface is now closed without promoting product gates or merging MK0 into `main`.
 
-One separate property must not be conflated with current-tree cleanliness: a **whole Git history audit** is required before declaring historical-secret exposure impossible. Deleting or ignoring a file in HEAD does not remove it from earlier commits.
+`main` contains the minimum default-branch publication controls required before exposure:
+
+- root `.gitignore`;
+- root `SECURITY.md`;
+- a public trust-boundary section in `README.md`;
+- `tools/audit-public-history.mjs`;
+- `.github/workflows/public-readiness.yml`.
+
+The public-readiness workflow listens to GitHub's `public` repository event from the default branch. On the private→public transition it explicitly fetches every branch and tag, checks all current branch-head workflow definitions, and scans every reachable text blob plus commit/tag object for credential classes. Binary or oversized objects make the audit `INCOMPLETE`; they cannot silently pass.
+
+Manual pre-publication review also established:
 
 ```text
-CURRENT TREE PUBLIC-SAFETY CONTROLS    PASS
-ACTIVE PUBLIC CI ROUTING               PASS BY CONFIGURATION
-WHOLE-HISTORY SECRET CERTIFICATION     OPEN
-REPOSITORY VISIBILITY                  PRIVATE
+KNOWN REAL SECRET LEAK                     NOT FOUND
+KNOWN REAL GMAIL LEAK                      NOT FOUND
+KNOWN REAL FINANCIAL PLAINTEXT LEAK        NOT FOUND
+WORKFLOW_DISPATCH RUNS                     0
+REAL GMAIL LIVE WORKFLOW EXECUTIONS        0
+OAUTH NEGATIVE PROBES                      SYNTHETIC ONLY
+OLDEST ACTIONS RUNNER INSPECTED            GITHUB-HOSTED
+SENSITIVE ACTION LOGS INSPECTED            PASS
+CURRENT BRANCH-HEAD SELF-HOSTED ROUTES     0
+CURRENT BRANCH-HEAD secrets.* REFERENCES   0
+```
+
+The automated whole-history certification still cannot execute while the repository is private because the private GitHub-hosted Actions quota is exhausted. This is a runtime/billing condition, not a code failure. The gate is therefore armed to execute automatically when the repository becomes public.
+
+```text
+DEFAULT-BRANCH PUBLIC HARDENING             PASS
+CURRENT TREE PUBLIC-SAFETY CONTROLS         PASS
+ACTIVE PUBLIC CI ROUTING                    PASS BY CONFIGURATION
+SENSITIVE HISTORICAL SURFACE REVIEW         PASS
+PUBLIC TRANSITION AUTO-AUDIT                ARMED
+WHOLE-HISTORY AUTOMATED CERTIFICATION       PENDING PUBLIC EVENT
+PRE_PUBLICATION_READY                       YES
+PUBLIC_CERTIFIED                            NO UNTIL AUTO-AUDIT PASS
+REPOSITORY VISIBILITY                       PRIVATE
+```
+
+Law:
+
+```text
+PRE_PUBLICATION_READY != PUBLIC_CERTIFIED
+QUOTA_BLOCKED AUDIT != AUDIT FAILURE
+PUBLIC EVENT PASS => PUBLIC_CERTIFIED
 ```
 
 ## Repository governance
 
 ```text
-main protected                  NO
-required status checks          NONE
-branch protection enforcement   OFF
-PR #1                           DRAFT / DO NOT MERGE
-active CI routing               ubuntu-latest
-real Gmail execution            LOCAL EDGE ONLY
+main default-branch hardening        PASS
+main protected                       NO — private-plan limitation
+required status checks               NONE — arm after public audit
+branch protection enforcement        OFF — arm after public audit
+PR #1                                DRAFT / DO NOT MERGE
+jett behind main                     0 after reconciliation
+active CI routing                    ubuntu-latest
+real Gmail execution                 LOCAL EDGE ONLY
 ```
+
+GitHub branch protection/rulesets are deliberately not represented as closed while the repository remains private and the current plan rejects that configuration. They are a post-visibility governance action, not a reason to merge MK0 early.
 
 `OPS-001` remains a dependency of `G-MK0`.
 
