@@ -7,6 +7,7 @@
 **MK0 is in specification/research. Full implementation is intentionally blocked until the P0 quarries and feasibility spikes close.**
 
 - [Project status](STATUS.md)
+- [Security policy](SECURITY.md)
 - [Product thesis](product/PRODUCT-THESIS.md)
 - [Product invariants](product/PRODUCT-INVARIANTS.md)
 - [Core data model](mk0/05-data-model/CORE-DATA-MODEL.md)
@@ -15,6 +16,20 @@
 - [MK0 plan](mk0/07-plan/MK0-PLAN.md)
 - [Active quarries](mk0/02-quarries/README.md)
 - [Competitive archaeology](research/MINING-001-COMPETITIVE-ARCHAEOLOGY.md)
+
+## Public repository trust boundary
+
+FinanceSensor is structured so that the repository can be public without becoming the trusted financial runtime.
+
+```text
+PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
+GITHUB_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
+CI_FIXTURES != REAL_FINANCIAL_DATA
+```
+
+Active CI uses ephemeral GitHub-hosted runners with `contents: read`. Real Gmail consent, OAuth credentials/tokens, real Gmail content and real financial plaintext remain **LOCAL EDGE ONLY** and are forbidden from CI/repository custody.
+
+The root `.gitignore`, [`SECURITY.md`](SECURITY.md), CI routing validator and public-exposure guard provide defense-in-depth. OAuth client IDs are public identifiers; OAuth client secrets, authorization codes and tokens are confidential authority.
 
 ## Product thesis
 
@@ -52,6 +67,7 @@ The cloud coordinates. Devices observe and reason. The tenant owns the financial
 ```text
 FinanceSensor/
 ├── README.md
+├── SECURITY.md
 ├── STATUS.md
 ├── product/
 │   ├── PRODUCT-THESIS.md
