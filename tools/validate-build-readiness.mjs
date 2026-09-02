@@ -5,11 +5,13 @@ const ledgerPath = 'graph/closure-ledger.json';
 const campaignPath = 'graph/physical-closure-campaign.json';
 const releasePath = 'mk0/12-release/RELEASE-GATES.md';
 const tenancyAdrPath = 'mk0/11-decisions/ADR-001-TENANT-FINANCIAL-OWNERSHIP-BOUNDARY.md';
+const scopePath = 'product/MK0-SCOPE-FREEZE.md';
+const implementationPlanPath = 'mk0/07-plan/IMPLEMENTATION-SLICES.md';
 
 const failures = [];
 const fail = message => failures.push(message);
 
-for (const path of [manifestPath, ledgerPath, campaignPath, releasePath, tenancyAdrPath]) {
+for (const path of [manifestPath, ledgerPath, campaignPath, releasePath, tenancyAdrPath, scopePath, implementationPlanPath]) {
   if (!fs.existsSync(path)) fail(`missing ${path}`);
 }
 
@@ -19,6 +21,8 @@ if (!failures.length) {
   const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
   const release = fs.readFileSync(releasePath, 'utf8');
   const tenancyAdr = fs.readFileSync(tenancyAdrPath, 'utf8');
+  const scope = fs.readFileSync(scopePath, 'utf8');
+  const implementationPlan = fs.readFileSync(implementationPlanPath, 'utf8');
 
   if (manifest.schemaVersion !== 1) fail('build readiness schemaVersion must be 1');
   if (manifest.project !== 'FinanceSensor' || manifest.mk !== 'MK0') fail('build readiness identity mismatch');
@@ -75,6 +79,28 @@ if (!failures.length) {
     if (!tenancyAdr.includes(marker)) fail(`ADR-001 missing tenancy marker: ${marker}`);
   }
 
+  if (byId.get('MK0_SCOPE')?.state !== 'PASS') fail('MK0_SCOPE must be PASS after scope freeze');
+  for (const marker of [
+    'MK0_SCOPE = FROZEN',
+    'PRIMARY PRODUCT                  MOBILE APPLICATION',
+    'FIRST PHYSICAL TARGET           ANDROID',
+    'NEW_UNJUSTIFIED_PRODUCT_SURFACE = FORBIDDEN',
+    'SCOPE_FROZEN != BUILD_READY'
+  ]) {
+    if (!scope.includes(marker)) fail(`MK0 scope freeze missing marker: ${marker}`);
+  }
+
+  if (byId.get('IMPLEMENTATION_PLAN')?.state !== 'PASS') fail('IMPLEMENTATION_PLAN must be PASS after slice freeze');
+  for (const marker of [
+    'IMPLEMENTATION_PLAN = PASS',
+    'BUILD_SEQUENCE       = B0 → B11',
+    'B3 — Gmail mobile OAuth custody',
+    'B7 — Control plane and tenant RLS',
+    'B11 — Physical closure and gate reconciliation'
+  ]) {
+    if (!implementationPlan.includes(marker)) fail(`implementation plan missing marker: ${marker}`);
+  }
+
   if (byId.get('FINANCIAL_MODEL')?.state !== 'PASS') fail('FINANCIAL_MODEL must be PASS');
   if (byId.get('EVENT_INVARIANTS')?.state !== 'PASS') fail('EVENT_INVARIANTS must be PASS');
 
@@ -93,10 +119,13 @@ if (!failures.length) {
   if (!campaign.phases?.some(phase => phase.status === 'PHYSICAL_EVIDENCE_REQUIRED')) fail('physical campaign must retain physical blockers');
 
   const prePhysical = new Set(manifest.prePhysicalClosureTargets ?? []);
-  for (const id of ['MK0_SCOPE', 'THREAT_MODEL', 'SIGNATURE_WIREFRAMES', 'NO_SCROLL_CONTRACT', 'IMPLEMENTATION_PLAN']) {
+  for (const id of ['THREAT_MODEL', 'SIGNATURE_WIREFRAMES', 'NO_SCROLL_CONTRACT']) {
     if (!prePhysical.has(id)) fail(`prePhysicalClosureTargets missing ${id}`);
   }
-  if (prePhysical.has('TENANCY_MODEL')) fail('TENANCY_MODEL cannot remain a pre-physical documentary blocker after ADR-001 freeze');
+  for (const id of ['TENANCY_MODEL', 'MK0_SCOPE', 'IMPLEMENTATION_PLAN']) {
+    if (prePhysical.has(id)) fail(`${id} cannot remain a pre-physical blocker after freeze`);
+  }
+  if (prePhysical.size !== 3) fail(`expected exactly 3 pre-physical blockers, got ${prePhysical.size}`);
 
   const physical = new Set(manifest.physicalClosureTargets ?? []);
   for (const id of ['P0_QUARRIES', 'EDGE_CLOUD_BOUNDARY', 'PRIVACY_MODEL', 'GMAIL_FEASIBILITY', 'ANDROID_FEASIBILITY', 'MULTI_DEVICE_DESIGN']) {
@@ -124,6 +153,8 @@ console.log(`STATE_COUNTS=${JSON.stringify(counts)}`);
 console.log(`PRE_PHYSICAL_TARGETS=${manifest.prePhysicalClosureTargets.length}`);
 console.log(`PHYSICAL_TARGETS=${manifest.physicalClosureTargets.length}`);
 console.log('TENANCY_MODEL=PASS');
+console.log('MK0_SCOPE=PASS');
+console.log('IMPLEMENTATION_PLAN=PASS');
 console.log('IMPLEMENTATION_BASELINE=FROZEN');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=CLOSURE_REQUIRED');
