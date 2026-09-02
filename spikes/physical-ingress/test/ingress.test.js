@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { SyntheticMailProvider } from '../src/provider.js';
 import { LocalEncryptedVault, DeviceCredentialStore } from '../src/vault.js';
 import { PrivacyTelemetrySink, assertNoSensitiveLiterals } from '../src/privacy.js';
-import { FinancialIngressEngine } from '../src/ingress.js';
+import { FinancialIngressEngine, isLikelyFinancialMetadata } from '../src/ingress.js';
 
 const NOW = new Date('2026-09-01T14:00:00Z');
 
@@ -49,6 +49,11 @@ test('METADATA_FIRST: every considered message is inspected as metadata before F
     const fullIndex = provider.calls.findIndex(c => c === call);
     assert.ok(metadataIndex >= 0 && metadataIndex < fullIndex);
   }
+});
+
+test('METADATA_HEADER_CASE: RFC-style header names are matched case-insensitively', () => {
+  assert.equal(isLikelyFinancialMetadata({ subject:'FinanceSensor Test Purchase', from:'tester@example.com' }), true);
+  assert.equal(isLikelyFinancialMetadata({ SUBJECT:'Compra realizada', FROM:'alerts@example.com' }), true);
 });
 
 test('FULL_ONLY_FOR_CANDIDATES: non-financial newsletter never receives FULL retrieval', async () => {
