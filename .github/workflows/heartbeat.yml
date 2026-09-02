@@ -51,6 +51,11 @@ jobs:
         working-directory: spikes/physical-ingress
         run: npm test
 
+      - name: Level C v8 static safety ECG
+        run: |
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          node tools/validate-level-c-v8.mjs
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -95,6 +100,8 @@ jobs:
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
+          test -f spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
+          test -f tools/validate-level-c-v8.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -115,6 +122,7 @@ jobs:
           echo 'Canonical financial invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Peripheral E2EE, recovery and parasympathetic scheduler invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Physical ingress and privacy-boundary invariants are responding.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Level C v8 syntax + static safety invariants are responding; this does not claim physical Gmail execution.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Closure graph is structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Artifact status declarations agree with the authoritative ledger.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Quarry Markdown states match the closure ledger.' >> "$GITHUB_STEP_SUMMARY"
