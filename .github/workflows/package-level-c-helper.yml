@@ -8,12 +8,12 @@ permissions:
 
 jobs:
   package:
-    runs-on: [self-hosted, linux, x64, financesensor]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v8 runner before packaging
+      - name: Verify controlled v8 helper before packaging
         run: |
           node --check spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
           grep -q "schemaVersion: 8" spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
@@ -60,8 +60,8 @@ jobs:
           FinanceSensor Gmail Level C v8 — bounded Gmail proof + refresh + network evidence
 
           PRECONDITION
-          Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on the controlled edge computer.
-          Never copy it into this self-hosted CI runner.
+          Keep the OAuth Desktop credentials JSON on the controlled edge computer.
+          Never upload it to GitHub Actions or commit it to the repository.
 
           This workflow packages the already-audited helper only. Gmail authorization and real-provider execution remain LOCAL EDGE ONLY.
 
@@ -84,7 +84,7 @@ jobs:
             PKCE verifier, credential path and client secret are not written to evidence
           - post-authorization failure paths attempt provider revoke before clearing local authority
 
-          SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
+          GITHUB_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
           EOF
 
       - name: Upload helper
