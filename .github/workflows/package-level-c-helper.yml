@@ -19,29 +19,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v4 runner before packaging
+      - name: Verify controlled v5 runner before packaging
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "loopbackRootRedirect: true" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "syntheticMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "levelCPass = coreProbePassed()" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
-          grep -q "owned-oauth-level-c-v4.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
-          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v4.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "profileBeforeHistoryGate: true" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "authorizedMailboxWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "historySelectionPath === 'FILTERED_MESSAGE_ADDED'" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "LEVEL_C_EXECUTION_COMPLETE_WITH_GAPS" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
+          grep -q "owned-oauth-level-c-v5.mjs" spikes/physical-ingress/live/RUN-FINANCESENSOR-LEVEL-C.cmd
+          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v5.mjs
           ! grep -q "GOOGLE_CLIENT_SECRET" .github/workflows/gmail-live-spike.yml
           ! grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" .github/workflows/gmail-live-spike.yml
 
       - name: Build helper directory
         run: |
-          mkdir -p FinanceSensor-Level-C-v4/spikes
-          cp -R spikes/physical-ingress FinanceSensor-Level-C-v4/spikes/
-          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v4/spikes/
-          cat > FinanceSensor-Level-C-v4/START-HERE.txt <<'EOF'
-          FinanceSensor Gmail Level C v4 — strict controlled DEV proof
+          mkdir -p FinanceSensor-Level-C-v5/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C-v5/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v5/spikes/
+          cat > FinanceSensor-Level-C-v5/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C v5 — mailbox-history diagnostic proof
 
           PRECONDITION
           Keep the OAuth Desktop credentials JSON for "FinanceSensor DEV Level-C" on this computer.
@@ -50,30 +51,35 @@ jobs:
           1. Open: spikes\physical-ingress\live\RUN-FINANCESENSOR-LEVEL-C.cmd
           2. Select the Google OAuth Desktop credentials JSON in the Windows picker.
           3. Authorize only the configured Gmail test account.
-          4. After authorization, send exactly the harmless synthetic message shown locally.
-             Its subject contains a fresh proof marker generated only for this run.
-          5. Run the bounded history-only probe. One retry is allowed if Gmail propagation is delayed.
-          6. Revoke access and verify the old refresh authority is denied.
-          7. Upload ONLY financesensor-level-c-result.json to ChatGPT.
+          4. FinanceSensor shows the exact authorized Gmail address locally. That address is never written to result evidence.
+          5. Send the exact harmless synthetic message shown on screen TO that exact address. Prefer a different sender account for a clean inbound event.
+          6. Wait until the message is visibly present in that inbox, then run the bounded probe.
+          7. Revoke access and verify the old refresh authority is denied.
+          8. Upload ONLY financesensor-level-c-result.json to ChatGPT.
 
-          v4 proof law:
-          EXECUTION_COMPLETE does not imply LEVEL_C_PASS.
-          LEVEL_C_PASS requires OAuth + history + metadata + exact synthetic marker + production
-          metadata gate + one FULL + extraction + replay + provider revocation + denied refresh.
+          v5 diagnostic law:
+          - profile historyId is checked before history.list
+          - unchanged profile historyId -> no history request is spent
+          - advanced historyId -> filtered messageAdded history is queried
+          - if filtered history is unexpectedly empty, one unfiltered diagnostic history request may record aggregate event-family counts only
+          - diagnostic fallback cannot by itself produce LEVEL_C_PASS
+
+          LEVEL_C_PASS requires the normal FILTERED_MESSAGE_ADDED path plus metadata marker,
+          production metadata gate, one FULL, extraction, replay, revocation and denied refresh.
 
           Privacy/request boundaries:
           - no historical messages.list sweep
-          - max 5 post-authorization changed messages per attempt
+          - max 5 changed message IDs inspected per attempt
           - max 1 FULL fetch
           - max 2 bounded probe attempts
-          - proof marker is not written to evidence
-          - credential path/content, tokens, codes, PKCE verifier and client secret are not written to evidence
+          - Gmail address, proof marker, message IDs, content, tokens, codes, PKCE verifier,
+            credential path and client secret are not written to evidence
           EOF
 
       - name: Upload helper
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceSensor-Level-C-v4-Windows
-          path: FinanceSensor-Level-C-v4
+          name: FinanceSensor-Level-C-v5-Windows
+          path: FinanceSensor-Level-C-v5
           if-no-files-found: error
           retention-days: 7
