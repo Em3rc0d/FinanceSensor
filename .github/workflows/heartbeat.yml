@@ -60,6 +60,12 @@ jobs:
           node --check spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
           node tools/validate-level-c-v8.mjs
 
+      - name: Physical campaign contract ECG
+        run: |
+          node --check tools/physical-evidence-sanitizer.mjs
+          node tools/validate-physical-evidence-sanitizer.mjs
+          node tools/validate-physical-campaign.mjs
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -103,6 +109,7 @@ jobs:
           test -f graph/STATUS-AUTHORITY.md
           test -f graph/traceability-matrix.json
           test -f graph/traceability-recovery.json
+          test -f graph/physical-closure-campaign.json
           test -f graph/CLOSURE-RECEIPT-TEMPLATE.md
           test -f mk0/04-architecture/PRIVACY-DATA-MATRIX.json
           test -f mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json
@@ -111,12 +118,16 @@ jobs:
           test -f mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           test -f mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md
+          test -f mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
           test -f spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs
           test -f tools/validate-level-c-v8.mjs
+          test -f tools/physical-evidence-sanitizer.mjs
+          test -f tools/validate-physical-evidence-sanitizer.mjs
+          test -f tools/validate-physical-campaign.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -136,6 +147,7 @@ jobs:
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Physical campaign CI verifies only manifest/sanitizer contracts; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
