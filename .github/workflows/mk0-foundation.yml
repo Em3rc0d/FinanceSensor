@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   foundation:
-    runs-on: [self-hosted, linux, x64, financesensor]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -38,4 +38,4 @@ jobs:
       - name: Foundation summary
         run: |
           echo 'FINANCESENSOR_MK0_FOUNDATION=PASS' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Manual diagnostic suite only. Automatic project ECG is FinanceSensor Heartbeat.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public-safe diagnostic suite on an ephemeral GitHub-hosted runner. Real Gmail execution remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
