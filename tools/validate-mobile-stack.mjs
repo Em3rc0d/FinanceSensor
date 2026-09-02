@@ -2,6 +2,8 @@ import fs from 'node:fs';
 
 const files = {
   stack: 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md',
+  storage: 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md',
+  android: 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md',
   oauth: 'mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md',
   crypto: 'mk0/11-decisions/ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md',
   surface: 'mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md'
@@ -12,6 +14,8 @@ for (const path of Object.values(files)) if (!fs.existsSync(path)) failures.push
 
 if (!failures.length) {
   const stack = fs.readFileSync(files.stack, 'utf8');
+  const storage = fs.readFileSync(files.storage, 'utf8');
+  const android = fs.readFileSync(files.android, 'utf8');
   const oauth = fs.readFileSync(files.oauth, 'utf8');
   const crypto = fs.readFileSync(files.crypto, 'utf8');
   const surface = fs.readFileSync(files.surface, 'utf8');
@@ -22,12 +26,31 @@ if (!failures.length) {
     'Apple   → Swift',
     'Flutter is not the credential vault',
     'EXPORTABLE_PRIVATE_KEY_FALLBACK = FORBIDDEN',
+    'PLAINTEXT_SQLITE_FALLBACK = FORBIDDEN',
     'FLUTTER_UI != SECURITY_BOUNDARY',
     'PLUGIN_CONVENIENCE < PLATFORM_TRUST_BOUNDARY',
     'FLUTTER_SUPPORT_MATRIX != FINANCESENSOR_SECURITY_BASELINE',
-    'ADR-013 remains open'
+    'FINANCESENSOR minSdk            31',
+    'PRODUCTION ENCRYPTION           SQLCipher 4.x family'
   ];
   for (const value of stackRequired) if (!stack.includes(value)) failures.push(`ADR-009 missing ${value}`);
+
+  const storageRequired = [
+    'PRODUCTION DATABASE ENCRYPTION  SQLCipher 4.x family',
+    'DATABASE KEY                    random 256-bit DEK',
+    'DEK IN SOURCE / DART CONFIG     FORBIDDEN',
+    'PLAINTEXT PRODUCTION DB         FORBIDDEN',
+    'SQLCIPHER_FAILURE => FAIL_CLOSED'
+  ];
+  for (const value of storageRequired) if (!storage.includes(value)) failures.push(`ADR-006 missing storage boundary marker: ${value}`);
+
+  const androidRequired = [
+    'ANDROID MIN SDK                  31',
+    '2026 RELEASE TARGET SDK FLOOR    36',
+    'SOFTWARE/EXPORTABLE AUTHORITY    forbidden as silent production fallback',
+    'EMULATOR_PASS != PHYSICAL_KEY_PROOF'
+  ];
+  for (const value of androidRequired) if (!android.includes(value)) failures.push(`ADR-013 missing Android baseline marker: ${value}`);
 
   const oauthRequired = [
     '### 4. Production mobile boundary',
@@ -44,6 +67,9 @@ if (!failures.length) {
   if (/refresh token.*Dart/i.test(stack) && !stack.includes('MUST NOT become durable custody')) {
     failures.push('ADR-009 may have moved refresh-token custody into Dart');
   }
+  if (/minSdk\s*[<:=]+\s*(?:2[0-9]|30)\b/i.test(stack)) {
+    failures.push('ADR-009 appears to allow an Android minimum below API 31');
+  }
 }
 
 if (failures.length) {
@@ -56,8 +82,12 @@ console.log('FINANCESENSOR_MOBILE_STACK_CONTRACT=PASS');
 console.log('MOBILE_UI_STACK=FLUTTER_DART');
 console.log('ANDROID_SECURITY_BRIDGE=KOTLIN');
 console.log('IOS_SECURITY_BRIDGE=SWIFT');
+console.log('LOCAL_DB=SQLITE_SQLCIPHER_4X');
+console.log('DATABASE_DEK_CUSTODY_IN_DART=FORBIDDEN');
+console.log('ANDROID_MIN_SDK=31');
+console.log('ANDROID_2026_TARGET_SDK_FLOOR=36');
 console.log('LONG_LIVED_SECRET_CUSTODY_IN_DART=FORBIDDEN');
 console.log('EXPORTABLE_PRIVATE_KEY_FALLBACK=FORBIDDEN');
-console.log('ANDROID_BASELINE=OPEN_UNDER_ADR_013');
 console.log('MOBILE_OAUTH_PHYSICAL_PROVEN=NO');
 console.log('MOBILE_CRYPTO_PHYSICAL_PROVEN=NO');
+console.log('LOCAL_STORAGE_PHYSICAL_PROVEN=NO');
