@@ -21,9 +21,9 @@
     },
     {
       "id": "MK0_SCOPE",
-      "state": "DECISION_FROZEN_CLOSURE_OPEN",
+      "state": "PASS",
       "class": "DOCUMENTARY",
-      "evidence": ["product/ROADMAP.md", "mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md"]
+      "evidence": ["product/MK0-SCOPE-FREEZE.md", "product/ROADMAP.md", "mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md"]
     },
     {
       "id": "P0_QUARRIES",
@@ -105,17 +105,15 @@
     },
     {
       "id": "IMPLEMENTATION_PLAN",
-      "state": "DRAFTED",
+      "state": "PASS",
       "class": "DOCUMENTARY",
-      "evidence": ["product/ROADMAP.md", "mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md", "mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md"]
+      "evidence": ["mk0/07-plan/IMPLEMENTATION-SLICES.md", "mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md", "product/MK0-SCOPE-FREEZE.md"]
     }
   ],
   "prePhysicalClosureTargets": [
-    "MK0_SCOPE",
     "THREAT_MODEL",
     "SIGNATURE_WIREFRAMES",
-    "NO_SCROLL_CONTRACT",
-    "IMPLEMENTATION_PLAN"
+    "NO_SCROLL_CONTRACT"
   ],
   "physicalClosureTargets": [
     "P0_QUARRIES",
