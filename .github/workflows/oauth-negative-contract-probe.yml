@@ -1,0 +1,47 @@
+name: OAuth Negative Contract Probe
+
+on:
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - '.github/workflows/oauth-negative-contract-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send synthetic invalid authorization code
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY_FILE="$(mktemp)"
+          HTTP_STATUS="$(curl -sS -o "$BODY_FILE" -w '%{http_code}' \
+            -X POST 'https://oauth2.googleapis.com/token' \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'grant_type=authorization_code' \
+            --data-urlencode 'client_id=150834461062-b32pvpc84plkl0ftftm2vcfqfoq1ff8t.apps.googleusercontent.com' \
+            --data-urlencode 'redirect_uri=http://127.0.0.1:54321' \
+            --data-urlencode 'code=FINANCESENSOR_SYNTHETIC_INVALID_CODE' \
+            --data-urlencode 'code_verifier=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')"
+
+          ERROR_CODE="$(node -e "const fs=require('fs');let x={};try{x=JSON.parse(fs.readFileSync(process.argv[1],'utf8'))}catch{};process.stdout.write(String(x.error||'UNCLASSIFIED'))" "$BODY_FILE")"
+          rm -f "$BODY_FILE"
+
+          echo "HTTP_STATUS=$HTTP_STATUS"
+          echo "OAUTH_ERROR=$ERROR_CODE"
+
+          if [ "$HTTP_STATUS" != "400" ]; then
+            echo 'Expected an OAuth rejection for a synthetic invalid code.' >&2
+            exit 1
+          fi
+
+          if [ "$ERROR_CODE" != "invalid_grant" ]; then
+            echo "Request-shape probe did not reach invalid_grant; got $ERROR_CODE." >&2
+            exit 1
+          fi
+
+          echo 'OAUTH_NEGATIVE_CONTRACT=PASS'
