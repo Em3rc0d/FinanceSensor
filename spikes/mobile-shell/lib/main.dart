@@ -293,14 +293,19 @@ class FinancialStateCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '+S/ 84 vs. agosto',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Color(0xFF91E8BB),
-                      fontWeight: FontWeight.w700,
+                const Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '+S/ 84 vs. agosto',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFF91E8BB),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
