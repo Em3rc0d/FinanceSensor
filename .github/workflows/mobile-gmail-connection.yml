@@ -1,0 +1,173 @@
+name: FinanceSensor Android Gmail Connection
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/mobile-shell/lib/main_connected.dart'
+      - 'spikes/mobile-shell/native/android/**'
+      - 'spikes/mobile-shell/test/connection_ui_test.dart'
+      - 'tools/validate-android-gmail-bridge.mjs'
+      - 'mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md'
+      - '.github/workflows/mobile-gmail-connection.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-android-gmail-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-gmail-connection-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Flutter 3.44.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          channel: stable
+          cache: true
+
+      - name: Static Gmail bridge boundary
+        run: node tools/validate-android-gmail-bridge.mjs
+
+      - name: Materialize Android Kotlin scaffold
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter create \
+            --platforms=android \
+            --android-language=kotlin \
+            --project-name=financesensor_mobile_shell \
+            --org=com.financesensor.lab \
+            .
+
+      - name: Apply Android OAuth bridge
+        working-directory: spikes/mobile-shell
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          kts = Path('android/app/build.gradle.kts')
+          groovy = Path('android/app/build.gradle')
+
+          if kts.exists():
+              text = kts.read_text()
+              old_min = 'minSdk = flutter.minSdkVersion'
+              old_target = 'targetSdk = flutter.targetSdkVersion'
+              if old_min not in text or old_target not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(old_min, 'minSdk = 31')
+              text = text.replace(old_target, 'targetSdk = 36')
+              if 'play-services-auth:21.6.0' not in text:
+                  text += '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n}\n'
+              kts.write_text(text)
+          elif groovy.exists():
+              text = groovy.read_text()
+              old_min = 'minSdkVersion flutter.minSdkVersion'
+              old_target = 'targetSdkVersion flutter.targetSdkVersion'
+              if old_min not in text or old_target not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(old_min, 'minSdkVersion 31')
+              text = text.replace(old_target, 'targetSdkVersion 36')
+              if 'play-services-auth:21.6.0' not in text:
+                  text += '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n}\n'
+              groovy.write_text(text)
+          else:
+              raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+
+          source = Path('native/android/MainActivity.kt')
+          target = Path('android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt')
+          if not source.exists():
+              raise SystemExit('NATIVE_GMAIL_BRIDGE_SOURCE_NOT_FOUND')
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(source.read_text())
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.INTERNET" />'
+          if permission not in manifest_text:
+              marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+              if marker not in manifest_text:
+                  raise SystemExit('ANDROID_MANIFEST_ROOT_MARKER_NOT_FOUND')
+              manifest_text = manifest_text.replace(marker, marker + '\n    ' + permission, 1)
+              manifest.write_text(manifest_text)
+          PY
+
+      - name: Verify Android OAuth compile surface
+        working-directory: spikes/mobile-shell
+        run: |
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
+          grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+          grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
+          grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
+          grep -q 'Identity.getAuthorizationClient' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
+          echo 'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT'
+
+      - name: Resolve dependencies
+        working-directory: spikes/mobile-shell
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: spikes/mobile-shell
+        run: flutter analyze
+
+      - name: Widget and bridge UI tests
+        working-directory: spikes/mobile-shell
+        run: flutter test
+
+      - name: Build Android Gmail connection debug APK
+        working-directory: spikes/mobile-shell
+        run: flutter build apk --debug --target lib/main_connected.dart
+
+      - name: Connection APK evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          test -f build/app/outputs/flutter-apk/app-debug.apk
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
+          stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
+          test -f "$HOME/.android/debug.keystore"
+          ANDROID_DEBUG_SHA1="$(keytool -list -v -alias androiddebugkey -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android 2>/dev/null | sed -n 's/^[[:space:]]*SHA1: //p' | head -1)"
+          test -n "$ANDROID_DEBUG_SHA1"
+          echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1"
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
+          echo 'FINANCESENSOR_ANDROID_GMAIL_CONNECTION_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
+          echo 'EXACT_SCOPE=gmail.readonly' >> "$GITHUB_STEP_SUMMARY"
+          echo 'APP_REFRESH_TOKEN_CUSTODY=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DART_BEARER_CUSTODY=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'OFFLINE_ACCESS_REQUESTED=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_OAUTH_EXECUTED_BY_CI=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_GMAIL_EXECUTED_BY_CI=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
+          echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Android Gmail connection APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-android-gmail-connection-debug
+          path: |
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
