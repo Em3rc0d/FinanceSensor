@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 
-const MAX_TEXT_BLOB_BYTES = 2 * 1024 * 1024;
+const MAX_TEXT_OBJECT_BYTES = 2 * 1024 * 1024;
+const SCANNED_OBJECT_TYPES = new Set(['blob', 'commit', 'tag']);
 
 const detectors = [
   {
@@ -49,13 +50,13 @@ function runGit(args, options = {}) {
   return String(result.stdout ?? '');
 }
 
-function listHistoricalBlobs() {
+function listReachableObjects() {
   const lines = runGit(['rev-list', '--objects', '--all']).split(/\r?\n/).filter(Boolean);
   const bySha = new Map();
   for (const line of lines) {
     const firstSpace = line.indexOf(' ');
     const sha = firstSpace === -1 ? line : line.slice(0, firstSpace);
-    const path = firstSpace === -1 ? '(unknown-path)' : line.slice(firstSpace + 1);
+    const path = firstSpace === -1 ? '(no-path)' : line.slice(firstSpace + 1);
     if (!bySha.has(sha)) bySha.set(sha, path);
   }
   return bySha;
@@ -69,10 +70,10 @@ function objectSize(sha) {
   return Number(runGit(['cat-file', '-s', sha]).trim());
 }
 
-function blobContent(sha) {
+function objectContent(sha) {
   const result = spawnSync('git', ['cat-file', '-p', sha], {
     encoding: 'utf8',
-    maxBuffer: MAX_TEXT_BLOB_BYTES + 1024,
+    maxBuffer: MAX_TEXT_OBJECT_BYTES + 1024,
   });
   if (result.status !== 0) throw new Error(`git cat-file failed for ${sha.slice(0, 12)}`);
   return String(result.stdout ?? '');
@@ -92,43 +93,54 @@ function scanContent(content) {
   return [...new Set(hits)];
 }
 
-const blobs = listHistoricalBlobs();
+const objects = listReachableObjects();
 const findings = [];
 let textBlobsScanned = 0;
+let commitObjectsScanned = 0;
+let tagObjectsScanned = 0;
 let binaryBlobsSkipped = 0;
-let oversizedBlobsSkipped = 0;
+let oversizedObjectsSkipped = 0;
 
-for (const [sha, path] of blobs) {
-  if (objectType(sha) !== 'blob') continue;
+for (const [sha, path] of objects) {
+  const type = objectType(sha);
+  if (!SCANNED_OBJECT_TYPES.has(type)) continue;
+
   const size = objectSize(sha);
-  if (size > MAX_TEXT_BLOB_BYTES) {
-    oversizedBlobsSkipped += 1;
+  if (size > MAX_TEXT_OBJECT_BYTES) {
+    oversizedObjectsSkipped += 1;
     continue;
   }
-  const content = blobContent(sha);
-  if (content.includes('\u0000')) {
+
+  const content = objectContent(sha);
+  if (type === 'blob' && content.includes('\u0000')) {
     binaryBlobsSkipped += 1;
     continue;
   }
-  textBlobsScanned += 1;
+
+  if (type === 'blob') textBlobsScanned += 1;
+  if (type === 'commit') commitObjectsScanned += 1;
+  if (type === 'tag') tagObjectsScanned += 1;
+
   const classes = scanContent(content);
-  if (classes.length) findings.push({ sha: sha.slice(0, 12), path, classes });
+  if (classes.length) findings.push({ sha: sha.slice(0, 12), path, type, classes });
 }
 
 console.log(`FINANCESENSOR_PUBLIC_HISTORY_TEXT_BLOBS_SCANNED=${textBlobsScanned}`);
+console.log(`FINANCESENSOR_PUBLIC_HISTORY_COMMITS_SCANNED=${commitObjectsScanned}`);
+console.log(`FINANCESENSOR_PUBLIC_HISTORY_TAGS_SCANNED=${tagObjectsScanned}`);
 console.log(`FINANCESENSOR_PUBLIC_HISTORY_BINARY_BLOBS_SKIPPED=${binaryBlobsSkipped}`);
-console.log(`FINANCESENSOR_PUBLIC_HISTORY_OVERSIZED_BLOBS_SKIPPED=${oversizedBlobsSkipped}`);
+console.log(`FINANCESENSOR_PUBLIC_HISTORY_OVERSIZED_OBJECTS_SKIPPED=${oversizedObjectsSkipped}`);
 
-if (oversizedBlobsSkipped > 0) {
+if (binaryBlobsSkipped > 0 || oversizedObjectsSkipped > 0) {
   console.error('FINANCESENSOR_PUBLIC_HISTORY_AUDIT=INCOMPLETE');
-  console.error('Reason: oversized historical blobs require separate review.');
+  console.error('Reason: every reachable object must be inspectable before public-readiness can PASS.');
   process.exit(2);
 }
 
 if (findings.length) {
   console.error('FINANCESENSOR_PUBLIC_HISTORY_AUDIT=FAIL');
   for (const finding of findings) {
-    console.error(`- ${finding.classes.join(',')} blob=${finding.sha} path=${finding.path}`);
+    console.error(`- ${finding.classes.join(',')} type=${finding.type} object=${finding.sha} path=${finding.path}`);
   }
   console.error('Matched secret values are intentionally never printed. Rotate any real credential before rewriting history.');
   process.exit(1);
