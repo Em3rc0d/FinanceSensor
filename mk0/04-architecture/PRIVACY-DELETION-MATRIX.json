@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "DRAFT",
+  "extends": "PRIVACY-DATA-MATRIX.json",
+  "classes": [
+    {
+      "id": "DELETION-TOMBSTONE",
+      "name": "Minimal tenant deletion resurrection-barrier receipt",
+      "sensitivity": "MEDIUM",
+      "purpose": "Prevent asynchronous jobs or backup restoration from resurrecting deleted tenant authority while exposing no financial content",
+      "source": "FinanceSensor control-plane deletion workflow",
+      "localRetention": "BOUNDED_UNTIL_BACKUP_AND_ASYNC_RESTORE_WINDOW_CLOSES",
+      "localProtection": "APPLICATION_SECURITY_CONTROLS",
+      "cloudPlaintext": "ALLOWED_MINIMIZED",
+      "e2eeSync": "NOT_REQUIRED",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "AFTER_BACKUP_RETENTION_AND_BOUNDED_RESTORE_SAFETY_WINDOW",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED"
+    }
+  ]
+}
