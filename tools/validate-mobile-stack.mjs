@@ -21,7 +21,7 @@ if (!failures.length) {
     'Android → Kotlin',
     'Apple   → Swift',
     'Flutter is not the credential vault',
-    'exportable long-lived private key fallback',
+    'EXPORTABLE_PRIVATE_KEY_FALLBACK = FORBIDDEN',
     'FLUTTER_UI != SECURITY_BOUNDARY',
     'PLUGIN_CONVENIENCE < PLATFORM_TRUST_BOUNDARY',
     'FLUTTER_SUPPORT_MATRIX != FINANCESENSOR_SECURITY_BASELINE',
@@ -29,7 +29,15 @@ if (!failures.length) {
   ];
   for (const value of stackRequired) if (!stack.includes(value)) failures.push(`ADR-009 missing ${value}`);
 
-  if (!oauth.includes('PRODUCTION MOBILE CREDENTIAL')) failures.push('ADR-017 no longer exposes mobile credential boundary');
+  const oauthRequired = [
+    '### 4. Production mobile boundary',
+    'Production Android/iOS client',
+    'store long-lived refresh authority only in protected device credential storage',
+    'expose short-lived access tokens to the Gmail adapter only when needed',
+    'does not claim final Android/iOS callback and credential-storage behavior is physically proven'
+  ];
+  for (const value of oauthRequired) if (!oauth.includes(value)) failures.push(`ADR-017 missing mobile OAuth boundary marker: ${value}`);
+
   if (!crypto.includes('exportable long-lived private key fallback → forbidden')) failures.push('ADR-021 no longer forbids exportable production authority fallback');
   if (!surface.includes('FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION')) failures.push('ADR-025 no longer defines mobile primary product');
 
@@ -51,4 +59,5 @@ console.log('IOS_SECURITY_BRIDGE=SWIFT');
 console.log('LONG_LIVED_SECRET_CUSTODY_IN_DART=FORBIDDEN');
 console.log('EXPORTABLE_PRIVATE_KEY_FALLBACK=FORBIDDEN');
 console.log('ANDROID_BASELINE=OPEN_UNDER_ADR_013');
-console.log('MOBILE_PHYSICAL_PROVEN=NO');
+console.log('MOBILE_OAUTH_PHYSICAL_PROVEN=NO');
+console.log('MOBILE_CRYPTO_PHYSICAL_PROVEN=NO');
