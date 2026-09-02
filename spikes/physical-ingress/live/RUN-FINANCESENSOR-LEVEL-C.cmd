@@ -12,13 +12,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo FinanceSensor Gmail Level C - controlled local probe
-echo ----------------------------------------------------
+echo FinanceSensor Gmail Level C v2 - controlled local probe
+echo -------------------------------------------------------
 echo Browser consent will open automatically.
 echo No token or Gmail content will be printed or saved.
-echo Maximum Gmail scan: 5 recent messages; maximum FULL fetch: 1.
+echo No historical mailbox list will run.
+echo Maximum changed messages per attempt: 5; maximum FULL fetch: 1.
 echo.
-node live\owned-oauth-level-c.mjs
+node live\owned-oauth-level-c-v2.mjs
 
 echo.
 echo FinanceSensor Level C process finished.
