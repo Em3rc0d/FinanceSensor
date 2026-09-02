@@ -12,7 +12,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo FinanceSensor Gmail Level C v6 - controlled local proof
+echo FinanceSensor Gmail Level C v7 - controlled local proof
 echo -------------------------------------------------------
 echo Select the Google OAuth Desktop credentials JSON downloaded from Google Cloud.
 echo The file contents stay local and are never printed or copied to evidence.
@@ -33,12 +33,14 @@ if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
 echo.
 echo Credential selected locally. Browser consent will open automatically.
 echo No historical mailbox sweep will run.
-echo One targeted synthetic-anchor search is allowed, maxResults=1.
+echo Gmail Search query is not used for the anchor.
+echo Each anchor attempt lists at most 5 recent INBOX IDs and inspects Subject metadata locally only.
+echo At most 2 anchor attempts are allowed in the whole run.
 echo The Gmail profile is used only to identify the authorized mailbox, never as startHistoryId.
-echo Maximum changed messages per attempt: 5; maximum FULL fetch: 1.
+echo Maximum changed messages per probe attempt: 5; maximum FULL fetch: 1.
 echo Level C PASS is emitted only if the message-history anchor, FULL, extraction, replay and revocation all pass.
 echo.
-node live\owned-oauth-level-c-v6.mjs
+node live\owned-oauth-level-c-v7.mjs
 
 set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
 echo.
