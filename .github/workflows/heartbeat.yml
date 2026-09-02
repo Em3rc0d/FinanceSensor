@@ -11,6 +11,7 @@ on:
       - 'spikes/canonical-resolver/**'
       - 'spikes/e2ee-sync/**'
       - 'spikes/physical-ingress/**'
+      - 'spikes/mobile-shell/**'
       - '.github/workflows/**'
       - 'ops/**'
       - 'graph/**'
@@ -70,6 +71,7 @@ jobs:
         run: |
           node tools/validate-mobile-product-lab.mjs
           node tools/validate-mobile-stack.mjs
+          node tools/validate-mobile-shell.mjs
 
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
@@ -129,6 +131,11 @@ jobs:
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f product/labs/mobile-bi/README.md
           test -f product/labs/mobile-bi/index.html
+          test -f spikes/mobile-shell/README.md
+          test -f spikes/mobile-shell/pubspec.yaml
+          test -f spikes/mobile-shell/lib/main.dart
+          test -f spikes/mobile-shell/test/widget_test.dart
+          test -f .github/workflows/mobile-shell.yml
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
@@ -141,6 +148,7 @@ jobs:
           test -f tools/validate-p1-sanitized-receipt.mjs
           test -f tools/validate-mobile-product-lab.mjs
           test -f tools/validate-mobile-stack.mjs
+          test -f tools/validate-mobile-shell.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -154,6 +162,8 @@ jobs:
           grep -q 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION' mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           grep -q 'FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION' mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
           grep -q 'FLUTTER_UI != SECURITY_BOUNDARY' mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md
+          grep -q 'MOBILE_SHELL != PRODUCTION_APP' spikes/mobile-shell/README.md
+          grep -q 'APK_BUILD_PASS != BUILD_READY' spikes/mobile-shell/README.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
           ! grep -R -q 'ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY' STATUS.md graph mk0 product research spikes tools ops --exclude='ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md'
 
@@ -163,7 +173,7 @@ jobs:
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Mobile Product Lab is synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Mobile Product Lab and Flutter Mobile Shell are synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Flutter is the MK0 product stack; long-lived OAuth/device-key authority remains behind Kotlin/Swift platform security bridges.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
