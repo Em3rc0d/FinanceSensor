@@ -23,21 +23,21 @@ Supersedes / superseded by
 
 ## Planned / active ADRs
 
-| ADR | Decision | Status | Blocked by |
+| ADR | Decision | Status | Remaining evidence / blocker |
 |---|---|---|---|
 | ADR-001 | Tenant as financial ownership boundary | PROPOSED | Q-009 review |
-| ADR-002 | Cloud Control Plane + Edge Data Plane | PROPOSED | Q-004/Q-005 |
-| ADR-003 | Gmail provider adapter vs generic IMAP-first | PROPOSED | Q-003 |
-| ADR-004 | Canonical event taxonomy | BLOCKED | Q-001 |
-| ADR-005 | Transaction fingerprint/resolver strategy | BLOCKED | Q-002 |
-| ADR-006 | Local persistence/encryption technology | OPEN | device spike/security review |
-| ADR-007 | Sync event model and ordering | BLOCKED | Q-005 |
-| ADR-008 | E2EE key hierarchy and production crypto | BLOCKED | Q-005/security review |
-| ADR-009 | Mobile implementation stack | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL MOBILE VALIDATION REQUIRED | ADR-013 + Q-003/Q-005 mobile evidence |
-| ADR-010 | Control-plane runtime/cloud platform | OPEN | architecture + cost evaluation |
-| ADR-011 | Classification stack | OPEN | extraction/resolver spike |
+| ADR-002 | Cloud Control Plane + Edge Data Plane | PROPOSED | Q-004/Q-005 closure |
+| ADR-003 | Gmail provider adapter vs generic IMAP-first | PROPOSED | Q-003 closure |
+| ADR-004 | Canonical event taxonomy | BLOCKED | legacy ADR formalization; Q-001 already CLOSED |
+| ADR-005 | Transaction fingerprint/resolver strategy | BLOCKED | legacy ADR formalization; Q-002 already CLOSED |
+| ADR-006 | Local persistence/encryption technology | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL STORAGE VALIDATION REQUIRED | Q-004/Q-005 storage evidence |
+| ADR-007 | Sync event model and ordering | BLOCKED | Q-005 physical sync evidence |
+| ADR-008 | E2EE key hierarchy and production crypto | BLOCKED | Q-005/security review; narrowed by ADR-021 |
+| ADR-009 | Mobile implementation stack | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL MOBILE VALIDATION REQUIRED | Q-003/Q-004/Q-005 mobile evidence |
+| ADR-010 | Control-plane runtime/cloud platform | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL CLOUD VALIDATION REQUIRED | Q-004/Q-005 cloud/deletion/witness evidence |
+| ADR-011 | Classification stack | OPEN | extraction/resolver implementation spike |
 | ADR-012 | Analytics/telemetry privacy boundary | PROPOSED | Q-004 |
-| ADR-013 | Minimum supported Android baseline | OPEN | device matrix evidence |
+| ADR-013 | Minimum supported Android baseline | ACCEPTED FOR MK0 IMPLEMENTATION / PHYSICAL DEVICE MATRIX REQUIRED | Q-003/Q-005 Android evidence |
 | ADR-014 | All-devices-lost recovery without server master key | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical/production evidence |
 | ADR-015 | Trusted checkpoint / anti-rollback model | SPIKE-ACCEPTED / PHYSICAL VALIDATION REQUIRED | Q-005 physical anchor/witness evidence |
 | ADR-016 | Opaque independent witness freshness | SPIKE-ACCEPTED / PRODUCTION POLICY RESOLVED BY ADR-022 | Q-005 physical witness evidence |
@@ -49,40 +49,130 @@ Supersedes / superseded by
 | ADR-022 | Production opaque witness topology and quorum | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL DEPLOYMENT REQUIRED | Q-005 witness deployment/failure evidence |
 | ADR-023 | Disconnect, tenant deletion and backup semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VERIFICATION REQUIRED | Q-004/Q-005 cloud/mobile/backup evidence |
 | ADR-024 | Recovery Kit checkpoint-anchor refresh semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VALIDATION REQUIRED | Q-005 physical recovery/export evidence |
-| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009 | ADR-013 physical mobile evidence |
+| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009 | physical mobile evidence |
 
 **Next available ADR:** `ADR-026`.
 
-## ADR-009 evidence boundary
+## MK0 implementation baseline resolved on 2026-09-02
 
-ADR-009 resolves the mobile framework choice while preserving native ownership of security-sensitive operations.
+The following choices are now frozen strongly enough to begin controlled implementation once the closure graph permits it:
 
 ```text
-PRODUCT UI / VIEW STATE          FLUTTER / DART
-ANDROID SECURITY BRIDGE          KOTLIN
-IOS SECURITY BRIDGE              SWIFT
-LOCAL DATABASE FAMILY            SQLITE
-EXACT ENCRYPTED SQLITE DRIVER     OPEN UNDER ADR-006
+PRIMARY PRODUCT                    MOBILE APPLICATION
+PRODUCT UI / VIEW STATE            FLUTTER / DART
+ANDROID SECURITY BRIDGE            KOTLIN
+IOS SECURITY BRIDGE                SWIFT
+ANDROID minSdk                     31 / Android 12
+2026 Android targetSdk floor       36
+LOCAL DATABASE                     SQLite + SQLCipher 4.x family
+DATABASE DEK                       256-bit random / native protected wrap
+PRIMARY CONTROL PLANE              Supabase / PostgreSQL
+TENANT AUTHORIZATION               membership + RLS
+GMAIL DATA PLANE                   DEVICE LOCAL
+GMAIL REFRESH AUTHORITY IN CLOUD   FORBIDDEN
+FINANCIAL PLAINTEXT IN CLOUD       FORBIDDEN NORMAL PATH
+OPAQUE E2EE RELAY                  ALLOWED / SERVER CANNOT DECRYPT
+EXPORTABLE PRIVATE-KEY FALLBACK    FORBIDDEN
+PLAINTEXT SQLITE FALLBACK          FORBIDDEN
+```
+
+This is an **implementation decision baseline**, not a declaration that Q-003/Q-004/Q-005 are closed.
+
+## ADR-006 evidence boundary
+
+ADR-006 resolves local encrypted persistence:
+
+```text
+DATABASE FAMILY                  SQLITE
+PRODUCTION ENCRYPTION            SQLCIPHER 4.x FAMILY
+DATABASE KEY                     RANDOM 256-BIT DEK
+DURABLE DEK IN DART              FORBIDDEN
+PLATFORM-PROTECTED DEK WRAP      REQUIRED
+PLAINTEXT SQLITE FALLBACK        FORBIDDEN
+DB/WAL/JOURNAL/TEMP              PHYSICAL INSPECTION REQUIRED
+```
+
+Evidence/decision:
+
+- `ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md`
+- `ADR-009-MOBILE-IMPLEMENTATION-STACK.md`
+- `../04-architecture/SECURITY-PRIVACY.md`
+
+Acceptance freezes technology and key ownership. It does not claim physical storage/backup behavior is proven.
+
+## ADR-009 evidence boundary
+
+ADR-009 resolves the mobile framework while preserving native ownership of security-sensitive operations:
+
+```text
+PRODUCT UI / VIEW STATE           FLUTTER / DART
+ANDROID SECURITY BRIDGE           KOTLIN
+IOS SECURITY BRIDGE               SWIFT
+LOCAL DATABASE                    SQLITE + SQLCIPHER under ADR-006
 LONG-LIVED OAUTH CUSTODY IN DART  FORBIDDEN
 LONG-LIVED PRIVATE KEYS IN DART   FORBIDDEN
-EXPORTABLE SECURITY FALLBACK      FORBIDDEN
-ANDROID MINIMUM BASELINE           OPEN UNDER ADR-013
+DATABASE DEK CUSTODY IN DART       FORBIDDEN
+EXPORTABLE SECURITY FALLBACK       FORBIDDEN
+ANDROID MINIMUM                    API 31 under ADR-013
 WEB/DESKTOP PRODUCT SCOPE          NOT CREATED BY FLUTTER CAPABILITY
 ```
 
 Evidence/decision:
 
 - `ADR-009-MOBILE-IMPLEMENTATION-STACK.md`
+- `ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md`
+- `ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md`
 - `ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
 - `ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md`
 - `ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md`
 - `../../tools/validate-mobile-stack.mjs`
 
-The framework decision does not convert mobile behavior into physical proof. Android/iOS credential custody and protected crypto remain open gates.
+## ADR-010 evidence boundary
+
+ADR-010 selects Supabase as the first control plane while explicitly denying it financial/Gmail authority:
+
+```text
+PRIMARY CONTROL PLANE            SUPABASE
+CONTROL DB                       POSTGRESQL
+ACCOUNT AUTH                     SUPABASE AUTH / FINANCESENSOR IDENTITY
+TENANT AUTHORIZATION             OWNERSHIP/MEMBERSHIP + RLS
+SERVICE ROLE IN MOBILE           FORBIDDEN
+GMAIL API EXECUTION IN CLOUD     FORBIDDEN
+GMAIL REFRESH TOKEN IN CLOUD     FORBIDDEN
+FINANCIAL PLAINTEXT NORMAL PATH  FORBIDDEN
+OPAQUE E2EE RELAY                ALLOWED
+INDEPENDENT WITNESS              OUTSIDE RELAY FAILURE DOMAIN REQUIRED
+BACKUP CONFIG                    MUST REMAIN <= ADR-023 35-DAY CEILING
+```
+
+Evidence/decision:
+
+- `ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md`
+- `ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
+- `ADR-022-PRODUCTION-WITNESS-QUORUM.md`
+- `ADR-023-DISCONNECT-DELETION-BACKUP-SEMANTICS.md`
+
+Provider selection does not provision production infrastructure and does not prove RLS/deletion/backup behavior.
+
+## ADR-013 evidence boundary
+
+ADR-013 freezes the Android authority baseline:
+
+```text
+MIN SDK                          31
+MINIMUM OS                       ANDROID 12
+2026 TARGET SDK FLOOR            36
+API 37                           COMPATIBILITY TARGET
+STRONGBOX                        PREFERRED WHERE AVAILABLE
+TEE-BACKED KEYSTORE              ACCEPTED FALLBACK SECURITY CLASS
+EXPORTABLE/SOFTWARE AUTHORITY    NO SILENT FALLBACK
+```
+
+The baseline is driven by Android Keystore protected key-agreement capability required by ADR-021. Physical devices must still prove actual key protection and performance.
 
 ## ADR-014 evidence boundary
 
-ADR-014 freezes only the **logical recovery ownership and hardening model**:
+ADR-014 freezes only the logical recovery ownership and hardening model:
 
 ```text
 SERVER MASTER KEY               REJECTED
@@ -100,11 +190,7 @@ Evidence:
 - `../10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/recovery.test.js`
 
-It does not freeze the production HPKE/AEAD/signature implementation, platform key-store behavior, Recovery Kit UX or physical disaster recovery. ADR-021 and ADR-024 now narrow those previously open design branches without promoting them to physical proof.
-
 ## ADR-015 evidence boundary
-
-ADR-015 freezes only the **bounded anchor-relative anti-rollback semantics**:
 
 ```text
 RELAY AS SOLE TRUST ANCHOR           REJECTED
@@ -112,7 +198,6 @@ INDEPENDENT TRUSTED ANCHOR            REQUIRED FOR ROLLBACK CLAIM
 SIGNED APPEND-ONLY CONTINUITY         SPIKE-ACCEPTED
 ROLLBACK/FORK/GAP RELATIVE TO ANCHOR  FAIL CLOSED
 NO INDEPENDENT ANCHOR                 INDETERMINATE_FRESHNESS
-VALID ANCHORED HEAD                   CONSISTENT_FROM_ANCHOR
 GLOBAL-LATEST FRESHNESS               UNPROVEN
 ```
 
@@ -126,8 +211,6 @@ Evidence:
 
 ## ADR-016 / ADR-022 evidence boundary
 
-ADR-016 adds an **independent opaque witness** as a stronger freshness signal without moving financial truth outside the edge. ADR-022 now freezes the first production topology and quorum policy.
-
 ```text
 REAL TENANT ID AT WITNESS             FORBIDDEN
 FINANCIAL PLAINTEXT AT WITNESS        FORBIDDEN
@@ -137,11 +220,6 @@ CONFIGURED WITNESSES                  3
 CONFIRMATION QUORUM                   2 OF 3
 MINIMUM FAILURE DOMAINS               2
 MINIMUM RELAY-INDEPENDENT WITNESS     1
-ROLLBACK/FORK/GAP/PARENT MISMATCH     FAIL CLOSED
-WITNESS AHEAD OF RELAY                RELAY_BEHIND_WITNESS
-VALID SAME-SEQUENCE DIVERGENCE        WITNESS_DIVERGENCE
-INSUFFICIENT INDEPENDENT EVIDENCE     EXPLICITLY UNCONFIRMED
-SILENT FALLBACK TO RELAY              REJECTED
 VALID CONTRADICTION                    CANNOT BE VOTED AWAY
 ```
 
@@ -150,24 +228,17 @@ Evidence/decision:
 - `ADR-016-OPAQUE-WITNESS-FRESHNESS.md`
 - `ADR-022-PRODUCTION-WITNESS-QUORUM.md`
 - `../04-architecture/WITNESS-FRESHNESS.md`
-- `../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
 - `../../spikes/e2ee-sync/test/witness.test.js`
 
 ## ADR-017 evidence boundary
-
-ADR-017 freezes the current **Gmail authorization ownership boundary**, not a completed production mobile OAuth deployment.
 
 ```text
 MINIMUM SCOPE CANDIDATE            gmail.readonly
 GMAIL DATA PLANE                   EDGE-LOCAL
 NORMAL CLOUD REFRESH-TOKEN CUSTODY REJECTED
 SHORT-LIVED TOKEN PROVIDER         CONTRACT TESTED
-401                                REAUTH_REQUIRED
-OOB COPY/PASTE                     REJECTED
-AUTO ATTACHMENT BYTE DOWNLOAD      REJECTED
 REAL PROVIDER REACHABILITY         PASS
 DESKTOP DEV LEVEL-C CONSENT        PHYSICAL PASS
-DESKTOP DEV TOKEN EXCHANGE         PHYSICAL PASS
 PROVIDER REVOCATION                PHYSICAL PASS
 PRODUCTION MOBILE CREDENTIAL       OPEN
 ```
@@ -177,32 +248,19 @@ Evidence:
 - `ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
 - `../10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
 - `../10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
-- `../10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md`
 - `../../spikes/physical-ingress/test/gmail-rest-provider.test.js`
-- `../../spikes/physical-ingress/test/real-provider-shape.test.js`
 
 ## ADR-018 / ADR-019 evidence boundary
-
-These ADRs freeze the **controlled Level-C synchronization bootstrap**, not production onboarding.
 
 ```text
 /profile.historyId AS BOOTSTRAP ANCHOR       REJECTED
 MESSAGE.historyId PROVENANCE                 REQUIRED
 IMMEDIATE Gmail Search q DEPENDENCY          REJECTED
 BOUNDED RECENT-INBOX SUBJECT WINDOW          LEVEL-C ACCEPTED
-HISTORICAL MAILBOX SWEEP                     REJECTED FOR HARNESS
 LEVEL-C HARNESS                              != PRODUCTION INITIAL-SYNC UX
 ```
 
-Evidence:
-
-- `ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md`
-- `ADR-019-GMAIL-BOOTSTRAP-WITHOUT-SEARCH-INDEX.md`
-- `../10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
-
 ## ADR-020 evidence boundary
-
-ADR-020 freezes the **server capability boundary** for Gmail restricted data while refusing to invent a provider exemption.
 
 ```text
 GMAIL OAUTH AUTHORITY ON SERVER              FORBIDDEN
@@ -214,14 +272,7 @@ E2EE RELAY => GOOGLE ASSESSMENT EXEMPT       NOT PROVEN
 GOOGLE APPLICABILITY DETERMINATION           REQUIRED BEFORE PUBLIC LAUNCH
 ```
 
-Evidence/plan:
-
-- `ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md`
-- `../07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md`
-
 ## ADR-021 evidence boundary
-
-ADR-021 freezes the **first production interoperability profile**, not physical mobile proof.
 
 ```text
 HPKE             RFC 9180 BASE MODE
@@ -234,15 +285,7 @@ PROTECTED KEYS   REQUIRED
 NODE SPIKE       NOT PRODUCTION CRYPTO
 ```
 
-Evidence/plan:
-
-- `ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md`
-- `../../research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md`
-- `../07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md`
-
 ## ADR-023 evidence boundary
-
-ADR-023 separates provider disconnect, Gmail-derived erase and tenant deletion.
 
 ```text
 DISCONNECT GMAIL                 REVOKE AUTHORITY + RETAIN USER DERIVED STATE
@@ -252,11 +295,7 @@ BACKUP RESTORE                   MUST NOT RESURRECT AUTHORITY
 BACKUP MAX PHYSICAL RETENTION    <= 35 DAYS
 ```
 
-The backup ceiling is an architecture requirement; actual provider behavior still requires physical/documentary evidence.
-
 ## ADR-024 evidence boundary
-
-ADR-024 freezes Recovery Kit refresh semantics:
 
 ```text
 RECOVERY KIT ANCHOR             MINIMUM TRUSTED ANCHOR, NOT GLOBAL LATEST
@@ -269,8 +308,6 @@ SAFE_TO_RESUME                  REQUIRES NEW KIT EXPORT + INTEGRITY + CUSTODY
 
 ## ADR-025 evidence boundary
 
-ADR-025 freezes **product-surface direction**, not physical mobile behavior.
-
 ```text
 PRIMARY PRODUCT                 MOBILE APPLICATION
 FIRST PHYSICAL PRODUCT TARGET   ANDROID
@@ -279,10 +316,8 @@ WEB                             FUTURE COMPANION OPTION
 DESKTOP                         NO FIRST-CLASS PRODUCT COMMITMENT
 MOBILE BI                       ACCEPTED PRODUCT LANGUAGE
 DESKTOP BI SHRUNK TO PHONE      REJECTED
-SYNTHETIC PRODUCT LAB           ALLOWED FOR UX VALIDATION
-PRODUCT LAB                     CANNOT CLOSE Q-003/Q-004/Q-005
 IMPLEMENTATION STACK            RESOLVED BY ADR-009
-ANDROID BASELINE                OPEN UNDER ADR-013
+ANDROID BASELINE                API 31 under ADR-013
 ```
 
 Evidence/design:
@@ -291,7 +326,6 @@ Evidence/design:
 - `../03-design/PRODUCT-DESIGN.md`
 - `../../product/ROADMAP.md`
 - `../../product/labs/mobile-bi/README.md`
-- `../../product/labs/mobile-bi/index.html`
 - `../../tools/validate-mobile-product-lab.mjs`
 
 ## Decision discipline
