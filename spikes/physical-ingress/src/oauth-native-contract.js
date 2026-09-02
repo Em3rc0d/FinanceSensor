@@ -48,6 +48,29 @@ export class OAuthTokenError extends Error {
   }
 }
 
+export function parseDesktopCredentialsJson(raw, { expectedClientId } = {}) {
+  let parsed;
+  try {
+    parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    throw new Error('Desktop credentials JSON is invalid');
+  }
+
+  const installed = parsed?.installed;
+  if (!installed || typeof installed !== 'object') {
+    throw new Error('Desktop credentials JSON must contain an installed client');
+  }
+
+  const clientId = assertNonEmpty(installed.client_id, 'installed.client_id');
+  const clientSecret = assertNonEmpty(installed.client_secret, 'installed.client_secret');
+
+  if (expectedClientId && clientId !== String(expectedClientId)) {
+    throw new Error('Desktop credentials client_id does not match expected FinanceSensor client');
+  }
+
+  return { clientId, clientSecret };
+}
+
 export function createPkcePair({ randomBytes = nodeRandomBytes } = {}) {
   if (typeof randomBytes !== 'function') throw new Error('randomBytes implementation required');
   const codeVerifier = base64Url(randomBytes(64));
@@ -117,10 +140,11 @@ export function validateAuthorizationResponse(callbackUrl, { expectedState } = {
   return { code, state: returnedState };
 }
 
-export function buildTokenExchangeRequest({ clientId, redirectUri, code, codeVerifier }) {
+export function buildTokenExchangeRequest({ clientId, clientSecret, redirectUri, code, codeVerifier }) {
   const params = new URLSearchParams();
   params.set('grant_type', 'authorization_code');
   params.set('client_id', assertNonEmpty(clientId, 'clientId'));
+  if (clientSecret) params.set('client_secret', assertNonEmpty(clientSecret, 'clientSecret'));
   params.set('redirect_uri', assertNonEmpty(redirectUri, 'redirectUri'));
   params.set('code', assertNonEmpty(code, 'code'));
   params.set('code_verifier', assertVerifier(codeVerifier));
@@ -135,6 +159,7 @@ export function buildTokenExchangeRequest({ clientId, redirectUri, code, codeVer
 
 export class LocalOAuthCredentialProvider {
   #clientId;
+  #clientSecret;
   #refreshToken;
   #fetch;
   #now;
@@ -145,12 +170,14 @@ export class LocalOAuthCredentialProvider {
 
   constructor({
     clientId,
+    clientSecret,
     refreshToken,
     fetchImpl = globalThis.fetch,
     now = () => Date.now(),
     refreshSkewMs = 60_000
   }) {
     this.#clientId = assertNonEmpty(clientId, 'clientId');
+    this.#clientSecret = clientSecret ? assertNonEmpty(clientSecret, 'clientSecret') : null;
     this.#refreshToken = assertNonEmpty(refreshToken, 'refreshToken');
     if (typeof fetchImpl !== 'function') throw new Error('fetch implementation required');
     if (typeof now !== 'function') throw new Error('now implementation required');
@@ -172,6 +199,7 @@ export class LocalOAuthCredentialProvider {
     const params = new URLSearchParams();
     params.set('grant_type', 'refresh_token');
     params.set('client_id', this.#clientId);
+    if (this.#clientSecret) params.set('client_secret', this.#clientSecret);
     params.set('refresh_token', this.#refreshToken);
 
     const response = await this.#fetch(TOKEN_ENDPOINT, {
@@ -184,7 +212,7 @@ export class LocalOAuthCredentialProvider {
       const raw = await response.text();
       throw new OAuthTokenError(
         `HTTP_${response.status}`,
-        sanitizeOAuthErrorText(raw, [this.#refreshToken])
+        sanitizeOAuthErrorText(raw, [this.#refreshToken, this.#clientSecret])
       );
     }
 
