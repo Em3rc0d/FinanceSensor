@@ -8,6 +8,11 @@ on:
     paths:
       - 'spikes/mobile-shell/**'
       - 'tools/validate-mobile-shell.mjs'
+      - 'tools/validate-mobile-stack.mjs'
+      - 'tools/validate-implementation-baseline.mjs'
+      - 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md'
+      - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
+      - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
       - '.github/workflows/mobile-shell.yml'
 
 permissions:
@@ -43,17 +48,69 @@ jobs:
           flutter --version
           flutter doctor -v
 
-      - name: Static synthetic boundary
-        run: node tools/validate-mobile-shell.mjs
+      - name: Static synthetic + implementation boundaries
+        run: |
+          node tools/validate-mobile-shell.mjs
+          node tools/validate-mobile-stack.mjs
+          node tools/validate-implementation-baseline.mjs
 
-      - name: Materialize Android scaffold
+      - name: Materialize Android Kotlin scaffold
         working-directory: spikes/mobile-shell
         run: |
           flutter create \
             --platforms=android \
+            --android-language=kotlin \
             --project-name=financesensor_mobile_shell \
             --org=com.financesensor.lab \
             .
+
+      - name: Apply FinanceSensor Android baseline
+        working-directory: spikes/mobile-shell
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          kts = Path('android/app/build.gradle.kts')
+          groovy = Path('android/app/build.gradle')
+
+          if kts.exists():
+              text = kts.read_text()
+              old_min = 'minSdk = flutter.minSdkVersion'
+              old_target = 'targetSdk = flutter.targetSdkVersion'
+              if old_min not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_MINSDK_MARKER_NOT_FOUND')
+              if old_target not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_TARGETSDK_MARKER_NOT_FOUND')
+              text = text.replace(old_min, 'minSdk = 31')
+              text = text.replace(old_target, 'targetSdk = 36')
+              kts.write_text(text)
+              print('ANDROID_GRADLE_DIALECT=KOTLIN_DSL')
+          elif groovy.exists():
+              text = groovy.read_text()
+              old_min = 'minSdkVersion flutter.minSdkVersion'
+              old_target = 'targetSdkVersion flutter.targetSdkVersion'
+              if old_min not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_MINSDK_MARKER_NOT_FOUND')
+              if old_target not in text:
+                  raise SystemExit('EXPECTED_FLUTTER_TARGETSDK_MARKER_NOT_FOUND')
+              text = text.replace(old_min, 'minSdkVersion 31')
+              text = text.replace(old_target, 'targetSdkVersion 36')
+              groovy.write_text(text)
+              print('ANDROID_GRADLE_DIALECT=GROOVY')
+          else:
+              raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+          PY
+
+      - name: Verify Android baseline
+        working-directory: spikes/mobile-shell
+        run: |
+          test -f android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle* 
+          grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+          ! grep -R -E -q 'minSdk(Version)?\s*[= ]\s*(2[0-9]|30)\b' android/app/build.gradle*
+          echo 'ANDROID_LANGUAGE=KOTLIN'
+          echo 'ANDROID_MIN_SDK=31'
+          echo 'ANDROID_TARGET_SDK=36'
 
       - name: Resolve dependencies
         working-directory: spikes/mobile-shell
@@ -78,6 +135,8 @@ jobs:
           sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
           stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
           echo 'FINANCESENSOR_MOBILE_SHELL_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
+          echo 'ANDROID_MIN_SDK=31' >> "$GITHUB_STEP_SUMMARY"
+          echo 'ANDROID_TARGET_SDK=36' >> "$GITHUB_STEP_SUMMARY"
           echo 'REAL_GMAIL=0' >> "$GITHUB_STEP_SUMMARY"
           echo 'REAL_OAUTH=0' >> "$GITHUB_STEP_SUMMARY"
           echo 'REAL_FINANCIAL_DATA=0' >> "$GITHUB_STEP_SUMMARY"
