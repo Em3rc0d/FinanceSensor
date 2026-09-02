@@ -97,11 +97,11 @@ CI_FIXTURES != REAL_FINANCIAL_DATA
 
 Real Gmail/OAuth authority and real financial plaintext remain LOCAL EDGE ONLY.
 
-## Public-readiness state
+## Public-readiness contract
 
-FinanceSensor is public. Public-readiness is enforced by `.github/workflows/public-readiness.yml` and `tools/audit-public-history.mjs`.
+FinanceSensor is public. Repository exposure is continuously guarded by `.github/workflows/public-readiness.yml` and `tools/audit-public-history.mjs`.
 
-The versioned status ledger does not persist a historical-scan PASS or Git object totals because both are properties of a specific repository snapshot. Their authoritative evidence is the latest `FinanceSensor Public Readiness` execution for the current refs.
+Public-readiness results are snapshot-scoped runtime evidence. This versioned ledger therefore does not promote a previous workflow result into a permanent repository fact and does not store Git object totals. The latest `FinanceSensor Public Readiness` execution is authoritative for the refs it inspected.
 
 Stable repository laws:
 
@@ -110,7 +110,7 @@ PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
 SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
 REAL Gmail/OAuth IN CI = FORBIDDEN
 REAL FINANCIAL PLAINTEXT IN CI = FORBIDDEN
-PUBLIC_CERTIFIED != BUILD_READY
+PUBLIC_READINESS_PASS(snapshot A) != PUBLIC_READINESS_PASS(snapshot B)
 GREEN PUBLIC AUDIT != PRODUCT CLOSURE
 ```
 
