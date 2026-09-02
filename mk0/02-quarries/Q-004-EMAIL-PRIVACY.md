@@ -2,7 +2,7 @@
 
 **Priority:** P0  
 **Status:** ACTIVE  
-**Last policy review:** 2026-09-01
+**Last policy review:** 2026-09-02
 
 ## Question
 
@@ -23,11 +23,19 @@ canonical financial state
    ↓ optional E2EE synchronization
 ```
 
-Level A synthetic evidence now proves the internal contract. Q-004 remains ACTIVE because the same boundary must still be observed against real Gmail, mobile credential storage, real transport and eventual cloud deletion/backup behavior.
+The privacy architecture is now materially less ambiguous than the original Q-004 draft:
+
+- Gmail OAuth/data-plane authority stays on the trusted edge (ADR-017/020);
+- raw Gmail content is transient by default;
+- cloud plaintext financial/Gmail content is forbidden;
+- provider disconnect, Gmail-derived erase, tenant deletion and backup semantics are separated and frozen by ADR-023;
+- Q-005 production crypto/witness/recovery decisions are now narrowed by ADR-021/022/024.
+
+Q-004 remains `ACTIVE` because real mobile storage, real network traffic, cloud deletion, backup restoration and production telemetry behavior still require physical evidence.
 
 ## Anti-pattern
 
-FinanceSensor intentionally rejects the inbox-copying / secondary-dataset pattern associated historically with Unroll.Me / Slice allegations and settlement.
+FinanceSensor intentionally rejects the inbox-copying / secondary-dataset pattern historically associated with Unroll.Me / Slice allegations and settlement.
 
 ```text
 NO hidden secondary commercial dataset
@@ -65,6 +73,7 @@ Gmail
   │ direct authenticated transport
   ▼
 AUTHORIZED DEVICE
+  ├─ protected OAuth authority
   ├─ opaque provider IDs / cursor
   ├─ selected metadata
   ├─ transient raw body when justified
@@ -91,24 +100,30 @@ amount plaintext
 category plaintext
 financial insight plaintext
 OAuth credential plaintext
+Tenant Root Key
+Recovery Private Key
 ```
 
 ## Stage contract
 
 ### OAuth credential
+
 - protected device credential facility in production;
 - never ordinary app-table plaintext;
 - never normal ledger sync payload;
 - removed/revoked on disconnect according to tested semantics.
 
 ### Mailbox enumeration
+
 Persist only what is required for idempotency/incremental operation:
+
 - opaque source identity/derived key;
 - history cursor;
 - processing/extraction version;
 - minimal timing/provenance.
 
 ### Metadata filter
+
 Selected headers may be inspected transiently. Subject text is not durable merely because it was retrieved.
 
 ### Raw extraction
@@ -123,19 +138,21 @@ derive FinancialEvidence + semanticType
 discard raw content
 ```
 
+Semantic meaning must be derived before raw content is discarded. Restart cannot depend on re-reading a deleted subject/body.
+
 ### FinancialEvidence
-Derived financial evidence persists encrypted because provenance/reconciliation/restart require it. The implementation discovery from S-003 is now explicit: **semantic meaning must be derived before raw content is discarded**. Restart cannot depend on re-reading a deleted subject/body.
+
+Derived financial evidence persists encrypted because provenance, reconciliation and restart require it.
 
 ### Canonical state
-Canonical events/relationships/corrections/insights remain encrypted local user state and may later synchronize only through the Q-005 E2EE model.
 
-## Level A executable evidence
+Canonical events/relationships/corrections/insights remain encrypted local user state and may synchronize only through the Q-005 E2EE model.
 
-Harness:
-`spikes/physical-ingress/`
+## Executable Level-A evidence
 
-Evidence:
-`mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
+Harness: `spikes/physical-ingress/`
+
+Evidence: `mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
 
 Observed:
 
@@ -153,11 +170,12 @@ local tenant deletion                 PASS
 request accounting                    PASS
 ```
 
-The local vault is a **spike encryption model**, not Android/iOS production keystore evidence.
+The local vault remains a **spike encryption model**, not Android/iOS production keystore evidence.
 
 ## Telemetry contract
 
 Allowed candidate classes:
+
 - app/build/parser versions;
 - capability class;
 - duration/resource classes;
@@ -165,51 +183,73 @@ Allowed candidate classes:
 - aggregate counts.
 
 Forbidden in ordinary telemetry:
+
 - source body/subject/attachment;
 - OAuth token;
 - merchant/counterparty plaintext;
 - amount/currency tied to event;
 - account/card/provider IDs;
-- canonical financial payload.
+- canonical financial payload;
+- Tenant Root Key / Recovery Private Key.
 
-S-003 includes an allowlist sink that rejects content-bearing fields.
+S-003 includes an allowlist sink that rejects content-bearing fields. Production-path crash/telemetry evidence remains required.
 
 ## Human access
 
-Routine developer/support access to Gmail-derived content or plaintext financial state remains forbidden. Debugging should prefer synthetic fixtures and redacted operational diagnostics.
+Routine developer/support access to Gmail-derived content or plaintext financial state is forbidden. Debugging should prefer synthetic fixtures and redacted operational diagnostics.
 
-## Deletion semantics currently demonstrated at Level A
+## Deletion semantics — ADR-023
 
-### Disconnect source
+The previous ambiguity around provider disconnect is resolved.
 
-Harness proves:
+### Disconnect Gmail
 
-```text
-credential removed locally
-history cursor cleared
-execution identity reset
-```
-
-Derived state has an explicit policy choice in the model:
-- retain user-owned derived financial history; or
-- explicitly erase Gmail-derived local state.
-
-This distinction must later become a clear UX decision, not an implicit side effect.
-
-### Delete tenant
-
-Harness proves local model behavior:
+Default:
 
 ```text
-credential deleted
-local encrypted vault destroyed
+credential/provider authority    DELETE / REVOKE
+history cursor                   DELETE
+execution identity               RESET
+future Gmail retrieval           STOP
+existing derived financial state RETAIN
 ```
 
-It does **not** yet prove production cloud envelope/control metadata/backup deletion.
+Derived state is user-owned financial history; disconnecting a provider does not silently delete it.
+
+### Disconnect Gmail + erase Gmail-derived history
+
+This is a separate explicit destructive operation. It must erase Gmail-derived state using provenance-aware deletion semantics without corrupting unrelated/mixed-provenance canonical state.
+
+### Delete FinanceSensor tenant
+
+Contract:
+
+```text
+provider authorities                REVOKE
+local protected credentials         DELETE
+local encrypted stores              DESTROY
+Tenant Root Key authority           DESTROY / INVALIDATE
+Recovery authority                  INVALIDATE
+cloud ciphertext envelopes          DELETE
+cloud tenant/control metadata       DELETE except bounded deletion receipt/tombstone
+witness log namespaces              DELETE / RETIRE
+account-linked diagnostics          DELETE
+future sync/recovery authorization  DENY
+```
+
+Backup restoration must not resurrect tenant authority.
+
+The infrastructure selection inherits this architecture ceiling:
+
+```text
+BACKUP_MAX_PHYSICAL_RETENTION <= 35 days
+```
+
+Physical backup expiry and restore behavior are not yet proven.
 
 ## Privacy Inspector measurable claims
 
-Candidate counters now have an executable foundation:
+Candidate counters with executable foundations:
 
 ```text
 Emails checked
@@ -220,72 +260,79 @@ Raw bodies retained
 Raw attachments retained
 Plaintext financial cloud bytes
 Request counts
+Deletion phase/status
 ```
 
-A production UI may only claim a zero when the real runtime/network evidence supports the same scope of claim.
+A production UI may claim a zero only when the real runtime/network/storage evidence supports the same scope of claim.
 
-## Machine-readable data matrix
+## Machine-readable inventory
 
-`mk0/04-architecture/PRIVACY-DATA-MATRIX.json`
+- `mk0/04-architecture/PRIVACY-DATA-MATRIX.json` currently contains **19 base data classes**.
+- `mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json` adds **5 recovery/checkpoint classes**.
+- combined validator scope: **24 classes** at this snapshot.
 
-Current matrix tracks 18 classes and remains DRAFT until real transport, mobile storage, E2EE and deletion semantics are reconciled.
+Both matrices remain `DRAFT`. ADR-023 introduces a bounded deletion tombstone/receipt concept that must be reconciled into the machine-readable inventory before Q-004 can close; `deny-unclassified-persistence` remains the default law.
 
-## Level B privacy evidence prepared but not executed
+## Physical closure campaign
 
-Real adapter / runner:
+Authoritative execution plan:
 
-```text
-spikes/physical-ingress/src/gmail-rest-provider.js
-spikes/physical-ingress/live/run-gmail.mjs
-.github/workflows/gmail-live-spike.yml
-```
+`mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md`
 
-The live runner intentionally prints **aggregate operational evidence only** and can revoke its controlled OAuth token after execution.
-
-Still required:
+Q-004 physical evidence still requires:
 
 ```text
-controlled real Gmail OAuth
-real endpoint lifecycle
-real remote revoke
-Android protected token storage
+Android/iOS protected OAuth credential custody
 real network inspection
-real filesystem/storage inspection
-cloud metadata/envelope deletion semantics
-backup retention/deletion semantics
+real filesystem/database/cache/temp inspection
+production telemetry/crash redaction
+cloud envelope/control-metadata deletion
+witness namespace deletion/retirement
+backup retention evidence
+restore-from-pre-deletion-backup resurrection test
 metadata leakage budget
+Privacy Inspector measured-claim mapping
 ```
 
 ## Current decision
 
 ```text
-RAW_EMAIL_CLOUD_STORAGE       FORBIDDEN
-RAW_EMAIL_LOCAL_RETENTION     TRANSIENT BY DEFAULT
-DERIVED_SEMANTIC_TYPE         ENCRYPTED DURABLE EVIDENCE
-GMAIL_TOKEN_CLOUD_PLAINTEXT   FORBIDDEN
-DERIVED_EVIDENCE_LOCAL        ENCRYPTED
-CANONICAL_LEDGER_LOCAL        ENCRYPTED
-CANONICAL_SYNC                E2EE CANDIDATE
-ROUTINE_HUMAN_ACCESS          FORBIDDEN
-CONTENT_ANALYTICS             FORBIDDEN
-GENERALIZED_AI_TRAINING       FORBIDDEN FOR GMAIL-DERIVED DATA
-LEVEL_A_PRIVACY_HARNESS       PASS
-LEVEL_B_REAL_LIFECYCLE        NOT EXECUTED
+RAW_EMAIL_CLOUD_STORAGE          FORBIDDEN
+RAW_EMAIL_LOCAL_RETENTION        TRANSIENT BY DEFAULT
+DERIVED_SEMANTIC_TYPE            ENCRYPTED DURABLE EVIDENCE
+GMAIL_TOKEN_CLOUD_PLAINTEXT      FORBIDDEN
+DERIVED_EVIDENCE_LOCAL           ENCRYPTED
+CANONICAL_LEDGER_LOCAL           ENCRYPTED
+CANONICAL_SYNC                   E2EE ONLY
+ROUTINE_HUMAN_ACCESS             FORBIDDEN
+CONTENT_ANALYTICS                FORBIDDEN
+GENERALIZED_AI_TRAINING          FORBIDDEN FOR GMAIL-DERIVED DATA
+DISCONNECT_DEFAULT               RETAIN DERIVED USER HISTORY
+EXPLICIT GMAIL-DERIVED ERASE     REQUIRED UX PATH
+TENANT_DELETE                    CRYPTO-SHRED + CLOUD/WITNESS DELETE
+BACKUP_RETENTION_CEILING         35 DAYS
+LEVEL_A_PRIVACY_HARNESS          PASS
+LEVEL_B/PRODUCTION LIFECYCLE     PHYSICAL EVIDENCE OPEN
 
-PRIVACY_MODEL                 ACTIVE / NOT CLOSED
+PRIVACY_MODEL                    ACTIVE / NOT CLOSED
 ```
 
 ## Closure criteria
 
 Q-004 closes only when:
+
 - machine-readable data inventory is complete and validated;
-- Q-005 key/sync model reconciles with this boundary;
+- Q-005 key/sync model is reconciled with this boundary;
 - threat model covers raw mail, tokens, evidence, ledger, metadata, logs and backups;
 - telemetry/crash redaction has executable production-path tests;
 - real Gmail consent/revoke lifecycle is observed;
-- Android protected credential storage is physically tested;
+- Android/iOS protected credential storage is physically tested;
 - real network/storage inspection supports the stated privacy boundary;
-- cloud deletion/backup semantics are specified and tested;
+- ADR-023 cloud deletion/backup semantics are physically tested;
 - Privacy Inspector claims map to measured evidence;
 - closure receipt lists residual metadata/backup risks;
 - `PRIVACY_MODEL PASS/FAIL` is recorded.
+
+```text
+DOCUMENTED PRIVACY CONTRACT != PHYSICALLY VERIFIED PRIVACY CONTRACT
+```
