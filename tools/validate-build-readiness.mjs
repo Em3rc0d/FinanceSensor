@@ -4,11 +4,12 @@ const manifestPath = 'graph/build-readiness.json';
 const ledgerPath = 'graph/closure-ledger.json';
 const campaignPath = 'graph/physical-closure-campaign.json';
 const releasePath = 'mk0/12-release/RELEASE-GATES.md';
+const tenancyAdrPath = 'mk0/11-decisions/ADR-001-TENANT-FINANCIAL-OWNERSHIP-BOUNDARY.md';
 
 const failures = [];
 const fail = message => failures.push(message);
 
-for (const path of [manifestPath, ledgerPath, campaignPath, releasePath]) {
+for (const path of [manifestPath, ledgerPath, campaignPath, releasePath, tenancyAdrPath]) {
   if (!fs.existsSync(path)) fail(`missing ${path}`);
 }
 
@@ -17,6 +18,7 @@ if (!failures.length) {
   const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
   const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
   const release = fs.readFileSync(releasePath, 'utf8');
+  const tenancyAdr = fs.readFileSync(tenancyAdrPath, 'utf8');
 
   if (manifest.schemaVersion !== 1) fail('build readiness schemaVersion must be 1');
   if (manifest.project !== 'FinanceSensor' || manifest.mk !== 'MK0') fail('build readiness identity mismatch');
@@ -61,6 +63,18 @@ if (!failures.length) {
     const node = ledger.nodes.find(node => node.id === id);
     if (node?.status !== 'CLOSED') fail(`${id} must remain CLOSED for financial model PASS`);
   }
+
+  if (byId.get('TENANCY_MODEL')?.state !== 'PASS') fail('TENANCY_MODEL must be PASS after ADR-001 freeze');
+  for (const marker of [
+    'TENANT = FINANCIAL OWNERSHIP + ISOLATION BOUNDARY',
+    'USER != TENANT',
+    'DEVICE != TENANT',
+    'CONNECTION != TENANT',
+    'TENANCY_MODEL_FROZEN != RLS_PHYSICALLY_PROVEN'
+  ]) {
+    if (!tenancyAdr.includes(marker)) fail(`ADR-001 missing tenancy marker: ${marker}`);
+  }
+
   if (byId.get('FINANCIAL_MODEL')?.state !== 'PASS') fail('FINANCIAL_MODEL must be PASS');
   if (byId.get('EVENT_INVARIANTS')?.state !== 'PASS') fail('EVENT_INVARIANTS must be PASS');
 
@@ -79,9 +93,10 @@ if (!failures.length) {
   if (!campaign.phases?.some(phase => phase.status === 'PHYSICAL_EVIDENCE_REQUIRED')) fail('physical campaign must retain physical blockers');
 
   const prePhysical = new Set(manifest.prePhysicalClosureTargets ?? []);
-  for (const id of ['MK0_SCOPE', 'TENANCY_MODEL', 'THREAT_MODEL', 'SIGNATURE_WIREFRAMES', 'NO_SCROLL_CONTRACT', 'IMPLEMENTATION_PLAN']) {
+  for (const id of ['MK0_SCOPE', 'THREAT_MODEL', 'SIGNATURE_WIREFRAMES', 'NO_SCROLL_CONTRACT', 'IMPLEMENTATION_PLAN']) {
     if (!prePhysical.has(id)) fail(`prePhysicalClosureTargets missing ${id}`);
   }
+  if (prePhysical.has('TENANCY_MODEL')) fail('TENANCY_MODEL cannot remain a pre-physical documentary blocker after ADR-001 freeze');
 
   const physical = new Set(manifest.physicalClosureTargets ?? []);
   for (const id of ['P0_QUARRIES', 'EDGE_CLOUD_BOUNDARY', 'PRIVACY_MODEL', 'GMAIL_FEASIBILITY', 'ANDROID_FEASIBILITY', 'MULTI_DEVICE_DESIGN']) {
@@ -108,6 +123,7 @@ console.log(`GATES=${manifest.gates.length}`);
 console.log(`STATE_COUNTS=${JSON.stringify(counts)}`);
 console.log(`PRE_PHYSICAL_TARGETS=${manifest.prePhysicalClosureTargets.length}`);
 console.log(`PHYSICAL_TARGETS=${manifest.physicalClosureTargets.length}`);
+console.log('TENANCY_MODEL=PASS');
 console.log('IMPLEMENTATION_BASELINE=FROZEN');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=CLOSURE_REQUIRED');
