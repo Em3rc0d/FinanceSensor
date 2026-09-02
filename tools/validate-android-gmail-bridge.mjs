@@ -94,15 +94,16 @@ if (!failures.length) {
   if (/\$\{\{\s*secrets\./.test(workflow)) fail('connection workflow must not reference GitHub secrets');
   if (/self-hosted/i.test(workflow)) fail('connection workflow must not route to self-hosted CI');
 
-  for (const marker of [
-    'ANDROID_AUTHORIZATION_PROVIDER = GOOGLE_AUTHORIZATION_CLIENT',
-    'ANDROID_OFFLINE_ACCESS = REJECTED',
-    'ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE',
-    'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN',
-    'PACKAGE_PLUS_SHA1_BINDING = REQUIRED',
-    'STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS'
-  ]) {
-    if (!adr.includes(marker)) fail(`ADR-026 missing marker: ${marker}`);
+  const adrMarkers = [
+    [/ANDROID_AUTHORIZATION_PROVIDER\s*=\s*GOOGLE_AUTHORIZATION_CLIENT/, 'ANDROID_AUTHORIZATION_PROVIDER = GOOGLE_AUTHORIZATION_CLIENT'],
+    [/ANDROID_OFFLINE_ACCESS\s*=\s*REJECTED/, 'ANDROID_OFFLINE_ACCESS = REJECTED'],
+    [/ANDROID_APP_REFRESH_TOKEN_CUSTODY\s*=\s*NONE/, 'ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE'],
+    [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN'],
+    [/PACKAGE_PLUS_SHA1_BINDING\s*=\s*REQUIRED/, 'PACKAGE_PLUS_SHA1_BINDING = REQUIRED'],
+    [/STATIC_BRIDGE_PASS\s*!=\s*PHYSICAL_OAUTH_PASS/, 'STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS']
+  ];
+  for (const [pattern, label] of adrMarkers) {
+    if (!pattern.test(adr)) fail(`ADR-026 missing marker: ${label}`);
   }
 
   for (const marker of [
