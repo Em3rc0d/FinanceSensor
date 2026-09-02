@@ -1,46 +1,46 @@
 # FinanceSensor-owned Gmail OAuth — Level C execution packet
 
-**Status:** READY FOR CONTROLLED EXTERNAL AUTHORIZATION  
+**Status:** READY FOR CONTROLLED EXTERNAL AUTHORIZATION — v3 REQUIRED  
 **Date:** 2026-09-01  
+**Reconciled:** 2026-09-02  
 **Owner:** Q-003 / ADR-017
 
 ## Purpose
 
-This packet defines the physical experiment that must prove FinanceSensor's own OAuth identity can feed the existing Gmail ingress path without weakening the privacy, least-privilege, provenance or parasympathetic contracts already demonstrated by synthetic and real-provider evidence.
+This packet defines the physical experiment that must prove FinanceSensor's own OAuth identity can feed the existing Gmail ingress path without weakening privacy, least privilege, provenance or parasympathetic contracts.
 
-It is not permission to move long-lived Gmail authority into CI or the FinanceSensor cloud.
+It is not permission to move long-lived Gmail authority or the Google Desktop client credential into CI or the FinanceSensor cloud.
 
 ## Preconditions
 
-The experiment starts only when all of the following exist:
-
 ```text
-CONTROLLED GOOGLE CLOUD DEV PROJECT
-GMAIL API ENABLED IN THAT DEV PROJECT
-FINANCESENSOR-OWNED OAUTH CLIENT FOR THE ACTUAL TEST PLATFORM
-CONTROLLED TEST USER ALLOWED BY THE DEV CONSENT CONFIGURATION
-EXACT REQUESTED SCOPE = gmail.readonly
-CONTROLLED EDGE/CLIENT RUNTIME
+CONTROLLED GOOGLE CLOUD DEV PROJECT                         READY
+GMAIL API ENABLED                                          READY
+FINANCESENSOR DEV DESKTOP OAUTH CLIENT                     READY
+CONTROLLED TEST USER                                       READY
+EXACT REQUESTED SCOPE = gmail.readonly                     READY
+GOOGLE-DOWNLOADED DESKTOP CREDENTIALS JSON                 OPERATOR-LOCAL
+CONTROLLED WINDOWS/EDGE RUNTIME                            READY
 ```
 
-DEV and eventual PROD OAuth projects/clients are separate identities.
+DEV and eventual PROD OAuth projects/clients remain separate identities.
 
 ## Authority boundary
 
 ```text
-Google consent in supported browser/platform flow
-        ↓
-authorization response bound to initiating session/state
-        ↓
-PKCE-protected code exchange
-        ↓
-protected edge credential store owns long-lived refresh authority
-        ↓
+Google Desktop credentials JSON
+        ↓ selected locally; never uploaded
+client_id + client_secret
+        ↓ process memory only
+Google consent in browser
+        ↓ state + PKCE S256
+Google token endpoint
+        ↓ refresh authority stays local
 LocalOAuthCredentialProvider
         ↓ short-lived bearer only
 GmailRestProvider
         ↓
-metadata-first physical ingress
+post-authorization Gmail history only
 ```
 
 Forbidden shortcuts:
@@ -48,86 +48,88 @@ Forbidden shortcuts:
 ```text
 cloud control plane as normal refresh-token custodian
 GitHub Actions as OAuth Level-C authority
-client secret embedded in mobile client
+real Desktop client_secret in GitHub/CI/chat/evidence
+client secret treated as mobile confidential boundary
 manual OOB copy/paste flow
 silent 401 retry loop
+historical mailbox sweep for this proof
 raw Gmail content in repository evidence
 raw financial literals in CI evidence
 ```
 
 ## Physical sequence
 
-1. Provision the controlled FinanceSensor DEV OAuth identity for the actual platform.
-2. Register/allow only the controlled test user required for the experiment.
-3. Initiate authorization from the controlled edge/client runtime.
-4. Request exactly `https://www.googleapis.com/auth/gmail.readonly`.
-5. Bind the response to the initiating session using `state` and PKCE S256.
-6. Exchange the authorization code without a client secret in the public-client runtime.
-7. Place long-lived refresh authority in the platform-protected credential store; never commit or print it.
-8. Obtain a short-lived access token through the device-local credential broker.
-9. Feed only that short-lived bearer into `GmailRestProvider`.
-10. Execute bounded `messages.list`.
-11. Execute `messages.get(METADATA)` for considered messages.
-12. Execute `messages.get(FULL)` only for selected financial candidates.
-13. Read the current Gmail history cursor/profile state.
-14. Produce a controlled new-message change and exercise `history.list` incremental sync.
-15. Repeat one sync window to verify idempotent replay.
-16. Force/observe an authorization-invalid state; verify the current call returns `REAUTH_REQUIRED` with no hidden retry.
-17. Re-authorize or refresh through the supported local authority path and verify later work resumes.
-18. Disconnect/revoke the controlled Gmail authorization and verify the old authority can no longer read Gmail.
-19. Verify local connection cursor/credential cleanup according to Q-004 while user-owned derived history follows the selected disconnect policy.
-20. Record only aggregate, sanitized evidence.
+1. Download the credentials JSON for the existing `FinanceSensor DEV Level-C` Desktop client directly from Google Cloud and keep it on the local test machine.
+2. Start the packaged v3 runner; Windows opens a file picker and the operator selects that JSON. Cancelling stops before OAuth.
+3. FinanceSensor parses only the `installed` Desktop client material and requires its `client_id` to equal the frozen public DEV Client ID.
+4. FinanceSensor keeps the Google-issued Desktop `client_secret` only in process memory and never writes the credential file/path to evidence.
+5. Initiate browser authorization requesting exactly `https://www.googleapis.com/auth/gmail.readonly`.
+6. Bind the callback to the initiating session with `state` and PKCE S256.
+7. Exchange the code using `client_id + local client_secret + redirect_uri + code + code_verifier` as required by the observed Desktop provider.
+8. Receive a short-lived access token and local refresh authority; never print or persist either in the runner/evidence.
+9. Call Gmail profile only to obtain the baseline `historyId`.
+10. The operator sends one harmless synthetic email after authorization.
+11. Call `history.list` from the baseline cursor; do **not** call `messages.list`.
+12. Inspect at most 5 changed message IDs per bounded attempt using `messages.get(METADATA)`.
+13. Call `messages.get(FULL)` for at most one qualifying synthetic candidate.
+14. Repeat the same history window once to observe replay consistency/idempotency.
+15. Revoke the controlled authorization.
+16. Attempt to use the old refresh authority and require denial after revoke.
+17. Clear direct in-process references to refresh authority and Desktop client credential.
+18. Record only aggregate, sanitized evidence.
+
+The runner permits at most two bounded history attempts in case Gmail propagation is delayed. It never expands into a mailbox scan.
 
 ## Required observations
 
 ```text
-REAL_OAUTH_CONSENT                  PASS / FAIL
-EXACT_SCOPE                         gmail.readonly / FAIL
-PKCE_S256                           PASS / FAIL
-STATE_BINDING                       PASS / FAIL
-CLIENT_SECRET_ON_EDGE               0 / FAIL
-CLOUD_REFRESH_AUTHORITY             0 / FAIL
-REAL_MESSAGES_LIST                  PASS / FAIL
-REAL_METADATA_GET                   PASS / FAIL
-REAL_SELECTED_FULL_GET              PASS / FAIL
-REAL_HISTORY_CURSOR                 PASS / FAIL
-REAL_INCREMENTAL_SYNC               PASS / FAIL
-REPLAY_IDEMPOTENT                   PASS / FAIL
-401_HIDDEN_RETRY                    0 / FAIL
-REAUTH_REQUIRED                     PASS / FAIL
-REMOTE_OR_PROVIDER_REVOCATION       PASS / FAIL
-OLD_AUTHORITY_AFTER_REVOCATION      DENIED / FAIL
-RAW_GMAIL_CONTENT_IN_REPO           0 / FAIL
-FINANCIAL_PLAINTEXT_IN_CI           0 / FAIL
-AUTH_SECRET_IN_LOGS                 0 / FAIL
-REQUEST_COUNT                       MEASURED
-TRANSFERRED_BYTES                   MEASURED WHERE AVAILABLE
-TIMING                              MEASURED
+DESKTOP_CREDENTIAL_SELECTED_LOCALLY      PASS / FAIL
+DESKTOP_CLIENT_ID_MATCH                  PASS / FAIL
+CLIENT_SECRET_REQUIRED_BY_PROVIDER       OBSERVED
+CLIENT_SECRET_PERSISTED_BY_RUNNER        0 / FAIL
+CLIENT_SECRET_IN_REPO_OR_CI              0 / FAIL
+REAL_OAUTH_CONSENT                       PASS / FAIL
+EXACT_SCOPE                              gmail.readonly / FAIL
+PKCE_S256                                PASS / FAIL
+STATE_BINDING                            PASS / FAIL
+CLOUD_REFRESH_AUTHORITY                  0 / FAIL
+REAL_HISTORY_CURSOR                      PASS / FAIL
+MESSAGES_LIST_USED                       0 / FAIL
+REAL_INCREMENTAL_HISTORY                 PASS / FAIL
+REAL_METADATA_GET                        PASS / FAIL
+REAL_SELECTED_FULL_GET                   PASS / FAIL
+REPLAY_OBSERVED                          PASS / REVIEW
+REMOTE_OR_PROVIDER_REVOCATION            PASS / FAIL
+OLD_REFRESH_AUTHORITY_AFTER_REVOCATION   DENIED / FAIL
+RAW_GMAIL_CONTENT_IN_REPO                0 / FAIL
+FINANCIAL_PLAINTEXT_IN_CI                0 / FAIL
+AUTH_SECRET_IN_LOGS_OR_EVIDENCE          0 / FAIL
+REQUEST_COUNT                            MEASURED
 ```
 
 ## Evidence identifiers
 
-The evidence artifact may retain:
+The sanitized result may retain:
 
-- execution date/time;
-- app/client identity as a one-way fingerprint if useful;
-- platform/runtime version;
-- requested scope string;
-- counts of list/metadata/full/history requests;
-- counts of candidates/evidence/canonical results;
-- timings and byte counts where available;
-- boolean gate results;
-- CI/repository commit SHA for the code under test.
+- execution timestamps;
+- client identity as a one-way fingerprint;
+- requested scope;
+- bounded request counts;
+- boolean/status gate results;
+- probe attempt count;
+- allowlisted OAuth error code if a provider call fails.
 
 It must not retain:
 
+- Google credentials JSON contents or local path;
+- Desktop `client_secret`;
 - refresh token;
 - access token;
 - authorization code;
 - PKCE verifier;
-- Gmail message body/subject;
+- Gmail message ID/body/subject;
 - real amount, account number, merchant, recipient or operation reference;
-- provider raw error body containing user data.
+- provider raw error body containing secrets or user data.
 
 ## Failure policy
 
@@ -135,34 +137,51 @@ Any of the following makes Level C **FAIL**, not partial success:
 
 ```text
 scope broader than gmail.readonly
+wrong/mismatched Desktop credentials file
 state/PKCE binding cannot be demonstrated
-client secret required in the public mobile client
-long-lived Gmail authority must traverse FinanceSensor cloud
-raw financial email is persisted to repo/CI
-401 causes an uncontrolled retry loop
-revoked/disconnected authority remains usable without an explained provider grace condition
-metadata-first boundary is bypassed without explicit evidence reason
+Desktop credential must leave the local runtime
+long-lived Gmail authority traverses FinanceSensor cloud
+messages.list or historical sweep occurs in v3
+raw financial email persists to repo/CI/evidence
+401 causes uncontrolled retry
+revoked authority remains usable without a documented provider grace condition
+secret/token appears in logs or sanitized evidence
 ```
 
-A provider/policy limitation discovered during the run may reopen ADR-017/Q-003 rather than being patched around silently.
+A provider/policy limitation discovered during the run reopens the relevant ADR/Q-node rather than being patched around silently.
+
+## Evidence already obtained from red attempts
+
+Two real Level-C attempts reached a state-bound callback and failed at token exchange before any Gmail call. A synthetic negative contract probe then reproduced `invalid_request` with no real grant and captured Google's safe diagnostic:
+
+```text
+client_secret is missing.
+```
+
+Frozen in:
+
+`mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md`
 
 ## Current readiness
 
 ```text
-REAL PROVIDER REACHABILITY              PASS
-REAL TRANSACTIONAL SOURCE SHAPE         PASS
-GMAIL REST ADAPTER                       READY
-PKCE / STATE CONTRACT                    TESTED
-EXACT-SCOPE GUARD                        TESTED
-NO CLIENT SECRET CONTRACT                TESTED
-LOCAL REFRESH AUTHORITY                  TESTED
-SHORT-TOKEN CACHE                        TESTED
-CONCURRENT REFRESH COALESCING            TESTED
-401 INVALIDATION / NO HIDDEN RETRY       TESTED
-REFRESH AUTHORITY → GMAIL BOUNDARY       TESTED
-CI LONG-LIVED-AUTHORITY CUSTODY          FORBIDDEN
-CONTROLLED FINANCESENSOR DEV OAUTH ID    EXTERNAL PRECONDITION
-INTERACTIVE LEVEL-C EXECUTION            NOT YET EXECUTED
+REAL PROVIDER REACHABILITY                   PASS
+REAL TRANSACTIONAL SOURCE SHAPE              PASS
+GMAIL REST ADAPTER                            READY
+CONTROLLED FINANCESENSOR DEV OAUTH ID         READY
+CONTROLLED TEST USER                          READY
+PKCE / STATE CONTRACT                         TESTED
+STATE CALLBACK                                PHYSICALLY OBSERVED
+DESKTOP CLIENT CREDENTIAL REQUIREMENT         PHYSICALLY OBSERVED
+DESKTOP CREDENTIAL LOCAL-CUSTODY CONTRACT     TESTED / v3
+LOCAL REFRESH AUTHORITY                       TESTED
+SHORT-TOKEN CACHE                             TESTED
+CONCURRENT REFRESH COALESCING                 TESTED
+401 INVALIDATION / NO HIDDEN RETRY            TESTED
+CI LONG-LIVED-AUTHORITY CUSTODY               FORBIDDEN
+HISTORY-ONLY LEVEL-C PROBE                    v3
+SUCCESSFUL PRODUCT TOKEN EXCHANGE             PENDING
+SUCCESSFUL GMAIL LEVEL-C DATA PLANE           PENDING
 ```
 
 `READY FOR AUTHORIZATION ≠ AUTHORIZED ≠ LEVEL C PASS`.
