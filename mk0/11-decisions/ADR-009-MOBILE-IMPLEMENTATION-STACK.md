@@ -8,7 +8,7 @@
 ADR-025 freezes FinanceSensor as a mobile-first product with Android as the first physical target and iOS as a required production target. The implementation stack remained open because the client must satisfy more than cross-platform UI delivery:
 
 - mobile BI-grade visualization;
-- local-first SQLite persistence;
+- local-first encrypted SQLite persistence;
 - Gmail OAuth with device-local credential authority;
 - Android Keystore / StrongBox integration;
 - iOS Keychain / Secure Enclave integration;
@@ -31,13 +31,13 @@ Native code remains mandatory where the operating system owns the security primi
 
 ### Kotlin Multiplatform / Compose Multiplatform
 
-Technically viable. Current Kotlin Multiplatform supports sharing business logic while keeping native UI, or sharing UI through Compose Multiplatform, and retains platform-specific source sets for Android/iOS APIs.
+Technically viable. Kotlin Multiplatform supports sharing business logic while retaining platform-specific source sets for Android/iOS APIs.
 
 Not selected for MK0 because FinanceSensor currently benefits more from one fast product/UI surface plus deliberately small native security adapters than from making Kotlin the cross-platform application language. This can be revisited if the shared protocol core becomes the dominant implementation cost.
 
 ### React Native
 
-Technically viable. React Native provides native modules/components for Kotlin/Swift integration.
+Technically viable through native modules/components for Kotlin/Swift integration.
 
 Not selected for MK0 because FinanceSensor does not currently gain enough from the JavaScript/React ecosystem to offset another runtime/package surface around a security-sensitive local-first product. This is not a statement that React Native cannot satisfy the requirements.
 
@@ -45,13 +45,13 @@ Not selected for MK0 because FinanceSensor does not currently gain enough from t
 
 Selected for MK0.
 
-Current Flutter provides:
+Flutter provides:
 
 - one mobile UI codebase for Android/iOS;
 - direct platform-specific integration through Kotlin/Swift platform channels;
-- supported mobile SQLite workflows;
+- mobile SQLite workflows;
 - strong control over custom visual composition needed for mobile BI;
-- supported Android/iOS deployment baselines broad enough for the product shell while allowing FinanceSensor to impose stricter feature/security gates.
+- deployment support broad enough for FinanceSensor to impose its stricter security baseline.
 
 ## Decision
 
@@ -65,11 +65,14 @@ LOCAL FINANCIAL APPLICATION LAYER
 Dart modules with deterministic contracts
 
 LOCAL SQL PERSISTENCE
-SQLite behind a repository boundary
+SQLite + SQLCipher under ADR-006
 
 PLATFORM SECURITY BRIDGE
 Android → Kotlin
 Apple   → Swift
+
+ANDROID AUTHORITY BASELINE
+minSdk 31 under ADR-013
 
 PROTECTED PRIVATE KEY OPERATIONS
 Android Keystore / StrongBox where compatible
@@ -89,9 +92,10 @@ The Flutter layer MUST NOT become durable custody for:
 - Gmail refresh tokens;
 - Google OAuth client credentials that are confidential on a given platform;
 - long-lived device private keys;
+- Database Encryption Keys (DEKs);
 - Recovery Kit private material.
 
-Those objects remain behind platform-owned/native facilities according to ADR-017, ADR-021 and ADR-024.
+Those objects remain behind platform-owned/native facilities according to ADR-006, ADR-017, ADR-021 and ADR-024.
 
 ### Native security bridge
 
@@ -112,6 +116,11 @@ PlatformDeviceKeyStore
   deriveOrUnwrapAuthorizedMaterial()
   keyProtectionClass()
   deleteDeviceAuthority()
+
+PlatformDatabaseKeyStore
+  createAndWrapDatabaseKey()
+  unwrapDatabaseKeyForOpen()
+  deleteDatabaseKeyAuthority()
 ```
 
 The bridge contract is shared; implementations are platform-specific.
@@ -133,7 +142,7 @@ Never:
 ```text
 NATIVE SECURITY OPERATION UNSUPPORTED
         ↓
-EXPORT PRIVATE KEY TO DART
+EXPORT PRIVATE KEY OR DATABASE KEY TO DART STORAGE
         ↓
 CONTINUE SILENTLY
 ```
@@ -154,33 +163,43 @@ This includes candidates such as:
 
 The existing Node spikes are specification/evidence inputs, not code to embed in the mobile app.
 
-### SQLite boundary
+### Encrypted SQLite boundary
 
-SQLite is selected as the initial local persistence family, but ADR-006 still owns the exact encrypted-persistence technology and keying mechanism.
+ADR-006 resolves the earlier persistence gap:
 
 ```text
-SQLITE FAMILY ACCEPTED
-EXACT ENCRYPTED DRIVER / KEY MANAGEMENT OPEN UNDER ADR-006
+SQLITE FAMILY                   ACCEPTED
+PRODUCTION ENCRYPTION           SQLCipher 4.x family
+DATABASE KEY                    random 256-bit DEK
+DURABLE DEK IN DART             FORBIDDEN
+PLAINTEXT SQLITE FALLBACK       FORBIDDEN
+PLATFORM-PROTECTED DEK WRAP     REQUIRED
 ```
 
-No plaintext production ledger is permitted merely because ordinary SQLite is convenient during development.
+The exact SQLCipher patch/library package is pinned and supply-chain reviewed at implementation time. Failure to initialize encrypted storage is a fail-closed storage error, not permission to open ordinary SQLite.
 
-## Android baseline nuance
+## Android baseline
 
-Flutter framework support does not define FinanceSensor's security baseline.
+ADR-013 resolves the mobile authority baseline:
 
-Current Android documentation exposes Keystore EC primitives broadly, but the dedicated key-agreement purpose used for protected ECDH is available from API 31. Therefore:
+```text
+FINANCESENSOR minSdk            31
+MINIMUM OS                      Android 12
+2026 targetSdk floor            36
+API 37                          compatibility target, not minimum
+```
+
+The reason is architectural rather than cosmetic: Android Keystore's dedicated protected ECDH `PURPOSE_AGREE_KEY` begins at API 31, matching the P-256 agreement profile selected by ADR-021.
 
 ```text
 FLUTTER MINIMUM != FINANCESENSOR AUTHORITY MINIMUM
 ```
 
-ADR-013 remains open until the physical device matrix determines whether FinanceSensor:
+API level alone still does not prove a device's hardware protection class. Runtime capability inspection and physical Keystore/StrongBox/TEE evidence remain mandatory.
 
-1. sets the whole production app minimum at a sufficiently modern Android level; or
-2. supports a broader read/local-only shell while gating multi-device authority to devices that satisfy the protected-key contract.
+### No broad-shell split in MK0
 
-No compatibility decision is made here.
+MK0 rejects shipping a broader installable Android shell whose key product/security features silently disappear below API 31. That compatibility mode can be reconsidered only through a new ADR after product validation.
 
 ## iOS boundary
 
@@ -204,12 +223,15 @@ Positive:
 - Android/iOS UI parity without duplicating the BI product surface;
 - explicit escape hatch into native security facilities;
 - security-critical authority remains platform-owned;
-- product lab concepts can migrate into a real mobile shell without redefining the architecture.
+- encrypted local storage and Android compatibility are no longer architecture unknowns;
+- product lab concepts can migrate into a real mobile shell without redefining architecture.
 
 Costs:
 
 - Kotlin and Swift bridge code must be maintained and tested;
 - plugin convenience cannot override the trust boundary;
+- SQLCipher introduces a native dependency and review obligation;
+- minSdk 31 intentionally excludes older Android devices;
 - mobile CI/build tooling becomes more complex;
 - iOS physical builds require Apple tooling/macOS even though most shared development can occur elsewhere.
 
@@ -220,7 +242,8 @@ Static/engineering:
 - Flutter project skeleton with zero real credentials;
 - typed native bridge contract;
 - synthetic Android/iOS bridge tests;
-- SQLite repository contract;
+- SQLCipher repository/key-boundary contract;
+- minSdk 31 / targetSdk policy guard;
 - mobile viewport regression harness;
 - dependency/SBOM capture.
 
@@ -231,8 +254,9 @@ Physical:
 - Android protected P-256 signing/key-agreement path;
 - iOS Secure Enclave/Keychain protected P-256 path;
 - Android↔iOS crypto interoperability;
+- SQLCipher database/sidecar inspection and protected DEK lifecycle;
 - credential/key deletion on disconnect/revocation;
-- compact Android performance and storage measurements.
+- compact API-31 Android performance and storage measurements.
 
 ## Governing laws
 
@@ -240,6 +264,7 @@ Physical:
 FLUTTER_UI != SECURITY_BOUNDARY
 PLUGIN_CONVENIENCE < PLATFORM_TRUST_BOUNDARY
 EXPORTABLE_PRIVATE_KEY_FALLBACK = FORBIDDEN
+PLAINTEXT_SQLITE_FALLBACK = FORBIDDEN
 FLUTTER_SUPPORT_MATRIX != FINANCESENSOR_SECURITY_BASELINE
 SHARED_UI != SHARED_SECRET_CUSTODY
 STACK_ACCEPTED != MOBILE_PHYSICAL_PROVEN
@@ -247,18 +272,16 @@ STACK_ACCEPTED != MOBILE_PHYSICAL_PROVEN
 
 ## External anchors reviewed
 
-Current official documentation reviewed on 2026-09-02:
+Current official/vendor documentation reviewed on 2026-09-02:
 
-- Flutter platform channels / platform-specific Kotlin and Swift integration;
-- Flutter SQLite persistence guidance;
-- Flutter supported deployment platforms;
-- Kotlin Multiplatform shared/native architecture documentation;
-- React Native native-platform module documentation;
+- Flutter platform-specific Kotlin/Swift integration and supported deployment platforms;
 - Android Keystore key-purpose documentation;
-- Apple CryptoKit Secure Enclave P-256 signing/key-agreement documentation.
+- Apple CryptoKit Secure Enclave P-256 signing/key-agreement documentation;
+- Zetetic SQLCipher documentation/release surface;
+- ADR-006 and ADR-013.
 
 Release-time versions and security behavior must be revalidated.
 
 ## Supersedes / superseded by
 
-This resolves the implementation-stack choice tracked as ADR-009 in the ADR index. It does not resolve ADR-006 (encrypted local persistence) or ADR-013 (minimum supported Android baseline).
+This resolves the implementation-stack choice tracked as ADR-009. ADR-006 now resolves encrypted local persistence and ADR-013 resolves the Android minimum baseline. Physical mobile behavior remains open under Q-003/Q-004/Q-005.
