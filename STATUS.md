@@ -232,9 +232,7 @@ FinanceSensor completed the private→public transition on 2026-09-02. The defau
 
 The first post-public run correctly failed closed on one `OAUTH_SECRET_ENV` detector hit in `spikes/physical-ingress/test/oauth-native-contract.test.js`. Inspection proved the matched value was the explicit synthetic fixture `desktop-local-client-secret` paired with the synthetic client ID `1234567890-example.apps.googleusercontent.com`; it was not provider authority or a real credential. The auditor was then narrowed with an exact reviewed-fixture allowlist rather than weakening the detector class.
 
-Clean reruns passed after the detector correction, branch reconciliation and certification-ledger update. The final recorded counters below are intentionally reconciled to include this status revision itself.
-
-Final public certification evidence:
+Subsequent clean reruns passed after detector correction, branch reconciliation and ledger updates. The final audit that directly precedes this locked baseline observed:
 
 ```text
 REPOSITORY VISIBILITY                       PUBLIC
