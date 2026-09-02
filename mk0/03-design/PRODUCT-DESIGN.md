@@ -4,6 +4,36 @@
 
 Make the user's financial state understandable in seconds, without requiring finance knowledge and without judging lifestyle choices.
 
+## Platform contract
+
+FinanceSensor is **mobile-first**.
+
+```text
+PRIMARY PRODUCT
+Android → first physical product target
+iOS     → required production target
+
+SECONDARY / FUTURE
+Web     → possible companion / richer analysis surface
+Desktop → engineering proof surface; no first-class product commitment
+```
+
+See [`../11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md`](../11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md).
+
+The product may deliver BI-grade financial understanding, but it must not become a desktop dashboard compressed into a phone.
+
+```text
+FINANCIAL MODEL
+      ↓
+MOBILE INFORMATION PRIORITY
+      ↓
+ONE PRIMARY QUESTION PER VIEWPORT
+      ↓
+PROGRESSIVE DISCLOSURE
+      ↓
+EXPLAIN EVERYTHING
+```
+
 ## Primary questions
 
 MK0 surfaces should answer:
@@ -33,17 +63,50 @@ Bottom navigation candidate:
 Inicio | Mov. | Sensor | Tú
 ```
 
+## Mobile BI language
+
+FinanceSensor should feel richer than a simple banking app while preserving mobile clarity.
+
+Allowed analytical primitives:
+
+- compact cash-flow trend;
+- period comparison;
+- spending composition;
+- top-category contribution;
+- recurring-payment horizon;
+- budget/limit progress;
+- projection only when its evidence and uncertainty are explicit;
+- Sensor signals for material change, opportunity and review;
+- drill-down from every derived number to events and evidence.
+
+Charts must answer a financial question. Decorative charts do not earn viewport space.
+
+The preferred hierarchy is:
+
+```text
+STATE
+  ↓
+TREND / COMPOSITION
+  ↓
+SENSOR SIGNAL
+  ↓
+ACTION OR DRILL-DOWN
+```
+
 ## Home information hierarchy
 
 1. Period.
-2. Money in.
-3. Money spent.
-4. Difference.
-5. Top spending categories.
-6. Upcoming known/expected recurring costs.
-7. Sensor status: opportunities / review count.
+2. Primary financial state / available difference.
+3. Money in.
+4. Money spent.
+5. Compact trend or comparison.
+6. Top spending categories.
+7. Upcoming known/expected recurring costs.
+8. Sensor status: opportunities / review count.
 
 The Home should not become an infinite dashboard.
+
+A visual may replace prose or redundant cards when it communicates the same answer more efficiently, but **Home remains no-scroll on the minimum supported viewport**.
 
 ## Default financial language
 
@@ -152,7 +215,7 @@ User correction should become a durable signal for future classification, but ne
 Every derived financial item should support a drill-down path:
 
 ```text
-Summary number
+Summary number / chart point / Sensor signal
    ↓
 category / transaction list
    ↓
@@ -170,6 +233,19 @@ Necesitamos tu ayuda
 ```
 
 rather than raw probability by default.
+
+## Synthetic Product Lab boundary
+
+A Product Lab may be implemented before `BUILD_READY=YES` only to validate UX and information architecture.
+
+It must remain visibly synthetic and cannot:
+
+- execute Gmail OAuth;
+- consume real Gmail content;
+- persist real financial plaintext;
+- claim production crypto behavior;
+- close Q-003/Q-004/Q-005;
+- be described as the production app.
 
 ## Empty/loading/stale states
 
@@ -200,6 +276,7 @@ Scroll is appropriate for:
 - transaction history;
 - search results;
 - long evidence lists;
+- analytical drill-down;
 - settings;
 - privacy/legal documents.
 
