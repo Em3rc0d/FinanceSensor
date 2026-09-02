@@ -2,7 +2,8 @@
 
 **Priority:** P0  
 **Status:** ACTIVE  
-**Last policy review:** 2026-09-01
+**Last policy review:** 2026-09-01  
+**Last physical execution:** 2026-09-02
 
 ## Question
 
@@ -10,21 +11,24 @@ Can a public FinanceSensor app obtain and retain the Gmail access required for i
 
 ## Current answer
 
-**Technically plausible. The ingress contract, real-provider reachability, real transactional reception and FinanceSensor-owned OAuth client contract are now demonstrated. The remaining product-specific gate is physical authorization/execution with a controlled FinanceSensor Google OAuth identity.**
+**Technical feasibility is physically demonstrated through a FinanceSensor-owned DEV OAuth identity. Public-production feasibility is not yet closed.**
 
 ```text
 LEVEL A — CONTRACTUAL INGRESS + OAUTH BOUNDARY       PASS AT SPIKE LEVEL
 LEVEL B — REAL PROVIDER REACHABILITY / DATA SHAPE    PASS
-LEVEL C — FINANCESENSOR-OWNED OAUTH IDENTITY         READY / NOT EXECUTED
+LEVEL C — FINANCESENSOR-OWNED DEV OAUTH IDENTITY     PHYSICAL PASS
+Q-003 — GMAIL PRODUCTION FEASIBILITY                 ACTIVE / NOT CLOSED
 ```
 
-Level A proves the internal privacy/ingress/OAuth authority contract. Level B proves Gmail can return real transactional structure to the engineering environment. Neither substitutes for Level C, which must exercise FinanceSensor's own Google OAuth identity, exact scope grant, supported client callback and REST adapter.
+Level C v7 completed the real FinanceSensor-owned OAuth + Gmail path with exact `gmail.readonly`, a message-derived history anchor, incremental `messageAdded`, metadata gating, exactly one FULL retrieval, extraction, replay, provider revocation and denial of old refresh authority.
+
+`LEVEL_C_PASS != Q-003_CLOSED` because production policy, protected credential handling, successful physical refresh/reauthorization and byte/timing evidence remain open.
 
 ## Authoritative findings
 
 ### F-003-01 — IMAP does not escape restricted-scope policy
 
-Google currently classifies `https://mail.google.com/`, `gmail.readonly`, `gmail.metadata`, `gmail.modify` and related Gmail permissions as restricted scopes. `mail.google.com` includes IMAP/SMTP/POP3 use.
+Google classifies `https://mail.google.com/`, `gmail.readonly`, `gmail.metadata`, `gmail.modify` and related Gmail permissions as restricted scopes. `mail.google.com` includes IMAP/SMTP/POP3 use.
 
 **Implication:** IMAP remains useful as a generic non-Gmail adapter, not as a Gmail policy bypass.
 
@@ -34,7 +38,7 @@ Sources:
 
 ### F-003-02 — `gmail.metadata` is insufficient for MK0
 
-FinanceSensor must sometimes inspect selected financial message bodies to derive amount, merchant, semantic meaning and references. `gmail.metadata` cannot provide the selected full body path required for that extraction.
+FinanceSensor must sometimes inspect selected financial message bodies to derive amount, merchant, semantic meaning and references. `gmail.metadata` cannot provide the selected full-body path required for extraction.
 
 Sources:
 - https://developers.google.com/workspace/gmail/api/reference/rest/v1/Format
@@ -47,13 +51,13 @@ Sources:
 https://www.googleapis.com/auth/gmail.readonly
 ```
 
-FinanceSensor MK0 reads but does not modify, send or delete Gmail messages. `OAUTH-003` now makes broader Gmail scope sets fail the contract suite.
+FinanceSensor MK0 reads but does not modify, send or delete Gmail messages. Broader Gmail scopes fail the OAuth contract suite.
 
-### F-003-04 — Metadata-first retrieval is compatible with the candidate scope
+### F-003-04 — Metadata-first retrieval remains the selected pattern
 
 ```text
-messages.list
-      ↓ IDs
+bounded message IDs
+      ↓
 messages.get(METADATA)
       ↓ local relevance filter
 messages.get(FULL) only for candidates
@@ -61,9 +65,19 @@ messages.get(FULL) only for candidates
 raw content discarded
 ```
 
-### F-003-05 — Incremental synchronization is supported
+### F-003-05 — Incremental synchronization is supported, but anchor provenance matters
 
-Google documents initial/full synchronization followed by `history.list` incremental synchronization. Expired/invalid history IDs can require a bounded recovery full sync.
+Google documents initial/full synchronization followed by `history.list` incremental synchronization. Expired/invalid history IDs can require bounded recovery.
+
+The physical campaign exposed an important distinction:
+
+```text
+CURRENT MAILBOX HISTORY POSITION
+        !=
+DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
+```
+
+v5 showed that using `/profile.historyId` as the bootstrap anchor was not a sufficient contract. ADR-018 therefore requires a recent message/thread/history-derived `historyId` for partial-sync anchoring.
 
 Sources:
 - https://developers.google.com/workspace/gmail/api/guides/sync
@@ -71,12 +85,12 @@ Sources:
 
 ### F-003-06 — Pub/Sub push is not required for MK0
 
-Standard Gmail push introduces Google Cloud Pub/Sub and mailbox identity/history metadata at the cloud boundary. FinanceSensor keeps push outside the MK0 critical path and favors device-driven eventual freshness first.
+Gmail push introduces Google Cloud Pub/Sub and additional mailbox identity/history metadata at the cloud boundary. FinanceSensor keeps push outside the MK0 critical path and favors device-driven eventual freshness first.
 
 Source:
 - https://developers.google.com/workspace/gmail/api/guides/push
 
-### F-003-07 — Public production requires restricted-scope verification
+### F-003-07 — Public production still requires restricted-scope verification
 
 Development/testing does not replace the public production verification path for restricted Gmail access.
 
@@ -87,7 +101,7 @@ Sources:
 
 ### F-003-08 — Security-assessment applicability remains architecture-dependent
 
-Third-party-server handling of restricted data can trigger additional Google security requirements. Keeping Gmail content on the authorized device narrows the server attack surface, but FinanceSensor does **not** claim that this guarantees an exemption.
+Third-party-server handling of restricted data can trigger additional Google security requirements. Keeping Gmail content on the authorized device narrows the server attack surface, but FinanceSensor does not claim that this guarantees an exemption.
 
 Sources:
 - https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification
@@ -96,7 +110,7 @@ Sources:
 
 ### F-003-09 — Intended use appears plausibly user-benefiting
 
-FinanceSensor's use appears adjacent to permitted user-benefiting monitoring/reporting behavior, but actual acceptance belongs to Google's verification process.
+FinanceSensor's use appears adjacent to permitted user-benefiting monitoring/reporting behavior, but actual acceptance belongs to Google's production verification process.
 
 Source:
 - https://developers.google.com/workspace/workspace-api-user-data-developer-policy
@@ -115,67 +129,125 @@ Source:
 
 ### F-003-11 — Real provider shape is compatible with staged ingress
 
-A controlled 2026-09-01 probe through an already-authorized Gmail engineering connector returned real transactional message identifiers, metadata, body text and MIME structure. No real content or credential was copied into the repository.
+A controlled real-provider probe returned real transactional message identifiers, metadata, body text and MIME structure. No real content or credential was copied into repository evidence.
 
 The real shape exposed parser defects in localized amounts, merchant provenance and operation-reference extraction. Those defects became sanitized synthetic tests before repair.
 
 Evidence:
 `../10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
 
-This proves provider reachability and source-shape compatibility, **not** FinanceSensor-owned OAuth authorization.
-
 ### F-003-12 — FinanceSensor-owned OAuth authority contract is executable
 
-ADR-017 now freezes:
+ADR-017 freezes the Desktop DEV boundary separately from production mobile credentials:
 
 ```text
-supported browser/platform authorization
+system browser / supported authorization
         ↓
-state + PKCE S256 binding
+state + PKCE S256
         ↓
-device-local long-lived credential authority
+local installed-client credential where Google requires it
         ↓
-short-lived access-token broker
+device-local refresh authority
+        ↓
+short-lived bearer only
         ↓
 GmailRestProvider
 ```
 
-Contract properties:
+Governing law:
 
 ```text
-exact gmail.readonly scope                  PASS
-broader Gmail scopes rejected               PASS
-state mismatch fail-closed                  PASS
-PKCE S256                                   PASS
-client secret absent from public exchange   PASS
-short-token cache                           PASS
-concurrent refresh coalescing               PASS
-401 cache invalidation                      PASS
-401 hidden same-call retry                  0
-refresh authority crossing to Gmail         0
-CI long-lived OAuth authority custody       FORBIDDEN / TESTED
+PROVIDER ASSUMPTION != PROVIDER EVIDENCE
+DESKTOP DEV CREDENTIAL != MOBILE CONFIDENTIAL SECRET
 ```
 
 Evidence:
 - `../11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md`
-- `../10-evidence/EV-Q003-OAUTH-CLIENT-CONTRACT-2026-09-01.md`
-- `../../spikes/physical-ingress/OWNED-OAUTH-EXECUTION.md`
+- `../10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md`
 
-### F-003-13 — GitHub Actions is not Level C
+### F-003-13 — CI is not Level C authority
 
-`.github/workflows/gmail-live-spike.yml` is now explicitly a **Gmail Bearer Reachability Spike**. It may accept one ephemeral access token for a controlled provider probe, but it is not the selected location for long-lived OAuth authority.
+GitHub Actions is forbidden from becoming custodian of the long-lived OAuth/Desktop credential. The product-owned Level-C proof executes locally on the controlled edge runtime.
 
-`OAUTH-013` guards this boundary.
+### F-003-14 — Immediate Gmail Search visibility is not an acceptable bootstrap dependency
+
+v6 observed a synthetic anchor visibly present in Inbox while two bounded exact-subject Gmail Search queries returned zero results.
+
+The evidence does **not** claim a universal Gmail indexing delay. It proves only that the Level-C bootstrap cannot require immediate Search-index visibility.
+
+ADR-019 therefore separates:
+
+```text
+MESSAGE DELIVERED TO INBOX
+        !=
+MESSAGE IMMEDIATELY SEARCHABLE BY q
+```
+
+v7 uses a bounded recent-INBOX ID window and Subject-only metadata in local memory to identify the synthetic anchor without Search `q`.
+
+### F-003-15 — FinanceSensor-owned Level C v7 physically passes
+
+Sanitized physical execution on 2026-09-02:
+
+```text
+REAL CONSENT                         PASS
+EXACT SCOPE                          gmail.readonly
+STATE BINDING                        PASS
+PKCE S256                            PASS
+TOKEN EXCHANGE                       HTTP 200
+PROFILE IDENTITY                     PASS
+SYNC ANCHOR SOURCE                   MESSAGE_HISTORY_ID
+RECENT INBOX ANCHOR WINDOW           PASS
+ANCHOR METADATA                      PASS
+ANCHOR SUBJECT MATCH                 PASS
+ANCHOR ESTABLISHED                   PASS
+INCREMENTAL HISTORY                  PASS
+FILTERED HISTORY RECORDS             1
+FILTERED messageAdded                1
+HISTORY SELECTION PATH               SUPPORTED_MESSAGE_ANCHOR_MESSAGE_ADDED
+PURCHASE METADATA                    PASS
+SYNTHETIC MARKER                     PASS
+PRODUCTION METADATA GATE             PASS
+SELECTED FULL                        PASS
+EXTRACTION                           PASS
+REPLAY                               PASS
+PROVIDER REVOKE                      PASS
+OLD REFRESH AUTHORITY                DENIED
+LEVEL C                              PASS
+```
+
+Bounded request evidence:
+
+```text
+anchor attempts          1 / max 2
+probe attempts           1 / max 2
+messages.list            1
+recent INBOX IDs         5 / max 5
+METADATA                 6
+FULL                     1 / max 1
+history.list             2
+profile                  1
+token exchange           1
+post-revoke refresh      1
+revoke                   1
+historical mailbox sweep 0
+Gmail Search q           0
+```
+
+Privacy counters in the sanitized result were all zero for Gmail content, financial plaintext, credentials, markers, mailbox address, message IDs and unrelated recent Subjects.
+
+Evidence:
+`../10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
 
 ## Endpoint/scope matrix
 
 | MK0 need | Endpoint / mode | Candidate scope | Decision |
 |---|---|---|---|
-| Enumerate bounded candidates | `messages.list` | `gmail.readonly` | REQUIRED candidate |
+| Bounded bootstrap IDs | `messages.list` with narrow bounds | `gmail.readonly` | REQUIRED candidate |
 | Retrieve selected headers | `messages.get?format=METADATA` | `gmail.readonly` | REQUIRED candidate |
 | Retrieve selected body | `messages.get?format=FULL` | `gmail.readonly` | REQUIRED candidate |
 | Incremental changes | `history.list` | `gmail.readonly` | REQUIRED candidate |
-| Current history cursor | `users.getProfile` | `gmail.readonly` | REQUIRED candidate |
+| Mailbox identity/current position | `users.getProfile` | `gmail.readonly` | identity/diagnostic; not bootstrap anchor |
 | Push trigger | `users.watch` + Pub/Sub | restricted access + cloud | DEFER |
 | Modify messages | modify endpoints | `gmail.modify` | NOT REQUIRED |
 | Send mail | send endpoints | send/compose | NOT REQUIRED |
@@ -185,36 +257,29 @@ Evidence:
 
 Implemented under `spikes/physical-ingress/`.
 
-Evidence:
-- `../10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md`
-- `../10-evidence/EV-Q003-OAUTH-CLIENT-CONTRACT-2026-09-01.md`
-
-Observed reconciled suite at evidence head `5035906dbe6cd652c6b9e5f5b530d7e45fc3187c`:
+Current contract family covers:
 
 ```text
-44 / 44 PASS
-
-bounded listing / metadata-first / selected FULL        PASS
-incremental history / cursor recovery / replay          PASS
-idempotent reprocessing / restart                       PASS
-localized amount + real-shape parser guards             PASS
-MIME descriptor-only discovery                          PASS
-PKCE / state / exact-scope OAuth contract                PASS
-local refresh authority / short-token cache              PASS
-concurrent refresh coalescing                            PASS
-401 invalidation / no hidden retry                       PASS
-CI long-lived-authority guard                            PASS
-raw body durable retention                               0
-raw attachment durable retention                         0
-plaintext financial cloud                                0 in harness
-real auth secret in repository evidence                  0
+bounded metadata-first retrieval
+FULL only for candidates
+case-insensitive RFC header lookup
+incremental history + replay
+history-expiry recovery model
+message-derived anchor contract
+bounded INBOX bootstrap support
+real-shape sanitized parser guards
+MIME descriptor-only discovery
+PKCE / state / exact-scope OAuth contract
+local refresh authority / short-token cache
+concurrent refresh coalescing
+401 invalidation / no hidden same-call retry
+CI long-lived-authority rejection
+raw body durable retention       0
+raw attachment durable retention 0
+plaintext financial cloud        0 in harness
 ```
 
-The ingress engine uses one async provider contract so synthetic and real Gmail adapters traverse the same downstream path.
-
 ## Level B — real provider reachability
-
-Executed 2026-09-01 through an already-authorized Gmail engineering connector.
 
 ```text
 REAL_PROVIDER_CONNECTION       PASS
@@ -226,69 +291,61 @@ REAL_RAW_CONTENT IN REPO       0
 REAL_FINANCIAL LITERALS IN CI  0
 ```
 
-The engineering connector's authority is not FinanceSensor's product authority and is not repurposed as such.
-
 ## Level C — FinanceSensor-owned real Gmail path
 
-**Prepared, not yet authorized/executed.**
+**PHYSICAL PASS at controlled Desktop DEV level.**
 
-Runtime components:
-
-```text
-spikes/physical-ingress/src/oauth-native-contract.js
-spikes/physical-ingress/src/gmail-rest-provider.js
-spikes/physical-ingress/OWNED-OAUTH-EXECUTION.md
-```
-
-Required physical chain:
+The v7 path was:
 
 ```text
-FINANCESENSOR-OWNED GOOGLE CLOUD DEV OAUTH IDENTITY
-        ↓
-CONTROLLED TEST USER
-        ↓ exact gmail.readonly consent
-SUPPORTED CLIENT CALLBACK + STATE + PKCE
-        ↓
-PROTECTED EDGE LONG-LIVED CREDENTIAL AUTHORITY
-        ↓ short bearer only
-GmailRestProvider
-        ↓
-list → METADATA → selected FULL → profile/history → incremental
-        ↓
-401 / reauthorization lifecycle
-        ↓
-revoke/disconnect
-        ↓
-old authority denied
+FinanceSensor-owned Google DEV OAuth identity
+  ↓ controlled tester + exact gmail.readonly
+system browser + state + PKCE
+  ↓
+local token authority
+  ↓
+/profile identity only
+  ↓
+bounded recent INBOX IDs (max 5, no Search q)
+  ↓
+Subject-only anchor metadata
+  ↓
+anchor MESSAGE.historyId
+  ↓
+second synthetic purchase
+  ↓
+history.list(messageAdded)
+  ↓
+purchase METADATA + production relevance gate
+  ↓
+exactly one FULL
+  ↓
+financial extraction
+  ↓
+replay
+  ↓
+revoke
+  ↓
+old refresh authority denied
 ```
 
-The exact required observations and fail conditions are frozen in `OWNED-OAUTH-EXECUTION.md`.
+No production mobile-secret claim is derived from this Desktop DEV proof.
 
-## Remaining external gate
+## Remaining Q-003 gates
 
-Q-003 cannot close until the controlled FinanceSensor DEV OAuth identity exists and interactive Level-C execution succeeds.
-
-Required observations include:
+The former external Level-C execution blocker is closed. Q-003 remains ACTIVE for these specific reasons:
 
 ```text
-REAL_OAUTH_CONSENT                 PASS / FAIL
-EXACT_SCOPE                        gmail.readonly / FAIL
-PKCE / STATE PLATFORM PATH         PASS / FAIL
-REAL_MESSAGES_LIST                 PASS / FAIL
-REAL_METADATA_GET                  PASS / FAIL
-REAL_SELECTED_FULL_GET             PASS / FAIL
-REAL_HISTORY_CURSOR                PASS / FAIL
-REAL_INCREMENTAL_SYNC              PASS / FAIL
-REPLAY_IDEMPOTENT                  PASS / FAIL
-REAL_REAUTH_LIFECYCLE              PASS / FAIL
-REAL_REVOCATION                    PASS / FAIL
-OLD_AUTHORITY_AFTER_REVOCATION     DENIED / FAIL
-NO_SECRET_LOGGING                  PASS / FAIL
-BOUNDED_REQUESTS                   measured
-BYTES / TIMING                     measured
+SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE      OPEN
+REQUEST PAYLOAD BYTE ACCOUNTING                 OPEN
+PER-ENDPOINT LATENCY EVIDENCE                  OPEN
+ANDROID/IOS PROTECTED CREDENTIAL HANDLING      OPEN OR DELEGATE TO PROVEN SECURITY GATE
+PUBLIC RESTRICTED-SCOPE VERIFICATION            OPEN
+SECURITY-ASSESSMENT APPLICABILITY               OPEN
+PRODUCTION CONSENT/DISCLOSURE PACKAGE           OPEN
 ```
 
-No Google Cloud administration connector/plugin is available in the current engineering environment. Therefore the external DEV project/client ownership and interactive user consent cannot be fabricated or automated from this repository session. This is now the principal Q-003 physical boundary rather than missing adapter/OAuth design.
+The v7 execution's total wall-clock duration is known, but end-to-end duration is not per-endpoint timing evidence. The observed `tokenRefresh=1` is the post-revoke denial check, not a successful real refresh after access-token expiry.
 
 ## Verification package still required before public launch
 
@@ -309,25 +366,27 @@ No Google Cloud administration connector/plugin is available in the current engi
 ```text
 GMAIL_TECHNICAL_PRIMITIVES           PASS
 MINIMUM_SCOPE_CANDIDATE              gmail.readonly
-METADATA_FIRST_PIPELINE              PROVEN_AT_SPIKE
-INCREMENTAL_SYNC_MODEL               PROVEN_AT_SPIKE
+METADATA_FIRST_PIPELINE              PROVEN_AT_SPIKE + REAL SELECTED FULL
+INCREMENTAL_SYNC_MODEL               PHYSICALLY PASS AT LEVEL C
 REAL_PROVIDER_REACHABILITY           PASS
 REAL_TRANSACTIONAL_DATA_RECEPTION    PASS
-PHYSICAL INGRESS SUITE               44 / 44 PASS @ evidence head
-FINANCESENSOR_GMAIL_ADAPTER          READY
-PKCE / STATE CONTRACT                PASS AT SPIKE
-EXACT-SCOPE GUARD                    PASS AT SPIKE
-LOCAL CREDENTIAL BROKER              PASS AT SPIKE
-SHORT-TOKEN CACHE                    PASS AT SPIKE
-CONCURRENT REFRESH COALESCING        PASS AT SPIKE
-401 / NO-HIDDEN-RETRY                PASS AT SPIKE
-CI AS LEVEL-C AUTHORITY              REJECTED / GUARDED
-FINANCESENSOR OAUTH TRANSPORT        READY / NOT AUTHORIZED
+FINANCESENSOR_GMAIL_ADAPTER          PHYSICALLY EXERCISED
+PKCE / STATE                         PHYSICALLY PASS
+EXACT-SCOPE GUARD                    PASS
+DESKTOP DEV TOKEN EXCHANGE           PHYSICALLY PASS
+MESSAGE-DERIVED SYNC ANCHOR          PHYSICALLY PASS
+BOUNDED INBOX BOOTSTRAP              PHYSICALLY PASS
+LOCAL EXTRACTION                     PHYSICALLY PASS
+REPLAY                               PHYSICALLY PASS
+PROVIDER REVOCATION                  PHYSICALLY PASS
+OLD AUTHORITY AFTER REVOKE           DENIED
+LEVEL_C                              PASS
 PUSH_REQUIRED_FOR_MK0                NO
-PRODUCTION_OAUTH_VERIFICATION        REQUIRED
+PRODUCTION_OAUTH_VERIFICATION        REQUIRED / OPEN
 PERMITTED_USE_FIT                    PLAUSIBLE / NOT YET VERIFIED
 SECURITY_ASSESSMENT_APPLICABILITY    OPEN
-LEVEL_C                              BLOCKED ON CONTROLLED EXTERNAL AUTHORIZATION
+BYTES / PER-ENDPOINT TIMING          OPEN
+SUCCESSFUL PHYSICAL REFRESH          OPEN
 
 GMAIL_FEASIBILITY                    ACTIVE / NOT CLOSED
 ```
@@ -341,12 +400,14 @@ Q-003 closes only when:
 - security-assessment applicability is documented for actual architecture;
 - appropriate-use fit has no unresolved policy contradiction;
 - consent/disclosure requirements are captured;
-- controlled FinanceSensor OAuth + list/metadata/full/history path executes;
+- controlled FinanceSensor OAuth + bounded list/metadata/full/history path executes — **PASS at Level C v7**;
 - platform-protected credential handling is physically observed or explicitly delegated to a separately proven security gate;
-- reauthorization and revoke/disconnect behavior are observed;
+- successful refresh/reauthorization and revoke/disconnect behavior are physically observed;
 - request/byte/timing evidence is recorded;
-- evidence artifact is stored under `mk0/10-evidence/`;
+- evidence artifact is stored under `mk0/10-evidence/` — **v7 PASS evidence stored**;
 - closure receipt is issued;
 - explicit `GMAIL_FEASIBILITY PASS/FAIL` is recorded.
 
-`READY FOR AUTHORIZATION ≠ LEVEL C PASS ≠ Q-003 CLOSED`.
+```text
+READY FOR AUTHORIZATION != LEVEL C PASS != Q-003 CLOSED
+```
