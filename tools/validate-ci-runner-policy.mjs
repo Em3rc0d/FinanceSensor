@@ -14,7 +14,7 @@ const RETIRED_WORKFLOWS = new Set([
   'gmail-live-spike.yml',
 ]);
 
-const REQUIRED_RUNNER = 'runs-on: [self-hosted, linux, x64, financesensor]';
+const REQUIRED_RUNNER = 'runs-on: ubuntu-latest';
 const failures = [];
 
 function fail(file, message) {
@@ -58,12 +58,12 @@ for (const file of ACTIVE_WORKFLOWS) {
 
   for (const line of runnerLines) {
     if (line !== REQUIRED_RUNNER) {
-      fail(file, `runner routing must be exactly: ${REQUIRED_RUNNER}`);
+      fail(file, `public CI routing must be exactly: ${REQUIRED_RUNNER}`);
     }
   }
 
-  if (text.includes('ubuntu-latest')) {
-    fail(file, 'active workflow references a GitHub-hosted runner');
+  if (/runs-on:\s*\[[^\]]*self-hosted/i.test(text) || /runs-on:\s*self-hosted/i.test(text)) {
+    fail(file, 'public active workflow references a persistent self-hosted runner');
   }
 
   if (/\$\{\{\s*secrets\./.test(text)) {
@@ -71,7 +71,7 @@ for (const file of ACTIVE_WORKFLOWS) {
   }
 
   if (/^\s*schedule\s*:/m.test(text) || /^\s*-?\s*cron\s*:/m.test(text)) {
-    fail(file, 'workstation CI must not rely on cron scheduling');
+    fail(file, 'CI must not rely on cron scheduling during MK0');
   }
 
   if (!/permissions:\s*\n\s*contents:\s*read/m.test(text)) {
@@ -113,8 +113,8 @@ if (failures.length > 0) {
 console.log('FINANCESENSOR_CI_RUNNER_POLICY=PASS');
 console.log(`ACTIVE_WORKFLOWS=${ACTIVE_WORKFLOWS.size}`);
 console.log(`RETIRED_WORKFLOWS=${RETIRED_WORKFLOWS.size}`);
-console.log('RUNNER_ROUTE=self-hosted+linux+x64+financesensor');
-console.log('GITHUB_HOSTED_ACTIVE_PATHS=0');
+console.log('RUNNER_ROUTE=ubuntu-latest');
+console.log('ACTIVE_SELF_HOSTED_PATHS=0');
 console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
-console.log('SELF_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
+console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
