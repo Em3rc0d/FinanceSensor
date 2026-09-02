@@ -2,6 +2,9 @@ import { spawnSync } from 'node:child_process';
 
 const MAX_TEXT_OBJECT_BYTES = 2 * 1024 * 1024;
 const SCANNED_OBJECT_TYPES = new Set(['blob', 'commit', 'tag']);
+const REVIEWED_SYNTHETIC_VALUES = new Set([
+  'desktop-local-client-secret',
+]);
 
 const detectors = [
   {
@@ -23,12 +26,12 @@ const detectors = [
   {
     id: 'OAUTH_SECRET_JSON',
     regex: /["']client_secret["']\s*:\s*["']([^"']{8,})["']/gi,
-    ignore: value => /(?:example|placeholder|redacted|dummy|test|fake|your[_ -]?client[_ -]?secret)/i.test(value),
+    ignore: value => REVIEWED_SYNTHETIC_VALUES.has(value) || /(?:example|placeholder|redacted|dummy|test|fake|your[_ -]?client[_ -]?secret)/i.test(value),
   },
   {
     id: 'OAUTH_SECRET_ENV',
     regex: /\b(?:GOOGLE_CLIENT_SECRET|CLIENT_SECRET)\s*=\s*([^\s#]{8,})/gi,
-    ignore: value => /(?:example|placeholder|redacted|dummy|test|fake|changeme|\$\{|%[A-Z0-9_]+%)/i.test(value),
+    ignore: value => REVIEWED_SYNTHETIC_VALUES.has(value.replace(/^['"]|['"];?$/g, '')) || /(?:example|placeholder|redacted|dummy|test|fake|changeme|\$\{|%[A-Z0-9_]+%)/i.test(value),
   },
   {
     id: 'REAL_GMAIL_ADDRESS',
