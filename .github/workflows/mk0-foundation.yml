@@ -1,68 +1,41 @@
 name: MK0 Foundation
 
 on:
-  push:
-    branches:
-      - main
-      - jett/mk0-foundation
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: financesensor-mk0-foundation
+  cancel-in-progress: true
+
 jobs:
-  canonical-resolver:
+  foundation:
     runs-on: [self-hosted, linux, x64, financesensor]
-    timeout-minutes: 10
-    defaults:
-      run:
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify canonical resolver invariants
         working-directory: spikes/canonical-resolver
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Verify resolver invariants
         run: npm test
 
-  e2ee-sync:
-    runs-on: [self-hosted, linux, x64, financesensor]
-    timeout-minutes: 10
-    defaults:
-      run:
+      - name: Verify E2EE / recovery / witness invariants
         working-directory: spikes/e2ee-sync
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Verify peripheral and parasympathetic invariants
         run: npm test
 
-  physical-ingress:
-    runs-on: [self-hosted, linux, x64, financesensor]
-    timeout-minutes: 10
-    defaults:
-      run:
+      - name: Verify physical ingress / privacy invariants
         working-directory: spikes/physical-ingress
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Verify ingress, recovery and privacy invariants
         run: npm test
+
+      - name: Foundation summary
+        run: |
+          echo 'FINANCESENSOR_MK0_FOUNDATION=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Manual diagnostic suite only. Automatic project ECG is FinanceSensor Heartbeat.' >> "$GITHUB_STEP_SUMMARY"
