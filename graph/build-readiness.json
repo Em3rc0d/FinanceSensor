@@ -33,10 +33,9 @@
     },
     {
       "id": "TENANCY_MODEL",
-      "state": "DRAFTED",
+      "state": "PASS",
       "class": "DOCUMENTARY",
-      "blockingDecision": "ADR-001",
-      "evidence": ["mk0/05-data-model/CORE-DATA-MODEL.md"]
+      "evidence": ["mk0/11-decisions/ADR-001-TENANT-FINANCIAL-OWNERSHIP-BOUNDARY.md", "mk0/05-data-model/CORE-DATA-MODEL.md", "mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md"]
     },
     {
       "id": "FINANCIAL_MODEL",
@@ -108,12 +107,11 @@
       "id": "IMPLEMENTATION_PLAN",
       "state": "DRAFTED",
       "class": "DOCUMENTARY",
-      "evidence": ["product/ROADMAP.md", "mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md"]
+      "evidence": ["product/ROADMAP.md", "mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md", "mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md"]
     }
   ],
   "prePhysicalClosureTargets": [
     "MK0_SCOPE",
-    "TENANCY_MODEL",
     "THREAT_MODEL",
     "SIGNATURE_WIREFRAMES",
     "NO_SCROLL_CONTRACT",
