@@ -76,6 +76,9 @@ jobs:
       - name: Implementation baseline ECG
         run: node tools/validate-implementation-baseline.mjs
 
+      - name: Build readiness ECG
+        run: node tools/validate-build-readiness.mjs
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -120,6 +123,7 @@ jobs:
           test -f graph/traceability-matrix.json
           test -f graph/traceability-recovery.json
           test -f graph/physical-closure-campaign.json
+          test -f graph/build-readiness.json
           test -f graph/CLOSURE-RECEIPT-TEMPLATE.md
           test -f mk0/04-architecture/PRIVACY-DATA-MATRIX.json
           test -f mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json
@@ -134,6 +138,7 @@ jobs:
           test -f mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
           test -f mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md
           test -f mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md
+          test -f mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f product/labs/mobile-bi/README.md
           test -f product/labs/mobile-bi/index.html
@@ -156,6 +161,7 @@ jobs:
           test -f tools/validate-mobile-stack.mjs
           test -f tools/validate-mobile-shell.mjs
           test -f tools/validate-implementation-baseline.mjs
+          test -f tools/validate-build-readiness.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -172,6 +178,8 @@ jobs:
           grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           grep -q 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION' mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           grep -q 'FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION' mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
+          grep -q 'BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED' graph/build-readiness.json
+          grep -q 'UNRESTRICTED_BUILD = BLOCKED' mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md
           grep -q 'MOBILE_SHELL != PRODUCTION_APP' spikes/mobile-shell/README.md
           grep -q 'APK_BUILD_PASS != BUILD_READY' spikes/mobile-shell/README.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
@@ -184,6 +192,7 @@ jobs:
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Implementation baseline is frozen: Flutter + Kotlin/Swift bridges, Android minSdk 31, SQLCipher local persistence, Supabase control plane.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Build readiness is machine-readable and remains false until G-MK0 closes.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Mobile Product Lab and Flutter Mobile Shell are synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
