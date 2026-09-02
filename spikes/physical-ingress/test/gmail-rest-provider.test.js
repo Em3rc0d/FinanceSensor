@@ -88,3 +88,20 @@ test('GMAIL-MIME-001 FULL message returns attachment descriptors without downloa
   ]);
   assert.equal(provider.calls.filter(call => call.path.includes('/attachments/')).length, 0);
 });
+
+test('GMAIL-ANCHOR-002 bounded bootstrap can list only recent INBOX IDs without Gmail search q', async () => {
+  let seenUrl;
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    fetchImpl: async url => {
+      seenUrl = new URL(url);
+      return jsonResponse(200, { messages: [{ id: 'recent-1', threadId: 'thread-1' }] });
+    }
+  });
+
+  const found = await provider.listMessages({ maxResults: 5, labelIds: ['INBOX'] });
+  assert.deepEqual(found, [{ id: 'recent-1', threadId: 'thread-1' }]);
+  assert.equal(seenUrl.searchParams.get('q'), null);
+  assert.equal(seenUrl.searchParams.get('maxResults'), '5');
+  assert.deepEqual(seenUrl.searchParams.getAll('labelIds'), ['INBOX']);
+});
