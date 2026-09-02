@@ -79,9 +79,14 @@ GLOBAL FRESHNESS
 
 ### Level A — contractual ingress + OAuth boundary
 
-Current ingress/OAuth contract family is green. The exact historical `45/45` count is no longer used as the current authority because additional sync-anchor regressions were added after that measurement.
+Current physical-ingress contract family is green. The latest locally executed ingress suite after the bounded-INBOX bootstrap contract is:
 
-Validated contract areas include:
+```text
+PHYSICAL INGRESS / OAUTH CONTRACTS     53 / 53 PASS
+CANONICAL RESOLVER                      98 / 98 PASS
+```
+
+Validated areas include:
 
 ```text
 ASYNC PROVIDER CONTRACT                     PASS
@@ -92,9 +97,8 @@ INCREMENTAL HISTORY MODEL                   PASS
 HISTORY 404 RECOVERY                        PASS
 GMAIL PROFILE CONTRACT                      PASS
 messageAdded HISTORY QUERY                  PASS
-HISTORY DIAGNOSTIC COUNTS                   PASS
-TARGETED SYNC-ANCHOR QUERY                  PASS
-MESSAGE-DERIVED historyId ANCHOR            PASS AT CONTRACT LEVEL
+MESSAGE-DERIVED historyId ANCHOR            PASS
+BOUNDED RECENT-INBOX BOOTSTRAP              PASS
 RESTART / REPLAY                            PASS
 REAL-SHAPE SANITIZED PARSER                 PASS
 MIME DESCRIPTORS                            PASS
@@ -126,7 +130,7 @@ REFRESH AUTHORITY → GMAIL                      0
 CI AS LONG-LIVED OAUTH AUTHORITY               REJECTED / GUARDED
 ```
 
-`DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET`.
+`DESKTOP DEV CREDENTIAL != MOBILE CONFIDENTIAL SECRET`.
 
 ### Level B — real Gmail provider
 
@@ -141,210 +145,106 @@ REAL FINANCIAL LITERALS IN CI  0
 ```
 
 Evidence:
-
 `mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md`
 
-The engineering connector authority is not product OAuth authority.
+### Level C — FinanceSensor-owned OAuth — PHYSICAL PASS
 
-### Level C — FinanceSensor-owned OAuth
-
-External DEV setup is physically present:
+The v1-v6 campaign exposed and repaired real assumptions instead of being discarded:
 
 ```text
-FINANCESENSOR GOOGLE CLOUD DEV PROJECT      READY / OBSERVED
-GMAIL API                                   ENABLED
-AUDIENCE                                    EXTERNAL / TESTING
-CONTROLLED TEST USER                        CONFIGURED
-REQUESTED SCOPE                             gmail.readonly ONLY
-DESKTOP OAUTH CLIENT                        FinanceSensor DEV Level-C
+v1/v2  Desktop token exchange contract mismatch
+v3     header casing + EXECUTION_COMPLETE/PASS ambiguity
+v4     history selection gap
+v5     /profile.historyId bootstrap mismatch
+v6     delivered-to-Inbox != immediately searchable by Gmail q
+v7     bounded recent-INBOX bootstrap → PASS
 ```
 
-#### v1 / v2 — fail-closed token exchange
-
-```text
-v1  state callback PASS → token HTTP 400             → Gmail calls 0
-v2  state callback PASS → INVALID_REQUEST HTTP 400   → Gmail calls 0
-```
-
-Synthetic negative provider diagnostics isolated Google's observed response:
-
-```text
-client_secret is missing.
-```
-
-That physically invalidated the earlier Client-ID-only Desktop DEV assumption. ADR-017 and the runner were corrected so the Google-issued Desktop installed-client credential is selected locally and never enters repo/CI/cloud/evidence.
-
-Evidence:
-
-`mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md`
-
-#### v3 — OAuth/Gmail path physically crossed; candidate gap
-
-v3 proved real consent, token exchange, Gmail profile/history access and revocation, but did not fetch a FULL synthetic message. It exposed two harness defects that were repaired:
-
-```text
-mail headers must be case-insensitive
-EXECUTION_COMPLETE != LEVEL_C_PASS
-```
-
-Evidence:
-
-`mk0/10-evidence/EV-Q003-LEVEL-C-V3-PARTIAL-2026-09-02.md`
-
-#### v4 — strict PASS law; history gap isolated
+v7 sanitized physical result:
 
 ```text
 REAL CONSENT                         PASS
+EXACT SCOPE                          gmail.readonly
 STATE BINDING                        PASS
+PKCE S256                            PASS
 TOKEN EXCHANGE                       HTTP 200
-PROFILE HISTORY CURSOR               PASS
-messages.list                        0 / SKIPPED BY DESIGN
-history.list                         2
-METADATA                             0
-FULL                                 0
-SYNTHETIC MARKER                     NOT FOUND
-PROVIDER REVOKE                      PASS
-REFRESH AUTHORITY AFTER REVOKE       DENIED
-EXECUTION COMPLETE                   true
-LEVEL C PASS                         FAIL
-```
-
-Evidence:
-
-`mk0/10-evidence/EV-Q003-LEVEL-C-V4-HISTORY-GAP-2026-09-02.md`
-
-#### v5 — physical mailbox/history diagnosis
-
-The v5 execution removed the remaining recipient/propagation ambiguity.
-
-Sanitized aggregate result:
-
-```text
-REAL CONSENT                         PASS
-STATE BINDING                        PASS
-TOKEN EXCHANGE                       HTTP 200
-AUTHORIZED MAILBOX SHOWN LOCALLY     PASS
-POST-SEND PROFILE CHECK              PASS
-MAILBOX HISTORY ADVANCED             PASS
-messages.list                        0
-FILTERED HISTORY RECORDS             0
-FILTERED messageAdded                0
-UNFILTERED DIAGNOSTIC USED           true
-UNFILTERED HISTORY RECORDS           0
-METADATA                             0
-FULL                                 0
+PROFILE IDENTITY                     PASS
+SYNC ANCHOR SOURCE                   MESSAGE_HISTORY_ID
+RECENT INBOX ANCHOR WINDOW           PASS
+RECENT INBOX IDS                     5 / max 5
+ANCHOR METADATA INSPECTED            5
+ANCHOR SUBJECT MATCH                 PASS
+ANCHOR ESTABLISHED                   PASS
+INCREMENTAL HISTORY                  PASS
+FILTERED HISTORY RECORDS             1
+FILTERED messageAdded                1
+HISTORY SELECTION PATH               SUPPORTED_MESSAGE_ANCHOR_MESSAGE_ADDED
+PURCHASE METADATA                    PASS
+SYNTHETIC MARKER                     PASS
+PRODUCTION METADATA GATE             PASS
+SELECTED FULL                        PASS
+EXTRACTION                           PASS
+REPLAY                               PASS
 PROVIDER REVOKE                      PASS
 OLD REFRESH AUTHORITY                DENIED
 EXECUTION COMPLETE                   true
-LEVEL C PASS                         FAIL
+LEVEL C                              PASS
 ```
 
-The message was visibly present in the exact mailbox that `/profile` reported, and the mailbox's current history position advanced. Therefore the unresolved variable was no longer destination or propagation.
-
-The contradiction was architectural: the harness had been using `/profile.historyId` as the bootstrap `history.list.startHistoryId`.
-
-Current Gmail API documentation defines the required provenance more narrowly: `startHistoryId` should be obtained from the `historyId` of a message, thread, or previous history-list response.
-
-New law:
+Provider request accounting:
 
 ```text
-CURRENT MAILBOX HISTORY POSITION
-        !=
-DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
+anchor attempts            1 / max 2
+probe attempts             1 / max 2
+profile                    1
+messages.list              1
+METADATA                   6
+FULL                       1 / max 1
+history.list               2
+token exchange             1
+post-revoke refresh check  1
+revoke                     1
+historical mailbox sweep   0
+Gmail Search q             0
+/profile.historyId anchor  0
+```
+
+Privacy counters reported by the sanitized result:
+
+```text
+raw Gmail content in evidence        0
+financial plaintext in evidence      0
+auth secret in evidence              0
+credential path in evidence          0
+anchor/purchase marker in evidence   0
+unrelated recent Subject in evidence 0
+authorized mailbox in evidence       0
+message ID in evidence               0
+pre-authorization mailbox sweep      0
 ```
 
 Evidence:
+`mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md`
 
-`mk0/10-evidence/EV-Q003-LEVEL-C-V5-PROFILE-HISTORY-ANCHOR-MISMATCH-2026-09-02.md`
+The whole interactive execution took approximately 323.548 seconds, but this is not per-endpoint latency evidence.
 
-Decision:
+### Q-003 after Level C PASS
 
-`mk0/11-decisions/ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md`
-
-#### v6 — message-derived partial-sync anchor / READY FOR PHYSICAL RUN
-
-v6 no longer uses `/profile.historyId` as `startHistoryId`.
+Q-003 remains `ACTIVE`, not because Gmail technical feasibility is still doubtful, but because its production closure contract is intentionally larger than the DEV proof.
 
 ```text
-OAuth
-  ↓
-/profile → identify exact authorized mailbox only
-  ↓
-FIRST harmless synthetic anchor email
-  ↓
-targeted messages.list by random anchor marker
-  maxResults = 1
-  ↓
-messages.get(METADATA, Subject only)
-  ↓
-anchor MESSAGE.historyId
-  ↓
-SECOND synthetic purchase email
-  ↓
-history.list(startHistoryId = anchor MESSAGE.historyId,
-             historyTypes = messageAdded)
-  ↓
-≤ 5 changed IDs
-  ↓
-METADATA → exact purchase marker → production metadata gate
-  ↓
-≤ 1 FULL
-  ↓
-financial extraction
-  ↓
-replay
-  ↓
-revoke → old refresh denied
+LEVEL C PHYSICAL EXECUTION                 PASS
+SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE  OPEN
+REQUEST PAYLOAD BYTE ACCOUNTING            OPEN
+PER-ENDPOINT LATENCY EVIDENCE              OPEN
+ANDROID/IOS PROTECTED CREDENTIAL HANDLING  OPEN / may delegate to proven security gate
+PUBLIC RESTRICTED-SCOPE VERIFICATION       OPEN
+SECURITY-ASSESSMENT APPLICABILITY          OPEN
+PRODUCTION CONSENT/DISCLOSURE PACKAGE      OPEN
+Q-003                                      ACTIVE
 ```
 
-The single targeted `messages.list` capability is deliberately reintroduced **only for the synthetic anchor**. It is not a historical mailbox scan and does not change the product's privacy direction.
-
-v6 runner hard caps:
-
-```text
-ANCHOR LOOKUP ATTEMPTS              <= 2
-ANCHOR list maxResults               = 1 per attempt
-HISTORY PROBE ATTEMPTS              <= 2
-CHANGED IDS INSPECTED               <= 5 per probe attempt
-FULL FETCHES                        <= 1
-HISTORICAL MAILBOX SWEEP              0
-/profile.historyId AS startHistoryId  0
-```
-
-Privacy result exclusions remain:
-
-```text
-authorized Gmail address    0
-anchor marker               0
-purchase marker             0
-message IDs                 0
-Gmail raw content           0
-financial plaintext         0
-credential path/content     0
-OAuth/token secrets         0
-```
-
-Important boundary:
-
-```text
-LEVEL-C SYNTHETIC ANCHOR HARNESS
-        !=
-PRODUCTION INITIAL-SYNC UX
-```
-
-Production onboarding/sync remains a separate design decision.
-
-Validated v6 runner head:
-
-```text
-878c61734f79d9a6b3f676ae2d55bfbb7f5b756a
-Heartbeat          SUCCESS — 33590311958
-Foundation push    SUCCESS — 33590312015
-Foundation PR      SUCCESS — 33590314688
-Package helper     SUCCESS — 33590311989
-```
-
-Q-003 remains **ACTIVE** until the v6 normal path completes physically and its sanitized result is audited.
+Important: the observed `tokenRefresh=1` in v7 is the deliberate post-revoke denial check. It does not prove a successful physical refresh after access-token expiry.
 
 ## Privacy nervous system
 
@@ -364,7 +264,7 @@ P-001 Product thesis                 PASS
 P-002 Product invariants             PASS
 Q-001 Canonical semantics            CLOSED
 Q-002 Fingerprinting/dedup           CLOSED
-Q-003 Gmail feasibility              ACTIVE
+Q-003 Gmail feasibility              ACTIVE  ← Level C PASS, production closure open
 Q-004 Email privacy                  ACTIVE
 Q-005 E2EE multi-device sync         ACTIVE
 C-001 External-transfer semantics    CLOSED
@@ -389,37 +289,51 @@ NODES        21
 BUILD_READY  false
 ```
 
+`graph/closure-ledger.json` remains authoritative for node states. Q-003 state is unchanged (`ACTIVE`), therefore no graph-state mutation is justified solely by the v7 Level C PASS.
+
 ## Current Q-003 critical path
 
 ```text
-LEVEL C v6
+LEVEL C v7 PHYSICAL PASS
         ↓
-exact authorized mailbox identity
+freeze sanitized evidence                 DONE
         ↓
-message-derived supported sync anchor
+successful real refresh before revoke     OPEN
         ↓
-filtered messageAdded
+bytes + per-endpoint latency              OPEN
         ↓
-METADATA
+protected production credential boundary  OPEN / Q-004/SEC linkage
         ↓
-exact synthetic purchase marker + production gate
+restricted-scope verification package     OPEN
         ↓
-1 FULL
+policy/security-assessment decision        OPEN
         ↓
-financial extraction
-        ↓
-replay
-        ↓
-revoke + denied old refresh
-        ↓
-LEVEL_C_PASS candidate
-        ↓
-audit sanitized evidence
-        ↓
-Q-003 closure decision
+Q-003 closure receipt
 ```
 
-Q-004 and Q-005 remain independent blockers even if Level C passes.
+Q-004 and Q-005 remain independent blockers.
+
+## GitHub Actions budget / CI operating mode
+
+User billing state observed 2026-09-02:
+
+```text
+GitHub plan                    Free
+Actions included minutes      2000 / 2000 used
+Actions billable usage        $0 after current discounts
+next included-minute reset    ~29 days
+```
+
+Operating rule until reset or an explicit budget/runner decision:
+
+```text
+DO NOT trigger GitHub Actions for routine reconciliation.
+DOCUMENTATION/EVIDENCE commits use [skip ci].
+DO NOT infer CI green from skipped CI.
+LOCAL VALIDATION PASS != GITHUB CI PASS.
+```
+
+The earlier `runner_id=0 / steps=[]` failures are not treated as product-test failures; they occurred after the included Actions capacity was exhausted.
 
 ## Repository governance
 
@@ -428,27 +342,31 @@ main protected                  NO
 required status checks          NONE
 branch protection enforcement   OFF
 PR #1                           DRAFT / DO NOT MERGE
+Actions routine execution       PAUSED UNTIL BUDGET DECISION/RESET
 ```
 
 `OPS-001` remains a dependency of `G-MK0`.
 
 ## Take-the-Hummer rule
 
-**Do not begin unrestricted product implementation yet.** Bounded spikes remain allowed only when they close graph nodes or produce evidence.
+**Do not begin unrestricted product implementation yet.** Level C passing removes a major Q-003 uncertainty, but Q-003/Q-004/Q-005 and G-MK0 remain open.
 
 ## Governing rules
 
 ```text
 FINANCIAL_TRUTH > FEATURE_COUNT
-PASS ≠ CLOSED
-CLOSED ≠ IMMUTABLE
-PROVEN_AT_SPIKE ≠ PROVEN
-DOCUMENTED ≠ VERIFIED
-GREEN CI ≠ BUILD_READY
-EXECUTION_COMPLETE ≠ LEVEL_C_PASS
-PROVIDER FIELD NAME SIMILARITY ≠ SEMANTIC INTERCHANGEABILITY
-CURRENT MAILBOX HISTORY ≠ DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
-LEVEL-C HARNESS ≠ PRODUCTION ONBOARDING
-PROVIDER ASSUMPTION ≠ PROVIDER EVIDENCE
-DESKTOP DEV CREDENTIAL ≠ MOBILE CONFIDENTIAL SECRET
+PASS != CLOSED
+CLOSED != IMMUTABLE
+PROVEN_AT_SPIKE != PROVEN
+DOCUMENTED != VERIFIED
+GREEN CI != BUILD_READY
+SKIPPED CI != GREEN CI
+LOCAL VALIDATION PASS != GITHUB CI PASS
+EXECUTION_COMPLETE != LEVEL_C_PASS
+LEVEL_C_PASS != Q-003_CLOSED
+CURRENT MAILBOX HISTORY != DOCUMENTED PARTIAL-SYNC ANCHOR PROVENANCE
+DELIVERED TO INBOX != IMMEDIATELY SEARCHABLE BY Gmail q
+LEVEL-C HARNESS != PRODUCTION ONBOARDING
+PROVIDER ASSUMPTION != PROVIDER EVIDENCE
+DESKTOP DEV CREDENTIAL != MOBILE CONFIDENTIAL SECRET
 ```
