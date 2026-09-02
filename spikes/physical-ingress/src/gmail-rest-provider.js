@@ -107,9 +107,11 @@ export class GmailRestProvider {
     return response.json();
   }
 
-  async listMessages({ after, maxResults = 500 }) {
+  async listMessages({ after, query, maxResults = 500 }) {
+    const explicitQuery = typeof query === 'string' && query.trim() ? query.trim() : undefined;
     const date = new Date(after);
-    const q = Number.isNaN(date.getTime()) ? undefined : `after:${date.toISOString().slice(0, 10).replaceAll('-', '/')}`;
+    const dateQuery = Number.isNaN(date.getTime()) ? undefined : `after:${date.toISOString().slice(0, 10).replaceAll('-', '/')}`;
+    const q = explicitQuery ?? dateQuery;
     const found = [];
     let pageToken;
     do {
