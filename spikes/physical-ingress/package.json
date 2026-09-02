@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v4.mjs",
+    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v5.mjs",
     "live:gmail": "node live/run-gmail.mjs",
-    "live:gmail:owned": "node live/owned-oauth-level-c-v4.mjs"
+    "live:gmail:owned": "node live/owned-oauth-level-c-v5.mjs"
   }
 }
