@@ -70,7 +70,7 @@ if (!failures.length) {
 
   if (byId.get('TENANCY_MODEL')?.state !== 'PASS') fail('TENANCY_MODEL must be PASS after ADR-001 freeze');
   for (const marker of [
-    'TENANT = FINANCIAL OWNERSHIP + ISOLATION BOUNDARY',
+    'TENANT = FINANCIAL OWNERSHIP BOUNDARY',
     'USER != TENANT',
     'DEVICE != TENANT',
     'CONNECTION != TENANT',
