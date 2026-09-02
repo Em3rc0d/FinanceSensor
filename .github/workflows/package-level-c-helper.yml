@@ -1,0 +1,56 @@
+name: Package Gmail Level C Helper
+
+on:
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - '.github/workflows/package-level-c-helper.yml'
+      - 'spikes/physical-ingress/**'
+      - 'spikes/canonical-resolver/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify controlled runner before packaging
+        run: |
+          node --check spikes/physical-ingress/live/owned-oauth-level-c.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c.mjs
+          grep -q "maxFullMessages: 1" spikes/physical-ingress/live/owned-oauth-level-c.mjs
+          ! grep -qi "client_secret" spikes/physical-ingress/live/owned-oauth-level-c.mjs
+
+      - name: Build helper directory
+        run: |
+          mkdir -p FinanceSensor-Level-C/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C/spikes/
+          cat > FinanceSensor-Level-C/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C — controlled DEV probe
+
+          1. Open: spikes\physical-ingress\live\RUN-FINANCESENSOR-LEVEL-C.cmd
+          2. The browser opens locally.
+          3. Click "Authorize FinanceSensor DEV" and use ONLY the configured test Gmail account.
+          4. After authorization, follow the local page to send one harmless synthetic test email.
+          5. Run the bounded probe, then revoke access.
+          6. Upload ONLY financesensor-level-c-result.json to ChatGPT.
+
+          Do not upload OAuth tokens, Google credential JSON, authorization codes, PKCE values,
+          Gmail message bodies, or real financial data.
+
+          Boundaries: max 5 recent messages, max 1 FULL fetch, no historical sweep.
+          EOF
+
+      - name: Upload helper
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinanceSensor-Level-C-Windows
+          path: FinanceSensor-Level-C
+          if-no-files-found: error
+          retention-days: 7
