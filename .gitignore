@@ -1,0 +1,49 @@
+# FinanceSensor public-safe ignore policy
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+coverage/
+dist/
+build/
+.tmp/
+tmp/
+*.log
+
+# Local Gmail/OAuth evidence and execution output
+financesensor-level-c-result.json
+financesensor-level-c-*.json
+*credentials*.json
+*credential*.json
+client_secret*.json
+
+# Private key / certificate material
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Local database / cache artifacts
+*.sqlite
+*.sqlite3
+*.db
+.cache/
+
+# IDE / OS metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local runner state must never be committed
+_actions/
+actions-runner/
+.runner
+.credentials
+.credentials_rsaparams
