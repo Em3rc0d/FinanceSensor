@@ -10,8 +10,16 @@ import { HistoryExpiredError } from './provider.js';
 const FINANCIAL_SUBJECT = /(compra|purchase|consumo|cargo|charged|abono|deposito|salary|sueldo|transfer|transferencia|refund|reembolso|devolucion|revers|anulad|comision|fee|tarjeta|card payment)/i;
 const FINANCIAL_SENDER = /(bank|banco|visa|mastercard|merchant|store|shop|payment|payments|billing|invoice|receipt)/i;
 
+function headerValue(headers = {}, name = '') {
+  const wanted = String(name).toLowerCase();
+  for (const [key, value] of Object.entries(headers ?? {})) {
+    if (String(key).toLowerCase() === wanted) return value ?? '';
+  }
+  return '';
+}
+
 export function isLikelyFinancialMetadata(headers = {}) {
-  return FINANCIAL_SUBJECT.test(headers.Subject ?? '') || FINANCIAL_SENDER.test(headers.From ?? '');
+  return FINANCIAL_SUBJECT.test(headerValue(headers, 'subject')) || FINANCIAL_SENDER.test(headerValue(headers, 'from'));
 }
 
 function parseLocalizedNumber(raw = '') {
@@ -83,13 +91,13 @@ function inferDirection(subject = '', body = '') {
 export function extractFinancialEvidence(fullMessage) {
   const amount = parseAmount(fullMessage.body);
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  const subject = fullMessage.headers?.Subject ?? '';
+  const subject = headerValue(fullMessage.headers, 'subject');
   const providerTransactionId = parseProviderTransactionId(fullMessage.body);
   const evidence = {
     tenantId: 'tenant-ingress',
     sourceType: 'GMAIL',
     sourceMessageId: fullMessage.id,
-    occurredAt: fullMessage.headers?.Date,
+    occurredAt: headerValue(fullMessage.headers, 'date'),
     amount,
     currency: parseCurrency(fullMessage.body),
     rawMerchant: parseMerchant(fullMessage.body),
