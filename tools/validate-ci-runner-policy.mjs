@@ -8,6 +8,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'mk0-foundation.yml',
   'heartbeat.yml',
   'package-level-c-helper.yml',
+  'public-readiness.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
