@@ -25,11 +25,14 @@ jobs:
           grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "MAX_PROBE_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
+          grep -q "MAX_ANCHOR_ATTEMPTS = 2" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "MAX_ANCHOR_LIST_RESULTS = 1" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "messagesListMode: 'TARGETED_SYNTHETIC_ANCHOR_ONLY'" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "profileHistoryUsedAsStartHistoryId: false" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "syncAnchorSource: 'MESSAGE_HISTORY_ID'" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "maxResults: MAX_ANCHOR_LIST_RESULTS" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
+          grep -q "ANCHOR_ATTEMPT_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
+          grep -q "FULL_FETCH_LIMIT_REACHED" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "startHistoryId: baselineHistoryId" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "anchorMarkerWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
           grep -q "messageIdWrittenToResult: 0" spikes/physical-ingress/live/owned-oauth-level-c-v6.mjs
@@ -58,8 +61,9 @@ jobs:
           4. FinanceSensor shows the exact authorized Gmail address locally.
           5. Send the FIRST harmless synthetic anchor email shown on screen to that exact address.
              Prefer a different sender account. Wait until the anchor is visibly present.
-          6. Click "establish supported sync anchor". FinanceSensor performs exactly one targeted
+          6. Click "establish supported sync anchor". FinanceSensor performs a targeted
              messages.list search with maxResults=1 and then METADATA Subject-only verification.
+             At most two anchor lookups are permitted in the whole run.
              The sync baseline is the anchor MESSAGE historyId, not /profile.historyId.
           7. Send the SECOND synthetic purchase email shown on screen. Wait until it is visible.
           8. Run the bounded history probe. One retry is allowed for propagation.
@@ -72,11 +76,11 @@ jobs:
 
           Privacy/request boundaries:
           - no historical mailbox sweep
-          - exactly one targeted synthetic-anchor list search, maxResults=1
+          - max 2 targeted synthetic-anchor list searches, maxResults=1 each
           - anchor list query contains only a random synthetic marker
           - anchor verification reads Subject metadata only; never body
-          - max 5 post-anchor changed message IDs inspected per attempt
-          - max 1 FULL fetch
+          - max 5 post-anchor changed message IDs inspected per history-probe attempt
+          - max 1 FULL fetch in the entire run
           - max 2 bounded history-probe attempts
           - Gmail address, anchor/purchase markers, message IDs, content, tokens, codes,
             PKCE verifier, credential path and client secret are not written to evidence
