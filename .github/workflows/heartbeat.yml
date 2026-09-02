@@ -65,6 +65,8 @@ jobs:
           node --check tools/physical-evidence-sanitizer.mjs
           node tools/validate-physical-evidence-sanitizer.mjs
           node tools/validate-physical-campaign.mjs
+          node --check tools/build-p1-sanitized-receipt.mjs
+          node tools/validate-p1-sanitized-receipt.mjs
 
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
@@ -128,6 +130,8 @@ jobs:
           test -f tools/physical-evidence-sanitizer.mjs
           test -f tools/validate-physical-evidence-sanitizer.mjs
           test -f tools/validate-physical-campaign.mjs
+          test -f tools/build-p1-sanitized-receipt.mjs
+          test -f tools/validate-p1-sanitized-receipt.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -147,7 +151,7 @@ jobs:
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Physical campaign CI verifies only manifest/sanitizer contracts; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
