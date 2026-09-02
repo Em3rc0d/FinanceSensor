@@ -1,0 +1,94 @@
+name: FinanceSensor Mobile Shell
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/mobile-shell/**'
+      - 'tools/validate-mobile-shell.mjs'
+      - '.github/workflows/mobile-shell.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-mobile-shell-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter 3.44.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          channel: stable
+          cache: true
+
+      - name: Flutter toolchain evidence
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      - name: Static synthetic boundary
+        run: node tools/validate-mobile-shell.mjs
+
+      - name: Materialize Android scaffold
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter create \
+            --platforms=android \
+            --project-name=financesensor_mobile_shell \
+            --org=com.financesensor.lab \
+            .
+
+      - name: Resolve dependencies
+        working-directory: spikes/mobile-shell
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: spikes/mobile-shell
+        run: flutter analyze
+
+      - name: Widget tests
+        working-directory: spikes/mobile-shell
+        run: flutter test
+
+      - name: Build Android debug APK
+        working-directory: spikes/mobile-shell
+        run: flutter build apk --debug
+
+      - name: APK evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          test -f build/app/outputs/flutter-apk/app-debug.apk
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
+          stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
+          echo 'FINANCESENSOR_MOBILE_SHELL_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_GMAIL=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_OAUTH=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_FINANCIAL_DATA=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-mobile-shell-android-debug
+          path: |
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
