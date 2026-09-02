@@ -66,11 +66,15 @@ jobs:
       - name: Privacy boundary ECG
         run: node tools/validate-privacy-matrix.mjs
 
+      - name: CI runner routing boundary ECG
+        run: node tools/validate-ci-runner-policy.mjs
+
       - name: Guard recovery equipment
         run: |
           test -f STATUS.md
           test -f ops/VITALS.md
           test -f ops/RECOVERY-PLAYBOOK.md
+          test -f ops/SELF-HOSTED-RUNNER.md
           test -f graph/GRAPH-PROTOCOL.md
           test -f graph/NERVOUS-SYSTEM.md
           test -f graph/STATUS-AUTHORITY.md
@@ -86,8 +90,10 @@ jobs:
           test -f spikes/e2ee-sync/src/recovery.js
           test -f spikes/e2ee-sync/test/recovery.test.js
           test -f spikes/physical-ingress/README.md
+          test -f tools/validate-ci-runner-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
           grep -q 'FINANCIAL_TRUTH' ops/VITALS.md
+          grep -q 'SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE' ops/SELF-HOSTED-RUNNER.md
           grep -q 'DO NOT MERGE' ops/RECOVERY-PLAYBOOK.md
           grep -q 'BUILD_READY = YES' graph/GRAPH-PROTOCOL.md
           grep -q 'PRODUCT INVARIANT' graph/NERVOUS-SYSTEM.md
@@ -107,5 +113,6 @@ jobs:
           echo 'Quarry Markdown states match the closure ledger.' >> "$GITHUB_STEP_SUMMARY"
           echo 'All declared product/data-model invariants are wired into the nervous system.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Privacy base + recovery data-handling matrices are structurally consistent.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'CI routing remains pinned to the dedicated FinanceSensor self-hosted runner and contains no active GitHub-hosted fallback.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Recovery equipment and ADR identity are present and uniquely wired.' >> "$GITHUB_STEP_SUMMARY"
