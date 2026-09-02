@@ -54,6 +54,10 @@ function sanitizedApiError(status) {
   return error;
 }
 
+function safeCount(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
 export class GmailRestProvider {
   constructor({ accessToken, credentialProvider, fetchImpl = globalThis.fetch, userId = 'me' }) {
     if (!accessToken && !credentialProvider) throw new Error('Gmail access token or credential provider required');
@@ -132,23 +136,70 @@ export class GmailRestProvider {
     };
   }
 
-  async listHistory({ startHistoryId, maxResults = 500 }) {
+  async listHistory({ startHistoryId, maxResults = 500, historyTypes = ['messageAdded'] }) {
     const changes = [];
+    const changed = [];
+    const diagnostics = {
+      historyRecordCount: 0,
+      messageChangedCount: 0,
+      messageAddedCount: 0,
+      messageDeletedCount: 0,
+      labelAddedCount: 0,
+      labelRemovedCount: 0
+    };
     let pageToken;
     let finalHistoryId = String(startHistoryId);
+    const historyTypesQuery = Array.isArray(historyTypes) && historyTypes.length ? historyTypes : undefined;
+
     do {
-      const page = await this._request('/history', { startHistoryId, historyTypes: 'messageAdded', maxResults: Math.min(500, maxResults), pageToken });
+      const page = await this._request('/history', {
+        startHistoryId,
+        historyTypes: historyTypesQuery,
+        maxResults: Math.min(500, maxResults),
+        pageToken
+      });
       for (const history of page.history ?? []) {
-        for (const added of history.messagesAdded ?? []) changes.push({ historyId: history.id, messageId: added.message.id });
+        diagnostics.historyRecordCount += 1;
+        const genericMessages = history.messages ?? [];
+        const addedMessages = history.messagesAdded ?? [];
+        const deletedMessages = history.messagesDeleted ?? [];
+        const labelsAdded = history.labelsAdded ?? [];
+        const labelsRemoved = history.labelsRemoved ?? [];
+        diagnostics.messageChangedCount += genericMessages.length;
+        diagnostics.messageAddedCount += addedMessages.length;
+        diagnostics.messageDeletedCount += deletedMessages.length;
+        diagnostics.labelAddedCount += labelsAdded.length;
+        diagnostics.labelRemovedCount += labelsRemoved.length;
+        for (const message of genericMessages) {
+          if (message?.id) changed.push({ historyId: history.id, messageId: message.id });
+        }
+        for (const added of addedMessages) {
+          if (added?.message?.id) changes.push({ historyId: history.id, messageId: added.message.id });
+        }
       }
       finalHistoryId = page.historyId ?? finalHistoryId;
       pageToken = page.nextPageToken;
-    } while (pageToken && changes.length < maxResults);
-    return { history: changes.slice(0, maxResults), historyId: String(finalHistoryId) };
+    } while (pageToken && changes.length < maxResults && diagnostics.historyRecordCount < maxResults);
+
+    return {
+      history: changes.slice(0, maxResults),
+      changed: changed.slice(0, maxResults),
+      historyId: String(finalHistoryId),
+      diagnostics
+    };
+  }
+
+  async getProfile() {
+    const profile = await this._request('/profile');
+    return {
+      emailAddress: profile.emailAddress ? String(profile.emailAddress) : '',
+      messagesTotal: safeCount(profile.messagesTotal),
+      threadsTotal: safeCount(profile.threadsTotal),
+      historyId: String(profile.historyId)
+    };
   }
 
   async getCurrentHistoryId() {
-    const profile = await this._request('/profile');
-    return String(profile.historyId);
+    return (await this.getProfile()).historyId;
   }
 }
