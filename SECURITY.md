@@ -36,7 +36,7 @@ Active public CI runs only on ephemeral GitHub-hosted runners. Active workflows 
 - never perform interactive OAuth or real Gmail execution;
 - use synthetic fixtures only for financial-content tests.
 
-`tools/validate-ci-runner-policy.mjs` enforces this routing boundary.
+The public-readiness gate verifies the current branch-head workflow surface before publication certification.
 
 ## Gmail Level C
 
