@@ -34,7 +34,8 @@ Current active workflows:
 
 - `FinanceSensor Heartbeat`;
 - `MK0 Foundation`;
-- `Package Gmail Level C Helper`.
+- `Package Gmail Level C Helper`;
+- `FinanceSensor Public Readiness`.
 
 The historical Gmail bearer workflow remains hard-disabled.
 
@@ -94,7 +95,11 @@ SANITIZED ARTIFACT != PROVIDER AUTHORITY
 
 ## Public exposure guard
 
-The Heartbeat additionally verifies the root public-safety files and rejects common committed token/private-key patterns in the checked tree. This is defense-in-depth and does not replace provider-side secret scanning or a whole-history audit.
+The Heartbeat verifies the root public-safety files and rejects common committed token/private-key patterns in the checked tree.
+
+`FinanceSensor Public Readiness` performs the stronger publication gate. It checks out complete reachable history (`fetch-depth: 0`) and runs `tools/audit-public-history.mjs`. The auditor examines historical text blobs for high-risk credential classes and reports only detector class, abbreviated blob ID and path. Matched secret values are never printed.
+
+A skipped, queued, quota-blocked or otherwise unexecuted public-readiness job is **not** a PASS.
 
 ## Historical runner state
 
@@ -124,4 +129,6 @@ PUBLIC_CLIENT_ID != SECRET
 AMBIENT PERSONAL CREDENTIALS != BOOTSTRAP MECHANISM
 SKIPPED CI != GREEN CI
 QUEUED CI != GREEN CI
+QUOTA_BLOCKED CI != GREEN CI
+PUBLIC_READY != CURRENT_TREE_ONLY
 ```
