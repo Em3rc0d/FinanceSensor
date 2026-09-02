@@ -19,34 +19,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify controlled v2 runner before packaging
+      - name: Verify controlled v3 runner before packaging
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
-          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
-          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
-          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
-          grep -q "loopbackRootRedirect: true" spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
-          ! grep -qi "client_secret" spikes/physical-ingress/live/owned-oauth-level-c-v2.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "MAX_MESSAGES = 5" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "MAX_FULL_MESSAGES = 1" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "messagesListUsed: false" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "loopbackRootRedirect: true" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "clientSecretPersistedByRunner: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "clientSecretWrittenToEvidence: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          grep -q "clientSecretCloudCopies: 0" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          ! grep -Eq "client_secret[[:space:]]*[:=][[:space:]]*['\"][^'\"]+" spikes/physical-ingress/live/owned-oauth-level-c-v3.mjs
+          ! grep -q "GOOGLE_CLIENT_SECRET" .github/workflows/gmail-live-spike.yml
+          ! grep -q "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH" .github/workflows/gmail-live-spike.yml
 
       - name: Build helper directory
         run: |
-          mkdir -p FinanceSensor-Level-C-v2/spikes
-          cp -R spikes/physical-ingress FinanceSensor-Level-C-v2/spikes/
-          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v2/spikes/
-          cat > FinanceSensor-Level-C-v2/START-HERE.txt <<'EOF'
-          FinanceSensor Gmail Level C v2 — controlled DEV probe
+          mkdir -p FinanceSensor-Level-C-v3/spikes
+          cp -R spikes/physical-ingress FinanceSensor-Level-C-v3/spikes/
+          cp -R spikes/canonical-resolver FinanceSensor-Level-C-v3/spikes/
+          cat > FinanceSensor-Level-C-v3/START-HERE.txt <<'EOF'
+          FinanceSensor Gmail Level C v3 — controlled DEV probe
+
+          PRECONDITION
+          Download the OAuth Desktop client credentials JSON for "FinanceSensor DEV Level-C"
+          directly from Google Cloud. Keep that JSON on this computer. Do not upload or paste it.
 
           1. Open: spikes\physical-ingress\live\RUN-FINANCESENSOR-LEVEL-C.cmd
-          2. The browser opens locally.
-          3. Click "Authorize FinanceSensor DEV" and use ONLY the configured test Gmail account.
-          4. After authorization, send one harmless synthetic test email using the text shown locally.
-          5. Run the bounded probe, then revoke access.
-          6. Upload ONLY financesensor-level-c-result.json to ChatGPT.
+          2. Windows asks you to select the downloaded Google OAuth credentials JSON.
+          3. The browser opens locally.
+          4. Click "Authorize FinanceSensor DEV" and use ONLY the configured test Gmail account.
+          5. After authorization, send one harmless synthetic test email using the text shown locally.
+          6. Run the bounded history-only probe, then revoke access.
+          7. Upload ONLY financesensor-level-c-result.json to ChatGPT.
 
-          Do not upload OAuth tokens, Google credential JSON, authorization codes, PKCE values,
-          Gmail message bodies, or real financial data.
+          Do not upload OAuth tokens, Google credential JSON, client secrets, authorization codes,
+          PKCE values, Gmail message bodies, or real financial data.
 
-          v2 boundaries:
+          v3 boundaries:
+          - Google-issued Desktop client credential is read locally and kept only in process memory
+          - credential file path and contents are never written to result evidence
           - Desktop loopback root redirect only: http://127.0.0.1:<ephemeral-port>
           - no historical messages.list sweep
           - max 5 post-authorization changed messages per attempt
@@ -58,7 +71,7 @@ jobs:
       - name: Upload helper
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceSensor-Level-C-v2-Windows
-          path: FinanceSensor-Level-C-v2
+          name: FinanceSensor-Level-C-v3-Windows
+          path: FinanceSensor-Level-C-v3
           if-no-files-found: error
           retention-days: 7
