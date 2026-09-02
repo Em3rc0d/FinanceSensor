@@ -5,6 +5,7 @@ import process from 'node:process';
 const root = process.cwd();
 const basePath = path.join(root, 'mk0', '04-architecture', 'PRIVACY-DATA-MATRIX.json');
 const recoveryPath = path.join(root, 'mk0', '04-architecture', 'PRIVACY-RECOVERY-MATRIX.json');
+const deletionPath = path.join(root, 'mk0', '04-architecture', 'PRIVACY-DELETION-MATRIX.json');
 const requiredFields = [
   'id', 'name', 'sensitivity', 'purpose', 'source', 'localRetention',
   'localProtection', 'cloudPlaintext', 'e2eeSync', 'rawRetention',
@@ -14,7 +15,7 @@ const requiredFields = [
 const failures = [];
 const fail = message => failures.push(message);
 
-for (const requiredPath of [basePath, recoveryPath]) {
+for (const requiredPath of [basePath, recoveryPath, deletionPath]) {
   if (!fs.existsSync(requiredPath)) {
     console.error(`PRIVACY_MATRIX_FAIL: missing ${path.relative(root, requiredPath)}`);
     process.exit(1);
@@ -23,20 +24,24 @@ for (const requiredPath of [basePath, recoveryPath]) {
 
 const base = JSON.parse(fs.readFileSync(basePath, 'utf8'));
 const recovery = JSON.parse(fs.readFileSync(recoveryPath, 'utf8'));
+const deletion = JSON.parse(fs.readFileSync(deletionPath, 'utf8'));
 
 if (base.defaultRule !== 'deny-unclassified-persistence') {
   fail('defaultRule must be deny-unclassified-persistence');
 }
-if (recovery.extends !== 'PRIVACY-DATA-MATRIX.json') {
-  fail('recovery matrix must explicitly extend PRIVACY-DATA-MATRIX.json');
-}
-if (recovery.schemaVersion !== base.schemaVersion) {
-  fail('recovery matrix schemaVersion must match base matrix');
+for (const [name, extension] of [['recovery', recovery], ['deletion', deletion]]) {
+  if (extension.extends !== 'PRIVACY-DATA-MATRIX.json') {
+    fail(`${name} matrix must explicitly extend PRIVACY-DATA-MATRIX.json`);
+  }
+  if (extension.schemaVersion !== base.schemaVersion) {
+    fail(`${name} matrix schemaVersion must match base matrix`);
+  }
 }
 
 const classes = [
   ...(Array.isArray(base.classes) ? base.classes : []),
-  ...(Array.isArray(recovery.classes) ? recovery.classes : [])
+  ...(Array.isArray(recovery.classes) ? recovery.classes : []),
+  ...(Array.isArray(deletion.classes) ? deletion.classes : [])
 ];
 const byId = new Map();
 
@@ -152,6 +157,28 @@ if (diagnostics && diagnostics.logging !== 'ALLOWLIST_ONLY') {
   fail('diagnostic telemetry must use an allowlist-only logging policy');
 }
 
+const deletionTombstone = requireClass('DELETION-TOMBSTONE');
+if (deletionTombstone) {
+  if (deletionTombstone.cloudPlaintext !== 'ALLOWED_MINIMIZED') {
+    fail('deletion tombstone cloud visibility must be ALLOWED_MINIMIZED');
+  }
+  if (deletionTombstone.e2eeSync !== 'NOT_REQUIRED') {
+    fail('deletion tombstone must not depend on E2EE sync');
+  }
+  if (!deletionTombstone.purpose.toUpperCase().includes('RESURRECT')) {
+    fail('deletion tombstone purpose must explicitly bind the resurrection barrier');
+  }
+  if (!deletionTombstone.localRetention.includes('BOUNDED')) {
+    fail('deletion tombstone retention must be bounded');
+  }
+  if (!deletionTombstone.deletionTrigger.includes('BACKUP_RETENTION')) {
+    fail('deletion tombstone deletion trigger must bind backup retention');
+  }
+  if (deletionTombstone.logging !== 'MINIMIZED') {
+    fail('deletion tombstone logging must be MINIMIZED');
+  }
+}
+
 const recoveryPrivate = requireClass('RECOVERY-PRIVATE-KEY');
 if (recoveryPrivate) {
   if (recoveryPrivate.cloudPlaintext !== 'FORBIDDEN') fail('Recovery Private Key cloud plaintext must be FORBIDDEN');
@@ -207,5 +234,7 @@ console.log('PRIVACY_MATRIX_PASS');
 console.log(`classes=${classes.length}`);
 console.log(`baseClasses=${base.classes.length}`);
 console.log(`recoveryClasses=${recovery.classes.length}`);
+console.log(`deletionClasses=${deletion.classes.length}`);
 console.log(`baseStatus=${base.status}`);
 console.log(`recoveryStatus=${recovery.status}`);
+console.log(`deletionStatus=${deletion.status}`);
