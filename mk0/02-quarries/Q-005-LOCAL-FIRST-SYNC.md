@@ -9,7 +9,7 @@ How can several authorized phones share one tenant's financial truth while the c
 
 ## Current finding
 
-Q-005 is now a coupled system of six load-bearing concerns:
+Q-005 is a coupled system of six load-bearing concerns:
 
 ```text
 PERIPHERAL NERVOUS SYSTEM
@@ -61,9 +61,9 @@ OPAQUE WITNESS SYSTEM
   explicit unavailable/unconfirmed state
 ```
 
-A secure protocol that corrupts state under replay is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A signed checkpoint chain that calls an old server view `LATEST` is unacceptable. A witness that needs financial plaintext or a stable real tenant identifier is also unacceptable.
+A secure protocol that corrupts state under replay is unacceptable. A recovery path that silently preserves a lost device's authority is unacceptable. A signed checkpoint chain that calls an old server view `LATEST` is unacceptable. A witness that needs financial plaintext or a stable real tenant identifier is unacceptable.
 
-Detailed contracts:
+## Governing architecture
 
 - `../04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md`
 - `../04-architecture/PARASYMPATHETIC-SYNC.md`
@@ -71,9 +71,20 @@ Detailed contracts:
 - `../04-architecture/TRUSTED-CHECKPOINT.md`
 - `../04-architecture/WITNESS-FRESHNESS.md`
 - `../04-architecture/Q005-ANTI-ROLLBACK-SECURITY-REVALIDATION.md`
+
+Decisions:
+
 - `../11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md`
 - `../11-decisions/ADR-015-TRUSTED-CHECKPOINT-ANTI-ROLLBACK.md`
 - `../11-decisions/ADR-016-OPAQUE-WITNESS-FRESHNESS.md`
+- `../11-decisions/ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md`
+- `../11-decisions/ADR-022-PRODUCTION-WITNESS-QUORUM.md`
+- `../11-decisions/ADR-023-DISCONNECT-DELETION-BACKUP-SEMANTICS.md`
+- `../11-decisions/ADR-024-RECOVERY-KIT-ANCHOR-REFRESH.md`
+
+Physical execution plan:
+
+- `../07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md`
 
 ## Ownership and authority
 
@@ -140,7 +151,7 @@ same event_id
 → FAIL CLOSED
 ```
 
-A second identity axis is also fixed:
+A second identity axis is fixed:
 
 ```text
 (tenant_id, origin_device_id, origin_device_sequence)
@@ -189,7 +200,7 @@ The Revocation Barrier freezes the accepted historical origin stream and rejects
 
 This is `INV-SYNC-012`.
 
-## All-devices-lost recovery — ADR-014
+## All-devices-lost recovery — ADR-014 + ADR-024
 
 ```text
 SERVER MASTER KEY         REJECTED
@@ -197,11 +208,12 @@ PASSWORD-ONLY RECOVERY    REJECTED FOR MK0
 ASYMMETRIC RECOVERY KEY   SPIKE-ACCEPTED
 Recovery Private Key      USER-HELD / OFFLINE
 PER-EPOCH RECOVERY WRAP   REQUIRED
+RECOVERY KIT ANCHOR       MINIMUM TRUSTED ANCHOR, NOT GLOBAL LATEST
 ```
 
 RecoveryCoverage requires authenticated tenant/epoch/Recovery-Key/authorizer binding and exactly one non-ambiguous distinct authority for each declared recoverable epoch.
 
-Before future sync resumes:
+Before future sync resumes after all-devices-lost recovery:
 
 ```text
 new device ACTIVE from N+1
@@ -214,15 +226,45 @@ N+1 RecoveryCoverage valid
 recovered history evidence present per lost device
 Revocation Barrier valid per lost device
 barrier commitment matches recovered history
+NEW N+1 RECOVERY KIT EXPORTED
+NEW KIT INTEGRITY CHECK PASSED
+USER CONFIRMED RECOVERY KIT CUSTODY
         ↓
 SAFE_TO_RESUME_FUTURE_SYNC
 ```
 
+Normal Recovery Kit refresh is event-driven, not checkpoint-driven. Recovery Key rotation or successful disaster cutover requires a new kit. An old valid kit is a historical minimum anchor, never proof of latest global state.
+
+## Production crypto profile — ADR-021
+
+The hand-composed Node spike remains feasibility evidence only. The first mobile physical interoperability profile is now frozen:
+
+```text
+KEY WRAP
+  RFC 9180 HPKE Base mode
+  DHKEM(P-256, HKDF-SHA256)
+  HKDF-SHA256
+  AES-128-GCM
+
+DEVICE ORIGIN SIGNING
+  ECDSA P-256 + SHA-256 profile
+  canonical protocol transcript
+  protected platform private-key facility
+
+DOMAIN ENVELOPES
+  256-bit Tenant Root Key
+  HKDF-SHA256 domain/epoch subkeys
+  AES-256-GCM
+  96-bit unique nonce
+```
+
+Android Keystore/StrongBox and Apple Secure Enclave/Keychain are the intended protected-key facilities. Silent fallback to exportable long-lived production private keys is forbidden.
+
+This is a **frozen physical-test profile**, not production proof. Android↔iOS interoperability, protected-key execution, canonical signature encoding and reviewed library versions still must pass.
+
 ## Knee stress campaign
 
-Evidence:
-
-`../10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
+Evidence: `../10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md`
 
 The campaign deliberately introduced adversarial assertions before fixes and exposed 12 weaknesses that previous green suites did not protect.
 
@@ -242,26 +284,22 @@ INV-SYNC-015 conflict-resolution conflict safety
 
 ## Trusted Checkpoint / Anti-Rollback — ADR-015
 
-The knee campaign exposed a stronger limitation:
-
 ```text
 VALID SIGNED STATE
         ≠
 PROOF THAT THE RELAY RETURNED THE NEWEST VALID STATE
 ```
 
-The first checkpoint baseline intentionally verified authenticity only. The adversarial suite produced eight red assertions. After repair:
+After the adversarial checkpoint campaign:
 
 ```text
 ARB-001..014             14 / 14 PASS
 checkpoint-era suite      98 / 98 PASS
 ```
 
-Evidence:
+Evidence: `../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
 
-`../10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md`
-
-FinanceSensor now distinguishes:
+FinanceSensor distinguishes:
 
 ```text
 SignedCheckpoint
@@ -298,74 +336,31 @@ APPEND-ONLY CONSISTENCY
 GLOBAL FRESHNESS
 ```
 
-## Opaque independent witness — ADR-016
+## Opaque independent witnesses — ADR-016 + ADR-022
 
-ADR-015 answers rollback relative to a trusted anchor. ADR-016 adds independent memory of checkpoint progress without turning the witness into a holder of financial truth.
-
-The first witness implementation intentionally authenticated submissions but did not enforce monotonicity/contradiction rules. The adversarial campaign produced:
-
-```text
-weak witness baseline    109 / 116 PASS
-red assertions             7
-```
-
-The seven failures were:
-
-```text
-rollback submission
-same-sequence different-hash fork
-sequence gap / fast-forward
-wrong previous checkpoint hash
-valid witness ahead of relay
-same-sequence valid witness divergence
-configured witness/log binding confusion
-```
-
-After repair:
+The bounded witness campaign repaired rollback, fork, gap, parent, relay-behind, divergence and log-binding failures.
 
 ```text
 WIT-001..018             18 / 18 PASS
 full distributed suite 116 / 116 PASS
 ```
 
-Evidence:
+Evidence: `../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
 
-`../10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md`
-
-### Witness privacy contract
-
-Each witness receives a different opaque log identifier. The candidate protocol does not require:
+### Frozen initial production topology
 
 ```text
-real tenant id
-email / bank / account identifiers
-amount / merchant / category
-financial event type
-origin-device identities / origin heads
-financial payload ciphertext
-Tenant Root Key
-Recovery Private Key
+configured witnesses              3
+confirmation quorum               2 of 3
+minimum failure domains           2
+minimum relay-independent witness 1
+per-witness opaque log id         REQUIRED
+real tenant id                    FORBIDDEN
+financial plaintext               FORBIDDEN
+financial ciphertext              FORBIDDEN
 ```
 
-Timing, checkpoint sequence and cadence remain metadata leakage and must be quantified before production.
-
-### Witness continuity
-
-```text
-first checkpoint = sequence 1 + null parent
-next checkpoint = N+1 + exact remembered parent hash
-lower sequence = rollback reject
-same sequence + different hash = fork reject
-gap = reject
-parent mismatch = reject
-exact same semantic checkpoint = retry-equivalent
-```
-
-This is `INV-SYNC-018`.
-
-### Witness evidence honesty
-
-The executable spike uses three witnesses and a two-witness threshold only as a bounded test configuration.
+### Evidence semantics
 
 ```text
 2 agreeing current witnesses + no contradictory valid evidence
@@ -377,14 +372,19 @@ valid witness ahead of relay
 valid same-sequence divergence
 → WITNESS_DIVERGENCE
 
-insufficient/unavailable witnesses
-→ explicit unconfirmed state
+<2 current witnesses
+→ WITNESS_UNCONFIRMED
 → NEVER silently trust relay freshness
+
+VALID CONTRADICTION
+→ CANNOT BE VOTED AWAY BY 2-OF-3
 ```
 
-This is `INV-SYNC-019`.
+`2-of-3` is a freshness-evidence threshold, not a consensus layer and not global-freshness proof.
 
-`2-of-3` is **not** frozen as the production policy.
+Timing, checkpoint sequence and cadence remain metadata leakage and must be measured physically.
+
+This is `INV-SYNC-018` and `INV-SYNC-019`.
 
 ## Parasympathetic model
 
@@ -412,7 +412,7 @@ EVENTUAL FRESHNESS > FAKE REAL-TIME
 
 Resource constraints may defer work. They may not disable encryption, authorization, provenance, idempotency, conflict safety, checkpoint verification or witness-evidence honesty.
 
-## Current bounded `PROVEN_AT_SPIKE` Q-005 invariants
+## Current bounded `PROVEN_AT_SPIKE` invariants
 
 ```text
 INV-SYNC-008  cloud lacks recovery decryption authority
@@ -431,46 +431,43 @@ INV-SYNC-019  contradiction-aware witness evidence honesty
 
 These are bounded spike properties, not release-grade `PROVEN`.
 
-## Current executable baseline
+## Deletion / retention — ADR-023
 
-Validated head before this documentation reconciliation:
-
-`fbc11506f37998e5a059bd6dc349f70f40b10c4b`
+Q-005 inherits the tenant lifecycle contract:
 
 ```text
-DISTRIBUTED / WITNESS                    116 / 116 PASS
-CANONICAL RESOLVER                        98 / 98 PASS
-PHYSICAL INGRESS                          31 / 31 PASS
-TRACEABILITY                              84 / 84 WIRED
-PROVEN_AT_SPIKE                           22
-PRIVACY                                   24 classes PASS
-HEARTBEAT                                 SUCCESS
-MK0 FOUNDATION                            SUCCESS
-BUILD_READY                               false
+DELETE TENANT
+→ destroy/invalidate tenant + recovery authority
+→ delete cloud opaque envelopes/control metadata
+→ retire/delete witness namespaces
+→ deny future sync/recovery authorization
+→ backup restore MUST NOT resurrect tenant authority
 ```
+
+Applicable backup physical retention must be finite and must not exceed the architecture ceiling of 35 days. Physical provider evidence remains open.
 
 ## Remaining blockers
 
-Q-005 stays `ACTIVE`:
+Q-005 stays `ACTIVE`. The remaining work is now intentionally biased toward **implementation evidence**, not unresolved high-level primitive/quorum/recovery UX choices:
 
 ```text
-production witness operator/topology/quorum policy
-Recovery Kit checkpoint-anchor refresh semantics
 reviewed production append-only checkpoint construction
 atomic crash-safe checkpoint + anchor advancement
-reviewed production HPKE/AEAD/signature implementation
+reviewed library implementation of ADR-021 profile
 Android ↔ iOS cryptographic interoperability
-Android Keystore / StrongBox evidence
-Apple Keychain / Secure Enclave evidence
+Android Keystore / StrongBox physical evidence
+Apple Keychain / Secure Enclave physical evidence
 protected mobile checkpoint-anchor storage
 real control-plane tenant authorization
 real recovery-wrap/checkpoint/barrier authorization
 crash/restart atomicity
 long-offline / network-partition behavior
+physical ADR-022 witness topology/failure campaign
 Recovery Kit export/import leakage controls
 physical all-devices-lost recovery
 physical post-recovery revocation/rotation/cutover
-witness/checkpoint retention and deletion semantics
+physical ADR-024 new-kit safe-to-resume gate
+witness/checkpoint deletion and backup behavior under ADR-023
 metadata leakage analysis
 penetration / side-channel review
 ```
@@ -493,11 +490,13 @@ REVOCATION BARRIER                 REQUIRED / SPIKE-TESTED
 ALL-DEVICES-LOST RECOVERY          SPIKE-ACCEPTED / ADR-014
 TRUSTED CHECKPOINT                 SPIKE-ACCEPTED / ADR-015
 OPAQUE WITNESS MODEL               SPIKE-ACCEPTED / ADR-016
+PRODUCTION WITNESS POLICY          FROZEN / ADR-022 / PHYSICAL OPEN
+PRODUCTION CRYPTO PROFILE          FROZEN / ADR-021 / PHYSICAL OPEN
+RECOVERY KIT REFRESH               FROZEN / ADR-024 / PHYSICAL OPEN
+DELETION/RETENTION SEMANTICS       FROZEN / ADR-023 / PHYSICAL OPEN
 RELAY AS SOLE TRUST/FRESHNESS      REJECTED
 NO-ANCHOR FRESHNESS                INDETERMINATE
 GLOBAL-LATEST FRESHNESS            NOT CLAIMED
-PRODUCTION WITNESS POLICY          OPEN
-PRODUCTION CRYPTO                  OPEN
 PHYSICAL MOBILE RECOVERY           OPEN
 
 MULTI_DEVICE_DESIGN                ACTIVE / NOT CLOSED
@@ -505,6 +504,20 @@ MULTI_DEVICE_DESIGN                ACTIVE / NOT CLOSED
 
 ## Closure criteria
 
-Q-005 closes only when bounded logical evidence is supplemented by release-grade proof for production crypto, tenant authorization, real mobile key/anchor storage, cross-platform interoperability, background/crash behavior, physical recovery/revocation, deletion/retention, and the selected production freshness/witness contract.
+Q-005 closes only when bounded logical evidence is supplemented by release-grade proof for:
 
-`PROVEN_AT_SPIKE ≠ PROVEN`.
+- reviewed implementation of ADR-021 and cross-platform crypto interoperability;
+- real control-plane tenant/recovery authorization;
+- protected mobile key and checkpoint-anchor storage;
+- ADR-022 witness topology, quorum and contradiction behavior;
+- background/crash/partition/long-offline behavior;
+- physical ADR-014/024 recovery, revocation, rotation, new-kit and cutover;
+- ADR-023 deletion/retention/backup behavior;
+- metadata leakage analysis;
+- penetration/side-channel review;
+- closure receipt with residual risks.
+
+```text
+PROVEN_AT_SPIKE != PROVEN
+DECISION FROZEN != PHYSICAL PROPERTY PROVEN
+```
