@@ -73,6 +73,9 @@ jobs:
           node tools/validate-mobile-stack.mjs
           node tools/validate-mobile-shell.mjs
 
+      - name: Implementation baseline ECG
+        run: node tools/validate-implementation-baseline.mjs
+
       - name: Closure graph ECG
         run: node tools/validate-closure-graph.mjs
 
@@ -122,7 +125,10 @@ jobs:
           test -f mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json
           test -f mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
+          test -f mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md
           test -f mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md
+          test -f mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md
+          test -f mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md
           test -f mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           test -f mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
@@ -149,6 +155,7 @@ jobs:
           test -f tools/validate-mobile-product-lab.mjs
           test -f tools/validate-mobile-stack.mjs
           test -f tools/validate-mobile-shell.mjs
+          test -f tools/validate-implementation-baseline.mjs
           test -f tools/validate-ci-runner-policy.mjs
           test -f tools/validate-gmail-production-policy.mjs
           grep -q 'BUILD_READY                NO' STATUS.md
@@ -158,10 +165,13 @@ jobs:
           grep -q 'BUILD_READY = YES' graph/GRAPH-PROTOCOL.md
           grep -q 'PRODUCT INVARIANT' graph/NERVOUS-SYSTEM.md
           grep -q 'only authoritative source' graph/STATUS-AUTHORITY.md
+          grep -q 'SQLCIPHER_FAILURE => FAIL_CLOSED' mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md
+          grep -q 'FLUTTER_UI != SECURITY_BOUNDARY' mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md
+          grep -q 'SUPABASE_AUTH != GOOGLE_OAUTH_AUTHORITY' mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md
+          grep -q 'ANDROID MIN SDK                  31' mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md
           grep -q 'SERVER_MASTER_KEY' mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           grep -q 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION' mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md
           grep -q 'FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION' mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md
-          grep -q 'FLUTTER_UI != SECURITY_BOUNDARY' mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md
           grep -q 'MOBILE_SHELL != PRODUCTION_APP' spikes/mobile-shell/README.md
           grep -q 'APK_BUILD_PASS != BUILD_READY' spikes/mobile-shell/README.md
           grep -q 'INV-SYNC-011' mk0/05-data-model/INVARIANTS.md
@@ -173,8 +183,8 @@ jobs:
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Implementation baseline is frozen: Flutter + Kotlin/Swift bridges, Android minSdk 31, SQLCipher local persistence, Supabase control plane.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Mobile Product Lab and Flutter Mobile Shell are synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Flutter is the MK0 product stack; long-lived OAuth/device-key authority remains behind Kotlin/Swift platform security bridges.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
           echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
