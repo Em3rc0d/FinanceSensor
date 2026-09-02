@@ -129,6 +129,9 @@ jobs:
           test -f mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json
           test -f mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md
           test -f mk0/04-architecture/PARASYMPATHETIC-SYNC.md
+          test -f mk0/04-architecture/THREAT-MODEL.md
+          test -f mk0/06-wireframes/SIGNATURE-UX-FREEZE.md
+          test -f mk0/06-wireframes/NO-SCROLL-BUILD-ENTRY.md
           test -f mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md
           test -f mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md
           test -f mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md
@@ -139,6 +142,8 @@ jobs:
           test -f mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md
           test -f mk0/07-plan/Q003-Q004-Q005-PHYSICAL-CLOSURE-CAMPAIGN.md
           test -f mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md
+          test -f mk0/07-plan/IMPLEMENTATION-SLICES.md
+          test -f product/MK0-SCOPE-FREEZE.md
           test ! -f mk0/11-decisions/ADR-005-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md
           test -f product/labs/mobile-bi/README.md
           test -f product/labs/mobile-bi/index.html
@@ -190,10 +195,93 @@ jobs:
           echo 'FINANCESENSOR_HEARTBEAT=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public CI executes on ephemeral GitHub-hosted infrastructure with contents:read only.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail authorization, tokens and financial data remain LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Physical campaign CI verifies manifest, sanitizer and local-edge receipt-adapter contracts only; no physical PASS is claimed by CI.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Implementation baseline is frozen: Flutter + Kotlin/Swift bridges, Android minSdk 31, SQLCipher local persistence, Supabase control plane.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Build readiness is machine-readable and remains false until G-MK0 closes.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Mobile Product Lab and Flutter Mobile Shell are synthetic-only and cannot claim production OAuth, financial data or BUILD_READY.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Public exposure guard found no obvious committed private-key/API-token patterns in the checked tree.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Gmail production policy remains fail-closed: Q-003 active, provider verification open, assessment applicability provider-controlled.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'STATUS still reflects the blocked BUILD_READY gate.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Implementation baseline and build-readiness contracts are machine-readable; BUILD_READY remains false until G-MK0 closes.' >> "$GITHUB_STEP_SUMMARY"
+
+  android-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter 3.44.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          channel: stable
+          cache: true
+
+      - name: Flutter toolchain evidence
+        run: flutter --version
+
+      - name: Materialize Android Kotlin scaffold
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter create --platforms=android --android-language=kotlin --project-name=financesensor_mobile_shell --org=com.financesensor.lab .
+
+      - name: Apply Android baseline
+        working-directory: spikes/mobile-shell
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          kts = Path('android/app/build.gradle.kts')
+          groovy = Path('android/app/build.gradle')
+          if kts.exists():
+              text = kts.read_text()
+              text = text.replace('minSdk = flutter.minSdkVersion', 'minSdk = 31')
+              text = text.replace('targetSdk = flutter.targetSdkVersion', 'targetSdk = 36')
+              kts.write_text(text)
+          elif groovy.exists():
+              text = groovy.read_text()
+              text = text.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 31')
+              text = text.replace('targetSdkVersion flutter.targetSdkVersion', 'targetSdkVersion 36')
+              groovy.write_text(text)
+          else:
+              raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+          PY
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
+          grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+
+      - name: Resolve dependencies
+        working-directory: spikes/mobile-shell
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: spikes/mobile-shell
+        run: flutter analyze
+
+      - name: Widget viewport tests
+        working-directory: spikes/mobile-shell
+        run: flutter test
+
+      - name: Build Android debug APK
+        working-directory: spikes/mobile-shell
+        run: flutter build apk --debug
+
+      - name: APK evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          test -f build/app/outputs/flutter-apk/app-debug.apk
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
+          stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
+          echo 'FINANCESENSOR_MOBILE_SHELL_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_GMAIL=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_OAUTH=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_FINANCIAL_DATA=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-mobile-shell-android-debug
+          path: |
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
