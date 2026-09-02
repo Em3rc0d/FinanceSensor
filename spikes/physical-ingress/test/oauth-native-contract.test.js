@@ -255,18 +255,29 @@ test('OAUTH-012 Gmail 401 invalidates local short token without hidden retry', a
   assert.equal(refreshCalls, 2);
 });
 
-test('OAUTH-013 CI bearer probe cannot become custodian of long-lived OAuth authority or Desktop credential', () => {
+test('OAUTH-013 retired Gmail CI workflow cannot become custodian of OAuth authority', () => {
   const workflow = readFileSync(new URL('../../../.github/workflows/gmail-live-spike.yml', import.meta.url), 'utf8');
-  assert.match(workflow, /FINANCESENSOR_GMAIL_ACCESS_TOKEN/);
+
+  assert.match(workflow, /RETIRED/);
+  assert.match(workflow, /if:\s*\$\{\{\s*false\s*\}\}/);
+  assert.match(workflow, /runs-on:\s*ubuntu-latest/);
+  assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/);
+  assert.match(workflow, /controlled local edge runtime/i);
+  assert.match(workflow, /SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE/);
+
   for (const forbidden of [
+    'FINANCESENSOR_GMAIL_ACCESS_TOKEN',
     'FINANCESENSOR_GMAIL_REFRESH_TOKEN',
     'GOOGLE_CLIENT_SECRET',
     'OAUTH_CLIENT_SECRET',
     'FINANCESENSOR_AUTHORIZATION_CODE',
     'FINANCESENSOR_CODE_VERIFIER',
-    'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH'
+    'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH',
+    '${{ secrets.',
+    'run-gmail.mjs',
+    'owned-oauth-level-c'
   ]) {
-    assert.equal(workflow.includes(forbidden), false, `${forbidden} must remain outside CI`);
+    assert.equal(workflow.includes(forbidden), false, `${forbidden} must remain outside retired CI`);
   }
 });
 
