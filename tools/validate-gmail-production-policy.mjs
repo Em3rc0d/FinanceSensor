@@ -37,7 +37,7 @@ requireText('quarry', quarry, 'LEVEL_C_PASS != Q-003_CLOSED');
 
 requireText('adr', adr, 'GOOGLE ASSESSMENT APPLICABILITY => PROVIDER DETERMINATION REQUIRED');
 requireText('adr', adr, 'SERVER-HOSTED GMAIL OAUTH AUTHORITY');
-requireText('adr', adr, 'GENERALIZED Gmail-DERIVED MODEL TRAINING');
+requireText('adr', adr, 'train or improve generalized AI/ML models with raw or derived Workspace API data');
 requireText('adr', adr, 'E2EE CIPHERTEXT => SECURITY ASSESSMENT EXEMPT');
 requireText('adr', adr, 'PROVIDER DETERMINATION > SELF-DECLARED EXEMPTION');
 
@@ -51,6 +51,7 @@ requireText('package', verification, 'generalized/foundation AI or ML models');
 requireText('evidence', evidence, 'PRODUCTION PATH NARROWED / GOOGLE REVIEW STILL REQUIRED');
 requireText('evidence', evidence, 'Q-003                         REMAINS ACTIVE');
 requireText('evidence', evidence, 'SECURITY-ASSESSMENT PROVIDER DETERMINATION OPEN');
+requireText('evidence', evidence, 'GENERALIZED Gmail-DERIVED MODEL TRAINING    FORBIDDEN');
 
 forbidText('adr', adr, 'SECURITY ASSESSMENT EXEMPT = PASS');
 forbidText('package', verification, 'GOOGLE RESTRICTED-SCOPE REVIEW    PASS');
