@@ -2,7 +2,7 @@ import { reduceP1Result } from './reduce-p1-production-lifecycle-result.mjs';
 
 const GMAIL_READONLY_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 
-function metric(count = 1, requestBodyBytes = 0, responseBodyBytes = 10, totalLatencyMs = 5) {
+function metric(count = 1, requestBodyBytes = 0, responseBodyBytes = 10, totalLatencyMs = 5, statuses = { '200': count }) {
   return {
     count,
     requestBodyBytes,
@@ -10,7 +10,7 @@ function metric(count = 1, requestBodyBytes = 0, responseBodyBytes = 10, totalLa
     totalLatencyMs,
     minLatencyMs: totalLatencyMs / Math.max(count, 1),
     maxLatencyMs: totalLatencyMs,
-    statuses: { '200': count },
+    statuses,
     networkErrors: 0
   };
 }
@@ -38,14 +38,14 @@ function passFixture() {
     network: {
       totalObservedRequests: 13,
       endpointClasses: {
-        tokenExchange: metric(1, 120, 200, 30),
-        tokenRefresh: metric(3, 300, 240, 50),
-        revoke: metric(1, 80, 0, 15),
-        profile: metric(2, 0, 120, 25),
-        list: metric(1, 0, 160, 20),
-        metadata: metric(2, 0, 220, 30),
-        full: metric(1, 0, 300, 25),
-        history: metric(2, 0, 240, 35),
+        tokenExchange: metric(1, 120, 200, 30, { '200': 1 }),
+        tokenRefresh: metric(3, 300, 240, 50, { '200': 1, '400': 2 }),
+        revoke: metric(1, 80, 0, 15, { '200': 1 }),
+        profile: metric(2, 0, 120, 25, { '200': 2 }),
+        list: metric(1, 0, 160, 20, { '200': 1 }),
+        metadata: metric(2, 0, 220, 30, { '200': 2 }),
+        full: metric(1, 0, 300, 25, { '200': 1 }),
+        history: metric(2, 0, 240, 35, { '200': 2 }),
         other: {
           count: 0,
           requestBodyBytes: 0,
@@ -118,14 +118,16 @@ expectReject(sample => { sample.privacy.rawGmailContentWrittenToResult = 1; }, '
 expectReject(sample => { sample.mailbox = 'person@example.com'; }, 'raw Gmail identity leak');
 expectReject(sample => { sample.network.endpointClasses.other.count = 1; }, 'unexpected endpoint class');
 expectReject(sample => { sample.revocation.postRevokeAttemptsUsed = 5; }, 'unbounded post-revoke attempts');
+expectReject(sample => { sample.network.endpointClasses.tokenRefresh.statuses = { '200': 3 }; }, 'missing observed HTTP 400 invalid_grant status');
 
 console.log('FINANCESENSOR_P1_RESULT_REDUCER_TEST=PASS');
 console.log('SYNTHETIC_PASS_FIXTURE=PASS');
-console.log('NEGATIVE_CASES=9');
+console.log('NEGATIVE_CASES=10');
 console.log('BROADER_SCOPE=REJECTED');
 console.log('REVOKE_5XX=REJECTED');
 console.log('NON_INVALID_GRANT=REJECTED');
 console.log('PROVIDER_GRACE=REJECTED');
 console.log('PRIVACY_LEAK=REJECTED');
 console.log('RAW_GMAIL_IDENTITY=REJECTED');
+console.log('MISSING_HTTP_400_EVIDENCE=REJECTED');
 console.log('RAW_RESULT_PUBLICATION=NOT_REQUIRED');
