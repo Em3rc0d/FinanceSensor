@@ -4,7 +4,12 @@ const paths = {
   pubspec: 'spikes/mobile-shell/pubspec.yaml',
   main: 'spikes/mobile-shell/lib/main.dart',
   test: 'spikes/mobile-shell/test/widget_test.dart',
-  readme: 'spikes/mobile-shell/README.md'
+  readme: 'spikes/mobile-shell/README.md',
+  statementReader: 'spikes/mobile-shell/lib/statement_ingress/pdfrx_statement_pdf_reader.dart',
+  statementModels: 'spikes/mobile-shell/lib/statement_ingress/statement_models.dart',
+  statementParser: 'spikes/mobile-shell/lib/statement_ingress/conservative_statement_parser.dart',
+  statementSession: 'spikes/mobile-shell/lib/statement_ingress/mobile_statement_import_session.dart',
+  statementTest: 'spikes/mobile-shell/test/mobile_statement_ingress_test.dart'
 };
 
 const failures = [];
@@ -17,7 +22,14 @@ if (!failures.length) {
   const main = fs.readFileSync(paths.main, 'utf8');
   const test = fs.readFileSync(paths.test, 'utf8');
   const readme = fs.readFileSync(paths.readme, 'utf8');
-  const dart = `${main}\n${test}`;
+  const statementDart = [
+    paths.statementReader,
+    paths.statementModels,
+    paths.statementParser,
+    paths.statementSession,
+    paths.statementTest
+  ].map(path => fs.readFileSync(path, 'utf8')).join('\n');
+  const dart = `${main}\n${test}\n${statementDart}`;
 
   for (const marker of [
     'PRODUCT LAB · DATOS 100% SINTÉTICOS',
@@ -75,12 +87,18 @@ if (!failures.length) {
     .filter(line => !line.startsWith('sdk:'));
 
   if (!normalizedDependencyLines.includes('flutter:')) failures.push('Flutter SDK dependency missing');
-  const nonFlutter = normalizedDependencyLines.filter(line => line !== 'flutter:');
-  if (nonFlutter.length) failures.push(`unexpected runtime dependencies: ${nonFlutter.join(', ')}`);
+  if (!normalizedDependencyLines.includes('pdfrx: 2.5.0')) failures.push('exact pdfrx 2.5.0 dependency missing');
+  const allowed = new Set(['flutter:', 'pdfrx: 2.5.0']);
+  const unexpected = normalizedDependencyLines.filter(line => !allowed.has(line));
+  if (unexpected.length) failures.push(`unexpected runtime dependencies: ${unexpected.join(', ')}`);
 
   for (const marker of ['Size(360, 800)', 'Size(393, 852)', 'Size(430, 900)', 'tester.takeException()']) {
     if (!test.includes(marker)) failures.push(`widget test missing viewport/assertion marker: ${marker}`);
   }
+
+  if (!statementDart.includes('PdfDocument.openData(')) failures.push('statement reader must open in-memory PDF data');
+  if (!statementDart.includes('useProgressiveLoading: false')) failures.push('statement reader must not require progressive/network loading');
+  if (!statementDart.includes('STATEMENT_PDF_OPEN_OR_PASSWORD_REJECTED')) failures.push('statement reader stable failure code missing');
 }
 
 if (failures.length) {
@@ -90,11 +108,12 @@ if (failures.length) {
 }
 
 console.log('FINANCESENSOR_FLUTTER_MOBILE_SHELL=PASS');
-console.log('RUNTIME_DEPENDENCIES=FLUTTER_SDK_ONLY');
+console.log('RUNTIME_DEPENDENCIES=FLUTTER_SDK,PDFRX_2_5_0');
 console.log('NETWORK_DEPENDENCIES=0');
 console.log('REAL_OAUTH_SURFACE=0');
 console.log('REAL_GMAIL_SURFACE=0');
 console.log('REAL_FINANCIAL_DATA=0');
+console.log('STATEMENT_RUNTIME=LOCAL_PDFIUM');
 console.log('APK_RELEASE_CLAIMED=0');
 console.log('BUILD_READY_CLAIMED_BY_MOBILE_SHELL=0');
 console.log('COMPACT_VIEWPORT_TEST_DECLARED=PASS');
