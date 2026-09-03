@@ -58,8 +58,9 @@ Supersedes / superseded by
 | ADR-031 | Gmail historical onboarding coverage | ACCEPTED FOR PRODUCTION DESIGN / REAL HISTORICAL COMPLETE OPEN | owned-mailbox nextPageToken exhaustion |
 | ADR-032 | Windows local Gmail history viewer | ACCEPTED FOR DEV PHYSICAL HARNESS / REAL COVERAGE OPEN | owned Windows historical completion |
 | ADR-033 | Financial source coverage asymmetry and statement lane | ACCEPTED FOR MK0 DESIGN / STATEMENT PHYSICAL PARSE OPEN | encrypted statement local parse + reconciliation |
+| ADR-034 | Mobile statement PDF runtime | ACCEPTED FOR MOBILE STATIC SPIKE / PHYSICAL DEVICE VALIDATION REQUIRED | Android encrypted-PDF runtime + owned-device statement proof; iOS remains open |
 
-**Next available ADR:** `ADR-034`.
+**Next available ADR:** `ADR-035`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
@@ -361,6 +362,33 @@ Evidence/design:
 - `../../product/ROADMAP.md`
 - `../../product/labs/mobile-bi/README.md`
 - `../../tools/validate-mobile-product-lab.mjs`
+
+## ADR-034 evidence boundary
+
+ADR-034 selects the statement PDF runtime only for the mobile static spike and keeps physical promotion closed:
+
+```text
+PRODUCT SURFACE                    FLUTTER MOBILE APP
+PRIMARY PHYSICAL TARGET            ANDROID
+REQUIRED PRODUCTION TARGETS        ANDROID + IOS
+MOBILE PDF RUNTIME                 PDFRX 2.5.0 / PDFIUM
+STATEMENT PARSE NETWORK            FORBIDDEN
+PASSWORD PERSISTENCE               FORBIDDEN
+PASSWORD MEMORY ZEROIZATION        NOT CLAIMED IN DART
+OWNED MUTABLE PDF WORKING BUFFER   ZERO AFTER DISPOSE REQUIRED
+WINDOWS STATEMENT HARNESS          MK0 EVIDENCE ONLY
+DESKTOP HARNESS PASS               != MOBILE PRODUCT PASS
+ANDROID APK BUILD PASS             != REAL STATEMENT PARSE PASS
+MOBILE STATEMENT PHYSICAL PASS     OPEN
+```
+
+Evidence/decision:
+
+- `ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md`
+- `ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md`
+- `../../graph/mobile-statement-ingress.json`
+- `../../spikes/mobile-shell/lib/statement_ingress/`
+- `../../tools/validate-mobile-statement-ingress.mjs`
 
 ## Decision discipline
 
