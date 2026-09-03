@@ -5,6 +5,10 @@
   "observedAtDay": "2026-09-03",
   "sourceBaselineCommit": "dcc5514aa503a32b6449e24e9ab0080b7692db33",
   "evidenceMode": "COMPOSITE_PHYSICAL_RECEIPTS_PLUS_ADVERSARIAL_ALLOWLIST",
+  "receipt": {
+    "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+    "blobSha": "8dda5d3f104d7fcf7339afb425095377b2d74970"
+  },
   "requiredClaims": [
     "OUTPUT_ALLOWLIST_ACTIVE",
     "SECRET_VALUE_PRINTING_DISABLED",
