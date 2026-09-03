@@ -105,7 +105,9 @@
   "physicalExecution": {
     "realOwnedGmail": "OPEN",
     "realHistoricalCoverageReceipt": "ABSENT",
-    "windowsDpapiRealPreflight": "OPEN_UNTIL_USER_RUN",
+    "windowsDpapiRealPreflight": "PASS_USER_OBSERVED",
+    "windowsDpapiEvidence": "mk0/10-evidence/EV-WINDOWS-DPAPI-GMAIL-HISTORY-PARTIAL-PHYSICAL-2026-09-03.md",
+    "lastRealGmailRun": "PARTIAL_STOPPED_SAFE_GMAIL_API_ERROR",
     "p1LifecycleReceipt": "OPEN",
     "iosTouched": false
   },

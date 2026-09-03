@@ -48,6 +48,18 @@ const cardMessage = (id, historyId, amount, merchant) => ({
   attachments: []
 });
 
+const cardPaymentMessage = (id, historyId, amount) => ({
+  id,
+  historyId: String(historyId),
+  headers: {
+    From: 'Banco Demo <alerts@notificacionesbcp.com.pe>',
+    Subject: 'Constancia de Pago de Tarjeta de Credito Propia - Servicio de Notificaciones BCP',
+    Date: 'Thu, 03 Sep 2026 18:00:00 -0500'
+  },
+  body: `Monto pagado S/ ${amount}. Numero de operacion: PAY-${id}`,
+  attachments: []
+});
+
 const marketingMessage = (id, historyId) => ({
   id,
   historyId: String(historyId),
@@ -194,4 +206,17 @@ test('bounded message concurrency accelerates a page without exceeding configure
   assert.equal(state.historicalBootstrap.pagesCompleted, 1);
   assert.ok(maxInFlight > 1);
   assert.ok(maxInFlight <= 4);
+});
+
+test('card payment projection preserves structural label instead of merchant normalization fragment', async () => {
+  const provider = new FakeProvider({
+    pages: { FIRST: { messages: [{ id: 'pay1' }], nextPageToken: null } },
+    messages: { pay1: cardPaymentMessage('pay1', 701, '422.93') }
+  });
+  const { engine } = importer(provider);
+  await engine.runAllAvailableActiveMailbox();
+  const projection = engine.projection();
+  assert.equal(projection.transactions.length, 1);
+  assert.equal(projection.transactions[0].semanticType, 'CARD_PAYMENT');
+  assert.equal(projection.transactions[0].merchant, 'Pago de tarjeta');
 });

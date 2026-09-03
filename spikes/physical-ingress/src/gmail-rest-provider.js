@@ -48,9 +48,11 @@ function collectAttachmentDescriptors(payload, output = []) {
 }
 
 function sanitizedApiError(status) {
-  const error = new Error(`Gmail API request failed with status ${status}`);
-  error.code = status === 401 ? 'REAUTH_REQUIRED' : 'GMAIL_API_ERROR';
-  error.status = status;
+  const safeStatus = Number.isInteger(Number(status)) ? Number(status) : 0;
+  const error = new Error(`Gmail API request failed with status ${safeStatus || 'unknown'}`);
+  error.code = safeStatus === 401 ? 'REAUTH_REQUIRED' : `GMAIL_API_HTTP_${safeStatus || 'UNKNOWN'}`;
+  error.status = safeStatus || null;
+  error.retryable = [429, 500, 502, 503, 504].includes(safeStatus);
   return error;
 }
 
