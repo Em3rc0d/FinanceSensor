@@ -3,7 +3,10 @@ import fs from 'node:fs';
 const contract = JSON.parse(fs.readFileSync('mk0/04-architecture/PRIVACY-MEASUREMENT-CONTRACT.json', 'utf8'));
 const campaign = JSON.parse(fs.readFileSync('graph/physical-closure-campaign.json', 'utf8'));
 const wireframes = fs.readFileSync('mk0/06-wireframes/SIGNATURE-WIREFRAMES.md', 'utf8');
-const normalizeText = value => String(value ?? '').replace(/\s+/g, ' ').trim();
+const normalizeText = value => String(value ?? '')
+  .replace(/[│┌┐└┘├┤┬┴┼─]+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
 const normalizedWireframes = normalizeText(wireframes);
 
 const failures = [];
@@ -128,7 +131,7 @@ if (failures.length) {
 console.log('FINANCESENSOR_PRIVACY_MEASUREMENT_CONTRACT=PASS');
 console.log(`MAIN_CLAIMS=${claims.length}`);
 console.log(`DETAIL_CLAIMS=${details.size}`);
-console.log('WIREFRAME_LAYOUT_WHITESPACE_NORMALIZED=PASS');
+console.log('WIREFRAME_LAYOUT_GLYPHS_NORMALIZED=PASS');
 console.log('UNMEASURED_ZERO_PROMOTION=FORBIDDEN');
 console.log('UNMEASURED_E2EE_VERIFIED_PROMOTION=FORBIDDEN');
 console.log('PHYSICAL_PRIVACY_PASS_CLAIMED_BY_CI=0');
