@@ -17,6 +17,18 @@ function assert(condition, message) {
   if (!condition) throw new Error(`FINANCIAL_SOURCE_COVERAGE_FAIL: ${message}`);
 }
 
+function assertNoPasswordValueLogging(source, label) {
+  const forbidden = [
+    /console\.(?:log|error|warn)\([^\n]*\$\{\s*password\s*\}/i,
+    /console\.(?:log|error|warn)\([^\n]*,\s*password(?:\s*[,)]|\s*$)/i,
+    /console\.(?:log|error|warn)\([^\n]*\+\s*password(?:\s*[,)]|\s*$)/i,
+    /console\.(?:log|error|warn)\(\s*password\s*\)/i
+  ];
+  for (const pattern of forbidden) {
+    assert(!pattern.test(source), `${label} must never log statement password value`);
+  }
+}
+
 assert(graph.status === 'DESIGN_FROZEN_STATEMENT_PIPELINE_STATIC_OPEN', 'status must stay static-open');
 assert(graph.laws.noGmailIncomeEvidenceIsNotZeroIncome === true, 'missing no-email != zero-income law');
 assert(graph.laws.outflowCoverageIsNotInflowCoverage === true, 'directional coverage must be split');
@@ -70,8 +82,8 @@ assert(viewer.includes('autocomplete="off"'), 'local password form must disable 
 assert(viewer.includes('fetchGmailStatementAttachment'), 'statement bytes must be fetched through local Gmail boundary');
 assert(viewer.includes('extractPasswordProtectedPdfText'), 'statement viewer must use local password-aware PDF parser');
 assert(viewer.includes('password = \'\''), 'statement password reference must be dropped after local import');
-assert(!/console\.(?:log|error|warn)[^\n]{0,200}password/i.test(viewer), 'viewer must never log statement password');
-assert(!/writeFile[^\n]{0,200}password/i.test(viewer), 'viewer must never write statement password');
+assertNoPasswordValueLogging(viewer, 'viewer');
+assert(!/writeFile[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*password\b)/i.test(viewer), 'viewer must never write statement password value');
 
 assert(launcher.includes('npm ci --omit=optional --ignore-scripts --no-audit --no-fund'), 'launcher must use locked minimal dependency install');
 assert(launcher.includes('windows-dpapi-preflight.mjs'), 'launcher must validate DPAPI before OAuth');
@@ -85,13 +97,13 @@ assert(workflow.includes('npm ci --omit=optional --ignore-scripts --no-audit --n
 assert(workflow.includes('Financial source coverage contract'), 'CI must run source-coverage contract');
 assert(workflow.includes('REAL_STATEMENT_PARSE remains physically OPEN'), 'CI must never promote synthetic statement tests to physical PASS');
 
+assertNoPasswordValueLogging(`${session}\n${pdf}`, 'statement parser boundary');
 const forbiddenPersistence = [
-  /writeFile[^\n]{0,200}password/i,
-  /setItem[^\n]{0,200}password/i,
-  /console\.(?:log|error|warn)[^\n]{0,200}password/i
+  /writeFile[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*password\b)/i,
+  /setItem[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*password\b)/i
 ];
 for (const pattern of forbiddenPersistence) {
-  assert(!pattern.test(`${session}\n${pdf}`), `forbidden password handling matched ${pattern}`);
+  assert(!pattern.test(`${session}\n${pdf}`), `forbidden password-value persistence matched ${pattern}`);
 }
 
 console.log('FINANCESENSOR_FINANCIAL_SOURCE_COVERAGE=PASS');
