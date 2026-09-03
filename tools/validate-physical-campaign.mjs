@@ -70,6 +70,7 @@ if (failures.length) {
 
 await import('./validate-p0-receipt.mjs');
 await import('./validate-p1-production-lifecycle.mjs');
+await import('./validate-p1-result-reducer.mjs');
 await import('./validate-p2-state.mjs');
 await import('./validate-deferred-physical-debt.mjs');
 
@@ -78,6 +79,7 @@ console.log(`PHASES=${phases.length}`);
 console.log('P0_PHYSICAL_PASS=PASS');
 console.log('P0_PASS_ORIGIN=BOUND_EXISTING_PHYSICAL_RECEIPTS');
 console.log('P1_HARNESS=READY_FAIL_CLOSED');
+console.log('P1_RESULT_REDUCER=SYNTHETIC_NEGATIVE_MATRIX_PASS');
 console.log('P1_PHYSICAL_EXECUTION=OPEN');
 console.log('P2_ANDROID_CUSTODY=PHYSICAL_PASS');
 console.log('P2_RESTORE_BEHAVIOR=CONTRACT_PASS');
