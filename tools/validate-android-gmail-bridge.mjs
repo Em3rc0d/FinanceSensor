@@ -98,13 +98,18 @@ if (!failures.length) {
   for (const marker of [
     'play-services-auth:21.6.0',
     '--target lib/main_connected.dart',
-    'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell',
+    'com.financesensor.lab.gmailconnection.r1',
+    'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r1',
+    'PACKAGE_COLLISION_ISOLATION=R1',
     'ANDROID_DEBUG_SHA1=',
     'REAL_OAUTH_EXECUTED_BY_CI=0',
     'REAL_GMAIL_EXECUTED_BY_CI=0',
     'BUILD_READY=NO'
   ]) {
     if (!workflow.includes(marker)) fail(`connection workflow missing marker: ${marker}`);
+  }
+  if (/ANDROID_OAUTH_PACKAGE=com\.financesensor\.lab\.financesensor_mobile_shell/.test(workflow)) {
+    fail('connection workflow must not reuse the collision-prone generated applicationId');
   }
   if (/\$\{\{\s*secrets\./.test(workflow)) fail('connection workflow must not reference GitHub secrets');
   if (/self-hosted/i.test(workflow)) fail('connection workflow must not route to self-hosted CI');
@@ -141,6 +146,8 @@ if (failures.length) {
 console.log('FINANCESENSOR_ANDROID_GMAIL_BRIDGE=PASS');
 console.log('ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT');
 console.log('EXACT_SCOPE=gmail.readonly');
+console.log('PHYSICAL_TEST_PACKAGE=com.financesensor.lab.gmailconnection.r1');
+console.log('PACKAGE_COLLISION_ISOLATION=R1');
 console.log('DART_BEARER_CUSTODY=0');
 console.log('APP_REFRESH_TOKEN_CUSTODY=0');
 console.log('OFFLINE_ACCESS_REQUESTED=0');
