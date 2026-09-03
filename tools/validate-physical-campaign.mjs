@@ -70,6 +70,7 @@ if (failures.length) {
 
 await import('./validate-p0-receipt.mjs');
 await import('./validate-p2-state.mjs');
+await import('./validate-deferred-physical-debt.mjs');
 
 console.log('FINANCESENSOR_PHYSICAL_CAMPAIGN_CONTRACT=PASS');
 console.log(`PHASES=${phases.length}`);
@@ -78,7 +79,9 @@ console.log('P0_PASS_ORIGIN=BOUND_EXISTING_PHYSICAL_RECEIPTS');
 console.log('P2_ANDROID_CUSTODY=PHYSICAL_PASS');
 console.log('P2_RESTORE_BEHAVIOR=CONTRACT_PASS');
 console.log('P2_OVERALL=PHYSICAL_EVIDENCE_REQUIRED');
+console.log('IOS_PHYSICAL_DEBT=RECORDED_FAIL_CLOSED');
+console.log('NEXT_PHYSICAL_FRONTIER=P1');
 console.log('P1_P7_PHYSICAL_EVIDENCE_REQUIRED=PASS');
 console.log('P8_BLOCKED_BY_PRIOR_PHASES=PASS');
 console.log('Q003_Q004_Q005_ACTIVE=PASS');
-console.log('CI_ROLE=REVALIDATES_BOUND_PHYSICAL_RECEIPTS_AND_STATIC_OPEN_BOUNDARIES');
+console.log('CI_ROLE=REVALIDATES_BOUND_PHYSICAL_RECEIPTS_STATIC_OPEN_BOUNDARIES_AND_DEBT_LEDGER');
