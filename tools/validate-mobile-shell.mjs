@@ -87,8 +87,8 @@ if (!failures.length) {
     .filter(line => !line.startsWith('sdk:'));
 
   if (!normalizedDependencyLines.includes('flutter:')) failures.push('Flutter SDK dependency missing');
-  if (!normalizedDependencyLines.includes('pdfrx: 2.5.0')) failures.push('exact pdfrx 2.5.0 dependency missing');
-  const allowed = new Set(['flutter:', 'pdfrx: 2.5.0']);
+  if (!normalizedDependencyLines.includes('pdfrx: 2.4.8')) failures.push('exact pdfrx 2.4.8 dependency missing');
+  const allowed = new Set(['flutter:', 'pdfrx: 2.4.8']);
   const unexpected = normalizedDependencyLines.filter(line => !allowed.has(line));
   if (unexpected.length) failures.push(`unexpected runtime dependencies: ${unexpected.join(', ')}`);
 
@@ -108,7 +108,7 @@ if (failures.length) {
 }
 
 console.log('FINANCESENSOR_FLUTTER_MOBILE_SHELL=PASS');
-console.log('RUNTIME_DEPENDENCIES=FLUTTER_SDK,PDFRX_2_5_0');
+console.log('RUNTIME_DEPENDENCIES=FLUTTER_SDK,PDFRX_2_4_8');
 console.log('NETWORK_DEPENDENCIES=0');
 console.log('REAL_OAUTH_SURFACE=0');
 console.log('REAL_GMAIL_SURFACE=0');
