@@ -34,25 +34,47 @@ BUILD_READY                NO
 
 ## Physical closure campaign
 
-P0 — Harness Integrity is now the first physically closed campaign phase.
+P0 — Harness Integrity is physically closed. P2 now has a receipt-bound Android sub-boundary while the overall cross-platform phase remains open.
 
 ```text
-P0 HARNESS INTEGRITY              PHYSICAL PASS / BOUND COMPOSITE RECEIPT
-P0 REQUIRED CLAIMS                6 / 6 BOUND
-PHYSICAL SOURCE RECEIPTS          3 OWNED-DEVICE RUNS
-ADVERSARIAL SANITIZER GUARD       PASS / CI REVALIDATED
-RAW PHYSICAL EVIDENCE IN GITHUB   FORBIDDEN
-PUBLIC RECEIPT                    SANITIZED / MINIMIZED
+P0 HARNESS INTEGRITY                    PHYSICAL PASS / BOUND COMPOSITE RECEIPT
+P0 REQUIRED CLAIMS                      6 / 6 BOUND
+PHYSICAL SOURCE RECEIPTS                3 OWNED-DEVICE RUNS
+ADVERSARIAL SANITIZER GUARD             PASS / CI REVALIDATED
+RAW PHYSICAL EVIDENCE IN GITHUB         FORBIDDEN
+PUBLIC RECEIPT                          SANITIZED / MINIMIZED
+
+P2 ANDROID PROTECTED OAUTH CUSTODY      PHYSICAL PASS / BOUND RECEIPT
+P2 RESTORE BEHAVIOR                     CONTRACT PASS
+P2 IOS PROTECTED OAUTH CUSTODY          STATIC READY / PHYSICAL OPEN
+P2 PASSED CLAIMS                        2 / 6
+P2 OPEN CLAIMS                          4 / 6
+P2 OVERALL                              PHYSICAL_EVIDENCE_REQUIRED
 ```
 
-The P0 PASS is not inferred from CI. `graph/physical-receipts/P0-2026-09-03.json` binds the real-device R1/R2 public receipts and sanitizer implementation/guard by immutable Git blob SHA. CI only revalidates that binding. P0 proves the publication/sanitization boundary; it does not claim that transient raw local capture itself contains no sensitive material.
+The P0 PASS is not inferred from CI. `graph/physical-receipts/P0-2026-09-03.json` binds the real-device R1/R2 public receipts and sanitizer implementation/guard by immutable Git blob SHA. CI only revalidates that binding.
+
+The Android P2 custody PASS is likewise not inferred from a static Kotlin scan. `graph/physical-receipts/P2-ANDROID-2026-09-03.json` binds existing owned-device R1/R2 observations to the Android native credential boundary. FinanceSensor Android holds no app refresh token, sends no bearer to Flutter, persists only the disconnect-barrier boolean, and keeps the short-lived bearer in native process memory.
+
+ADR-028 freezes the cross-platform interpretation:
+
+```text
+PROTECTED_CUSTODY != APP_MUST_STORE_REFRESH_TOKEN
+NO_APP_HELD_LONG_LIVED_AUTHORITY > NEW_TOKEN_VAULT
+ANDROID_P2_CUSTODY_PASS != GOOGLE_PROVIDER_REVOKE_PASS
+IOS_STATIC_READY != IOS_PHYSICAL_PASS
+P2_PARTIAL_PASS != P2_PASS
+```
+
+P0 proves the publication/sanitization boundary; P2 Android proves Android credential custody. Neither closes the remaining product/provider/mobile phases.
 
 ```text
 P0 PASS != P1..P8 PASS
-P0 PASS != Q-003 CLOSED
-P0 PASS != Q-004 CLOSED
+P2 ANDROID PASS != P2 PASS
+P0/P2 PARTIAL PROGRESS != Q-003 CLOSED
+P0/P2 PARTIAL PROGRESS != Q-004 CLOSED
 P0 PASS != Q-005 CLOSED
-P0 PASS != BUILD_READY
+P0/P2 PARTIAL PROGRESS != BUILD_READY
 ```
 
 ## Financial heart
@@ -109,9 +131,9 @@ PHYSICAL INGRESS / OAUTH CONTRACTS     53 / 53 PASS
 CANONICAL RESOLVER                      98 / 98 PASS
 ```
 
-### Android R2 physical connection boundary
+### Android R2 physical connection and P2 custody boundary
 
-The Android R2 lab has now physically established the mobile connection path while keeping the provider-revoke proof separate:
+The Android R2 lab physically established the mobile connection and local credential-custody path while keeping provider revoke separate:
 
 ```text
 PACKAGE                                    com.financesensor.lab.gmailconnection.r2
@@ -121,7 +143,11 @@ GMAIL PROFILE                              HTTP 2xx PHYSICAL PASS
 BEARER TO FLUTTER                          NO
 APP REFRESH TOKEN CUSTODY                  NO
 OFFLINE ACCESS                             NO
+SHORT BEARER CUSTODY                       KOTLIN PROCESS MEMORY ONLY
+ACCOUNT HANDLE CUSTODY                     MEMORY ONLY
+PERSISTED AUTH STATE                       DISCONNECT BARRIER BOOLEAN ONLY
 DURABLE LOCAL DISCONNECT BARRIER           PHYSICAL PASS
+P2 ANDROID PROTECTED OAUTH CUSTODY          PHYSICAL PASS / BOUND RECEIPT
 ACCOUNT_HANDLE_UNAVAILABLE ROOT CAUSE      IDENTIFIED
 ACCOUNT HANDLE BRIDGE REPAIR               CI PASS
 DEPRECATED SIGN-IN ACCOUNT INFERENCE       REMOVED
@@ -137,18 +163,39 @@ The implementation repair compiled and tested successfully in public CI, but the
 Therefore:
 
 ```text
+ANDROID_P2_CUSTODY_PASS       != GOOGLE_PROVIDER_REVOKE_PASS
 ACCOUNT_HANDLE_BRIDGE_CI_PASS != GOOGLE_PROVIDER_REVOKE_PASS
 CI_APK_BUILD_PASS             != PHYSICAL_R2_PROVIDER_REVOKE_PASS
 REVOKE_TASK_SUCCESS           != PROVIDER_REVOKE_VERIFIED
 PROVIDER_REVOKE_VERIFIED      = PREVIOUS_BEARER_HTTP_401
 ```
 
+### iOS P2 boundary
+
+The iOS credential architecture is now frozen against the current Google Sign-In SDK surface, but it is not physically proven.
+
+```text
+IOS GOOGLE AUTHORITY                     GOOGLE SIGN-IN SDK
+IOS DURABLE GOOGLE CREDENTIAL STATE      SDK / KEYCHAIN
+FINANCESENSOR TOKEN DUPLICATION          FORBIDDEN
+TOKEN IN USERDEFAULTS                    FORBIDDEN
+TOKEN TO FLUTTER                         FORBIDDEN
+RESTORE                                  BARRIER-GUARDED
+DISCONNECT                               BARRIER FIRST + SDK DISCONNECT
+IOS BRIDGE                               STATIC READY
+IOS PHYSICAL CUSTODY                     OPEN
+```
+
+`spikes/mobile-shell/native/ios/GmailCredentialBroker.swift` is a reference bridge and `tools/validate-ios-gmail-custody.mjs` is only a static fail-closed guard. An owned iPhone run is still required before the iOS claim can pass.
+
 ### Q-003 closure state
 
-Q-003 remains `ACTIVE`. Shared P0 is PASS, Level C v7 proves DEV feasibility and Android R2 proves physical mobile connectivity; none closes the production/provider contract.
+Q-003 remains `ACTIVE`. Shared P0 is PASS; Android P2 credential custody is physically PASS; Level C v7 proves DEV feasibility; Android R2 proves physical mobile connectivity. Production/provider and cross-platform gates remain open.
 
 ```text
 P0 HARNESS INTEGRITY                          PHYSICAL PASS / BOUND RECEIPT
+P2 ANDROID CREDENTIAL CUSTODY                 PHYSICAL PASS / BOUND RECEIPT
+P2 IOS CREDENTIAL CUSTODY                     STATIC READY / PHYSICAL OPEN
 LEVEL C PHYSICAL EXECUTION                    PASS
 ANDROID R2 PHYSICAL CONNECTIVITY              PASS
 ANDROID R2 ACCOUNT-HANDLE BRIDGE              CI PASS / PHYSICAL RETEST OPEN
@@ -156,7 +203,7 @@ ANDROID PROVIDER REVOKE HTTP 401               OPEN
 SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE     OPEN
 REQUEST PAYLOAD BYTE ACCOUNTING               OPEN
 PER-ENDPOINT LATENCY EVIDENCE                 OPEN
-ANDROID/IOS PROTECTED CREDENTIAL HANDLING     OPEN
+CROSS-PLATFORM PROTECTED CREDENTIAL HANDLING  OPEN
 PUBLIC RESTRICTED-SCOPE VERIFICATION          OPEN
 SECURITY-ASSESSMENT PROVIDER DETERMINATION    OPEN
 Q-003                                         ACTIVE
@@ -190,18 +237,22 @@ Consequently, the product may not display `Correos guardados = 0` until the matc
 
 ### Q-004 closure state
 
-Q-004 remains `ACTIVE`. The shared harness publication boundary is physically closed, but credential custody and transport/storage/deletion/backup remain physical work.
+Q-004 remains `ACTIVE`. P0 is closed and two P2 claims are resolved, but iOS/cross-platform credential custody and P3 remain physical work.
 
 ```text
 P0 HARNESS INTEGRITY                          PHYSICAL PASS / BOUND RECEIPT
-P2 MOBILE CREDENTIAL CUSTODY                  PHYSICAL OPEN
-P3 TRANSPORT/STORAGE/DELETION/BACKUP          PHYSICAL OPEN
+P2 ANDROID PROTECTED OAUTH CUSTODY            PHYSICAL PASS / BOUND RECEIPT
+P2 RESTORE BEHAVIOR                           CONTRACT PASS
+P2 IOS PROTECTED OAUTH CUSTODY                PHYSICAL OPEN
+P2 CROSS-PLATFORM OPEN CLAIMS                 4
+P2 OVERALL                                    PHYSICAL_EVIDENCE_REQUIRED
+P3 TRANSPORT/STORAGE/DELETION/BACKUP          PHYSICAL OPEN / BLOCKED BY P2 PASS
 P4 MOBILE CRYPTO                              PHYSICAL OPEN FOR E2EE DISPLAY CLAIM
-P2+P3 OPEN PHYSICAL CLAIMS                    14
+P2+P3 OPEN PHYSICAL CLAIMS                    12
 Q-004                                         ACTIVE
 ```
 
-The open physical set is derived directly from non-PASS phases in `graph/physical-closure-campaign.json`; the Q-004/Q-005 validators fail if their subgraphs drift from the campaign.
+The open physical set is derived from unresolved claims in `graph/physical-closure-campaign.json`; a partially proven phase may expose `passedClaims` without being promoted to phase PASS. The Q-004 validator fails if the subgraph drifts from that state.
 
 Stable trust boundaries remain:
 
