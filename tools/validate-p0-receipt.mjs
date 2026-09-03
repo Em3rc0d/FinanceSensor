@@ -40,6 +40,11 @@ if (binding.status !== 'PASS') fail('P0 binding must declare PASS');
 if (binding.observedAtDay !== '2026-09-03') fail('P0 binding observedAtDay mismatch');
 if (binding.sourceBaselineCommit !== 'dcc5514aa503a32b6449e24e9ab0080b7692db33') fail('P0 source baseline commit mismatch');
 if (binding.evidenceMode !== 'COMPOSITE_PHYSICAL_RECEIPTS_PLUS_ADVERSARIAL_ALLOWLIST') fail('P0 evidence mode mismatch');
+if (binding.receipt?.path !== receiptPath) fail('P0 binding receipt path mismatch');
+const actualReceiptSha = gitBlobSha(receipt);
+if (binding.receipt?.blobSha !== actualReceiptSha) {
+  fail(`P0 receipt blob binding mismatch: expected ${binding.receipt?.blobSha}, found ${actualReceiptSha}`);
+}
 
 const p0 = (campaign.phases ?? []).find(phase => phase.id === 'P0');
 if (!p0) fail('physical campaign missing P0');
@@ -81,7 +86,7 @@ else {
     '## Sanitization boundary',
     'no screenshots, account identity, access token, Gmail message content, history identifier value, provider response body, private signing material or financial plaintext'
   ]) {
-    if (!r2Disconnect.includes(fragment)) fail(`R2 disconnect P0 evidence missing sanitization fragment`);
+    if (!r2Disconnect.includes(fragment)) fail('R2 disconnect P0 evidence missing sanitization fragment');
   }
 }
 
@@ -175,6 +180,7 @@ console.log('P0_REQUIRED_CLAIMS=6');
 console.log('PHYSICAL_SOURCE_RECEIPTS=3');
 console.log('STATIC_GUARD_SOURCES=2');
 console.log('SOURCE_BLOB_BINDINGS=PASS');
+console.log('RECEIPT_BLOB_BINDING=PASS');
 console.log('P0_EVIDENCE_ORIGIN=BOUND_EXISTING_PHYSICAL_RECEIPTS');
 console.log('RAW_PHYSICAL_EVIDENCE_IN_GITHUB=0');
 console.log('P0_DOES_NOT_CLOSE_Q003_Q004_Q005=PASS');
