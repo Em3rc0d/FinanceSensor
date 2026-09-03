@@ -148,27 +148,19 @@ jobs:
           set -euo pipefail
           APK='build/app/outputs/flutter-apk/app-debug.apk'
           test -f "$APK"
-          sha256sum "$APK" | tee "$APK.sha256"
-          stat -c 'APK_BYTES=%s' "$APK"
+          APK_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          printf '%s  %s\n' "$APK_SHA256" "$APK" | tee "$APK.sha256"
+          APK_BYTES="$(stat -c '%s' "$APK")"
+          echo "APK_BYTES=$APK_BYTES"
 
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           APKSIGNER="$(find -L "$SDK_ROOT/build-tools" -name apksigner -print 2>/dev/null | sort -V | tail -1 || true)"
-          RAW_SHA1=''
+          test -n "$APKSIGNER"
+          echo "APK_SIGNER_TOOL=$(basename "$(dirname "$APKSIGNER")")/apksigner"
 
-          if [ -n "$APKSIGNER" ]; then
-            chmod +x "$APKSIGNER" || true
-            echo "APK_SIGNER_TOOL=$(basename "$(dirname "$APKSIGNER")")/apksigner"
-            CERT_INFO="$("$APKSIGNER" verify --print-certs "$APK" 2>&1 || true)"
-            printf '%s\n' "$CERT_INFO" | grep -Ei 'Signer #[0-9]+ certificate (SHA-256|SHA-1|MD5) digest:' || true
-            RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | sed -n -E 's/^Signer #[0-9]+ certificate SHA-?1 digest:[[:space:]]*//Ip' | head -1)"
-          fi
-
-          if [ -z "$RAW_SHA1" ]; then
-            echo 'APKSIGNER_SHA1_PARSE=FALLBACK_TO_KEYTOOL'
-            CERT_INFO="$(keytool -printcert -jarfile "$APK" 2>&1 || true)"
-            printf '%s\n' "$CERT_INFO" | grep -E 'SHA1:|SHA-1:' || true
-            RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | sed -n -E 's/^[[:space:]]*SHA-?1:[[:space:]]*//Ip' | head -1)"
-          fi
+          CERT_INFO="$(bash "$APKSIGNER" verify --print-certs "$APK" 2>&1 || true)"
+          printf '%s\n' "$CERT_INFO" | grep -Ei 'certificate (SHA-256|SHA-1|MD5) digest:' || true
+          RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | grep -Ei 'certificate SHA-?1 digest:' | head -1 | sed -E 's/.*digest:[[:space:]]*//I')"
 
           test -n "$RAW_SHA1"
           HEX_SHA1="$(printf '%s' "$RAW_SHA1" | tr '[:lower:]' '[:upper:]' | tr -cd '0-9A-F')"
@@ -178,15 +170,23 @@ jobs:
 
           echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1"
           echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
-          echo 'FINANCESENSOR_ANDROID_GMAIL_CONNECTION_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
-          echo 'EXACT_SCOPE=gmail.readonly' >> "$GITHUB_STEP_SUMMARY"
-          echo 'APP_REFRESH_TOKEN_CUSTODY=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'DART_BEARER_CUSTODY=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'OFFLINE_ACCESS_REQUESTED=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'REAL_OAUTH_EXECUTED_BY_CI=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'REAL_GMAIL_EXECUTED_BY_CI=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
-          echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1" >> "$GITHUB_STEP_SUMMARY"
+
+          cat > connection-debug-evidence.txt <<EOF
+          FINANCESENSOR_ANDROID_GMAIL_CONNECTION_APK=DEBUG_ONLY
+          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell
+          ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1
+          APK_SHA256=$APK_SHA256
+          APK_BYTES=$APK_BYTES
+          EXACT_SCOPE=gmail.readonly
+          APP_REFRESH_TOKEN_CUSTODY=0
+          DART_BEARER_CUSTODY=0
+          OFFLINE_ACCESS_REQUESTED=0
+          REAL_OAUTH_EXECUTED_BY_CI=0
+          REAL_GMAIL_EXECUTED_BY_CI=0
+          BUILD_READY=NO
+          EOF
+
+          cat connection-debug-evidence.txt >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Android Gmail connection APK
         uses: actions/upload-artifact@v4
@@ -195,5 +195,6 @@ jobs:
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+            spikes/mobile-shell/connection-debug-evidence.txt
           if-no-files-found: error
           retention-days: 7
