@@ -6,7 +6,12 @@ const adapters = fs.readFileSync('spikes/physical-ingress/src/statement-source-a
 const session = fs.readFileSync('spikes/physical-ingress/src/statement-import-session.js', 'utf8');
 const pdf = fs.readFileSync('spikes/physical-ingress/src/pdfjs-statement-parser.js', 'utf8');
 const rows = fs.readFileSync('spikes/physical-ingress/src/statement-row-parser.js', 'utf8');
+const importer = fs.readFileSync('spikes/physical-ingress/src/statement-evidence-importer.js', 'utf8');
+const viewer = fs.readFileSync('spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs', 'utf8');
+const launcher = fs.readFileSync('spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd', 'utf8');
+const workflow = fs.readFileSync('.github/workflows/gmail-historical.yml', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('spikes/physical-ingress/package.json', 'utf8'));
+const lock = JSON.parse(fs.readFileSync('spikes/physical-ingress/package-lock.json', 'utf8'));
 
 function assert(condition, message) {
   if (!condition) throw new Error(`FINANCIAL_SOURCE_COVERAGE_FAIL: ${message}`);
@@ -17,6 +22,8 @@ assert(graph.laws.noGmailIncomeEvidenceIsNotZeroIncome === true, 'missing no-ema
 assert(graph.laws.outflowCoverageIsNotInflowCoverage === true, 'directional coverage must be split');
 assert(graph.laws.gmailBootstrapCompleteIsNotCashflowComplete === true, 'Gmail completion cannot imply cashflow completion');
 assert(graph.laws.cashflowCompleteRequiresBothDirections === true, 'cashflow completion must require both directions');
+assert(graph.laws.creditStatementAutoIsNotDebitStatementAuto === true, 'credit/debit statement acquisition must stay distinct');
+assert(graph.laws.debitStatementManualRequestIsNotManualTransactionEntry === true, 'requested statement is not manual transaction entry');
 assert(graph.laws.cardStatementDoesNotProveSavingsInflows === true, 'card statement inflow boundary missing');
 assert(graph.statementPasswordBoundary.localMemoryOnly === true, 'statement password must be memory-only');
 for (const key of ['persist', 'log', 'cloud', 'github', 'chat']) {
@@ -33,6 +40,7 @@ for (const law of [
   'NO_GMAIL_INCOME_EVIDENCE != ZERO_INCOME',
   'OUTFLOW_COVERAGE != INFLOW_COVERAGE',
   'GMAIL_BOOTSTRAP_COMPLETE != CASHFLOW_COMPLETE',
+  'CREDIT_STATEMENT_AUTO != DEBIT_STATEMENT_AUTO',
   'CARD_STATEMENT != SAVINGS_ACCOUNT_INFLOW_PROOF'
 ]) {
   assert(adr.includes(law), `ADR missing law ${law}`);
@@ -47,16 +55,40 @@ assert(adapters.includes('Anulación') === false, 'adapter must not whitelist un
 assert(session.includes('passwordPersisted: false'), 'session summary must state password not persisted');
 assert(session.includes('rawPdfPersisted: false'), 'session summary must state raw PDF not persisted');
 assert(session.includes('plaintextPersisted: false'), 'session summary must state plaintext not persisted');
-assert(pdf.includes("password,"), 'PDF loader must receive password locally');
-assert(pdf.includes("PDF_PASSWORD_REJECTED"), 'PDF errors must sanitize password rejection');
-assert(rows.includes("return 'IN'"), 'savings parser must support explicit inflow evidence');
-assert(rows.includes("return null"), 'parser must preserve ambiguous direction');
+assert(pdf.includes('password,'), 'PDF loader must receive password locally');
+assert(pdf.includes('PDF_PASSWORD_REJECTED'), 'PDF errors must sanitize password rejection');
+assert(rows.includes("direction: 'IN', semanticType: 'INCOME'"), 'savings parser must support explicit inflow evidence');
+assert(rows.includes("semanticType: 'CARD_PAYMENT'"), 'card payment must stay card payment rather than personal income');
+assert(rows.includes("direction: null, semanticType: 'UNKNOWN'"), 'parser must preserve ambiguous direction');
+assert(importer.includes("semanticType: item.semanticType ?? 'UNKNOWN'"), 'statement rebuild must preserve previously resolved evidence semantics');
+assert(importer.includes("item?.evidenceClass === 'BANK_STATEMENT'"), 'statement authority must be explicit');
+
+assert(viewer.includes("state?.historicalBootstrap?.status === 'RUNNING'"), 'statement writer must refuse concurrent historical writer');
+assert(viewer.includes("error.code = 'HISTORICAL_SCAN_ACTIVE'"), 'concurrent writer must fail with stable safe code');
+assert(viewer.includes('Clave del PDF · solo esta sesión'), 'local password input must describe session-only custody');
+assert(viewer.includes('autocomplete="off"'), 'local password form must disable autocomplete');
+assert(viewer.includes('fetchGmailStatementAttachment'), 'statement bytes must be fetched through local Gmail boundary');
+assert(viewer.includes('extractPasswordProtectedPdfText'), 'statement viewer must use local password-aware PDF parser');
+assert(viewer.includes('password = \'\''), 'statement password reference must be dropped after local import');
+assert(!/console\.(?:log|error|warn)[^\n]{0,200}password/i.test(viewer), 'viewer must never log statement password');
+assert(!/writeFile[^\n]{0,200}password/i.test(viewer), 'viewer must never write statement password');
+
+assert(launcher.includes('npm ci --omit=optional --ignore-scripts --no-audit --no-fund'), 'launcher must use locked minimal dependency install');
+assert(launcher.includes('windows-dpapi-preflight.mjs'), 'launcher must validate DPAPI before OAuth');
+assert(launcher.includes('Nunca pegues esa clave en ChatGPT ni en GitHub'), 'launcher must keep statement password out of chat/repo');
+assert(launcher.indexOf('windows-dpapi-preflight.mjs') < launcher.indexOf('OpenFileDialog'), 'DPAPI preflight must precede OAuth credential selection');
+
 assert(pkg.dependencies?.['pdfjs-dist'] === '6.3.289', 'PDF.js must be exact-pinned');
+assert(lock.packages?.['']?.dependencies?.['pdfjs-dist'] === '6.3.289', 'lockfile root must preserve exact PDF.js pin');
+assert(lock.packages?.['node_modules/pdfjs-dist']?.version === '6.3.289', 'lockfile must resolve exact PDF.js version');
+assert(workflow.includes('npm ci --omit=optional --ignore-scripts --no-audit --no-fund'), 'CI must use locked minimal PDF runtime');
+assert(workflow.includes('Financial source coverage contract'), 'CI must run source-coverage contract');
+assert(workflow.includes('REAL_STATEMENT_PARSE remains physically OPEN'), 'CI must never promote synthetic statement tests to physical PASS');
 
 const forbiddenPersistence = [
-  /writeFile[^\n]{0,160}password/i,
-  /setItem[^\n]{0,160}password/i,
-  /console\.(?:log|error|warn)[^\n]{0,160}password/i
+  /writeFile[^\n]{0,200}password/i,
+  /setItem[^\n]{0,200}password/i,
+  /console\.(?:log|error|warn)[^\n]{0,200}password/i
 ];
 for (const pattern of forbiddenPersistence) {
   assert(!pattern.test(`${session}\n${pdf}`), `forbidden password handling matched ${pattern}`);
@@ -65,8 +97,12 @@ for (const pattern of forbiddenPersistence) {
 console.log('FINANCESENSOR_FINANCIAL_SOURCE_COVERAGE=PASS');
 console.log('OUTFLOW_COVERAGE_SPLIT=PASS');
 console.log('INFLOW_REQUIRES_STATEMENT_OR_OTHER_SOURCE=PASS');
+console.log('CREDIT_STATEMENT_AUTO_LANE=PASS');
+console.log('DEBIT_STATEMENT_REQUESTED_LANE=PASS');
+console.log('HISTORICAL_CONCURRENT_WRITER=DENIED');
 console.log('STATEMENT_PASSWORD_PERSISTENCE=0');
 console.log('RAW_DECRYPTED_STATEMENT_DURABILITY=0');
 console.log('INTERBANK_STATEMENT_COVERAGE=UNPROVEN');
+console.log('REAL_STATEMENT_PARSE=OPEN');
 console.log('IOS_TOUCHED=0');
 console.log('BUILD_READY=false');
