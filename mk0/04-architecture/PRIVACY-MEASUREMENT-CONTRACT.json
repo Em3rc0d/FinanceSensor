@@ -43,7 +43,10 @@
       "scope": "CURRENT_DEVICE_AFTER_PROCESSING_BOUNDARY",
       "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
       "physicalEvidenceRequired": true,
-      "requiredPhysicalClaim": "RAW_GMAIL_CONTENT_NOT_DURABLE",
+      "requiredPhysicalPhase": "P3",
+      "requiredPhysicalClaims": [
+        "RAW_GMAIL_CONTENT_NOT_DURABLE"
+      ],
       "zeroEvidence": "POST_PROCESSING_FILESYSTEM_DATABASE_CACHE_TEMP_INSPECTION",
       "unmeasuredBehavior": "DO_NOT_DISPLAY_ZERO"
     },
@@ -54,7 +57,16 @@
       "scope": "PRODUCTION_SYNC_PATH",
       "measurementSource": "Q005_PHYSICAL_CRYPTO_INTEROP_RECEIPT",
       "physicalEvidenceRequired": true,
-      "requiredPhysicalClaim": "Q005_MOBILE_CRYPTO_INTEROP_PHYSICAL_PASS",
+      "requiredPhysicalPhase": "P4",
+      "requiredPhysicalClaims": [
+        "ANDROID_WRAP_IOS_UNWRAP",
+        "IOS_WRAP_ANDROID_UNWRAP",
+        "ANDROID_SIGN_IOS_VERIFY",
+        "IOS_SIGN_ANDROID_VERIFY",
+        "NEGATIVE_MATRIX_FAILS_CLOSED",
+        "PROTECTED_KEY_USE_PROVEN",
+        "NO_SILENT_EXPORTABLE_KEY_FALLBACK"
+      ],
       "verifiedDisplay": "CHECKMARK",
       "unmeasuredBehavior": "DO_NOT_DISPLAY_VERIFIED"
     }
@@ -69,18 +81,21 @@
       "id": "RAW_BODIES_RETAINED",
       "valueType": "NON_NEGATIVE_INTEGER",
       "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
+      "zeroRequiresPhase": "P3",
       "zeroRequires": "RAW_GMAIL_CONTENT_NOT_DURABLE"
     },
     {
       "id": "RAW_ATTACHMENTS_RETAINED",
       "valueType": "NON_NEGATIVE_INTEGER",
       "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
+      "zeroRequiresPhase": "P3",
       "zeroRequires": "RAW_GMAIL_CONTENT_NOT_DURABLE"
     },
     {
       "id": "PLAINTEXT_FINANCIAL_CLOUD_BYTES",
       "valueType": "NON_NEGATIVE_INTEGER",
       "measurementSource": "PHYSICAL_NETWORK_INSPECTION",
+      "zeroRequiresPhase": "P3",
       "zeroRequires": "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH"
     },
     {
