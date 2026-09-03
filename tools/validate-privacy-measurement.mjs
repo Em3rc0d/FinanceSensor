@@ -3,6 +3,8 @@ import fs from 'node:fs';
 const contract = JSON.parse(fs.readFileSync('mk0/04-architecture/PRIVACY-MEASUREMENT-CONTRACT.json', 'utf8'));
 const campaign = JSON.parse(fs.readFileSync('graph/physical-closure-campaign.json', 'utf8'));
 const wireframes = fs.readFileSync('mk0/06-wireframes/SIGNATURE-WIREFRAMES.md', 'utf8');
+const normalizeText = value => String(value ?? '').replace(/\s+/g, ' ').trim();
+const normalizedWireframes = normalizeText(wireframes);
 
 const failures = [];
 const fail = message => failures.push(message);
@@ -24,7 +26,8 @@ for (const claim of claims) {
   }
   if (typeof claim.id !== 'string' || byId.has(claim.id)) fail(`invalid or duplicate claim id ${claim.id}`);
   byId.set(claim.id, claim);
-  if (typeof claim.uiLabel !== 'string' || !wireframes.includes(claim.uiLabel)) fail(`${claim.id} UI label is not bound to the S-10 wireframe text`);
+  const normalizedLabel = normalizeText(claim.uiLabel);
+  if (!normalizedLabel || !normalizedWireframes.includes(normalizedLabel)) fail(`${claim.id} UI label is not bound to the S-10 wireframe text`);
   if (!['NON_NEGATIVE_INTEGER', 'VERIFICATION_STATE'].includes(claim.valueType)) fail(`${claim.id} has unsupported valueType`);
   if (typeof claim.measurementSource !== 'string' || claim.measurementSource.length === 0) fail(`${claim.id} missing measurementSource`);
   if (typeof claim.unmeasuredBehavior !== 'string') fail(`${claim.id} missing unmeasuredBehavior`);
@@ -112,7 +115,7 @@ for (const rule of [
   if (!forbidden.has(rule)) fail(`missing forbidden privacy derivation ${rule}`);
 }
 
-if (!wireframes.includes('Every number on this screen must be technically measurable. No privacy theater.')) {
+if (!normalizedWireframes.includes(normalizeText('Every number on this screen must be technically measurable. No privacy theater.'))) {
   fail('S-10 no-privacy-theater invariant missing from signature wireframes');
 }
 
@@ -125,6 +128,7 @@ if (failures.length) {
 console.log('FINANCESENSOR_PRIVACY_MEASUREMENT_CONTRACT=PASS');
 console.log(`MAIN_CLAIMS=${claims.length}`);
 console.log(`DETAIL_CLAIMS=${details.size}`);
+console.log('WIREFRAME_LAYOUT_WHITESPACE_NORMALIZED=PASS');
 console.log('UNMEASURED_ZERO_PROMOTION=FORBIDDEN');
 console.log('UNMEASURED_E2EE_VERIFIED_PROMOTION=FORBIDDEN');
 console.log('PHYSICAL_PRIVACY_PASS_CLAIMED_BY_CI=0');
