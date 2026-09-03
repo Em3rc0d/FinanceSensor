@@ -27,7 +27,7 @@ const expectedProof = {
   privacyInventory: '25_CLASSES_MACHINE_VALIDATED',
   metadataLeakageBudget: 'STATIC_CI_PASS_PHYSICAL_P3_OPEN',
   privacyInspectorMeasurement: 'STATIC_CI_PASS_PHYSICAL_P3_P4_OPEN',
-  physicalHarnessIntegrity: 'STATIC_READY_PHYSICAL_P0_OPEN',
+  physicalHarnessIntegrity: 'PHYSICAL_P0_PASS_BOUND_RECEIPT',
   mobileCredentialCustody: 'PHYSICAL_P2_OPEN',
   transportStorageDeletionBackup: 'PHYSICAL_P3_OPEN'
 };
@@ -42,15 +42,21 @@ if ((metadata.cloudForbiddenClassIds ?? []).length !== 13) fail('metadata budget
 
 const phaseById = new Map((campaign.phases ?? []).map(phase => [phase.id, phase]));
 for (const id of ['P0', 'P2', 'P3', 'P4']) if (!phaseById.has(id)) fail(`physical campaign missing ${id}`);
+if (phaseById.get('P0')?.status !== 'PASS') fail('Q-004 may consume P0 only when campaign P0 is PASS');
 
+const expectedOpenPhaseIds = ['P0', 'P2', 'P3'].filter(id => phaseById.get(id)?.status !== 'PASS');
+if (!sameSet(new Set(expectedOpenPhaseIds), new Set(['P2', 'P3']))) {
+  fail(`Q-004 open physical phase partition changed; expected current P2+P3, found ${expectedOpenPhaseIds.join('+')}`);
+}
 const expectedOpen = new Set();
-for (const id of ['P0', 'P2', 'P3']) {
+for (const id of expectedOpenPhaseIds) {
   for (const claim of phaseById.get(id)?.requiredClaims ?? []) expectedOpen.add(claim);
 }
 const actualOpen = asSet(graph.openPhysicalGates);
 if (!sameSet(actualOpen, expectedOpen)) {
-  fail(`openPhysicalGates must exactly equal P0+P2+P3 requiredClaims; expected ${[...expectedOpen].sort().join(',')}`);
+  fail(`openPhysicalGates must exactly equal remaining non-PASS P0/P2/P3 claims; expected ${[...expectedOpen].sort().join(',')}`);
 }
+if (actualOpen.size !== 14) fail(`Q-004 must have 14 physical claims remaining after P0 PASS, found ${actualOpen.size}`);
 
 const display = new Map((graph.dependentDisplayGates ?? []).map(item => [item.claim, item]));
 const rawZero = display.get('RAW_EMAILS_RETAINED_ZERO');
@@ -73,8 +79,11 @@ else {
 }
 
 const evidencePaths = new Set((graph.evidence ?? []).map(item => item.path));
-if (!evidencePaths.has('mk0/10-evidence/EV-Q004-PRIVACY-MEASUREMENT-METADATA-BUDGET-2026-09-03.md')) {
-  fail('Q-004 graph missing static privacy contract evidence receipt');
+for (const required of [
+  'mk0/10-evidence/EV-Q004-PRIVACY-MEASUREMENT-METADATA-BUDGET-2026-09-03.md',
+  'mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md'
+]) {
+  if (!evidencePaths.has(required)) fail(`Q-004 graph missing evidence receipt ${required}`);
 }
 for (const item of graph.evidence ?? []) {
   if (item.closesQ004 !== false) fail(`${item.path} must not close Q-004`);
@@ -89,6 +98,7 @@ for (const rule of [
   'RAW_CONTENT_DISPOSAL_DESIGN=>MEASURED_ZERO_RAW_EMAILS_RETAINED',
   'E2EE_DESIGN=>E2EE_VERIFIED_CHECKMARK',
   'SYNTHETIC_HARNESS_PASS=>P0_PHYSICAL_PASS',
+  'P0_PASS=>Q004_CLOSED',
   'CI_PASS=>Q004_CLOSED'
 ]) {
   if (!forbidden.has(rule)) fail(`missing Q-004 forbidden promotion ${rule}`);
@@ -101,10 +111,12 @@ if (failures.length) {
 }
 
 console.log('FINANCESENSOR_Q004_EVIDENCE_GRAPH=PASS');
+console.log('P0=PHYSICAL_PASS_BOUND_RECEIPT');
 console.log(`OPEN_PHYSICAL_GATES=${actualOpen.size}`);
+console.log('OPEN_PHYSICAL_PHASES=P2,P3');
 console.log('PRIVACY_CLASSES=25');
 console.log('CLOUD_VISIBLE_CLASSES=12');
 console.log('CLOUD_FORBIDDEN_CLASSES=13');
 console.log('Q004=ACTIVE');
 console.log('BUILD_READY=false');
-console.log('PHYSICAL_PRIVACY_PASS_CLAIMED_BY_CI=0');
+console.log('CI_ROLE=REVALIDATES_P0_RECEIPT_AND_STATIC_PRIVACY_CONTRACTS');
