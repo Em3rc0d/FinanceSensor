@@ -5,6 +5,7 @@
   "buildReadyRequired": false,
   "asOf": "2026-09-03",
   "proofBoundary": {
+    "physicalHarnessIntegrity": "PHYSICAL_P0_PASS_BOUND_RECEIPT",
     "levelCv7": "PHYSICAL_PASS",
     "levelCv8": "HARNESS_READY_PHYSICAL_OPEN",
     "androidR2Connection": "PHYSICAL_CONNECTIVITY_PASS",
@@ -65,6 +66,14 @@
     {
       "path": "tools/validate-gmail-production-policy.mjs",
       "role": "production-policy fail-closed guard"
+    },
+    {
+      "path": "graph/physical-receipts/P0-2026-09-03.json",
+      "role": "shared immutable P0 physical harness evidence binding"
+    },
+    {
+      "path": "tools/validate-p0-receipt.mjs",
+      "role": "P0 immutable composite receipt validator"
     }
   ],
   "evidence": [
@@ -107,6 +116,11 @@
       "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-ACCOUNT-HANDLE-BRIDGE-2026-09-03.md",
       "proof": "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS_PHYSICAL_RETEST_OPEN",
       "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+      "proof": "P0_COMPOSITE_PHYSICAL_HARNESS_SANITIZATION_PASS",
+      "closesQ003": false
     }
   ],
   "openPhysicalGates": [
@@ -124,6 +138,7 @@
     "CASA_OR_APPROVED_ASSESSMENT_IF_REQUIRED"
   ],
   "forbiddenPromotions": [
+    "P0_PASS=>Q003_CLOSED",
     "LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED",
     "LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS",
     "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS=>ANDROID_PROVIDER_REVOKE_PASS",
