@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const contractPath = 'graph/gmail-historical-onboarding.json';
 const adrPath = 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md';
+const dpapiPhysicalEvidencePath = 'mk0/10-evidence/EV-WINDOWS-DPAPI-GMAIL-HISTORY-PARTIAL-PHYSICAL-2026-09-03.md';
 const providerPath = 'spikes/physical-ingress/src/gmail-rest-provider.js';
 const importerPath = 'spikes/physical-ingress/src/historical-gmail-importer.js';
 const adaptersPath = 'spikes/physical-ingress/src/transaction-evidence-adapters.js';
@@ -25,6 +26,7 @@ const fail = message => failures.push(message);
 for (const path of [
   contractPath,
   adrPath,
+  dpapiPhysicalEvidencePath,
   providerPath,
   importerPath,
   adaptersPath,
@@ -43,6 +45,7 @@ for (const path of [
 if (!failures.length) {
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
   const adr = fs.readFileSync(adrPath, 'utf8');
+  const dpapiPhysicalEvidence = fs.readFileSync(dpapiPhysicalEvidencePath, 'utf8');
   const provider = fs.readFileSync(providerPath, 'utf8');
   const importer = fs.readFileSync(importerPath, 'utf8');
   const adapters = fs.readFileSync(adaptersPath, 'utf8');
@@ -71,8 +74,11 @@ if (!failures.length) {
   if (contract.incrementalCutover?.anchor !== 'GREATEST_VALID_OBSERVED_MESSAGE_HISTORY_ID') fail('incremental anchor must be message-derived');
   if (contract.incrementalCutover?.profileHistoryIdSubstitution !== false) fail('/profile.historyId substitution must remain rejected');
   if (contract.realMailboxValidation?.repositoryRawFixtures !== 'FORBIDDEN') fail('real Gmail fixtures must never enter repo');
-  if (contract.physicalExecution?.realOwnedGmail !== 'OPEN') fail('real Gmail physical execution must remain OPEN before controlled run');
-  if (contract.physicalExecution?.windowsDpapiRealPreflight !== 'OPEN_UNTIL_USER_RUN') fail('Windows DPAPI physical preflight must remain open until real user run');
+  if (contract.physicalExecution?.realOwnedGmail !== 'OPEN') fail('real Gmail historical completion must remain OPEN after partial controlled run');
+  if (contract.physicalExecution?.realHistoricalCoverageReceipt !== 'ABSENT') fail('real historical coverage receipt must remain absent until COMPLETE');
+  if (contract.physicalExecution?.windowsDpapiRealPreflight !== 'PASS_USER_OBSERVED') fail('Windows DPAPI physical preflight must remain user-observed PASS');
+  if (contract.physicalExecution?.windowsDpapiEvidence !== dpapiPhysicalEvidencePath) fail('Windows DPAPI evidence path mismatch');
+  if (contract.physicalExecution?.lastRealGmailRun !== 'PARTIAL_STOPPED_SAFE_GMAIL_API_ERROR') fail('last real Gmail run must remain partial STOPPED_SAFE until a later physical run supersedes it');
   if (contract.physicalExecution?.iosTouched !== false) fail('iOS must remain untouched for this path');
   if (contract.localViewer?.status !== 'STATIC_READY_REAL_OAUTH_OPEN') fail('real viewer must remain static-ready / real OAuth open');
   if (contract.localViewer?.oauthScope !== 'https://www.googleapis.com/auth/gmail.readonly') fail('viewer scope must be exact gmail.readonly');
@@ -93,8 +99,17 @@ if (!failures.length) {
     if (!adr.includes(phrase)) fail(`ADR-031 missing governing law: ${phrase}`);
   }
 
-  for (const marker of ['async listMessagePage', 'includeSpamTrash']) {
-    if (!provider.includes(marker)) fail(`Gmail provider missing historical paging marker: ${marker}`);
+  for (const marker of [
+    '**DPAPI status:** PASS — user-observed physical execution',
+    'REAL GMAIL EXECUTION                      PARTIAL / STOPPED_SAFE',
+    'REAL HISTORICAL COVERAGE                  OPEN',
+    'COMPLETE CLAIM                           NO'
+  ]) {
+    if (!dpapiPhysicalEvidence.includes(marker)) fail(`DPAPI physical evidence missing marker: ${marker}`);
+  }
+
+  for (const marker of ['async listMessagePage', 'includeSpamTrash', 'GMAIL_API_HTTP_', 'error.retryable']) {
+    if (!provider.includes(marker)) fail(`Gmail provider missing historical/diagnostic marker: ${marker}`);
   }
 
   for (const marker of [
@@ -105,7 +120,8 @@ if (!failures.length) {
     "historyCursorSource = 'MESSAGE_DERIVED_HISTORY_ID'",
     'messageConcurrency = 6',
     'messageConcurrency > 10',
-    'forEachConcurrent(uniqueIds, messageConcurrency'
+    'forEachConcurrent(uniqueIds, messageConcurrency',
+    "if (item.semanticType === 'CARD_PAYMENT') return item.rawMerchant || 'Pago de tarjeta'"
   ]) {
     if (!importer.includes(marker)) fail(`historical importer missing marker: ${marker}`);
   }
@@ -119,7 +135,8 @@ if (!failures.length) {
     'RIPLEY_CARD_PAYMENT',
     'RIPLEY_PROMOTIONAL_DOMAIN',
     'KNOWN_BANK_NON_TRANSACTION',
-    'MARKETING_ACCOUNT_OR_SECURITY'
+    'MARKETING_ACCOUNT_OR_SECURITY',
+    'htmlBodyToText'
   ]) {
     if (!adapters.includes(marker)) fail(`issuer adapter matrix missing marker: ${marker}`);
   }
@@ -232,7 +249,8 @@ console.log('LOCAL_HISTORY_STATE=AES_256_GCM');
 console.log('LOCAL_HISTORY_KEY=WINDOWS_DPAPI_CURRENT_USER');
 console.log('DPAPI_TOPOLOGY=RUNNER_TO_PREFLIGHT_TO_WINDOWS_BACKEND');
 console.log('WSL_UNC_LAUNCH=STATIC_READY');
-console.log('WINDOWS_DPAPI_PREFLIGHT=PHYSICAL_OPEN_UNTIL_USER_RUN');
+console.log('WINDOWS_DPAPI_PREFLIGHT=PASS_USER_OBSERVED');
 console.log('REAL_HISTORY_VIEWER=STATIC_READY_REAL_OAUTH_OPEN');
-console.log('REAL_GMAIL_EXECUTION=OPEN');
+console.log('REAL_GMAIL_EXECUTION=PARTIAL_STOPPED_SAFE_GMAIL_API_ERROR');
+console.log('REAL_HISTORICAL_COVERAGE=OPEN');
 console.log('IOS_TOUCHED=0');
