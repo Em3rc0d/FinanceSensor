@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v7.mjs",
+    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v7.mjs && node --check live/owned-oauth-gmail-history-viewer.mjs",
     "live:gmail": "node live/run-gmail.mjs",
-    "live:gmail:owned": "node live/owned-oauth-level-c-v7.mjs"
+    "live:gmail:owned": "node live/owned-oauth-level-c-v7.mjs",
+    "live:gmail:history": "node live/owned-oauth-gmail-history-viewer.mjs"
   }
 }
