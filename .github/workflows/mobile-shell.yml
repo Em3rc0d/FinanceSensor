@@ -148,8 +148,8 @@ jobs:
         working-directory: spikes/mobile-shell
         run: |
           flutter pub deps --style=compact > /tmp/financesensor-pub-deps.txt
-          grep -E -q '^[-|`+ ]*pdfrx 2\.5\.0([ +]|$)' /tmp/financesensor-pub-deps.txt
-          echo 'PDFRX_RESOLVED=2.5.0'
+          grep -E -q '^[-|`+ ]*pdfrx 2\.4\.8([ +]|$)' /tmp/financesensor-pub-deps.txt
+          echo 'PDFRX_RESOLVED=2.4.8'
           echo 'MOBILE_STATEMENT_DEPENDENCY_RESOLUTION=PASS'
 
       - name: Analyze
@@ -173,7 +173,7 @@ jobs:
           echo 'FINANCESENSOR_MOBILE_SHELL_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
           echo 'ANDROID_MIN_SDK=31' >> "$GITHUB_STEP_SUMMARY"
           echo 'ANDROID_TARGET_SDK=36' >> "$GITHUB_STEP_SUMMARY"
-          echo 'MOBILE_STATEMENT_RUNTIME=PDFRX_2_5_0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'MOBILE_STATEMENT_RUNTIME=PDFRX_2_4_8' >> "$GITHUB_STEP_SUMMARY"
           echo 'MOBILE_STATEMENT_STATIC_READY=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'MOBILE_STATEMENT_PHYSICAL_PASS=OPEN' >> "$GITHUB_STEP_SUMMARY"
           echo 'PASSWORD_MEMORY_ZEROIZATION_CLAIM=0' >> "$GITHUB_STEP_SUMMARY"
