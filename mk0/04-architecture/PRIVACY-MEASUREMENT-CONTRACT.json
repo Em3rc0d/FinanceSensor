@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "status": "ACCEPTED_FOR_PHYSICAL_VALIDATION",
+  "surface": "S-10_PRIVACY_INSPECTOR",
+  "defaultRule": "DO_NOT_DISPLAY_UNMEASURED_PRIVACY_CLAIMS",
+  "zeroClaimRule": "ZERO_REQUIRES_SCOPE_MATCHED_RUNTIME_OR_PHYSICAL_EVIDENCE",
+  "verificationClaimRule": "VERIFIED_REQUIRES_MATCHING_PHYSICAL_PASS_RECEIPT",
+  "claims": [
+    {
+      "id": "EMAILS_CHECKED",
+      "uiLabel": "Correos revisados",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "scope": "DAY_AND_CONNECTION",
+      "measurementSource": "LOCAL_INGRESS_ENUMERATION_COUNTER",
+      "physicalEvidenceRequired": false,
+      "zeroEvidence": "RUNTIME_COUNTER",
+      "unmeasuredBehavior": "SHOW_UNKNOWN_NOT_ZERO"
+    },
+    {
+      "id": "FINANCIAL_EVIDENCE_CREATED",
+      "uiLabel": "Evidencias financieras",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "scope": "DAY_AND_TENANT",
+      "measurementSource": "LOCAL_EXTRACTION_COMMIT_COUNTER",
+      "physicalEvidenceRequired": false,
+      "zeroEvidence": "RUNTIME_COUNTER",
+      "unmeasuredBehavior": "SHOW_UNKNOWN_NOT_ZERO"
+    },
+    {
+      "id": "CANONICAL_MOVEMENTS_RESOLVED",
+      "uiLabel": "Movimientos resueltos",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "scope": "DAY_AND_TENANT",
+      "measurementSource": "CANONICAL_RESOLVER_COMMIT_COUNTER",
+      "physicalEvidenceRequired": false,
+      "zeroEvidence": "RUNTIME_COUNTER",
+      "unmeasuredBehavior": "SHOW_UNKNOWN_NOT_ZERO"
+    },
+    {
+      "id": "RAW_EMAILS_RETAINED",
+      "uiLabel": "Correos guardados",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "scope": "CURRENT_DEVICE_AFTER_PROCESSING_BOUNDARY",
+      "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
+      "physicalEvidenceRequired": true,
+      "requiredPhysicalClaim": "RAW_GMAIL_CONTENT_NOT_DURABLE",
+      "zeroEvidence": "POST_PROCESSING_FILESYSTEM_DATABASE_CACHE_TEMP_INSPECTION",
+      "unmeasuredBehavior": "DO_NOT_DISPLAY_ZERO"
+    },
+    {
+      "id": "E2EE_SYNC_VERIFIED",
+      "uiLabel": "Cifrada de extremo a extremo",
+      "valueType": "VERIFICATION_STATE",
+      "scope": "PRODUCTION_SYNC_PATH",
+      "measurementSource": "Q005_PHYSICAL_CRYPTO_INTEROP_RECEIPT",
+      "physicalEvidenceRequired": true,
+      "requiredPhysicalClaim": "Q005_MOBILE_CRYPTO_INTEROP_PHYSICAL_PASS",
+      "verifiedDisplay": "CHECKMARK",
+      "unmeasuredBehavior": "DO_NOT_DISPLAY_VERIFIED"
+    }
+  ],
+  "detailClaims": [
+    {
+      "id": "FULL_MESSAGES_FETCHED",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "measurementSource": "LOCAL_GMAIL_ENDPOINT_COUNTER"
+    },
+    {
+      "id": "RAW_BODIES_RETAINED",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
+      "zeroRequires": "RAW_GMAIL_CONTENT_NOT_DURABLE"
+    },
+    {
+      "id": "RAW_ATTACHMENTS_RETAINED",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "measurementSource": "PHYSICAL_STORAGE_INSPECTION",
+      "zeroRequires": "RAW_GMAIL_CONTENT_NOT_DURABLE"
+    },
+    {
+      "id": "PLAINTEXT_FINANCIAL_CLOUD_BYTES",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "measurementSource": "PHYSICAL_NETWORK_INSPECTION",
+      "zeroRequires": "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH"
+    },
+    {
+      "id": "REQUESTS_TOTAL",
+      "valueType": "NON_NEGATIVE_INTEGER",
+      "measurementSource": "LOCAL_ENDPOINT_COUNTER"
+    },
+    {
+      "id": "DELETION_PHASE_STATUS",
+      "valueType": "ENUM",
+      "measurementSource": "DELETION_STATE_MACHINE"
+    }
+  ],
+  "forbiddenDerivations": [
+    "ARCHITECTURE_ASSERTION_AS_ZERO_EVIDENCE",
+    "CI_PASS_AS_PHYSICAL_ZERO_EVIDENCE",
+    "SYNTHETIC_FIXTURE_AS_REAL_PRIVACY_MEASUREMENT",
+    "MAILBOX_SIZE_AS_EMAILS_CHECKED",
+    "ENCRYPTION_DESIGN_AS_E2EE_VERIFIED",
+    "MISSING_COUNTER_AS_ZERO",
+    "MISSING_STORAGE_SAMPLE_AS_ZERO",
+    "MISSING_NETWORK_SAMPLE_AS_ZERO"
+  ]
+}
