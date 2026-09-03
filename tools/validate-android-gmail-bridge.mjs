@@ -32,7 +32,10 @@ if (!failures.length) {
     'Bearer hacia Flutter',
     'Refresh token en app',
     "bool get isConnected => state == 'CONNECTED';",
-    'DISCONNECTED_VERIFIED'
+    'DISCONNECTED_VERIFIED',
+    'HTTP post-revoke',
+    'Intentos post-revoke',
+    'Bearer anterior'
   ]) {
     if (!dart.includes(marker)) fail(`connected Dart surface missing marker: ${marker}`);
   }
@@ -70,8 +73,12 @@ if (!failures.length) {
     'putBoolean(DISCONNECT_BARRIER_KEY, active)',
     'if (isDisconnectBarrierActive())',
     'verifyPreviousBearerDenied(token, result)',
+    'probePreviousBearer(token)',
+    'POST_REVOKE_PROBE_DELAYS_MS',
     'oldTokenDeniedAfterRevoke',
     'providerRevokeHttpStatus',
+    'providerRevokeProbeAttempts',
+    'providerRevokeElapsedMs',
     'providerGrantReused',
     'consentResolutionObserved',
     'explicitReconnect = reconnectAfterDisconnect',
@@ -117,15 +124,18 @@ if (!failures.length) {
     fail('disconnectGmail must activate the local disconnect barrier before provider operations');
   }
 
-  const revokeProbeBlock = kotlin.match(/private fun verifyPreviousBearerDenied\(token: String\?, result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun clearCachedToken/);
+  const revokeProbeBlock = kotlin.match(/private fun verifyPreviousBearerDenied\(token: String\?, result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun probePreviousBearer/);
   if (!revokeProbeBlock) {
     fail('post-revoke previous-bearer verification block could not be audited');
   } else {
-    if (!revokeProbeBlock[1].includes('status == 401 || status == 403')) {
-      fail('provider revoke verification must require the previous bearer to be denied by Gmail');
+    if (!revokeProbeBlock[1].includes('val verified = lastStatus == 401')) {
+      fail('provider revoke verification must require HTTP 401 from the previous bearer');
     }
     if (!revokeProbeBlock[1].includes('providerRevokeVerified')) {
       fail('previous-bearer denial must be represented as a separate provider-revoke fact');
+    }
+    if (!revokeProbeBlock[1].includes('providerRevokeProbeAttempts')) {
+      fail('post-revoke probe attempts must be observable without exposing the bearer');
     }
   }
 
@@ -187,6 +197,7 @@ if (!failures.length) {
     'No solicitado',
     'successful native authorization exposes only coarse Gmail state to Flutter',
     'OAuth authorization alone is not a verified Gmail connection',
+    'verified revoke requires HTTP 401 from the previous bearer',
     'expect(authorized.isConnected, isFalse)'
   ]) {
     if (!test.includes(marker)) fail(`connection test missing marker: ${marker}`);
@@ -210,7 +221,8 @@ console.log('OFFLINE_ACCESS_REQUESTED=0');
 console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
 console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
 console.log('DURABLE_DISCONNECT_BARRIER=REQUIRED');
-console.log('POST_REVOKE_OLD_BEARER_DENIAL=REQUIRED');
+console.log('POST_REVOKE_OLD_BEARER_HTTP_401=REQUIRED');
+console.log('POST_REVOKE_RETRY_WINDOW=REQUIRED');
 console.log('EXPLICIT_RECONNECT_GRANT_REUSE=ALLOWED');
 console.log('PASSIVE_RECONNECT=FORBIDDEN');
 console.log('REAL_OAUTH_EXECUTED_BY_CI=0');
