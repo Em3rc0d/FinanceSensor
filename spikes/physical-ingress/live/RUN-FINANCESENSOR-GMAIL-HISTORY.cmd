@@ -24,11 +24,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
-powershell.exe -NoProfile -NonInteractive -Command "$v='FinanceSensor-DPAPI-Preflight';$b=[Text.Encoding]::UTF8.GetBytes($v);$p=[Security.Cryptography.ProtectedData]::Protect($b,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);$u=[Security.Cryptography.ProtectedData]::Unprotect($p,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);if([Text.Encoding]::UTF8.GetString($u)-ne $v){exit 2}" >nul 2>nul
+powershell.exe -NoProfile -NonInteractive -Command "$v='FinanceSensor-DPAPI-Preflight';$b=[Text.Encoding]::UTF8.GetBytes($v);$p=[System.Security.Cryptography.ProtectedData]::Protect($b,$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser);$u=[System.Security.Cryptography.ProtectedData]::Unprotect($p,$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser);if([Text.Encoding]::UTF8.GetString($u)-ne $v){exit 2}" >nul 2>nul
 if errorlevel 1 (
   echo.
   echo FinanceSensor no pudo validar Windows DPAPI para tu usuario.
   echo Se detuvo antes de seleccionar credenciales y antes de acceder a Gmail.
+  echo Codigo local: DPAPI_PREFLIGHT_FAILED
   echo.
   popd
   pause
