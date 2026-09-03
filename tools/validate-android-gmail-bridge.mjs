@@ -30,7 +30,8 @@ if (!failures.length) {
     "disconnectGmail",
     "CONNECTION LAB · FINANZAS SINTÉTICAS",
     "Bearer hacia Flutter",
-    "Refresh token en app"
+    "Refresh token en app",
+    "bool get isConnected => state == 'CONNECTED';"
   ]) {
     if (!dart.includes(marker)) fail(`connected Dart surface missing marker: ${marker}`);
   }
@@ -44,10 +45,11 @@ if (!failures.length) {
     /\brefresh_token\b/i,
     /\bclient_secret\b/i,
     /serverAuthCode/,
-    /requestOfflineAccess/
+    /requestOfflineAccess/,
+    /isConnected\s*=>[^;]*AUTHORIZED/
   ];
   for (const pattern of forbiddenDart) {
-    if (pattern.test(dart)) fail(`Dart layer crossed native credential/network boundary: ${pattern}`);
+    if (pattern.test(dart)) fail(`Dart layer crossed native credential/network boundary or overstated connectivity: ${pattern}`);
   }
 
   for (const marker of [
@@ -61,9 +63,22 @@ if (!failures.length) {
     '"accessTokenExposedToFlutter" to false',
     '"refreshTokenHeldByApp" to false',
     '"offlineAccessRequested" to false',
-    'REAUTH_REQUIRED'
+    'REAUTH_REQUIRED',
+    'probeAuthorizedProfile(authorization, result)'
   ]) {
     if (!kotlin.includes(marker)) fail(`Android bridge missing marker: ${marker}`);
+  }
+
+  const getStateBlock = kotlin.match(/private fun getGmailState\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun authorizeGmail/);
+  if (!getStateBlock) {
+    fail('Android bridge getGmailState block could not be audited');
+  } else {
+    if (!getStateBlock[1].includes('probeAuthorizedProfile(authorization, result)')) {
+      fail('getGmailState must verify Gmail profile before reporting a connected state');
+    }
+    if (getStateBlock[1].includes('state("AUTHORIZED")')) {
+      fail('getGmailState may not equate OAuth authorization with Gmail connectivity');
+    }
   }
 
   const forbiddenKotlin = [
@@ -109,9 +124,11 @@ if (!failures.length) {
   for (const marker of [
     'Gmail solo lectura',
     'No solicitado',
-    'successful native authorization exposes only coarse Gmail state to Flutter'
+    'successful native authorization exposes only coarse Gmail state to Flutter',
+    'OAuth authorization alone is not a verified Gmail connection',
+    'expect(authorized.isConnected, isFalse)'
   ]) {
-    if (!test.includes(marker)) fail(`connection widget test missing marker: ${marker}`);
+    if (!test.includes(marker)) fail(`connection test missing marker: ${marker}`);
   }
 }
 
@@ -127,7 +144,8 @@ console.log('EXACT_SCOPE=gmail.readonly');
 console.log('DART_BEARER_CUSTODY=0');
 console.log('APP_REFRESH_TOKEN_CUSTODY=0');
 console.log('OFFLINE_ACCESS_REQUESTED=0');
-console.log('NATIVE_GMAIL_PROFILE_PROBE=DECLARED');
+console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
+console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
 console.log('DISCONNECT_PROVIDER_REVOKE=DECLARED');
 console.log('REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('REAL_GMAIL_EXECUTED_BY_CI=0');
