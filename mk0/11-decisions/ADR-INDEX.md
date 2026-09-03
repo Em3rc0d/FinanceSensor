@@ -50,8 +50,13 @@ Supersedes / superseded by
 | ADR-023 | Disconnect, tenant deletion and backup semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VERIFICATION REQUIRED | Q-004/Q-005 cloud/mobile/backup evidence |
 | ADR-024 | Recovery Kit checkpoint-anchor refresh semantics | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL VALIDATION REQUIRED | Q-005 physical recovery/export evidence |
 | ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009 | physical mobile evidence |
+| ADR-026 | Android Google Authorization boundary | ACCEPTED FOR PHYSICAL VALIDATION / PARTIAL PHYSICAL EVIDENCE | provider revoke retest / production lifecycle |
+| ADR-027 | Android Google Account handle custody | ACCEPTED FOR R2 PHYSICAL RETEST | provider revoke retest |
+| ADR-028 | Mobile OAuth custody semantics | ACCEPTED FOR P2 / ANDROID PHYSICAL EVIDENCE / IOS PHYSICAL OPEN | cross-platform P2 evidence |
+| ADR-029 | MK0 Closure Lab evidence infrastructure | ACCEPTED FOR MK0 EVIDENCE EXECUTION / NOT PRODUCT BUILD AUTHORITY | dedicated synthetic provider environment |
+| ADR-030 | Restore-domain-independent deletion barrier | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL P3 VALIDATION REQUIRED | provider backup/delete/restore campaign |
 
-**Next available ADR:** `ADR-026`.
+**Next available ADR:** `ADR-031`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
