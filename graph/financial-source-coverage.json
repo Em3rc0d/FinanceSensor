@@ -9,7 +9,10 @@
     "cashflowCompleteRequiresBothDirections": true,
     "creditStatementAutoIsNotDebitStatementAuto": true,
     "debitStatementManualRequestIsNotManualTransactionEntry": true,
-    "cardStatementDoesNotProveSavingsInflows": true
+    "cardStatementDoesNotProveSavingsInflows": true,
+    "windowsStatementRunnerIsEvidenceHarnessOnly": true,
+    "desktopHarnessPassIsNotMobileProductPass": true,
+    "productStatementRuntimeIsMobile": true
   },
   "sources": {
     "GMAIL_TRANSACTIONAL_EMAIL": {
@@ -55,6 +58,21 @@
     "decryptedTextDurable": false,
     "derivedEvidenceLocalAllowed": true
   },
+  "productRuntimeBoundary": {
+    "productSurface": "FLUTTER_MOBILE_APP",
+    "primaryPhysicalTarget": "ANDROID",
+    "requiredProductionTargets": ["ANDROID", "IOS"],
+    "productStatementIngress": "MOBILE_DEVICE_LOCAL",
+    "flutterRole": "UI_AND_DETERMINISTIC_APPLICATION_LOGIC",
+    "nativeSecurityBridge": {
+      "android": "KOTLIN",
+      "ios": "SWIFT"
+    },
+    "windowsStatementRunner": "MK0_EVIDENCE_HARNESS_ONLY",
+    "windowsRunnerShipsInProduct": false,
+    "desktopProductClaimAllowed": false,
+    "desktopHarnessCanPromoteMobilePass": false
+  },
   "uiTruth": {
     "showOutflowCoverageSeparately": true,
     "showInflowCoverageSeparately": true,
@@ -62,9 +80,11 @@
     "gmailCompleteLabelScope": "MAILBOX_ENUMERATION_ONLY"
   },
   "references": [
+    "mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md",
     "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
     "graph/gmail-historical-onboarding.json",
-    "mk0/05-data-model/CORE-DATA-MODEL.md"
+    "mk0/05-data-model/CORE-DATA-MODEL.md",
+    "spikes/mobile-shell/README.md"
   ],
   "iosTouched": false,
   "buildReady": false
