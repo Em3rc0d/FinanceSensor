@@ -6,8 +6,8 @@
   "asOf": "2026-09-03",
   "proofBoundary": {
     "privacyInventory": "25_CLASSES_MACHINE_VALIDATED",
-    "metadataLeakageBudget": "STATIC_IMPLEMENTED_CI_REVALIDATION_PENDING_PHYSICAL_P3_OPEN",
-    "privacyInspectorMeasurement": "STATIC_IMPLEMENTED_CI_REVALIDATION_PENDING_PHYSICAL_P3_P4_OPEN",
+    "metadataLeakageBudget": "STATIC_CI_PASS_PHYSICAL_P3_OPEN",
+    "privacyInspectorMeasurement": "STATIC_CI_PASS_PHYSICAL_P3_P4_OPEN",
     "physicalHarnessIntegrity": "STATIC_READY_PHYSICAL_P0_OPEN",
     "mobileCredentialCustody": "PHYSICAL_P2_OPEN",
     "transportStorageDeletionBackup": "PHYSICAL_P3_OPEN"
@@ -64,6 +64,10 @@
     {
       "path": "tools/validate-privacy-measurement.mjs",
       "role": "Privacy Inspector measurement validator"
+    },
+    {
+      "path": "tools/validate-q004-evidence.mjs",
+      "role": "Q-004 evidence subgraph fail-closed validator"
     }
   ],
   "evidence": [
@@ -86,10 +90,20 @@
       "path": "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md",
       "proof": "BOUNDED_RECOVERY_PRIVACY_SPIKE_EVIDENCE",
       "closesQ004": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q004-PRIVACY-MEASUREMENT-METADATA-BUDGET-2026-09-03.md",
+      "proof": "PRIVACY_MEASUREMENT_AND_METADATA_BUDGET_STATIC_CI_PASS_PHYSICAL_OPEN",
+      "closesQ004": false
     }
   ],
   "openPhysicalGates": [
-    "P0_HARNESS_SANITIZATION_PHYSICAL_PASS",
+    "OUTPUT_ALLOWLIST_ACTIVE",
+    "SECRET_VALUE_PRINTING_DISABLED",
+    "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT",
+    "PRIVATE_KEY_BYTES_ABSENT",
+    "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY",
+    "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED",
     "ANDROID_PROTECTED_OAUTH_CUSTODY",
     "IOS_PROTECTED_OAUTH_CUSTODY",
     "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
