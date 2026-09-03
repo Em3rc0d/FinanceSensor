@@ -1,6 +1,7 @@
 package com.financesensor.lab.financesensor_mobile_shell
 
 import android.accounts.Account
+import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Intent
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
@@ -8,6 +9,7 @@ import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.RevokeAccessRequest
+import com.google.android.gms.common.AccountPicker
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import io.flutter.embedding.android.FlutterActivity
@@ -21,12 +23,19 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "com.financesensor.platform/gmail"
+        private const val REQUEST_PICK_GOOGLE_ACCOUNT = 6102
         private const val REQUEST_AUTHORIZE_GMAIL = 6103
+        private const val GOOGLE_ACCOUNT_TYPE = "com.google"
         private const val GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly"
         private const val GMAIL_PROFILE = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
         private const val CONNECTION_PREFS = "financesensor_connection_state"
         private const val DISCONNECT_BARRIER_KEY = "gmail_disconnect_barrier"
         private val POST_REVOKE_PROBE_DELAYS_MS = longArrayOf(0L, 750L, 2_000L)
+    }
+
+    private enum class AccountPickerPurpose {
+        AUTHORIZE,
+        REVOKE,
     }
 
     private data class BearerProbe(
@@ -38,6 +47,8 @@ class MainActivity : FlutterActivity() {
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private var pendingAuthorizationResult: MethodChannel.Result? = null
     private var pendingAuthorizationWasExplicitReconnect = false
+    private var pendingAccountPickerPurpose: AccountPickerPurpose? = null
+    private var pendingRevokeToken: String? = null
     private var shortLivedAccessToken: String? = null
     private var authorizedAccount: Account? = null
 
@@ -55,9 +66,14 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    private fun request(): AuthorizationRequest = AuthorizationRequest.builder()
-        .setRequestedScopes(listOf(Scope(GMAIL_READONLY)))
-        .build()
+    private fun request(account: Account? = null): AuthorizationRequest {
+        val builder = AuthorizationRequest.builder()
+            .setRequestedScopes(listOf(Scope(GMAIL_READONLY)))
+        if (account != null) {
+            builder.setAccount(account)
+        }
+        return builder.build()
+    }
 
     private fun client() = Identity.getAuthorizationClient(this)
 
@@ -77,7 +93,7 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        client().authorize(request())
+        client().authorize(request(authorizedAccount))
             .addOnSuccessListener { authorization ->
                 if (authorization.hasResolution()) {
                     clearMemory()
@@ -100,18 +116,70 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        val reconnectAfterDisconnect = isDisconnectBarrierActive()
+        beginGoogleAccountSelection(
+            purpose = AccountPickerPurpose.AUTHORIZE,
+            result = result,
+            explicitReconnect = isDisconnectBarrierActive(),
+            tokenForRevoke = null,
+        )
+    }
 
-        client().authorize(request())
+    private fun beginGoogleAccountSelection(
+        purpose: AccountPickerPurpose,
+        result: MethodChannel.Result,
+        explicitReconnect: Boolean,
+        tokenForRevoke: String?,
+    ) {
+        if (pendingAuthorizationResult != null) {
+            result.error("AUTH_BUSY", "A Google account flow is already active", null)
+            return
+        }
+
+        pendingAuthorizationResult = result
+        pendingAuthorizationWasExplicitReconnect = explicitReconnect
+        pendingAccountPickerPurpose = purpose
+        pendingRevokeToken = tokenForRevoke
+
+        val options = AccountPicker.AccountChooserOptions.Builder()
+            .setAllowableAccountsTypes(listOf(GOOGLE_ACCOUNT_TYPE))
+            .setAlwaysShowAccountPicker(true)
+            .build()
+
+        try {
+            startActivityForResult(
+                AccountPicker.newChooseAccountIntent(options),
+                REQUEST_PICK_GOOGLE_ACCOUNT,
+            )
+        } catch (_: Exception) {
+            finishPendingGoogleFlow()
+            if (purpose == AccountPickerPurpose.REVOKE) {
+                result.success(
+                    state("DISCONNECTED") + mapOf(
+                        "providerRevokeVerified" to false,
+                        "disconnectBarrierActive" to true,
+                        "providerRevokeReason" to "ACCOUNT_PICKER_UNAVAILABLE",
+                    ),
+                )
+            } else {
+                result.error("ACCOUNT_PICKER_FAILED", "Google account selection could not start", null)
+            }
+        }
+    }
+
+    private fun authorizeSelectedAccount(
+        account: Account,
+        result: MethodChannel.Result,
+        explicitReconnect: Boolean,
+    ) {
+        client().authorize(request(account))
             .addOnSuccessListener { authorization ->
                 if (authorization.hasResolution()) {
                     val pendingIntent = authorization.pendingIntent
                     if (pendingIntent == null) {
+                        finishPendingGoogleFlow()
                         result.error("AUTH_RESOLUTION_MISSING", "Google authorization resolution is unavailable", null)
                         return@addOnSuccessListener
                     }
-                    pendingAuthorizationResult = result
-                    pendingAuthorizationWasExplicitReconnect = reconnectAfterDisconnect
                     try {
                         startIntentSenderForResult(
                             pendingIntent.intentSender,
@@ -122,31 +190,94 @@ class MainActivity : FlutterActivity() {
                             0,
                         )
                     } catch (_: Exception) {
-                        pendingAuthorizationResult = null
-                        pendingAuthorizationWasExplicitReconnect = false
+                        finishPendingGoogleFlow()
                         result.error("AUTH_RESOLUTION_FAILED", "Google authorization UI could not start", null)
                     }
                 } else {
+                    finishPendingGoogleFlow()
                     probeAuthorizedProfile(
                         authorization,
                         result,
-                        explicitReconnect = reconnectAfterDisconnect,
+                        explicitReconnect = explicitReconnect,
                         consentResolutionObserved = false,
                     )
                 }
             }
-            .addOnFailureListener { error -> failAuthorization(result, error, preserveDisconnectBarrier = reconnectAfterDisconnect) }
+            .addOnFailureListener { error ->
+                finishPendingGoogleFlow()
+                failAuthorization(result, error, preserveDisconnectBarrier = explicitReconnect)
+            }
     }
 
     @Deprecated("Android Activity callback required by FlutterActivity")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQUEST_AUTHORIZE_GMAIL) return
 
+        when (requestCode) {
+            REQUEST_PICK_GOOGLE_ACCOUNT -> handleAccountPickerResult(resultCode, data)
+            REQUEST_AUTHORIZE_GMAIL -> handleAuthorizationResolutionResult(resultCode, data)
+        }
+    }
+
+    private fun handleAccountPickerResult(resultCode: Int, data: Intent?) {
+        val result = pendingAuthorizationResult ?: return
+        val purpose = pendingAccountPickerPurpose ?: return
+        val explicitReconnect = pendingAuthorizationWasExplicitReconnect
+        val tokenForRevoke = pendingRevokeToken
+
+        if (resultCode != Activity.RESULT_OK || data == null) {
+            finishPendingGoogleFlow()
+            if (purpose == AccountPickerPurpose.REVOKE) {
+                result.success(
+                    state("DISCONNECTED") + mapOf(
+                        "providerRevokeVerified" to false,
+                        "disconnectBarrierActive" to true,
+                        "providerRevokeReason" to "ACCOUNT_SELECTION_CANCELLED",
+                    ),
+                )
+            } else {
+                result.error("AUTH_CANCELLED", "Google account selection was not completed", null)
+            }
+            return
+        }
+
+        val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+        val accountType = data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)
+        if (accountName.isNullOrBlank() || accountType != GOOGLE_ACCOUNT_TYPE) {
+            finishPendingGoogleFlow()
+            if (purpose == AccountPickerPurpose.REVOKE) {
+                result.success(
+                    state("DISCONNECTED") + mapOf(
+                        "providerRevokeVerified" to false,
+                        "disconnectBarrierActive" to true,
+                        "providerRevokeReason" to "ACCOUNT_HANDLE_UNAVAILABLE",
+                    ),
+                )
+            } else {
+                result.error("ACCOUNT_HANDLE_UNAVAILABLE", "Google account handle was unavailable", null)
+            }
+            return
+        }
+
+        val account = Account(accountName, accountType)
+        authorizedAccount = account
+
+        when (purpose) {
+            AccountPickerPurpose.AUTHORIZE -> {
+                authorizeSelectedAccount(account, result, explicitReconnect)
+            }
+
+            AccountPickerPurpose.REVOKE -> {
+                finishPendingGoogleFlow()
+                revoke(account, tokenForRevoke, result)
+            }
+        }
+    }
+
+    private fun handleAuthorizationResolutionResult(resultCode: Int, data: Intent?) {
         val result = pendingAuthorizationResult ?: return
         val explicitReconnect = pendingAuthorizationWasExplicitReconnect
-        pendingAuthorizationResult = null
-        pendingAuthorizationWasExplicitReconnect = false
+        finishPendingGoogleFlow()
 
         if (resultCode != Activity.RESULT_OK || data == null) {
             result.error("AUTH_CANCELLED", "Google authorization was not completed", null)
@@ -166,6 +297,13 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun finishPendingGoogleFlow() {
+        pendingAuthorizationResult = null
+        pendingAuthorizationWasExplicitReconnect = false
+        pendingAccountPickerPurpose = null
+        pendingRevokeToken = null
+    }
+
     private fun probeGmail(result: MethodChannel.Result) {
         if (isDisconnectBarrierActive()) {
             clearMemory()
@@ -173,7 +311,7 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        client().authorize(request())
+        client().authorize(request(authorizedAccount))
             .addOnSuccessListener { authorization ->
                 if (authorization.hasResolution()) {
                     clearMemory()
@@ -210,7 +348,7 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        remember(authorization)
+        rememberToken(authorization)
 
         ioExecutor.execute {
             var connection: HttpURLConnection? = null
@@ -296,39 +434,12 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        client().authorize(request())
-            .addOnSuccessListener { authorization ->
-                if (authorization.hasResolution()) {
-                    clearReturnedToken(authorization)
-                    clearMemory()
-                    result.success(
-                        state("DISCONNECTED_VERIFIED") + mapOf(
-                            "providerRevokeVerified" to true,
-                            "disconnectBarrierActive" to true,
-                            "providerRevokeReason" to "NO_ACTIVE_GRANT",
-                        ),
-                    )
-                    return@addOnSuccessListener
-                }
-
-                remember(authorization)
-                val account = authorizedAccount
-                val token = shortLivedAccessToken
-                if (account == null) {
-                    clearReturnedToken(authorization)
-                    clearMemory()
-                    result.success(
-                        state("DISCONNECTED") + mapOf(
-                            "providerRevokeVerified" to false,
-                            "disconnectBarrierActive" to true,
-                            "providerRevokeReason" to "ACCOUNT_HANDLE_UNAVAILABLE",
-                        ),
-                    )
-                } else {
-                    revoke(account, token, result)
-                }
-            }
-            .addOnFailureListener { error -> failAuthorization(result, error, preserveDisconnectBarrier = true) }
+        beginGoogleAccountSelection(
+            purpose = AccountPickerPurpose.REVOKE,
+            result = result,
+            explicitReconnect = false,
+            tokenForRevoke = knownToken,
+        )
     }
 
     private fun revoke(account: Account, token: String?, result: MethodChannel.Result) {
@@ -459,17 +570,8 @@ class MainActivity : FlutterActivity() {
             .addOnCompleteListener { done() }
     }
 
-    private fun clearReturnedToken(authorization: AuthorizationResult) {
-        val token = authorization.accessToken
-        if (!token.isNullOrBlank()) {
-            client().clearToken(ClearTokenRequest.builder().setToken(token).build())
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun remember(authorization: AuthorizationResult) {
+    private fun rememberToken(authorization: AuthorizationResult) {
         shortLivedAccessToken = authorization.accessToken
-        authorizedAccount = authorization.toGoogleSignInAccount()?.account
     }
 
     private fun clearMemory() {
@@ -493,6 +595,7 @@ class MainActivity : FlutterActivity() {
         "explicitReconnect" to false,
         "consentResolutionObserved" to false,
         "providerGrantReused" to false,
+        "accountHandleAvailableInMemory" to (authorizedAccount != null),
     )
 
     private fun failAuthorization(
@@ -509,6 +612,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        finishPendingGoogleFlow()
         clearMemory()
         ioExecutor.shutdownNow()
         super.onDestroy()
