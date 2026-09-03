@@ -10,13 +10,18 @@
   },
   "runtime": {
     "package": "pdfrx",
-    "version": "2.5.0",
+    "version": "2.4.8",
     "engine": "PDFIUM",
     "license": "MIT",
     "flutter": "3.44.7",
-    "dart": "3.12.x",
+    "dart": "3.12.2",
     "input": "UINT8LIST_DEVICE_MEMORY",
-    "networkRequiredForParse": false
+    "networkRequiredForParse": false,
+    "rejectedCandidate": {
+      "package": "pdfrx",
+      "version": "2.5.0",
+      "reason": "REQUIRES_FLUTTER_GTE_3_47_0_AND_WOULD_FORCE_UNPLANNED_BASELINE_CHANGE"
+    }
   },
   "passwordBoundary": {
     "custody": "EPHEMERAL_DART_OPERATION",
@@ -52,7 +57,8 @@
     "WINDOWS_STATEMENT_PASS=>ANDROID_STATEMENT_PASS",
     "ANDROID_STATEMENT_PASS=>IOS_STATEMENT_PASS",
     "PASSWORD_REFERENCE_DROPPED=>PASSWORD_MEMORY_ZEROIZED",
-    "MOBILE_STATEMENT_STATIC_READY=>BUILD_READY"
+    "MOBILE_STATEMENT_STATIC_READY=>BUILD_READY",
+    "DEPENDENCY_CONFLICT=>SILENT_FLUTTER_BASELINE_UPGRADE"
   ],
   "references": [
     "mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md",
