@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const ledgerPath = 'graph/closure-ledger.json';
 const indexPath = 'graph/q003-evidence.json';
 const quarryPath = 'mk0/02-quarries/Q-003-GMAIL-POLICY.md';
+const campaignPath = 'graph/physical-closure-campaign.json';
 const failures = [];
 
 function fail(message) {
@@ -13,15 +14,15 @@ function requireFile(path) {
   if (!fs.existsSync(path)) fail(`missing file: ${path}`);
 }
 
-requireFile(ledgerPath);
-requireFile(indexPath);
-requireFile(quarryPath);
+for (const path of [ledgerPath, indexPath, quarryPath, campaignPath]) requireFile(path);
 
 if (!failures.length) {
   const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   const quarry = fs.readFileSync(quarryPath, 'utf8');
+  const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
   const q003 = (ledger.nodes ?? []).find(node => node.id === 'Q-003');
+  const p0 = (campaign.phases ?? []).find(phase => phase.id === 'P0');
 
   if (!q003) fail('closure ledger has no Q-003 node');
   if (index.nodeId !== 'Q-003') fail(`evidence index nodeId must be Q-003, got ${index.nodeId}`);
@@ -29,6 +30,7 @@ if (!failures.length) {
   if (ledger.buildReady !== false) fail('Q-003 evidence boundary requires buildReady=false');
   if (q003?.status !== index.nodeStateRequired) fail(`Q-003 state mismatch: ledger=${q003?.status}, required=${index.nodeStateRequired}`);
   if (q003?.closureReceipt !== null) fail('Q-003 must not have a closure receipt while production/provider gates are open');
+  if (p0?.status !== 'PASS') fail('Q-003 shared harness boundary requires campaign P0 PASS');
 
   for (const entry of [...(index.artifacts ?? []), ...(index.evidence ?? [])]) {
     if (!entry?.path) {
@@ -43,6 +45,7 @@ if (!failures.length) {
   }
 
   const requiredProofBoundary = {
+    physicalHarnessIntegrity: 'PHYSICAL_P0_PASS_BOUND_RECEIPT',
     levelCv7: 'PHYSICAL_PASS',
     levelCv8: 'HARNESS_READY_PHYSICAL_OPEN',
     productionVerification: 'OPEN',
@@ -53,6 +56,9 @@ if (!failures.length) {
       fail(`proofBoundary.${key} must be ${expected}`);
     }
   }
+
+  const p0Receipt = 'mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md';
+  if (!(index.evidence ?? []).some(entry => entry.path === p0Receipt)) fail('Q-003 evidence index missing shared P0 receipt');
 
   const requiredOpenPhysical = new Set([
     'SUCCESSFUL_PRE_REVOKE_REFRESH',
@@ -76,6 +82,7 @@ if (!failures.length) {
   }
 
   for (const promotion of [
+    'P0_PASS=>Q003_CLOSED',
     'LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED',
     'LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS',
     'PACKAGE_DRAFTED=>GOOGLE_APPROVED',
@@ -108,6 +115,7 @@ if (failures.length) {
 
 console.log('FINANCESENSOR_Q003_EVIDENCE_BOUNDARY=PASS');
 console.log('Q003_STATE=ACTIVE');
+console.log('P0=PHYSICAL_PASS_BOUND_RECEIPT');
 console.log('LEVEL_C_V7=PHYSICAL_PASS');
 console.log('LEVEL_C_V8=HARNESS_READY_PHYSICAL_OPEN');
 console.log('PRODUCTION_VERIFICATION=OPEN');
