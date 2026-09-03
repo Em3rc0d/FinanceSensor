@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "project": "FinanceSensor",
   "node": "Q-003",
   "status": "STATIC_READY_REAL_GMAIL_OPEN",
@@ -50,6 +50,27 @@
     "MERCHANT_RECEIPT",
     "GENERIC_FINANCIAL_RECEIPT"
   ],
+  "issuerAdapters": {
+    "BCP": "STATIC_TESTED",
+    "INTERBANK": "STATIC_TESTED",
+    "RIPLEY": "STATIC_TESTED",
+    "unknownFormats": "CONSERVATIVE_FALLBACK_OR_NON_CANDIDATE"
+  },
+  "localViewer": {
+    "status": "STATIC_READY_REAL_OAUTH_OPEN",
+    "runner": "spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd",
+    "entrypoint": "spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs",
+    "oauthScope": "https://www.googleapis.com/auth/gmail.readonly",
+    "oauthClient": "EXISTING_FINANCESENSOR_DESKTOP_DEV_ONLY",
+    "stateLocation": "WINDOWS_LOCALAPPDATA_FINANCESENSOR_GMAIL_HISTORY_DEV",
+    "stateEncryption": "AES_256_GCM",
+    "stateKeyProtection": "WINDOWS_DPAPI_CURRENT_USER",
+    "refreshTokenDurablePersistence": "FORBIDDEN",
+    "rawGmailBodyDurablePersistence": "FORBIDDEN",
+    "dashboardBinding": "LOOPBACK_127_0_0_1_SESSION_SECRET",
+    "previewState": "NOT_COMPLETE",
+    "completeState": "ONLY_AFTER_NEXT_PAGE_TOKEN_ABSENT"
+  },
   "realMailboxValidation": {
     "allowedLocation": "TRUSTED_EDGE_ONLY",
     "repositoryRawFixtures": "FORBIDDEN",
@@ -63,15 +84,22 @@
     "INVALID_CURSOR_RESTARTS_WITH_DEDUP",
     "KNOWN_BANK_PROMOTIONS_REJECTED",
     "BANK_AND_MERCHANT_EVIDENCE_RECONCILED",
-    "MESSAGE_DERIVED_INCREMENTAL_ANCHOR"
+    "MESSAGE_DERIVED_INCREMENTAL_ANCHOR",
+    "RIPLEY_CARD_PAYMENT_RECOGNIZED",
+    "RIPLEY_PROMOTIONAL_DOMAIN_REJECTED",
+    "LOCAL_STATE_AES_256_GCM",
+    "LOCAL_STATE_KEY_DPAPI_CURRENT_USER",
+    "REAL_HISTORY_VIEWER_FAILS_CLOSED"
   ],
   "physicalExecution": {
     "realOwnedGmail": "OPEN",
     "realHistoricalCoverageReceipt": "ABSENT",
-    "p1LifecycleReceipt": "OPEN"
+    "p1LifecycleReceipt": "OPEN",
+    "iosTouched": false
   },
   "forbiddenPromotions": [
     "STATIC_READY=>REAL_GMAIL_PASS",
+    "VIEWER_STATIC_READY=>REAL_HISTORICAL_COVERAGE_PASS",
     "SEARCH_QUERY_MATCHES=>HISTORICAL_COVERAGE_COMPLETE",
     "BANK_SENDER=>TRANSACTION",
     "KEYWORD_MATCH=>FINANCIAL_EVIDENCE",
