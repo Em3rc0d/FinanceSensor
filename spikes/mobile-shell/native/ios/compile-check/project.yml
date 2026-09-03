@@ -1,0 +1,35 @@
+name: FinanceSensorP2CustodyCompile
+
+options:
+  bundleIdPrefix: com.financesensor.lab
+  deploymentTarget:
+    iOS: "15.0"
+
+packages:
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS.git
+    exactVersion: 9.2.0
+
+targets:
+  FinanceSensorP2CustodyCompile:
+    type: framework
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: ../GmailCredentialBroker.swift
+    dependencies:
+      - package: GoogleSignIn
+        product: GoogleSignIn
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.financesensor.lab.p2custodycompile
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        SKIP_INSTALL: YES
+        SWIFT_VERSION: "6.0"
+
+schemes:
+  FinanceSensorP2CustodyCompile:
+    build:
+      targets:
+        FinanceSensorP2CustodyCompile: all
