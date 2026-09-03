@@ -10,6 +10,10 @@ const failures = [];
 const fail = message => failures.push(message);
 const asSet = values => new Set(Array.isArray(values) ? values : []);
 const sameSet = (a, b) => a.size === b.size && [...a].every(value => b.has(value));
+const unresolvedClaims = phase => {
+  const passed = asSet(phase?.passedClaims);
+  return (phase?.requiredClaims ?? []).filter(claim => !passed.has(claim));
+};
 
 if (graph.schemaVersion !== 1) fail('Q-004 evidence graph schemaVersion must be 1');
 if (graph.nodeId !== 'Q-004') fail('Q-004 evidence graph nodeId mismatch');
@@ -28,7 +32,7 @@ const expectedProof = {
   metadataLeakageBudget: 'STATIC_CI_PASS_PHYSICAL_P3_OPEN',
   privacyInspectorMeasurement: 'STATIC_CI_PASS_PHYSICAL_P3_P4_OPEN',
   physicalHarnessIntegrity: 'PHYSICAL_P0_PASS_BOUND_RECEIPT',
-  mobileCredentialCustody: 'PHYSICAL_P2_OPEN',
+  mobileCredentialCustody: 'P2_ANDROID_PHYSICAL_PASS_IOS_PHYSICAL_OPEN',
   transportStorageDeletionBackup: 'PHYSICAL_P3_OPEN'
 };
 for (const [key, value] of Object.entries(expectedProof)) {
@@ -43,6 +47,7 @@ if ((metadata.cloudForbiddenClassIds ?? []).length !== 13) fail('metadata budget
 const phaseById = new Map((campaign.phases ?? []).map(phase => [phase.id, phase]));
 for (const id of ['P0', 'P2', 'P3', 'P4']) if (!phaseById.has(id)) fail(`physical campaign missing ${id}`);
 if (phaseById.get('P0')?.status !== 'PASS') fail('Q-004 may consume P0 only when campaign P0 is PASS');
+if (phaseById.get('P2')?.status !== 'PHYSICAL_EVIDENCE_REQUIRED') fail('Q-004 requires P2 to remain physically open until iOS/cross-platform closure');
 
 const expectedOpenPhaseIds = ['P0', 'P2', 'P3'].filter(id => phaseById.get(id)?.status !== 'PASS');
 if (!sameSet(new Set(expectedOpenPhaseIds), new Set(['P2', 'P3']))) {
@@ -50,13 +55,18 @@ if (!sameSet(new Set(expectedOpenPhaseIds), new Set(['P2', 'P3']))) {
 }
 const expectedOpen = new Set();
 for (const id of expectedOpenPhaseIds) {
-  for (const claim of phaseById.get(id)?.requiredClaims ?? []) expectedOpen.add(claim);
+  for (const claim of unresolvedClaims(phaseById.get(id))) expectedOpen.add(claim);
 }
 const actualOpen = asSet(graph.openPhysicalGates);
 if (!sameSet(actualOpen, expectedOpen)) {
-  fail(`openPhysicalGates must exactly equal remaining non-PASS P0/P2/P3 claims; expected ${[...expectedOpen].sort().join(',')}`);
+  fail(`openPhysicalGates must exactly equal unresolved P2+P3 claims; expected ${[...expectedOpen].sort().join(',')}`);
 }
-if (actualOpen.size !== 14) fail(`Q-004 must have 14 physical claims remaining after P0 PASS, found ${actualOpen.size}`);
+if (actualOpen.size !== 12) fail(`Q-004 must have 12 physical claims remaining after P0 PASS + two P2 claims resolved, found ${actualOpen.size}`);
+
+const p2Passed = asSet(phaseById.get('P2')?.passedClaims);
+if (!sameSet(p2Passed, new Set(['ANDROID_PROTECTED_OAUTH_CUSTODY', 'RESTORE_BEHAVIOR_DOCUMENTED']))) {
+  fail('Q-004 expected P2 passed claims Android custody + documented restore only');
+}
 
 const display = new Map((graph.dependentDisplayGates ?? []).map(item => [item.claim, item]));
 const rawZero = display.get('RAW_EMAILS_RETAINED_ZERO');
@@ -81,7 +91,8 @@ else {
 const evidencePaths = new Set((graph.evidence ?? []).map(item => item.path));
 for (const required of [
   'mk0/10-evidence/EV-Q004-PRIVACY-MEASUREMENT-METADATA-BUDGET-2026-09-03.md',
-  'mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md'
+  'mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md',
+  'mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md'
 ]) {
   if (!evidencePaths.has(required)) fail(`Q-004 graph missing evidence receipt ${required}`);
 }
@@ -99,6 +110,8 @@ for (const rule of [
   'E2EE_DESIGN=>E2EE_VERIFIED_CHECKMARK',
   'SYNTHETIC_HARNESS_PASS=>P0_PHYSICAL_PASS',
   'P0_PASS=>Q004_CLOSED',
+  'ANDROID_P2_CUSTODY_PASS=>P2_PASS',
+  'IOS_STATIC_READY=>IOS_P2_PHYSICAL_PASS',
   'CI_PASS=>Q004_CLOSED'
 ]) {
   if (!forbidden.has(rule)) fail(`missing Q-004 forbidden promotion ${rule}`);
@@ -112,6 +125,9 @@ if (failures.length) {
 
 console.log('FINANCESENSOR_Q004_EVIDENCE_GRAPH=PASS');
 console.log('P0=PHYSICAL_PASS_BOUND_RECEIPT');
+console.log('P2_ANDROID_CUSTODY=PHYSICAL_PASS');
+console.log('P2_RESTORE_BEHAVIOR=CONTRACT_PASS');
+console.log('P2_IOS_CUSTODY=PHYSICAL_OPEN');
 console.log(`OPEN_PHYSICAL_GATES=${actualOpen.size}`);
 console.log('OPEN_PHYSICAL_PHASES=P2,P3');
 console.log('PRIVACY_CLASSES=25');
@@ -119,4 +135,4 @@ console.log('CLOUD_VISIBLE_CLASSES=12');
 console.log('CLOUD_FORBIDDEN_CLASSES=13');
 console.log('Q004=ACTIVE');
 console.log('BUILD_READY=false');
-console.log('CI_ROLE=REVALIDATES_P0_RECEIPT_AND_STATIC_PRIVACY_CONTRACTS');
+console.log('CI_ROLE=REVALIDATES_BOUND_P0_P2_RECEIPTS_AND_STATIC_PRIVACY_CONTRACTS');
