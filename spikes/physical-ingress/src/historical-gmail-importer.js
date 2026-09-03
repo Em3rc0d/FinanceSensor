@@ -71,6 +71,20 @@ function maxHistoryId(a, b) {
   }
 }
 
+async function forEachConcurrent(items, limit, worker) {
+  if (!items.length) return;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      await worker(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+}
+
 function durableEvidence(sourceMessageId, extracted) {
   return {
     tenantId: 'tenant-ingress',
@@ -183,9 +197,16 @@ export class HistoricalGmailImporter {
     processed.add(id);
   }
 
-  async runAllAvailableActiveMailbox({ pageSize = 100, maxPagesPerRun = Number.POSITIVE_INFINITY } = {}) {
+  async runAllAvailableActiveMailbox({
+    pageSize = 100,
+    maxPagesPerRun = Number.POSITIVE_INFINITY,
+    messageConcurrency = 6
+  } = {}) {
     this._requireAuth();
     if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500) throw new Error('pageSize must be 1..500');
+    if (!Number.isInteger(messageConcurrency) || messageConcurrency < 1 || messageConcurrency > 10) {
+      throw new Error('messageConcurrency must be 1..10');
+    }
     if (!(Number.isFinite(maxPagesPerRun) || maxPagesPerRun === Number.POSITIVE_INFINITY) || maxPagesPerRun <= 0) {
       throw new Error('maxPagesPerRun must be positive');
     }
@@ -224,10 +245,10 @@ export class HistoricalGmailImporter {
 
       const messages = Array.isArray(page.messages) ? page.messages : [];
       bootstrap.messagesEnumerated += messages.length;
-      for (const item of messages) {
-        if (!item?.id) continue;
-        await this._processMessage(String(item.id), state, processed);
-      }
+      const uniqueIds = [...new Set(messages.map(item => item?.id ? String(item.id) : null).filter(Boolean))];
+      await forEachConcurrent(uniqueIds, messageConcurrency, async id => {
+        await this._processMessage(id, state, processed);
+      });
 
       state.processedSourceIds = [...processed];
       bootstrap.pagesCompleted += 1;
