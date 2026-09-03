@@ -11,6 +11,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'public-readiness.yml',
   'mobile-shell.yml',
   'mobile-gmail-connection.yml',
+  'gmail-historical.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
@@ -123,6 +124,27 @@ if (workflowFiles.includes('mobile-gmail-connection.yml')) {
   }
 }
 
+// The historical Gmail workflow validates only synthetic/static contracts.
+// The executable real OAuth viewer remains a LOCAL/TRUSTED-EDGE entrypoint and must never run in hosted CI.
+if (workflowFiles.includes('gmail-historical.yml')) {
+  const text = read('gmail-historical.yml');
+  const requiredMarkers = [
+    'Synthetic/static only',
+    'REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN',
+    'contents: read',
+    'runs-on: ubuntu-latest',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('gmail-historical.yml', `historical CI boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
+    fail('gmail-historical.yml', 'historical CI may not receive Gmail/OAuth credentials');
+  }
+  if (/node\s+[^\n]*owned-oauth-gmail-history-viewer\.mjs/.test(text) && !/node --check\s+spikes\/physical-ingress\/live\/owned-oauth-gmail-history-viewer\.mjs/.test(text)) {
+    fail('gmail-historical.yml', 'historical CI may syntax-check but never execute the real Gmail viewer');
+  }
+}
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!workflowFiles.includes(file)) {
     fail(file, 'registered retired workflow is missing');
@@ -166,4 +188,6 @@ console.log('MOBILE_SHELL_REAL_OAUTH=0');
 console.log('MOBILE_SHELL_REAL_FINANCIAL_DATA=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_GMAIL_EXECUTED_BY_CI=0');
+console.log('GMAIL_HISTORICAL_REAL_OAUTH_EXECUTED_BY_CI=0');
+console.log('GMAIL_HISTORICAL_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
