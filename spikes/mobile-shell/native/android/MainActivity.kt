@@ -55,10 +55,10 @@ class MainActivity : FlutterActivity() {
         client().authorize(request())
             .addOnSuccessListener { authorization ->
                 if (authorization.hasResolution()) {
+                    clearMemory()
                     result.success(state("READY_TO_CONNECT"))
                 } else {
-                    remember(authorization)
-                    result.success(state("AUTHORIZED"))
+                    probeAuthorizedProfile(authorization, result)
                 }
             }
             .addOnFailureListener { error -> failAuthorization(result, error) }
