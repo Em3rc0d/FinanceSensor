@@ -23,6 +23,7 @@ if (!failures.length) {
   const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
   const q003 = (ledger.nodes ?? []).find(node => node.id === 'Q-003');
   const p0 = (campaign.phases ?? []).find(phase => phase.id === 'P0');
+  const p1 = (campaign.phases ?? []).find(phase => phase.id === 'P1');
   const p2 = (campaign.phases ?? []).find(phase => phase.id === 'P2');
 
   if (!q003) fail('closure ledger has no Q-003 node');
@@ -32,6 +33,7 @@ if (!failures.length) {
   if (q003?.status !== index.nodeStateRequired) fail(`Q-003 state mismatch: ledger=${q003?.status}, required=${index.nodeStateRequired}`);
   if (q003?.closureReceipt !== null) fail('Q-003 must not have a closure receipt while production/provider gates are open');
   if (p0?.status !== 'PASS') fail('Q-003 shared harness boundary requires campaign P0 PASS');
+  if (p1?.status !== 'PHYSICAL_EVIDENCE_REQUIRED') fail('Q-003 must keep P1 physical execution open until receipt-bound lifecycle evidence exists');
   if (p2?.status !== 'PHYSICAL_EVIDENCE_REQUIRED') fail('Q-003 must keep P2 open until iOS/cross-platform custody evidence closes');
   if (!(p2?.passedClaims ?? []).includes('ANDROID_PROTECTED_OAUTH_CUSTODY')) fail('Q-003 expected Android P2 custody physical PASS');
   if (!(p2?.passedClaims ?? []).includes('RESTORE_BEHAVIOR_DOCUMENTED')) fail('Q-003 expected restore behavior contract PASS');
@@ -50,6 +52,7 @@ if (!failures.length) {
 
   const requiredProofBoundary = {
     physicalHarnessIntegrity: 'PHYSICAL_P0_PASS_BOUND_RECEIPT',
+    p1ProductionLifecycle: 'HARNESS_READY_PHYSICAL_OPEN',
     mobileCredentialCustodyAndroid: 'P2_PHYSICAL_PASS_BOUND_RECEIPT',
     mobileCredentialCustodyIos: 'P2_STATIC_READY_PHYSICAL_OPEN',
     levelCv7: 'PHYSICAL_PASS',
@@ -65,16 +68,28 @@ if (!failures.length) {
 
   for (const receipt of [
     'mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md',
+    'mk0/10-evidence/EV-P1-PRODUCTION-LIFECYCLE-HARNESS-READY-2026-09-03.md',
     'mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md'
   ]) {
     if (!(index.evidence ?? []).some(entry => entry.path === receipt)) fail(`Q-003 evidence index missing receipt ${receipt}`);
   }
 
+  for (const artifact of [
+    'graph/p1-production-lifecycle.json',
+    'spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs',
+    'tools/validate-p1-production-lifecycle.mjs'
+  ]) {
+    if (!(index.artifacts ?? []).some(entry => entry.path === artifact)) fail(`Q-003 evidence index missing P1 artifact ${artifact}`);
+  }
+
   const requiredOpenPhysical = new Set([
     'SUCCESSFUL_PRE_REVOKE_REFRESH',
     'REFRESHED_BEARER_GMAIL_USE',
+    'MINIMUM_SCOPE_REFRESH_PHYSICAL',
     'REQUEST_RESPONSE_BODY_BYTE_EVIDENCE',
     'PER_ENDPOINT_CLASS_LATENCY_EVIDENCE',
+    'PROVIDER_REVOKE_ACCEPTED_PHYSICAL',
+    'OLD_REFRESH_AUTHORITY_DENIED_PHYSICAL',
     'PRODUCTION_PLATFORM_PROTECTED_CREDENTIAL_HANDLING',
     'PRODUCTION_DISCONNECT_DELETION_EVIDENCE'
   ]);
@@ -93,6 +108,9 @@ if (!failures.length) {
 
   for (const promotion of [
     'P0_PASS=>Q003_CLOSED',
+    'P1_HARNESS_READY=>P1_PHYSICAL_PASS',
+    'REVOKE_HTTP_200=>OLD_REFRESH_AUTHORITY_DENIED',
+    'ANY_NON_2XX_REFRESH=>OLD_REFRESH_AUTHORITY_DENIED',
     'ANDROID_P2_CUSTODY_PASS=>P2_PASS',
     'IOS_STATIC_READY=>IOS_P2_PHYSICAL_PASS',
     'LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED',
@@ -128,6 +146,8 @@ if (failures.length) {
 console.log('FINANCESENSOR_Q003_EVIDENCE_BOUNDARY=PASS');
 console.log('Q003_STATE=ACTIVE');
 console.log('P0=PHYSICAL_PASS_BOUND_RECEIPT');
+console.log('P1=HARNESS_READY_PHYSICAL_OPEN');
+console.log('P1_SEMANTIC_DENIAL=HTTP_400_INVALID_GRANT_REQUIRED');
 console.log('P2_ANDROID_CUSTODY=PHYSICAL_PASS_BOUND_RECEIPT');
 console.log('P2_IOS_CUSTODY=STATIC_READY_PHYSICAL_OPEN');
 console.log('LEVEL_C_V7=PHYSICAL_PASS');
