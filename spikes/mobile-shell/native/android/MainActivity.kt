@@ -26,7 +26,14 @@ class MainActivity : FlutterActivity() {
         private const val GMAIL_PROFILE = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
         private const val CONNECTION_PREFS = "financesensor_connection_state"
         private const val DISCONNECT_BARRIER_KEY = "gmail_disconnect_barrier"
+        private val POST_REVOKE_PROBE_DELAYS_MS = longArrayOf(0L, 750L, 2_000L)
     }
+
+    private data class BearerProbe(
+        val status: Int,
+        val latencyMs: Int,
+        val responseBytes: Int,
+    )
 
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private var pendingAuthorizationResult: MethodChannel.Result? = null
@@ -344,6 +351,7 @@ class MainActivity : FlutterActivity() {
                 state("DISCONNECTED") + mapOf(
                     "providerRevokeVerified" to false,
                     "disconnectBarrierActive" to true,
+                    "providerRevokeProbeAttempts" to 0,
                     "providerRevokeReason" to "NO_PREVIOUS_TOKEN_TO_PROBE",
                 ),
             )
@@ -351,55 +359,93 @@ class MainActivity : FlutterActivity() {
         }
 
         ioExecutor.execute {
-            var connection: HttpURLConnection? = null
-            try {
-                val started = System.nanoTime()
-                connection = (URL(GMAIL_PROFILE).openConnection() as HttpURLConnection).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 12_000
-                    readTimeout = 12_000
-                    setRequestProperty("Authorization", "Bearer $token")
-                    setRequestProperty("Accept", "application/json")
-                }
+            val overallStarted = System.nanoTime()
+            var attempts = 0
+            var lastProbe: BearerProbe? = null
+            var probeFailed = false
 
-                val status = connection.responseCode
-                val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-                val bodyBytes = stream?.use { it.readBytes() } ?: ByteArray(0)
-                val latencyMs = ((System.nanoTime() - started) / 1_000_000L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                val denied = status == 401 || status == 403
-
-                clearCachedToken(token) {
-                    clearMemory()
-                    runOnUiThread {
-                        result.success(
-                            state(if (denied) "DISCONNECTED_VERIFIED" else "DISCONNECTED") + mapOf(
-                                "providerRevokeVerified" to denied,
-                                "oldTokenDeniedAfterRevoke" to denied,
-                                "providerRevokeHttpStatus" to status,
-                                "providerRevokeLatencyMs" to latencyMs,
-                                "providerRevokeResponseBytes" to bodyBytes.size,
-                                "disconnectBarrierActive" to true,
-                                "providerRevokeReason" to if (denied) "PREVIOUS_BEARER_DENIED" else "PREVIOUS_BEARER_NOT_DENIED",
-                            ),
-                        )
+            for (delayMs in POST_REVOKE_PROBE_DELAYS_MS) {
+                if (delayMs > 0L) {
+                    try {
+                        Thread.sleep(delayMs)
+                    } catch (_: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        probeFailed = true
+                        break
                     }
                 }
-            } catch (_: Exception) {
-                clearCachedToken(token) {
-                    clearMemory()
-                    runOnUiThread {
-                        result.success(
-                            state("DISCONNECTED") + mapOf(
-                                "providerRevokeVerified" to false,
-                                "disconnectBarrierActive" to true,
-                                "providerRevokeReason" to "POST_REVOKE_PROBE_FAILED",
-                            ),
-                        )
-                    }
+
+                attempts += 1
+                try {
+                    val probe = probePreviousBearer(token)
+                    lastProbe = probe
+                    if (probe.status == 401) break
+                } catch (_: Exception) {
+                    probeFailed = true
                 }
-            } finally {
-                connection?.disconnect()
             }
+
+            val lastStatus = lastProbe?.status
+            val verified = lastStatus == 401
+            val reason = when {
+                verified -> "PREVIOUS_BEARER_UNAUTHORIZED"
+                lastStatus != null && lastStatus in 200..299 -> "PREVIOUS_BEARER_STILL_VALID"
+                lastStatus == 403 -> "PREVIOUS_BEARER_FORBIDDEN_AMBIGUOUS"
+                lastStatus != null -> "POST_REVOKE_UNEXPECTED_HTTP"
+                probeFailed -> "POST_REVOKE_PROBE_FAILED"
+                else -> "POST_REVOKE_NO_RESULT"
+            }
+            val elapsedMs = ((System.nanoTime() - overallStarted) / 1_000_000L)
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
+
+            clearCachedToken(token) {
+                clearMemory()
+                runOnUiThread {
+                    result.success(
+                        state(if (verified) "DISCONNECTED_VERIFIED" else "DISCONNECTED") + mapOf(
+                            "providerRevokeVerified" to verified,
+                            "oldTokenDeniedAfterRevoke" to verified,
+                            "providerRevokeHttpStatus" to lastStatus,
+                            "providerRevokeLatencyMs" to lastProbe?.latencyMs,
+                            "providerRevokeResponseBytes" to lastProbe?.responseBytes,
+                            "providerRevokeProbeAttempts" to attempts,
+                            "providerRevokeElapsedMs" to elapsedMs,
+                            "disconnectBarrierActive" to true,
+                            "providerRevokeReason" to reason,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun probePreviousBearer(token: String): BearerProbe {
+        var connection: HttpURLConnection? = null
+        try {
+            val started = System.nanoTime()
+            connection = (URL(GMAIL_PROFILE).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 12_000
+                readTimeout = 12_000
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
+            }
+
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val bodyBytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+            val latencyMs = ((System.nanoTime() - started) / 1_000_000L)
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
+
+            return BearerProbe(
+                status = status,
+                latencyMs = latencyMs,
+                responseBytes = bodyBytes.size,
+            )
+        } finally {
+            connection?.disconnect()
         }
     }
 
@@ -443,6 +489,7 @@ class MainActivity : FlutterActivity() {
         "disconnectBarrierActive" to isDisconnectBarrierActive(),
         "providerRevokeVerified" to false,
         "oldTokenDeniedAfterRevoke" to false,
+        "providerRevokeProbeAttempts" to 0,
         "explicitReconnect" to false,
         "consentResolutionObserved" to false,
         "providerGrantReused" to false,
