@@ -42,6 +42,7 @@ test('GMAIL-AUTH-002 a 401 becomes explicit REAUTH_REQUIRED without silently ret
 
   await assert.rejects(provider.getCurrentHistoryId(), error => {
     assert.equal(error.code, 'REAUTH_REQUIRED');
+    assert.equal(error.status, 401);
     assert.equal(String(error.message).includes('expired-secret-token'), false);
     return true;
   });
@@ -49,7 +50,7 @@ test('GMAIL-AUTH-002 a 401 becomes explicit REAUTH_REQUIRED without silently ret
   assert.equal(unauthorizedSignals, 1);
 });
 
-test('GMAIL-AUTH-003 Gmail API error text cannot echo the bearer token', async () => {
+test('GMAIL-AUTH-003 Gmail API error text cannot echo the bearer token and exposes only sanitized HTTP status', async () => {
   const secret = 'token-that-must-never-appear';
   const provider = new GmailRestProvider({
     accessToken: secret,
@@ -57,7 +58,25 @@ test('GMAIL-AUTH-003 Gmail API error text cannot echo the bearer token', async (
   });
 
   await assert.rejects(provider.getCurrentHistoryId(), error => {
+    assert.equal(error.code, 'GMAIL_API_HTTP_500');
+    assert.equal(error.status, 500);
+    assert.equal(error.retryable, true);
     assert.equal(String(error.message).includes(secret), false);
+    return true;
+  });
+});
+
+test('GMAIL-AUTH-004 non-transient Gmail status remains sanitized and non-retryable', async () => {
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    fetchImpl: async () => jsonResponse(403, { error: { message: 'private upstream detail' } })
+  });
+
+  await assert.rejects(provider.getCurrentHistoryId(), error => {
+    assert.equal(error.code, 'GMAIL_API_HTTP_403');
+    assert.equal(error.status, 403);
+    assert.equal(error.retryable, false);
+    assert.equal(String(error.message).includes('private upstream detail'), false);
     return true;
   });
 });
