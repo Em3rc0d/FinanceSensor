@@ -91,7 +91,7 @@ if (!failures.length) {
     if (!adapters.includes(marker)) fail(`issuer adapter matrix missing marker: ${marker}`);
   }
 
-  for (const marker of ['createCipheriv(\'aes-256-gcm\'', 'createDecipheriv(\'aes-256-gcm\'', 'renameSync']) {
+  for (const marker of ["createCipheriv('aes-256-gcm'", "createDecipheriv('aes-256-gcm'", 'renameSync']) {
     if (!vault.includes(marker)) fail(`persistent encrypted vault missing marker: ${marker}`);
   }
 
@@ -103,7 +103,7 @@ if (!failures.length) {
     'WINDOWS_DPAPI_REQUIRED_FOR_REAL_HISTORY_VIEWER',
     'DataProtectionScope]::CurrentUser',
     'PAGE_SIZE = 50',
-    'prompt\', \'consent',
+    "authUrl.searchParams.set('prompt', 'consent')",
     'ALL_DETECTED_TRANSACTION_EVIDENCE_WITHIN_COMPLETED_GMAIL_MAILBOX_SCOPE',
     'nextPageToken',
     '127.0.0.1'
