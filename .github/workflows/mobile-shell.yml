@@ -137,6 +137,13 @@ jobs:
         working-directory: spikes/mobile-shell
         run: flutter pub get
 
+      - name: Lockfile evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          echo 'FINANCESENSOR_PUBSPEC_LOCK_BEGIN'
+          cat pubspec.lock
+          echo 'FINANCESENSOR_PUBSPEC_LOCK_END'
+
       - name: Mobile statement package resolution
         working-directory: spikes/mobile-shell
         run: |
