@@ -5,16 +5,20 @@ const adrPath = 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.m
 const providerPath = 'spikes/physical-ingress/src/gmail-rest-provider.js';
 const importerPath = 'spikes/physical-ingress/src/historical-gmail-importer.js';
 const adaptersPath = 'spikes/physical-ingress/src/transaction-evidence-adapters.js';
+const vaultPath = 'spikes/physical-ingress/src/file-encrypted-vault.js';
+const viewerPath = 'spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs';
+const runnerPath = 'spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd';
 const resolverPath = 'spikes/canonical-resolver/src/resolver.js';
 const tests = [
   'spikes/physical-ingress/test/transaction-evidence-adapters.test.js',
   'spikes/physical-ingress/test/historical-gmail-importer.test.js',
+  'spikes/physical-ingress/test/file-encrypted-vault.test.js',
   'spikes/canonical-resolver/test/evidence-channel-reconciliation.test.js'
 ];
 const failures = [];
 const fail = message => failures.push(message);
 
-for (const path of [contractPath, adrPath, providerPath, importerPath, adaptersPath, resolverPath, ...tests]) {
+for (const path of [contractPath, adrPath, providerPath, importerPath, adaptersPath, vaultPath, viewerPath, runnerPath, resolverPath, ...tests]) {
   if (!fs.existsSync(path)) fail(`missing Gmail historical artifact: ${path}`);
 }
 
@@ -24,6 +28,9 @@ if (!failures.length) {
   const provider = fs.readFileSync(providerPath, 'utf8');
   const importer = fs.readFileSync(importerPath, 'utf8');
   const adapters = fs.readFileSync(adaptersPath, 'utf8');
+  const vault = fs.readFileSync(vaultPath, 'utf8');
+  const viewer = fs.readFileSync(viewerPath, 'utf8');
+  const runner = fs.readFileSync(runnerPath, 'utf8');
   const resolver = fs.readFileSync(resolverPath, 'utf8');
 
   if (contract.status !== 'STATIC_READY_REAL_GMAIL_OPEN') fail('historical contract must remain static-ready / real Gmail open');
@@ -39,6 +46,13 @@ if (!failures.length) {
   if (contract.incrementalCutover?.profileHistoryIdSubstitution !== false) fail('/profile.historyId substitution must remain rejected');
   if (contract.realMailboxValidation?.repositoryRawFixtures !== 'FORBIDDEN') fail('real Gmail fixtures must never enter repo');
   if (contract.physicalExecution?.realOwnedGmail !== 'OPEN') fail('real Gmail physical execution must remain OPEN before controlled run');
+  if (contract.physicalExecution?.iosTouched !== false) fail('iOS must remain untouched for this path');
+  if (contract.localViewer?.status !== 'STATIC_READY_REAL_OAUTH_OPEN') fail('real viewer must remain static-ready / real OAuth open');
+  if (contract.localViewer?.oauthScope !== 'https://www.googleapis.com/auth/gmail.readonly') fail('viewer scope must be exact gmail.readonly');
+  if (contract.localViewer?.stateEncryption !== 'AES_256_GCM') fail('viewer local state must use AES-256-GCM');
+  if (contract.localViewer?.stateKeyProtection !== 'WINDOWS_DPAPI_CURRENT_USER') fail('viewer key must be Windows DPAPI CurrentUser protected');
+  if (contract.localViewer?.refreshTokenDurablePersistence !== 'FORBIDDEN') fail('refresh token durable persistence must remain forbidden');
+  if (contract.localViewer?.completeState !== 'ONLY_AFTER_NEXT_PAGE_TOKEN_ABSENT') fail('viewer COMPLETE semantics mismatch');
 
   for (const phrase of [
     'GMAIL EVIDENCE COVERAGE != BANK LEDGER COMPLETENESS',
@@ -69,15 +83,42 @@ if (!failures.length) {
     'BCP_EXTERNAL_TRANSFER',
     'INTERBANK_CARD_PURCHASE',
     'INTERBANK_PLIN_PAYMENT',
+    'RIPLEY_CARD_PAYMENT',
+    'RIPLEY_PROMOTIONAL_DOMAIN',
     'KNOWN_BANK_NON_TRANSACTION',
     'MARKETING_ACCOUNT_OR_SECURITY'
   ]) {
     if (!adapters.includes(marker)) fail(`issuer adapter matrix missing marker: ${marker}`);
   }
 
-  for (const marker of ['evidenceChannels', 'BANK_NOTIFICATION', 'MERCHANT_RECEIPT']) {
-    if (!resolver.includes(marker) && marker === 'evidenceChannels') fail('resolver must preserve independent evidence channels');
+  for (const marker of ['createCipheriv(\'aes-256-gcm\'', 'createDecipheriv(\'aes-256-gcm\'', 'renameSync']) {
+    if (!vault.includes(marker)) fail(`persistent encrypted vault missing marker: ${marker}`);
   }
+
+  for (const marker of [
+    'HistoricalGmailImporter',
+    'LocalFileEncryptedVault',
+    'LocalOAuthCredentialProvider',
+    'GMAIL_READONLY_SCOPE',
+    'WINDOWS_DPAPI_REQUIRED_FOR_REAL_HISTORY_VIEWER',
+    'DataProtectionScope]::CurrentUser',
+    'PAGE_SIZE = 50',
+    'prompt\', \'consent',
+    'ALL_DETECTED_TRANSACTION_EVIDENCE_WITHIN_COMPLETED_GMAIL_MAILBOX_SCOPE',
+    'nextPageToken',
+    '127.0.0.1'
+  ]) {
+    if (!viewer.includes(marker)) fail(`real history viewer missing marker: ${marker}`);
+  }
+  for (const forbidden of ['writeFileSync(refreshToken', 'writeFileSync(shortAccessToken', 'raw_mime', 'attachments.map']) {
+    if (viewer.includes(forbidden)) fail(`real viewer contains forbidden persistence marker: ${forbidden}`);
+  }
+
+  for (const marker of ['FINANCESENSOR_GOOGLE_CREDENTIALS_PATH', 'gmail.readonly', 'owned-oauth-gmail-history-viewer.mjs', 'iOS: NO TOCADO']) {
+    if (!runner.includes(marker)) fail(`one-click history runner missing marker: ${marker}`);
+  }
+
+  if (!resolver.includes('evidenceChannels')) fail('resolver must preserve independent evidence channels');
 }
 
 if (failures.length) {
@@ -93,5 +134,9 @@ console.log('AGGREGATE_MESSAGE_LIMIT=NONE');
 console.log('RAW_BODY_FETCH=CANDIDATES_ONLY');
 console.log('INVALID_CURSOR=RESTART_WITH_SOURCE_ID_DEDUP');
 console.log('INCREMENTAL_ANCHOR=MESSAGE_DERIVED_HISTORY_ID');
+console.log('ISSUER_ADAPTERS=BCP,INTERBANK,RIPLEY');
+console.log('LOCAL_HISTORY_STATE=AES_256_GCM');
+console.log('LOCAL_HISTORY_KEY=WINDOWS_DPAPI_CURRENT_USER');
+console.log('REAL_HISTORY_VIEWER=STATIC_READY_REAL_OAUTH_OPEN');
 console.log('REAL_GMAIL_EXECUTION=OPEN');
 console.log('IOS_TOUCHED=0');
