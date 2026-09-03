@@ -42,6 +42,7 @@ function endpoint(raw, name) {
   finiteNonNegative(value.minLatencyMs, `${name}.minLatencyMs`);
   finiteNonNegative(value.maxLatencyMs, `${name}.maxLatencyMs`);
   assert(Number.isInteger(value.networkErrors) && value.networkErrors >= 0, `${name}.networkErrors must be non-negative integer`);
+  assert(value.statuses && typeof value.statuses === 'object' && !Array.isArray(value.statuses), `${name}.statuses must be an object`);
   return value;
 }
 
@@ -101,6 +102,10 @@ export function reduceP1Result(raw) {
   assert(metrics.revoke.count === 1, 'revoke count must be exactly 1 on successful path');
   assert(metrics.full.count === 1, 'FULL retrieval count must be exactly 1');
   assert(metrics.profile.count >= 2, 'profile count must prove bearer before/after refresh');
+  assert(Number(metrics.tokenExchange.statuses?.['200'] ?? 0) >= 1, 'tokenExchange metrics must contain HTTP 200');
+  assert(Number(metrics.tokenRefresh.statuses?.['200'] ?? 0) >= 1, 'tokenRefresh metrics must contain pre-revoke HTTP 200');
+  assert(Number(metrics.tokenRefresh.statuses?.['400'] ?? 0) >= 1, 'tokenRefresh metrics must contain post-revoke HTTP 400');
+  assert(Number(metrics.revoke.statuses?.['200'] ?? 0) >= 1, 'revoke metrics must contain HTTP 200');
 
   const other = raw.network?.endpointClasses?.other;
   assert(other && other.count === 0 && other.networkErrors === 0, 'unexpected endpoint class observed');
