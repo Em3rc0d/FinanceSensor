@@ -27,7 +27,7 @@ const anchorSubject = `FinanceSensor P1 Anchor ${anchorMarker}`;
 const anchorBody = 'FinanceSensor P1 synthetic anchor. No financial data.';
 const probeMarker = `FSP1P-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 const probeSubject = `FinanceSensor P1 Synthetic Purchase ${probeMarker}`;
-const probeBody = 'Synthetic purchase evidence only. PEN 12.34; Merchant: DEMO STORE; Operation: DEMO-P1.';
+const probeBody = `Synthetic purchase evidence only. Marker: ${probeMarker}. PEN 12.34; Merchant: DEMO STORE; Operation: DEMO-P1.`;
 
 const sessionSecret = crypto.randomBytes(24).toString('base64url');
 const oauthState = crypto.randomBytes(24).toString('base64url');
