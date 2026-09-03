@@ -30,7 +30,7 @@ const expectedProof = {
   witnessTopology: 'FROZEN_PHYSICAL_P5_OPEN',
   allDevicesLostRecovery: 'SPIKE_ACCEPTED_PHYSICAL_P6_OPEN',
   transportStorageDeletionBackup: 'PHYSICAL_P3_OPEN',
-  physicalHarnessIntegrity: 'STATIC_READY_PHYSICAL_P0_OPEN',
+  physicalHarnessIntegrity: 'PHYSICAL_P0_PASS_BOUND_RECEIPT',
   closureReceipt: 'P8_BLOCKED_BY_PRIOR_PHASES'
 };
 for (const [key, expected] of Object.entries(expectedProof)) {
@@ -61,19 +61,24 @@ for (const evidence of graph.evidence ?? []) {
   else if (!exists(evidence.path)) fail(`Q-005 evidence missing: ${evidence.path}`);
   if (evidence?.closesQ005 !== false) fail(`${evidence?.path ?? '<unknown>'} must not close Q-005`);
 }
+const evidencePaths = new Set((graph.evidence ?? []).map(item => item.path));
+if (!evidencePaths.has('mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md')) {
+  fail('Q-005 graph must bind P0 physical PASS receipt');
+}
 
 const phaseById = new Map((campaign.phases ?? []).map(phase => [phase.id, phase]));
+if (phaseById.get('P0')?.status !== 'PASS') fail('Q-005 may consume P0 only when campaign P0 is PASS');
 const expectedPhysicalPhases = new Set(
   (campaign.phases ?? [])
-    .filter(phase => (phase.binds ?? []).includes('Q-005') && phase.id !== 'P8')
+    .filter(phase => (phase.binds ?? []).includes('Q-005') && phase.id !== 'P8' && phase.status !== 'PASS')
     .map(phase => phase.id)
 );
 const actualPhysicalPhases = asSet(graph.openPhysicalPhases);
 if (!sameSet(actualPhysicalPhases, expectedPhysicalPhases)) {
-  fail(`openPhysicalPhases must exactly match campaign phases binding Q-005 before P8: ${[...expectedPhysicalPhases].sort().join(',')}`);
+  fail(`openPhysicalPhases must exactly match non-PASS campaign phases binding Q-005 before P8: ${[...expectedPhysicalPhases].sort().join(',')}`);
 }
-if (!sameSet(expectedPhysicalPhases, new Set(['P0', 'P3', 'P4', 'P5', 'P6']))) {
-  fail('physical campaign Q-005 phase partition changed; explicit review required');
+if (!sameSet(expectedPhysicalPhases, new Set(['P3', 'P4', 'P5', 'P6']))) {
+  fail('physical campaign Q-005 open phase partition changed; explicit review required');
 }
 
 const expectedPhysicalGates = new Set();
@@ -88,9 +93,9 @@ for (const phaseId of expectedPhysicalPhases) {
 }
 const actualPhysicalGates = asSet(graph.openPhysicalGates);
 if (!sameSet(actualPhysicalGates, expectedPhysicalGates)) {
-  fail(`openPhysicalGates must equal P0+P3+P4+P5+P6 claims; expected ${[...expectedPhysicalGates].sort().join(',')}`);
+  fail(`openPhysicalGates must equal remaining P3+P4+P5+P6 claims; expected ${[...expectedPhysicalGates].sort().join(',')}`);
 }
-if (actualPhysicalGates.size !== 35) fail(`Q-005 expected 35 open physical claims, found ${actualPhysicalGates.size}`);
+if (actualPhysicalGates.size !== 29) fail(`Q-005 expected 29 open physical claims after P0 PASS, found ${actualPhysicalGates.size}`);
 
 const p8 = phaseById.get('P8');
 if (!p8) fail('physical campaign missing P8 closure receipts');
@@ -118,6 +123,7 @@ for (const rule of [
   'SIGNED_CHECKPOINT=>GLOBAL_LATEST_FRESHNESS',
   'TWO_OF_THREE_WITNESSES=>GLOBAL_CONSENSUS',
   'CI_PASS=>PHYSICAL_KEY_PROTECTION_PASS',
+  'P0_PASS=>Q005_CLOSED',
   'CI_PASS=>Q005_CLOSED'
 ]) {
   if (!forbidden.has(rule)) fail(`missing Q-005 forbidden promotion ${rule}`);
@@ -132,10 +138,11 @@ if (failures.length) {
 console.log('FINANCESENSOR_Q005_EVIDENCE_GRAPH=PASS');
 console.log('BOUNDED_DISTRIBUTED_SUITE=116/116_PROVEN_AT_SPIKE');
 console.log(`BOUNDED_INVARIANTS=${actualInvariantIds.size}`);
+console.log('P0=PHYSICAL_PASS_BOUND_RECEIPT');
 console.log(`OPEN_PHYSICAL_PHASES=${actualPhysicalPhases.size}`);
 console.log(`OPEN_PHYSICAL_GATES=${actualPhysicalGates.size}`);
 console.log('P8=BLOCKED_BY_PRIOR_PHASES');
 console.log('GLOBAL_LATEST_FRESHNESS=NOT_CLAIMED');
 console.log('Q005=ACTIVE');
 console.log('BUILD_READY=false');
-console.log('PHYSICAL_SYNC_CRYPTO_RECOVERY_PASS_CLAIMED_BY_CI=0');
+console.log('CI_ROLE=REVALIDATES_BOUND_P0_RECEIPT_AND_BOUNDED_Q005_EVIDENCE');

@@ -10,7 +10,7 @@
     "witnessTopology": "FROZEN_PHYSICAL_P5_OPEN",
     "allDevicesLostRecovery": "SPIKE_ACCEPTED_PHYSICAL_P6_OPEN",
     "transportStorageDeletionBackup": "PHYSICAL_P3_OPEN",
-    "physicalHarnessIntegrity": "STATIC_READY_PHYSICAL_P0_OPEN",
+    "physicalHarnessIntegrity": "PHYSICAL_P0_PASS_BOUND_RECEIPT",
     "closureReceipt": "P8_BLOCKED_BY_PRIOR_PHASES"
   },
   "boundedInvariantRange": {
@@ -89,8 +89,16 @@
       "role": "P0/P3/P4/P5/P6/P8 physical closure authority"
     },
     {
+      "path": "graph/physical-receipts/P0-2026-09-03.json",
+      "role": "immutable P0 composite physical evidence binding"
+    },
+    {
       "path": "spikes/e2ee-sync",
       "role": "bounded executable sync/recovery/witness feasibility suite"
+    },
+    {
+      "path": "tools/validate-p0-receipt.mjs",
+      "role": "P0 immutable composite receipt validator"
     },
     {
       "path": "tools/validate-q005-evidence.mjs",
@@ -132,16 +140,15 @@
       "path": "mk0/10-evidence/EV-Q005-EVIDENCE-BOUNDARY-2026-09-03.md",
       "proof": "Q005_PROVEN_AT_SPIKE_VS_PHYSICAL_BOUNDARY_MACHINE_FROZEN",
       "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+      "proof": "P0_COMPOSITE_PHYSICAL_HARNESS_SANITIZATION_PASS",
+      "closesQ005": false
     }
   ],
-  "openPhysicalPhases": ["P0", "P3", "P4", "P5", "P6"],
+  "openPhysicalPhases": ["P3", "P4", "P5", "P6"],
   "openPhysicalGates": [
-    "OUTPUT_ALLOWLIST_ACTIVE",
-    "SECRET_VALUE_PRINTING_DISABLED",
-    "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT",
-    "PRIVATE_KEY_BYTES_ABSENT",
-    "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY",
-    "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED",
     "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
     "RAW_GMAIL_CONTENT_NOT_DURABLE",
     "CLOUD_ENVELOPES_DELETED",
@@ -188,6 +195,7 @@
     "SIGNED_CHECKPOINT=>GLOBAL_LATEST_FRESHNESS",
     "TWO_OF_THREE_WITNESSES=>GLOBAL_CONSENSUS",
     "CI_PASS=>PHYSICAL_KEY_PROTECTION_PASS",
+    "P0_PASS=>Q005_CLOSED",
     "CI_PASS=>Q005_CLOSED"
   ]
 }

@@ -22,11 +22,16 @@
     {
       "id": "P0",
       "title": "Harness integrity",
-      "status": "STATIC_READY_PHYSICAL_OPEN",
+      "status": "PASS",
       "dependsOn": [],
       "binds": ["Q-003", "Q-004", "Q-005"],
       "receiptPattern": "EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-<date>.md",
       "physicalReceiptRequiredForPass": true,
+      "passReceipt": {
+        "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+        "binding": "graph/physical-receipts/P0-2026-09-03.json",
+        "evidenceOrigin": "BOUND_EXISTING_PHYSICAL_RECEIPTS"
+      },
       "requiredClaims": [
         "OUTPUT_ALLOWLIST_ACTIVE",
         "SECRET_VALUE_PRINTING_DISABLED",

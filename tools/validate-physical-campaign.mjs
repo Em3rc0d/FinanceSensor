@@ -41,11 +41,17 @@ for (const phase of phases) {
   }
 
   if (phase.status === 'PASS') {
-    fail(`${phase.id} cannot be marked PASS in the manifest without an immutable receipt binding mechanism; use closure tooling first`);
+    if (!phase.passReceipt?.path || !phase.passReceipt?.binding || !phase.passReceipt?.evidenceOrigin) {
+      fail(`${phase.id} PASS requires path + binding + evidenceOrigin`);
+    } else {
+      if (!fs.existsSync(phase.passReceipt.path)) fail(`${phase.id} PASS receipt missing: ${phase.passReceipt.path}`);
+      if (!fs.existsSync(phase.passReceipt.binding)) fail(`${phase.id} PASS binding missing: ${phase.passReceipt.binding}`);
+    }
+    if (phase.id !== 'P0') fail(`${phase.id} PASS has no phase-specific immutable receipt validator yet`);
   }
 }
 
-if (byId.get('P0')?.status !== 'STATIC_READY_PHYSICAL_OPEN') fail('P0 must distinguish static readiness from physical PASS');
+if (byId.get('P0')?.status !== 'PASS') fail('P0 must be PASS only through its immutable composite physical receipt');
 for (const id of ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7']) {
   if (byId.get(id)?.status !== 'PHYSICAL_EVIDENCE_REQUIRED') fail(`${id} must remain PHYSICAL_EVIDENCE_REQUIRED`);
 }
@@ -62,10 +68,13 @@ if (failures.length) {
   process.exit(1);
 }
 
+await import('./validate-p0-receipt.mjs');
+
 console.log('FINANCESENSOR_PHYSICAL_CAMPAIGN_CONTRACT=PASS');
 console.log(`PHASES=${phases.length}`);
-console.log('P0_STATIC_READY_PHYSICAL_OPEN=PASS');
+console.log('P0_PHYSICAL_PASS=PASS');
+console.log('P0_PASS_ORIGIN=BOUND_EXISTING_PHYSICAL_RECEIPTS');
 console.log('P1_P7_PHYSICAL_EVIDENCE_REQUIRED=PASS');
 console.log('P8_BLOCKED_BY_PRIOR_PHASES=PASS');
 console.log('Q003_Q004_Q005_ACTIVE=PASS');
-console.log('PHYSICAL_PASS_CLAIMED_BY_CI=0');
+console.log('CI_ROLE=REVALIDATES_BOUND_PHYSICAL_RECEIPT_ONLY');

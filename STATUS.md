@@ -30,7 +30,30 @@ REPOSITORY GOVERNANCE      OPEN
 BUILD_READY                NO
 ```
 
-`graph/closure-ledger.json` remains the authoritative source for node closure state. `graph/q003-evidence.json` and `graph/q004-evidence.json` carry the finer physical/provider/privacy proof boundaries for their respective quarries.
+`graph/closure-ledger.json` remains the authoritative source for node closure state. `graph/q003-evidence.json`, `graph/q004-evidence.json` and `graph/q005-evidence.json` carry the finer physical/provider/privacy/distributed proof boundaries.
+
+## Physical closure campaign
+
+P0 — Harness Integrity is now the first physically closed campaign phase.
+
+```text
+P0 HARNESS INTEGRITY              PHYSICAL PASS / BOUND COMPOSITE RECEIPT
+P0 REQUIRED CLAIMS                6 / 6 BOUND
+PHYSICAL SOURCE RECEIPTS          3 OWNED-DEVICE RUNS
+ADVERSARIAL SANITIZER GUARD       PASS / CI REVALIDATED
+RAW PHYSICAL EVIDENCE IN GITHUB   FORBIDDEN
+PUBLIC RECEIPT                    SANITIZED / MINIMIZED
+```
+
+The P0 PASS is not inferred from CI. `graph/physical-receipts/P0-2026-09-03.json` binds the real-device R1/R2 public receipts and sanitizer implementation/guard by immutable Git blob SHA. CI only revalidates that binding. P0 proves the publication/sanitization boundary; it does not claim that transient raw local capture itself contains no sensitive material.
+
+```text
+P0 PASS != P1..P8 PASS
+P0 PASS != Q-003 CLOSED
+P0 PASS != Q-004 CLOSED
+P0 PASS != Q-005 CLOSED
+P0 PASS != BUILD_READY
+```
 
 ## Financial heart
 
@@ -61,7 +84,21 @@ E2EE / KEY / RECOVERY / REVOCATION /
 KNEE / CHECKPOINT / WITNESS / PNS      116 / 116 PASS
 ```
 
-Q-005 remains `ACTIVE`: bounded spike evidence is not release-grade production/mobile/crypto/witness proof.
+Q-005 remains `ACTIVE`: the 116/116 result is bounded `PROVEN_AT_SPIKE`, not release-grade production/mobile/crypto/witness proof.
+
+After P0 closure:
+
+```text
+P0 HARNESS INTEGRITY                       PHYSICAL PASS
+P3 TRANSPORT/STORAGE/DELETION/BACKUP       PHYSICAL OPEN
+P4 MOBILE CRYPTO INTEROPERABILITY          PHYSICAL OPEN
+P5 WITNESS CRASH/PARTITION                 PHYSICAL OPEN
+P6 ALL-DEVICES-LOST RECOVERY               PHYSICAL OPEN
+Q-005 OPEN PHYSICAL PHASES                 4
+Q-005 OPEN PHYSICAL CLAIMS                 29
+P8 CLOSURE RECEIPT                         BLOCKED BY PRIOR PHASES
+Q-005                                      ACTIVE
+```
 
 ## Gmail / financial ingress
 
@@ -93,7 +130,7 @@ GOOGLE PROVIDER REVOKE                     PHYSICAL OPEN
 REQUIRED OLD-BEARER RESULT                 HTTP 401
 ```
 
-The repaired native bridge now obtains an Android `Account` handle explicitly through AccountPicker, binds `AuthorizationRequest.setAccount(account)`, and reuses the same in-memory handle for `RevokeAccessRequest`. Google account identifiers are not persisted.
+The repaired native bridge obtains an Android `Account` handle explicitly through AccountPicker, binds `AuthorizationRequest.setAccount(account)`, and reuses the same in-memory handle for `RevokeAccessRequest`. Google account identifiers are not persisted.
 
 The implementation repair compiled and tested successfully in public CI, but the CI APK uses an ephemeral compile-only signer. It is not valid evidence for the already registered stable R2 OAuth identity.
 
@@ -108,9 +145,10 @@ PROVIDER_REVOKE_VERIFIED      = PREVIOUS_BEARER_HTTP_401
 
 ### Q-003 closure state
 
-Q-003 remains `ACTIVE`. Level C v7 proves DEV feasibility; Android R2 proves physical mobile connectivity; neither closes the production/provider contract.
+Q-003 remains `ACTIVE`. Shared P0 is PASS, Level C v7 proves DEV feasibility and Android R2 proves physical mobile connectivity; none closes the production/provider contract.
 
 ```text
+P0 HARNESS INTEGRITY                          PHYSICAL PASS / BOUND RECEIPT
 LEVEL C PHYSICAL EXECUTION                    PASS
 ANDROID R2 PHYSICAL CONNECTIVITY              PASS
 ANDROID R2 ACCOUNT-HANDLE BRIDGE              CI PASS / PHYSICAL RETEST OPEN
@@ -126,7 +164,7 @@ Q-003                                         ACTIVE
 
 ## Privacy boundary
 
-The static Q-004 privacy model is now machine-validated rather than merely documented:
+The static Q-004 privacy model is machine-validated rather than merely documented:
 
 ```text
 PRIVACY INVENTORY                            25 / 25 CLASSES VALIDATED
@@ -152,24 +190,25 @@ Consequently, the product may not display `Correos guardados = 0` until the matc
 
 ### Q-004 closure state
 
-Q-004 remains `ACTIVE`. The repository has a green static privacy contract, not physical privacy proof.
+Q-004 remains `ACTIVE`. The shared harness publication boundary is physically closed, but credential custody and transport/storage/deletion/backup remain physical work.
 
 ```text
-P0 HARNESS INTEGRITY                          STATIC READY / PHYSICAL OPEN
+P0 HARNESS INTEGRITY                          PHYSICAL PASS / BOUND RECEIPT
 P2 MOBILE CREDENTIAL CUSTODY                  PHYSICAL OPEN
 P3 TRANSPORT/STORAGE/DELETION/BACKUP          PHYSICAL OPEN
 P4 MOBILE CRYPTO                              PHYSICAL OPEN FOR E2EE DISPLAY CLAIM
-P0+P2+P3 OPEN PHYSICAL CLAIMS                 20
+P2+P3 OPEN PHYSICAL CLAIMS                    14
 Q-004                                         ACTIVE
 ```
 
-The open physical set is derived directly from `graph/physical-closure-campaign.json`; `tools/validate-q004-evidence.mjs` fails if the Q-004 subgraph drifts from those campaign claims.
+The open physical set is derived directly from non-PASS phases in `graph/physical-closure-campaign.json`; the Q-004/Q-005 validators fail if their subgraphs drift from the campaign.
 
 Stable trust boundaries remain:
 
 ```text
 PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
 GITHUB_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
+SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
 CI_FIXTURES != REAL_FINANCIAL_DATA
 REAL GMAIL/OAUTH AUTHORITY = LOCAL EDGE ONLY
 REAL FINANCIAL PLAINTEXT = LOCAL EDGE ONLY
