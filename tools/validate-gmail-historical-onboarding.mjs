@@ -7,18 +7,36 @@ const importerPath = 'spikes/physical-ingress/src/historical-gmail-importer.js';
 const adaptersPath = 'spikes/physical-ingress/src/transaction-evidence-adapters.js';
 const vaultPath = 'spikes/physical-ingress/src/file-encrypted-vault.js';
 const viewerPath = 'spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs';
+const windowsViewerPath = 'spikes/physical-ingress/live/owned-oauth-gmail-history-viewer-windows.mjs';
+const dpapiPreflightPath = 'spikes/physical-ingress/live/windows-dpapi-preflight.mjs';
+const dpapiBackendPath = 'spikes/physical-ingress/src/windows-dpapi.js';
 const runnerPath = 'spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd';
 const resolverPath = 'spikes/canonical-resolver/src/resolver.js';
 const tests = [
   'spikes/physical-ingress/test/transaction-evidence-adapters.test.js',
   'spikes/physical-ingress/test/historical-gmail-importer.test.js',
   'spikes/physical-ingress/test/file-encrypted-vault.test.js',
+  'spikes/physical-ingress/test/windows-dpapi.test.js',
   'spikes/canonical-resolver/test/evidence-channel-reconciliation.test.js'
 ];
 const failures = [];
 const fail = message => failures.push(message);
 
-for (const path of [contractPath, adrPath, providerPath, importerPath, adaptersPath, vaultPath, viewerPath, runnerPath, resolverPath, ...tests]) {
+for (const path of [
+  contractPath,
+  adrPath,
+  providerPath,
+  importerPath,
+  adaptersPath,
+  vaultPath,
+  viewerPath,
+  windowsViewerPath,
+  dpapiPreflightPath,
+  dpapiBackendPath,
+  runnerPath,
+  resolverPath,
+  ...tests
+]) {
   if (!fs.existsSync(path)) fail(`missing Gmail historical artifact: ${path}`);
 }
 
@@ -30,6 +48,9 @@ if (!failures.length) {
   const adapters = fs.readFileSync(adaptersPath, 'utf8');
   const vault = fs.readFileSync(vaultPath, 'utf8');
   const viewer = fs.readFileSync(viewerPath, 'utf8');
+  const windowsViewer = fs.readFileSync(windowsViewerPath, 'utf8');
+  const dpapiPreflight = fs.readFileSync(dpapiPreflightPath, 'utf8');
+  const dpapiBackend = fs.readFileSync(dpapiBackendPath, 'utf8');
   const runner = fs.readFileSync(runnerPath, 'utf8');
   const resolver = fs.readFileSync(resolverPath, 'utf8');
 
@@ -126,21 +147,66 @@ if (!failures.length) {
     if (viewer.includes(forbidden)) fail(`real viewer contains forbidden persistence marker: ${forbidden}`);
   }
 
+  // The one-click runner owns ordering, while DPAPI implementation is delegated to a
+  // dedicated local helper. Validate the complete topology rather than requiring the
+  // cryptographic implementation to be duplicated inline in the .cmd file.
   for (const marker of [
     'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH',
     'gmail.readonly',
-    'owned-oauth-gmail-history-viewer.mjs',
+    'node live\\windows-dpapi-preflight.mjs',
+    'node live\\owned-oauth-gmail-history-viewer-windows.mjs',
     'iOS: NO TOCADO',
     'pushd "%~dp0.."',
-    'FinanceSensor-DPAPI-Preflight',
-    'DataProtectionScope]::CurrentUser',
-    'Ruta WSL/UNC: SOPORTADA MEDIANTE PUSHD'
+    'Ruta WSL/UNC: SOPORTADA MEDIANTE PUSHD',
+    'System.Windows.Forms.OpenFileDialog'
   ]) {
     if (!runner.includes(marker)) fail(`one-click history runner missing marker: ${marker}`);
   }
-  const dpapiIndex = runner.indexOf('FinanceSensor-DPAPI-Preflight');
+
+  const dpapiIndex = runner.indexOf('node live\\windows-dpapi-preflight.mjs');
   const pickerIndex = runner.indexOf('System.Windows.Forms.OpenFileDialog');
+  const viewerIndex = runner.indexOf('node live\\owned-oauth-gmail-history-viewer-windows.mjs');
   if (dpapiIndex < 0 || pickerIndex < 0 || dpapiIndex > pickerIndex) fail('DPAPI preflight must execute before OAuth credential picker');
+  if (viewerIndex < 0 || pickerIndex < 0 || viewerIndex < pickerIndex) fail('real history viewer must execute only after credential selection');
+
+  for (const marker of [
+    "import { dpapiPreflight } from '../src/windows-dpapi.js'",
+    'dpapiPreflight()',
+    'FINANCESENSOR_DPAPI_PREFLIGHT=PASS',
+    'FINANCESENSOR_DPAPI_PREFLIGHT=FAIL'
+  ]) {
+    if (!dpapiPreflight.includes(marker)) fail(`DPAPI preflight entrypoint missing marker: ${marker}`);
+  }
+
+  for (const marker of [
+    "Add-Type -AssemblyName System.Security -ErrorAction Stop",
+    '[System.Security.Cryptography.ProtectedData]::Protect',
+    '[System.Security.Cryptography.ProtectedData]::Unprotect',
+    '[System.Security.Cryptography.DataProtectionScope]::CurrentUser',
+    'FinanceSensor-DPAPI-Preflight',
+    'FINANCESENSOR_DPAPI_FAILURE|',
+    "new Set(['preflight', 'protect', 'unprotect'])"
+  ]) {
+    if (!dpapiBackend.includes(marker)) fail(`Windows DPAPI backend missing marker: ${marker}`);
+  }
+  for (const forbidden of [
+    'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH',
+    'gmail.googleapis.com',
+    'accounts.google.com',
+    'access_token',
+    'refresh_token'
+  ]) {
+    if (dpapiBackend.includes(forbidden)) fail(`Windows DPAPI backend crosses forbidden OAuth/Gmail boundary: ${forbidden}`);
+  }
+
+  for (const marker of [
+    "Add-Type -AssemblyName System.Security -ErrorAction Stop",
+    '[System.Security.Cryptography.ProtectedData]',
+    "await import('./owned-oauth-gmail-history-viewer.mjs')",
+    'syncBuiltinESMExports()'
+  ]) {
+    if (!windowsViewer.includes(marker)) fail(`Windows history viewer shim missing marker: ${marker}`);
+  }
 
   if (!resolver.includes('evidenceChannels')) fail('resolver must preserve independent evidence channels');
 }
@@ -164,6 +230,7 @@ console.log('INCREMENTAL_ANCHOR=MESSAGE_DERIVED_HISTORY_ID');
 console.log('ISSUER_ADAPTERS=BCP,INTERBANK,RIPLEY');
 console.log('LOCAL_HISTORY_STATE=AES_256_GCM');
 console.log('LOCAL_HISTORY_KEY=WINDOWS_DPAPI_CURRENT_USER');
+console.log('DPAPI_TOPOLOGY=RUNNER_TO_PREFLIGHT_TO_WINDOWS_BACKEND');
 console.log('WSL_UNC_LAUNCH=STATIC_READY');
 console.log('WINDOWS_DPAPI_PREFLIGHT=PHYSICAL_OPEN_UNTIL_USER_RUN');
 console.log('REAL_HISTORY_VIEWER=STATIC_READY_REAL_OAUTH_OPEN');
