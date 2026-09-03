@@ -94,6 +94,11 @@ function stableProjectionId(item) {
   return `tx_${crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)}`;
 }
 
+function projectionMerchant(item) {
+  if (item.semanticType === 'CARD_PAYMENT') return item.rawMerchant || 'Pago de tarjeta';
+  return item.merchantCanonical || item.rawMerchant || null;
+}
+
 function durableEvidence(sourceMessageId, extracted) {
   return {
     tenantId: 'tenant-ingress',
@@ -318,7 +323,7 @@ export class HistoricalGmailImporter {
           amount: item.amount,
           currency: item.currency,
           direction: item.flowDirection,
-          merchant: item.merchantCanonical || item.rawMerchant || null,
+          merchant: projectionMerchant(item),
           semanticType: item.semanticType,
           confidence: item.confidence,
           evidenceCount: item.evidenceIds?.length ?? 0
