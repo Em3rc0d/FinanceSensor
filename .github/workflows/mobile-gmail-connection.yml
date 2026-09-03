@@ -66,6 +66,8 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
+          physical_package = 'com.financesensor.lab.gmailconnection.r1'
+          generated_package = 'com.financesensor.lab.financesensor_mobile_shell'
           kts = Path('android/app/build.gradle.kts')
           groovy = Path('android/app/build.gradle')
 
@@ -73,10 +75,12 @@ jobs:
               text = kts.read_text()
               old_min = 'minSdk = flutter.minSdkVersion'
               old_target = 'targetSdk = flutter.targetSdkVersion'
-              if old_min not in text or old_target not in text:
+              old_app_id = f'applicationId = "{generated_package}"'
+              if old_min not in text or old_target not in text or old_app_id not in text:
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
               text = text.replace(old_min, 'minSdk = 31')
               text = text.replace(old_target, 'targetSdk = 36')
+              text = text.replace(old_app_id, f'applicationId = "{physical_package}"')
               if 'play-services-auth:21.6.0' not in text:
                   text += '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n}\n'
               kts.write_text(text)
@@ -84,10 +88,12 @@ jobs:
               text = groovy.read_text()
               old_min = 'minSdkVersion flutter.minSdkVersion'
               old_target = 'targetSdkVersion flutter.targetSdkVersion'
-              if old_min not in text or old_target not in text:
+              old_app_id = f'applicationId "{generated_package}"'
+              if old_min not in text or old_target not in text or old_app_id not in text:
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
               text = text.replace(old_min, 'minSdkVersion 31')
               text = text.replace(old_target, 'targetSdkVersion 36')
+              text = text.replace(old_app_id, f'applicationId "{physical_package}"')
               if 'play-services-auth:21.6.0' not in text:
                   text += '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n}\n'
               groovy.write_text(text)
@@ -117,13 +123,14 @@ jobs:
         run: |
           grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
           grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+          grep -R -q 'com.financesensor.lab.gmailconnection.r1' android/app/build.gradle*
           grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
           grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
           grep -q 'Identity.getAuthorizationClient' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
-          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r1'
           echo 'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT'
 
       - name: Resolve dependencies
@@ -169,11 +176,12 @@ jobs:
           test "$(printf '%s' "$ANDROID_DEBUG_SHA1" | tr -cd ':' | wc -c)" -eq 19
 
           echo "ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1"
-          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell'
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r1'
 
           cat > connection-debug-evidence.txt <<EOF
           FINANCESENSOR_ANDROID_GMAIL_CONNECTION_APK=DEBUG_ONLY
-          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.financesensor_mobile_shell
+          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r1
+          PACKAGE_COLLISION_ISOLATION=R1
           ANDROID_DEBUG_SHA1=$ANDROID_DEBUG_SHA1
           APK_SHA256=$APK_SHA256
           APK_BYTES=$APK_BYTES
@@ -191,7 +199,7 @@ jobs:
       - name: Upload Android Gmail connection APK
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-android-gmail-connection-debug
+          name: financesensor-android-gmail-connection-r1-debug
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
