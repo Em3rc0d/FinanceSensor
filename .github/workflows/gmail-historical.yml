@@ -1,0 +1,96 @@
+name: FinanceSensor Gmail Historical
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/physical-ingress/**'
+      - 'spikes/canonical-resolver/**'
+      - 'graph/gmail-historical-onboarding.json'
+      - 'graph/q003-evidence.json'
+      - 'tools/validate-gmail-historical-onboarding.mjs'
+      - 'tools/validate-q003-evidence.mjs'
+      - 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md'
+      - 'mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md'
+      - '.github/workflows/gmail-historical.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/physical-ingress/**'
+      - 'spikes/canonical-resolver/**'
+      - 'graph/gmail-historical-onboarding.json'
+      - 'graph/q003-evidence.json'
+      - 'tools/validate-gmail-historical-onboarding.mjs'
+      - 'tools/validate-q003-evidence.mjs'
+      - 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md'
+      - 'mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md'
+      - '.github/workflows/gmail-historical.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-gmail-historical-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Viewer syntax guard
+        run: |
+          node --check spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs
+          node --check spikes/physical-ingress/src/file-encrypted-vault.js
+          node --check tools/validate-gmail-historical-onboarding.mjs
+          node --check tools/validate-q003-evidence.mjs
+
+      - name: Physical ingress regression
+        working-directory: spikes/physical-ingress
+        run: npm test
+
+      - name: Canonical resolver regression
+        working-directory: spikes/canonical-resolver
+        run: npm test
+
+      - name: Historical onboarding contract
+        run: node tools/validate-gmail-historical-onboarding.mjs
+
+      - name: Q-003 evidence boundary
+        run: node tools/validate-q003-evidence.mjs
+
+      - name: Public CI trust boundary
+        run: node tools/validate-ci-runner-policy.mjs
+
+      - name: No real Gmail or credential material in test path
+        run: |
+          test -f spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd
+          test -f mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md
+          ! grep -R -E -n --exclude-dir=.git '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' spikes/physical-ingress graph/gmail-historical-onboarding.json mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md tools/validate-gmail-historical-onboarding.mjs
+
+      - name: PR iOS no-touch guard
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -E '^spikes/mobile-shell/native/ios/|^.*ios.*$'; then
+            echo 'Historical Gmail PR unexpectedly touches iOS.' >&2
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo 'FINANCESENSOR_GMAIL_HISTORICAL_CI=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Synthetic/static only. No real Gmail OAuth, tokens, mailbox data or financial plaintext enter GitHub Actions.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN.' >> "$GITHUB_STEP_SUMMARY"
