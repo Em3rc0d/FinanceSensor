@@ -5,6 +5,7 @@ const files = {
   storage: 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md',
   android: 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md',
   oauth: 'mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md',
+  custody: 'mk0/11-decisions/ADR-028-MOBILE-OAUTH-CUSTODY-SEMANTICS.md',
   crypto: 'mk0/11-decisions/ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md',
   surface: 'mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md'
 };
@@ -17,6 +18,7 @@ if (!failures.length) {
   const storage = fs.readFileSync(files.storage, 'utf8');
   const android = fs.readFileSync(files.android, 'utf8');
   const oauth = fs.readFileSync(files.oauth, 'utf8');
+  const custody = fs.readFileSync(files.custody, 'utf8');
   const crypto = fs.readFileSync(files.crypto, 'utf8');
   const surface = fs.readFileSync(files.surface, 'utf8');
 
@@ -61,6 +63,17 @@ if (!failures.length) {
   ];
   for (const value of oauthRequired) if (!oauth.includes(value)) failures.push(`ADR-017 missing mobile OAuth boundary marker: ${value}`);
 
+  const custodyRequired = [
+    'PROTECTED_CUSTODY != APP_MUST_STORE_REFRESH_TOKEN',
+    'NO_REFRESH_TOKEN > PROTECTED_REFRESH_TOKEN',
+    'ANDROID APP-HELD REFRESH TOKEN       NONE',
+    'FINANCESENSOR TOKEN DUPLICATION      FORBIDDEN',
+    'USERDEFAULTS != TOKEN_STORE',
+    'ANDROID_P2_CUSTODY_PASS != PROVIDER_REVOKE_PASS',
+    'IOS_STATIC_READY != IOS_PHYSICAL_PASS'
+  ];
+  for (const value of custodyRequired) if (!custody.includes(value)) failures.push(`ADR-028 missing custody refinement: ${value}`);
+
   if (!crypto.includes('exportable long-lived private key fallback → forbidden')) failures.push('ADR-021 no longer forbids exportable production authority fallback');
   if (!surface.includes('FINANCESENSOR PRIMARY PRODUCT = MOBILE APPLICATION')) failures.push('ADR-025 no longer defines mobile primary product');
 
@@ -87,7 +100,11 @@ console.log('DATABASE_DEK_CUSTODY_IN_DART=FORBIDDEN');
 console.log('ANDROID_MIN_SDK=31');
 console.log('ANDROID_2026_TARGET_SDK_FLOOR=36');
 console.log('LONG_LIVED_SECRET_CUSTODY_IN_DART=FORBIDDEN');
+console.log('ANDROID_APP_HELD_REFRESH_TOKEN=NONE');
+console.log('IOS_GOOGLE_AUTHORITY=GOOGLE_SIGNIN_SDK');
+console.log('IOS_TOKEN_DUPLICATION_BY_FINANCESENSOR=FORBIDDEN');
 console.log('EXPORTABLE_PRIVATE_KEY_FALLBACK=FORBIDDEN');
-console.log('MOBILE_OAUTH_PHYSICAL_PROVEN=NO');
+console.log('MOBILE_OAUTH_PHYSICAL_PROVEN=PARTIAL_ANDROID_P2_ONLY');
+console.log('IOS_OAUTH_PHYSICAL_PROVEN=NO');
 console.log('MOBILE_CRYPTO_PHYSICAL_PROVEN=NO');
 console.log('LOCAL_STORAGE_PHYSICAL_PROVEN=NO');
