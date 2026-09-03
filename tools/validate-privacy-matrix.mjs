@@ -230,6 +230,9 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import('./validate-privacy-metadata-budget.mjs');
+await import('./validate-privacy-measurement.mjs');
+
 console.log('PRIVACY_MATRIX_PASS');
 console.log(`classes=${classes.length}`);
 console.log(`baseClasses=${base.classes.length}`);
@@ -238,3 +241,5 @@ console.log(`deletionClasses=${deletion.classes.length}`);
 console.log(`baseStatus=${base.status}`);
 console.log(`recoveryStatus=${recovery.status}`);
 console.log(`deletionStatus=${deletion.status}`);
+console.log('PRIVACY_METADATA_BUDGET_ATTACHED=PASS');
+console.log('PRIVACY_INSPECTOR_MEASUREMENT_ATTACHED=PASS');
