@@ -61,7 +61,7 @@ assert(rows.includes("direction: 'IN', semanticType: 'INCOME'"), 'savings parser
 assert(rows.includes("semanticType: 'CARD_PAYMENT'"), 'card payment must stay card payment rather than personal income');
 assert(rows.includes("direction: null, semanticType: 'UNKNOWN'"), 'parser must preserve ambiguous direction');
 assert(importer.includes("semanticType: item.semanticType ?? 'UNKNOWN'"), 'statement rebuild must preserve previously resolved evidence semantics');
-assert(importer.includes("item?.evidenceClass === 'BANK_STATEMENT'"), 'statement authority must be explicit');
+assert(importer.includes("evidence?.evidenceClass === 'BANK_STATEMENT'"), 'statement authority must be explicit');
 
 assert(viewer.includes("state?.historicalBootstrap?.status === 'RUNNING'"), 'statement writer must refuse concurrent historical writer');
 assert(viewer.includes("error.code = 'HISTORICAL_SCAN_ACTIVE'"), 'concurrent writer must fail with stable safe code');
