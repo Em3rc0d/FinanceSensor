@@ -52,6 +52,18 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
 
+  test('OAuth authorization alone is not a verified Gmail connection', () {
+    const GmailConnectionSnapshot authorized = GmailConnectionSnapshot(state: 'AUTHORIZED');
+    const GmailConnectionSnapshot connected = GmailConnectionSnapshot(
+      state: 'CONNECTED',
+      profileReachable: true,
+      historyAnchorObserved: true,
+    );
+
+    expect(authorized.isConnected, isFalse);
+    expect(connected.isConnected, isTrue);
+  });
+
   testWidgets('Android connection surface starts disconnected and exposes privacy boundary', (tester) async {
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1;
