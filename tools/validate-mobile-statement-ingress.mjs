@@ -31,16 +31,21 @@ if (!failures.length) {
   if (graph.product?.surface !== 'FLUTTER_MOBILE_APP') failures.push('product surface must be Flutter mobile');
   if (graph.product?.primaryPhysicalTarget !== 'ANDROID') failures.push('Android must remain primary physical target');
   if (JSON.stringify(graph.product?.requiredProductionTargets) !== JSON.stringify(['ANDROID', 'IOS'])) failures.push('Android+iOS production target set changed');
-  if (graph.runtime?.package !== 'pdfrx' || graph.runtime?.version !== '2.5.0') failures.push('pdfrx exact runtime pin missing');
+  if (graph.runtime?.package !== 'pdfrx' || graph.runtime?.version !== '2.4.8') failures.push('pdfrx exact compatible runtime pin missing');
+  if (graph.runtime?.rejectedCandidate?.version !== '2.5.0') failures.push('incompatible pdfrx 2.5.0 candidate must remain recorded');
+  if (!String(graph.runtime?.rejectedCandidate?.reason || '').includes('FLUTTER_GTE_3_47_0')) failures.push('rejected candidate reason must preserve real CI incompatibility');
+  if (graph.runtime?.flutter !== '3.44.7' || graph.runtime?.dart !== '3.12.2') failures.push('FinanceSensor Flutter/Dart baseline changed unexpectedly');
   if (graph.runtime?.engine !== 'PDFIUM') failures.push('PDFium runtime boundary missing');
   if (graph.runtime?.networkRequiredForParse !== false) failures.push('statement parse must not require network');
   if (graph.passwordBoundary?.persist !== false || graph.passwordBoundary?.log !== false || graph.passwordBoundary?.cloud !== false || graph.passwordBoundary?.github !== false) failures.push('password persistence boundary weakened');
   if (graph.passwordBoundary?.memoryZeroizationClaim !== false) failures.push('Dart password zeroization must not be claimed');
   if (graph.pdfBufferBoundary?.zeroAfterDisposeRequired !== true) failures.push('owned mutable PDF buffer must be zeroed');
+  if (!graph.forbiddenPromotions?.includes('DEPENDENCY_CONFLICT=>SILENT_FLUTTER_BASELINE_UPGRADE')) failures.push('silent framework upgrade must be forbidden');
   if (graph.buildReady !== false) failures.push('BUILD_READY must remain false');
 
   for (const marker of [
-    'MOBILE_PDF_RUNTIME             pdfrx 2.5.0',
+    'MOBILE_PDF_RUNTIME             pdfrx 2.4.8',
+    'DEPENDENCY_CONFLICT != SILENT_FRAMEWORK_UPGRADE_AUTHORITY',
     'PASSWORD_REFERENCE_DROPPED != PASSWORD_BYTES_PROVEN_WIPED',
     'WINDOWS_HARNESS != MOBILE_PRODUCT_RUNTIME',
     'ANDROID_APK_BUILD_PASS != REAL_STATEMENT_PARSE_PASS',
@@ -50,7 +55,8 @@ if (!failures.length) {
   }
 
   if (!/sdk:\s*'>=3\.12\.0 <4\.0\.0'/.test(pubspec)) failures.push('Dart 3.12 baseline missing from pubspec');
-  if (!/^\s*pdfrx:\s*2\.5\.0\s*$/m.test(pubspec)) failures.push('pubspec must exact-pin pdfrx 2.5.0');
+  if (!/^\s*pdfrx:\s*2\.4\.8\s*$/m.test(pubspec)) failures.push('pubspec must exact-pin pdfrx 2.4.8');
+  if (/^\s*pdfrx:\s*2\.5\.0\s*$/m.test(pubspec)) failures.push('incompatible pdfrx 2.5.0 must not return');
 
   for (const marker of [
     'PdfDocument.openData(',
@@ -107,7 +113,10 @@ if (failures.length) {
 console.log('FINANCESENSOR_MOBILE_STATEMENT_INGRESS=PASS');
 console.log('PRODUCT_SURFACE=FLUTTER_MOBILE_APP');
 console.log('PRIMARY_PHYSICAL_TARGET=ANDROID');
-console.log('MOBILE_PDF_RUNTIME=PDFRX_2_5_0');
+console.log('FLUTTER_BASELINE=3.44.7');
+console.log('DART_BASELINE=3.12.2');
+console.log('MOBILE_PDF_RUNTIME=PDFRX_2_4_8');
+console.log('PDFRX_2_5_0=REJECTED_BASELINE_INCOMPATIBLE');
 console.log('STATEMENT_PARSE_NETWORK_REQUIRED=0');
 console.log('PASSWORD_PERSISTENCE=0');
 console.log('PASSWORD_MEMORY_ZEROIZATION_CLAIM=0');
