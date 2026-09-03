@@ -55,7 +55,7 @@ echo   - Gmail Search anchor: NO;
 echo   - recent Inbox IDs per anchor attempt: at most 5;
 echo   - anchor attempts: at most 2;
 echo   - history message IDs: at most 5;
-echo   - FULL Gmail retrievals: exactly at most 1, synthetic target only;
+echo   - FULL Gmail retrievals: at most 1, synthetic target only;
 echo   - provider revoke PASS requires HTTP 200;
 echo   - old refresh authority PASS requires HTTP 400 + invalid_grant;
 echo   - timeout, 5xx, other 4xx or provider grace never count as PASS.
@@ -90,7 +90,7 @@ if errorlevel 1 (
 echo.
 echo =========================================================
 echo P1 CONTROLLED RUN: LOCAL PASS CANDIDATE
-necho =========================================================
+echo =========================================================
 echo The raw result remains LOCAL ONLY:
 echo   financesensor-p1-production-lifecycle-result.json
 echo.
