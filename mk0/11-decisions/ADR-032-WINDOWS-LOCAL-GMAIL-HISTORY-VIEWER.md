@@ -26,6 +26,19 @@ spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs
 
 The runner uses the existing FinanceSensor Google OAuth Desktop DEV identity. It MUST NOT create or substitute a new OAuth client.
 
+## Windows / WSL launch boundary
+
+The repository may be reached from Windows through a native Windows path or through a WSL UNC path such as `\\wsl.localhost\...`.
+
+The CMD launcher therefore enters its runtime with `pushd` rather than `cd /d`. Windows may temporarily map a UNC path to a drive letter; that temporary mapping is launch plumbing only and does not redefine the trusted edge.
+
+Before the OAuth credential picker is opened, the launcher performs a synthetic Windows DPAPI CurrentUser protect/unprotect preflight. Failure stops the run before any credential is selected and before Gmail is accessed.
+
+```text
+WSL_UNC_PATH != SELF_HOSTED_CI_AUTHORITY
+DPAPI_PREFLIGHT_FAIL => STOP_BEFORE_OAUTH
+```
+
 ## OAuth boundary
 
 The requested scope is exactly:
@@ -84,6 +97,32 @@ No external assets are required. Responses use `no-store` and `no-referrer` cont
 
 The dashboard may display the authorized mailbox and derived transaction values because it is a local user-facing surface. Those values are not repository evidence and must never be copied into CI fixtures.
 
+## Historical scan concurrency
+
+Historical coverage remains page-based, but message inspection inside a page may run concurrently to avoid an unnecessarily slow first import.
+
+The default is:
+
+```text
+MESSAGE_CONCURRENCY = 6
+```
+
+with a hard runtime ceiling:
+
+```text
+MESSAGE_CONCURRENCY_MAX = 10
+```
+
+Concurrency changes throughput only. It MUST NOT change enumeration scope, evidence semantics, idempotency or completion claims.
+
+A page checkpoint is written only after every unique message task scheduled for that page has reached terminal handling. If one task fails, the page is not promoted to committed coverage.
+
+```text
+CONCURRENCY != COVERAGE RELAXATION
+PARTIAL PAGE != COMMITTED PAGE
+ALL UNIQUE MESSAGE TASKS TERMINAL => PAGE MAY COMMIT
+```
+
 ## Progress semantics
 
 While `users.messages.list` still returns a `nextPageToken`, the dashboard state is a preview:
@@ -137,11 +176,15 @@ Static tests may prove:
 - encrypted local vault behavior;
 - fail-closed ciphertext tamper behavior;
 - issuer adapter behavior on synthetic structures;
-- dashboard and pagination wiring.
+- bounded message concurrency and page commit ordering;
+- dashboard and pagination wiring;
+- WSL/UNC launcher shape and preflight ordering.
 
 They do NOT prove:
 
 - successful real OAuth for this viewer;
+- successful DPAPI execution on the user's actual Windows account;
+- real-provider performance under bounded concurrency;
 - completed real owned-mailbox historical coverage;
 - zero raw Gmail retention as a physically measured runtime property;
 - P1 revoke/refresh lifecycle closure;
@@ -169,6 +212,9 @@ DESKTOP_DEV_VIEWER != PRODUCTION_MOBILE_CUSTODY
 TOKEN_MEMORY != TOKEN_DURABLE_STORAGE
 RAW_GMAIL_BODY != DERIVED_LOCAL_STATE
 DPAPI_CURRENT_USER > REPOSITORY_KEY_STORAGE
+DPAPI_STATIC_READY != WINDOWS_DPAPI_PHYSICAL_PASS
+CONCURRENCY != COVERAGE RELAXATION
+WSL_UNC_LAUNCH_READY != REAL_GMAIL_PASS
 LOOPBACK_LOCAL_UI != CLOUD_FINANCIAL_PLAINTEXT
 IOS_TOUCHED = 0
 ```
