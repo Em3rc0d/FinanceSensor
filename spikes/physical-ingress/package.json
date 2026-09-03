@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v7.mjs && node --check live/owned-oauth-gmail-history-viewer.mjs",
+    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v7.mjs && node --check live/owned-oauth-gmail-history-viewer.mjs && node --check live/owned-oauth-gmail-history-viewer-windows.mjs && node --check live/windows-dpapi-preflight.mjs && node --check src/windows-dpapi.js",
     "live:gmail": "node live/run-gmail.mjs",
     "live:gmail:owned": "node live/owned-oauth-level-c-v7.mjs",
-    "live:gmail:history": "node live/owned-oauth-gmail-history-viewer.mjs"
+    "live:gmail:history": "node live/owned-oauth-gmail-history-viewer-windows.mjs"
   }
 }
