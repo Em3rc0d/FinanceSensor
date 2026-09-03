@@ -6,6 +6,8 @@
   "asOf": "2026-09-03",
   "proofBoundary": {
     "physicalHarnessIntegrity": "PHYSICAL_P0_PASS_BOUND_RECEIPT",
+    "mobileCredentialCustodyAndroid": "P2_PHYSICAL_PASS_BOUND_RECEIPT",
+    "mobileCredentialCustodyIos": "P2_STATIC_READY_PHYSICAL_OPEN",
     "levelCv7": "PHYSICAL_PASS",
     "levelCv8": "HARNESS_READY_PHYSICAL_OPEN",
     "androidR2Connection": "PHYSICAL_CONNECTIVITY_PASS",
@@ -15,113 +17,39 @@
     "securityAssessmentProviderDetermination": "OPEN"
   },
   "artifacts": [
-    {
-      "path": "mk0/02-quarries/Q-003-GMAIL-POLICY.md",
-      "role": "authoritative quarry contract"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md",
-      "role": "OAuth authority boundary"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md",
-      "role": "message-derived sync anchor"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-019-GMAIL-BOOTSTRAP-WITHOUT-SEARCH-INDEX.md",
-      "role": "search-index-independent bootstrap"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md",
-      "role": "restricted-data server boundary"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md",
-      "role": "Android Google AuthorizationClient credential boundary"
-    },
-    {
-      "path": "mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md",
-      "role": "Android Account handle ownership and provider revoke boundary"
-    },
-    {
-      "path": "spikes/mobile-shell/native/android/MainActivity.kt",
-      "role": "Android R2 native Gmail authorization and revoke bridge"
-    },
-    {
-      "path": "tools/validate-android-gmail-bridge.mjs",
-      "role": "Android Gmail bridge fail-closed static guard"
-    },
-    {
-      "path": "mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md",
-      "role": "public production verification plan"
-    },
-    {
-      "path": "spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs",
-      "role": "next controlled physical proof harness"
-    },
-    {
-      "path": "tools/validate-level-c-v8.mjs",
-      "role": "v8 static safety guard"
-    },
-    {
-      "path": "tools/validate-gmail-production-policy.mjs",
-      "role": "production-policy fail-closed guard"
-    },
-    {
-      "path": "graph/physical-receipts/P0-2026-09-03.json",
-      "role": "shared immutable P0 physical harness evidence binding"
-    },
-    {
-      "path": "tools/validate-p0-receipt.mjs",
-      "role": "P0 immutable composite receipt validator"
-    }
+    {"path": "mk0/02-quarries/Q-003-GMAIL-POLICY.md", "role": "authoritative quarry contract"},
+    {"path": "mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md", "role": "OAuth authority boundary"},
+    {"path": "mk0/11-decisions/ADR-018-GMAIL-PARTIAL-SYNC-ANCHOR.md", "role": "message-derived sync anchor"},
+    {"path": "mk0/11-decisions/ADR-019-GMAIL-BOOTSTRAP-WITHOUT-SEARCH-INDEX.md", "role": "search-index-independent bootstrap"},
+    {"path": "mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md", "role": "restricted-data server boundary"},
+    {"path": "mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md", "role": "Android Google AuthorizationClient credential boundary"},
+    {"path": "mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md", "role": "Android Account handle ownership and provider revoke boundary"},
+    {"path": "mk0/11-decisions/ADR-028-MOBILE-OAUTH-CUSTODY-SEMANTICS.md", "role": "cross-platform P2 credential custody semantics"},
+    {"path": "spikes/mobile-shell/native/android/MainActivity.kt", "role": "Android R2 native Gmail authorization and revoke bridge"},
+    {"path": "spikes/mobile-shell/native/ios/GmailCredentialBroker.swift", "role": "iOS Google Sign-In custody reference bridge / physical open"},
+    {"path": "tools/validate-android-gmail-bridge.mjs", "role": "Android Gmail bridge fail-closed static guard"},
+    {"path": "tools/validate-ios-gmail-custody.mjs", "role": "iOS Gmail custody static guard"},
+    {"path": "graph/physical-receipts/P2-ANDROID-2026-09-03.json", "role": "immutable Android P2 physical custody binding"},
+    {"path": "tools/validate-p2-android-receipt.mjs", "role": "Android P2 physical custody receipt validator"},
+    {"path": "tools/validate-p2-state.mjs", "role": "P2 partial-state validator"},
+    {"path": "mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md", "role": "public production verification plan"},
+    {"path": "spikes/physical-ingress/live/owned-oauth-level-c-v8.mjs", "role": "next controlled physical proof harness"},
+    {"path": "tools/validate-level-c-v8.mjs", "role": "v8 static safety guard"},
+    {"path": "tools/validate-gmail-production-policy.mjs", "role": "production-policy fail-closed guard"},
+    {"path": "graph/physical-receipts/P0-2026-09-03.json", "role": "shared immutable P0 physical harness evidence binding"},
+    {"path": "tools/validate-p0-receipt.mjs", "role": "P0 immutable composite receipt validator"}
   ],
   "evidence": [
-    {
-      "path": "mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md",
-      "proof": "REAL_PROVIDER_REACHABILITY_PASS",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md",
-      "proof": "OAUTH_ADAPTER_CONTRACT_PASS",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md",
-      "proof": "DESKTOP_DEV_CREDENTIAL_BEHAVIOR_OBSERVED",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md",
-      "proof": "LEVEL_C_V7_PHYSICAL_PASS",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-PRODUCTION-POLICY-REFRESH-2026-09-02.md",
-      "proof": "PRODUCTION_POLICY_PATH_NARROWED",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-LEVEL-C-V8-HARNESS-READY-2026-09-02.md",
-      "proof": "LEVEL_C_V8_HARNESS_READY_PHYSICAL_OPEN",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-STABLE-LAB-SIGNING-IDENTITY-2026-09-02.md",
-      "proof": "ANDROID_R2_STABLE_PHYSICAL_SIGNING_IDENTITY_FROZEN",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-ACCOUNT-HANDLE-BRIDGE-2026-09-03.md",
-      "proof": "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS_PHYSICAL_RETEST_OPEN",
-      "closesQ003": false
-    },
-    {
-      "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
-      "proof": "P0_COMPOSITE_PHYSICAL_HARNESS_SANITIZATION_PASS",
-      "closesQ003": false
-    }
+    {"path": "mk0/10-evidence/EV-Q003-REAL-GMAIL-REACHABILITY-2026-09-01.md", "proof": "REAL_PROVIDER_REACHABILITY_PASS", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-GMAIL-OAUTH-ADAPTER-CONTRACT-2026-09-01.md", "proof": "OAUTH_ADAPTER_CONTRACT_PASS", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-DESKTOP-OAUTH-CLIENT-CREDENTIAL-2026-09-02.md", "proof": "DESKTOP_DEV_CREDENTIAL_BEHAVIOR_OBSERVED", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md", "proof": "LEVEL_C_V7_PHYSICAL_PASS", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-PRODUCTION-POLICY-REFRESH-2026-09-02.md", "proof": "PRODUCTION_POLICY_PATH_NARROWED", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-LEVEL-C-V8-HARNESS-READY-2026-09-02.md", "proof": "LEVEL_C_V8_HARNESS_READY_PHYSICAL_OPEN", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-ANDROID-R2-STABLE-LAB-SIGNING-IDENTITY-2026-09-02.md", "proof": "ANDROID_R2_STABLE_PHYSICAL_SIGNING_IDENTITY_FROZEN", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-Q003-ANDROID-R2-ACCOUNT-HANDLE-BRIDGE-2026-09-03.md", "proof": "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS_PHYSICAL_RETEST_OPEN", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md", "proof": "P0_COMPOSITE_PHYSICAL_HARNESS_SANITIZATION_PASS", "closesQ003": false},
+    {"path": "mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md", "proof": "P2_ANDROID_PROTECTED_OAUTH_CUSTODY_PHYSICAL_PASS", "closesQ003": false}
   ],
   "openPhysicalGates": [
     "ANDROID_PROVIDER_REVOKE_HTTP_401",
@@ -139,6 +67,8 @@
   ],
   "forbiddenPromotions": [
     "P0_PASS=>Q003_CLOSED",
+    "ANDROID_P2_CUSTODY_PASS=>P2_PASS",
+    "IOS_STATIC_READY=>IOS_P2_PHYSICAL_PASS",
     "LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED",
     "LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS",
     "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS=>ANDROID_PROVIDER_REVOKE_PASS",
