@@ -207,6 +207,10 @@ class GmailConnectionSnapshot {
     this.consentResolutionObserved = false,
     this.providerGrantReused = false,
     this.providerRevokeHttpStatus,
+    this.providerRevokeLatencyMs,
+    this.providerRevokeProbeAttempts = 0,
+    this.providerRevokeElapsedMs,
+    this.providerRevokeReason,
   });
 
   final String state;
@@ -223,6 +227,10 @@ class GmailConnectionSnapshot {
   final bool consentResolutionObserved;
   final bool providerGrantReused;
   final int? providerRevokeHttpStatus;
+  final int? providerRevokeLatencyMs;
+  final int providerRevokeProbeAttempts;
+  final int? providerRevokeElapsedMs;
+  final String? providerRevokeReason;
 
   bool get isConnected => state == 'CONNECTED';
   bool get isBusy => state == 'CHECKING';
@@ -253,13 +261,45 @@ class GmailConnectionSnapshot {
       return 'Gmail respondió; Google reutilizó un permiso existente después de tu acción explícita.';
     }
     if (state == 'DISCONNECTED_VERIFIED') {
-      return 'Acceso local cerrado; el token anterior ya no accede a Gmail.';
+      return 'Acceso local cerrado; Gmail rechazó el bearer anterior con HTTP 401.';
+    }
+    if (state == 'DISCONNECTED' && disconnectBarrierActive && providerRevokeHttpStatus != null) {
+      return 'FinanceSensor sigue desconectado; el bearer anterior terminó con HTTP $providerRevokeHttpStatus después de $providerRevokeProbeAttempts intento(s).';
     }
     if (state == 'DISCONNECTED' && disconnectBarrierActive) {
       return 'FinanceSensor está desconectado y la barrera local permanece activa.';
     }
     if (historyAnchorObserved) return 'Gmail respondió y se observó un ancla de historial.';
     return 'Sin contenido financiero real cargado en la interfaz.';
+  }
+
+  String get oldBearerLabel {
+    if (providerRevokeVerified && providerRevokeHttpStatus == 401) return 'Denegado · HTTP 401';
+    if (providerRevokeHttpStatus != null && providerRevokeHttpStatus! >= 200 && providerRevokeHttpStatus! < 300) {
+      return 'Aún válido · HTTP $providerRevokeHttpStatus';
+    }
+    if (providerRevokeHttpStatus == 403) return 'Rechazado · HTTP 403 (ambiguo)';
+    if (providerRevokeHttpStatus != null) return 'HTTP $providerRevokeHttpStatus';
+    return 'Sin resultado HTTP';
+  }
+
+  String get revokeReasonLabel {
+    switch (providerRevokeReason) {
+      case 'PREVIOUS_BEARER_UNAUTHORIZED':
+        return 'Bearer anterior inválido';
+      case 'PREVIOUS_BEARER_STILL_VALID':
+        return 'Bearer anterior aún válido';
+      case 'PREVIOUS_BEARER_FORBIDDEN_AMBIGUOUS':
+        return 'HTTP 403 ambiguo';
+      case 'POST_REVOKE_PROBE_FAILED':
+        return 'Probe post-revoke falló';
+      case 'NO_PREVIOUS_TOKEN_TO_PROBE':
+        return 'Sin bearer anterior para probar';
+      case 'NO_ACTIVE_GRANT':
+        return 'No había grant activo';
+      default:
+        return providerRevokeReason ?? 'Sin veredicto';
+    }
   }
 
   factory GmailConnectionSnapshot.fromMap(Map<Object?, Object?> raw) {
@@ -283,6 +323,10 @@ class GmailConnectionSnapshot {
       consentResolutionObserved: raw['consentResolutionObserved'] == true,
       providerGrantReused: raw['providerGrantReused'] == true,
       providerRevokeHttpStatus: integer('providerRevokeHttpStatus'),
+      providerRevokeLatencyMs: integer('providerRevokeLatencyMs'),
+      providerRevokeProbeAttempts: integer('providerRevokeProbeAttempts') ?? 0,
+      providerRevokeElapsedMs: integer('providerRevokeElapsedMs'),
+      providerRevokeReason: raw['providerRevokeReason'] as String?,
     );
   }
 }
@@ -334,76 +378,90 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(color: const Color(0xFF34425A), borderRadius: BorderRadius.circular(99)),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(color: const Color(0xFF34425A), borderRadius: BorderRadius.circular(99)),
+                ),
               ),
-            ),
-            const SizedBox(height: 13),
-            const Text('Conectar Gmail', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 5),
-            const Text(
-              'FinanceSensor pide únicamente lectura. La autorización vive en Android; el token corto no cruza a Flutter.',
-              style: TextStyle(fontSize: 8.5, height: 1.35, color: Color(0xFF8FA0B9)),
-            ),
-            const SizedBox(height: 12),
-            _ConnectionStateCard(snapshot: snapshot),
-            const SizedBox(height: 10),
-            const _SecurityFact(label: 'Permiso', value: 'Gmail solo lectura'),
-            const _SecurityFact(label: 'Offline access', value: 'No solicitado'),
-            const _SecurityFact(label: 'Refresh token en app', value: 'No'),
-            const _SecurityFact(label: 'Bearer hacia Flutter', value: 'No'),
-            if (snapshot.disconnectBarrierActive)
-              const _SecurityFact(label: 'Barrera de desconexión', value: 'Activa'),
-            if (snapshot.disconnectBarrierActive)
-              _SecurityFact(
-                label: 'Revocación Google',
-                value: snapshot.providerRevokeVerified ? 'Verificada' : 'No verificada',
-              ),
-            if (snapshot.providerGrantReused)
-              const _SecurityFact(label: 'Grant Google', value: 'Reutilizado tras tu acción'),
-            if (snapshot.messageCount != null)
-              _SecurityFact(label: 'Mensajes reportados', value: '${snapshot.messageCount}'),
-            if (snapshot.latencyMs != null)
-              _SecurityFact(label: 'Probe de perfil', value: '${snapshot.latencyMs} ms'),
-            const SizedBox(height: 12),
-            if (actionBusy)
-              const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
-            else if (!snapshot.isConnected)
-              FilledButton.icon(
-                onPressed: () => _run(GmailPlatformBridge.connect),
-                icon: const Icon(Icons.link),
-                label: const Text('Conectar Gmail'),
-              )
-            else ...<Widget>[
-              FilledButton.tonalIcon(
-                onPressed: () => _run(GmailPlatformBridge.probe),
-                icon: const Icon(Icons.health_and_safety_outlined),
-                label: const Text('Probar acceso Gmail'),
-              ),
-              const SizedBox(height: 6),
-              TextButton(
-                onPressed: () => _run(GmailPlatformBridge.disconnect),
-                child: const Text('Desconectar y revocar acceso'),
-              ),
-            ],
-            if (snapshot.state == 'AUTH_FAILED_10') ...<Widget>[
-              const SizedBox(height: 8),
+              const SizedBox(height: 13),
+              const Text('Conectar Gmail', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
               const Text(
-                'Este APK necesita un cliente OAuth Android registrado con su package name y la huella SHA-1 exacta de firma.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 8, color: Color(0xFFFFC56F)),
+                'FinanceSensor pide únicamente lectura. La autorización vive en Android; el token corto no cruza a Flutter.',
+                style: TextStyle(fontSize: 8.5, height: 1.35, color: Color(0xFF8FA0B9)),
               ),
+              const SizedBox(height: 12),
+              _ConnectionStateCard(snapshot: snapshot),
+              const SizedBox(height: 10),
+              const _SecurityFact(label: 'Permiso', value: 'Gmail solo lectura'),
+              const _SecurityFact(label: 'Offline access', value: 'No solicitado'),
+              const _SecurityFact(label: 'Refresh token en app', value: 'No'),
+              const _SecurityFact(label: 'Bearer hacia Flutter', value: 'No'),
+              if (snapshot.disconnectBarrierActive)
+                const _SecurityFact(label: 'Barrera de desconexión', value: 'Activa'),
+              if (snapshot.disconnectBarrierActive)
+                _SecurityFact(
+                  label: 'Revocación Google',
+                  value: snapshot.providerRevokeVerified ? 'Verificada' : 'No verificada',
+                ),
+              if (snapshot.disconnectBarrierActive)
+                _SecurityFact(label: 'Bearer anterior', value: snapshot.oldBearerLabel),
+              if (snapshot.providerRevokeHttpStatus != null)
+                _SecurityFact(label: 'HTTP post-revoke', value: '${snapshot.providerRevokeHttpStatus}'),
+              if (snapshot.providerRevokeProbeAttempts > 0)
+                _SecurityFact(label: 'Intentos post-revoke', value: '${snapshot.providerRevokeProbeAttempts}'),
+              if (snapshot.providerRevokeLatencyMs != null)
+                _SecurityFact(label: 'Último probe revoke', value: '${snapshot.providerRevokeLatencyMs} ms'),
+              if (snapshot.providerRevokeElapsedMs != null)
+                _SecurityFact(label: 'Ventana de verificación', value: '${snapshot.providerRevokeElapsedMs} ms'),
+              if (snapshot.providerRevokeReason != null)
+                _SecurityFact(label: 'Diagnóstico revoke', value: snapshot.revokeReasonLabel),
+              if (snapshot.providerGrantReused)
+                const _SecurityFact(label: 'Grant Google', value: 'Reutilizado tras tu acción'),
+              if (snapshot.messageCount != null)
+                _SecurityFact(label: 'Mensajes reportados', value: '${snapshot.messageCount}'),
+              if (snapshot.latencyMs != null)
+                _SecurityFact(label: 'Probe de perfil', value: '${snapshot.latencyMs} ms'),
+              const SizedBox(height: 12),
+              if (actionBusy)
+                const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
+              else if (!snapshot.isConnected)
+                FilledButton.icon(
+                  onPressed: () => _run(GmailPlatformBridge.connect),
+                  icon: const Icon(Icons.link),
+                  label: const Text('Conectar Gmail'),
+                )
+              else ...<Widget>[
+                FilledButton.tonalIcon(
+                  onPressed: () => _run(GmailPlatformBridge.probe),
+                  icon: const Icon(Icons.health_and_safety_outlined),
+                  label: const Text('Probar acceso Gmail'),
+                ),
+                const SizedBox(height: 6),
+                TextButton(
+                  onPressed: () => _run(GmailPlatformBridge.disconnect),
+                  child: const Text('Desconectar y revocar acceso'),
+                ),
+              ],
+              if (snapshot.state == 'AUTH_FAILED_10') ...<Widget>[
+                const SizedBox(height: 8),
+                const Text(
+                  'Este APK necesita un cliente OAuth Android registrado con su package name y la huella SHA-1 exacta de firma.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 8, color: Color(0xFFFFC56F)),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -464,7 +522,13 @@ class _SecurityFact extends StatelessWidget {
         children: <Widget>[
           Expanded(child: Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF8FA0B9)))),
           const SizedBox(width: 8),
-          Text(value, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800)),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
+            ),
+          ),
         ],
       ),
     );
@@ -499,7 +563,7 @@ void showConnectionLabSheet(BuildContext context) {
         lab.DetailLine(label: 'OAuth Android', value: 'Bridge real'),
         lab.DetailLine(label: 'Gmail profile probe', value: 'Nativo'),
         lab.DetailLine(label: 'Disconnect barrier', value: 'Nativo + durable'),
-        lab.DetailLine(label: 'Revoke proof', value: 'Bearer previo denegado'),
+        lab.DetailLine(label: 'Revoke proof', value: 'Bearer previo + HTTP 401'),
         lab.DetailLine(label: 'CI ejecuta OAuth real', value: 'NO'),
         lab.DetailLine(label: 'BUILD_READY', value: 'NO'),
       ],
