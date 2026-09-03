@@ -3,10 +3,13 @@
   "nodeId": "Q-003",
   "nodeStateRequired": "ACTIVE",
   "buildReadyRequired": false,
-  "asOf": "2026-09-02",
+  "asOf": "2026-09-03",
   "proofBoundary": {
     "levelCv7": "PHYSICAL_PASS",
     "levelCv8": "HARNESS_READY_PHYSICAL_OPEN",
+    "androidR2Connection": "PHYSICAL_CONNECTIVITY_PASS",
+    "androidR2AccountHandleBridge": "CI_PASS_PHYSICAL_RETEST_OPEN",
+    "androidR2ProviderRevoke": "HTTP_401_PHYSICAL_OPEN",
     "productionVerification": "OPEN",
     "securityAssessmentProviderDetermination": "OPEN"
   },
@@ -30,6 +33,22 @@
     {
       "path": "mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md",
       "role": "restricted-data server boundary"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md",
+      "role": "Android Google AuthorizationClient credential boundary"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md",
+      "role": "Android Account handle ownership and provider revoke boundary"
+    },
+    {
+      "path": "spikes/mobile-shell/native/android/MainActivity.kt",
+      "role": "Android R2 native Gmail authorization and revoke bridge"
+    },
+    {
+      "path": "tools/validate-android-gmail-bridge.mjs",
+      "role": "Android Gmail bridge fail-closed static guard"
     },
     {
       "path": "mk0/07-plan/GMAIL-PRODUCTION-VERIFICATION-PACKAGE.md",
@@ -78,9 +97,20 @@
       "path": "mk0/10-evidence/EV-Q003-LEVEL-C-V8-HARNESS-READY-2026-09-02.md",
       "proof": "LEVEL_C_V8_HARNESS_READY_PHYSICAL_OPEN",
       "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-STABLE-LAB-SIGNING-IDENTITY-2026-09-02.md",
+      "proof": "ANDROID_R2_STABLE_PHYSICAL_SIGNING_IDENTITY_FROZEN",
+      "closesQ003": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-ACCOUNT-HANDLE-BRIDGE-2026-09-03.md",
+      "proof": "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS_PHYSICAL_RETEST_OPEN",
+      "closesQ003": false
     }
   ],
   "openPhysicalGates": [
+    "ANDROID_PROVIDER_REVOKE_HTTP_401",
     "SUCCESSFUL_PRE_REVOKE_REFRESH",
     "REFRESHED_BEARER_GMAIL_USE",
     "REQUEST_RESPONSE_BODY_BYTE_EVIDENCE",
@@ -96,6 +126,9 @@
   "forbiddenPromotions": [
     "LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED",
     "LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS",
+    "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS=>ANDROID_PROVIDER_REVOKE_PASS",
+    "CI_APK_BUILD_PASS=>PHYSICAL_R2_PROVIDER_REVOKE_PASS",
+    "REVOKE_TASK_SUCCESS=>PROVIDER_REVOKE_VERIFIED_WITHOUT_HTTP_401",
     "PACKAGE_DRAFTED=>GOOGLE_APPROVED",
     "OPAQUE_E2EE_RELAY=>SECURITY_ASSESSMENT_EXEMPT"
   ]
