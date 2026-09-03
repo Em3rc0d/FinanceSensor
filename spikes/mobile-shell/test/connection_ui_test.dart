@@ -38,6 +38,9 @@ void main() {
               'responseBytes': 128,
               'disconnectBarrierActive': false,
               'providerRevokeVerified': false,
+              'explicitReconnect': false,
+              'consentResolutionObserved': true,
+              'providerGrantReused': false,
             };
           case 'disconnectGmail':
             return <String, Object?>{
@@ -47,6 +50,8 @@ void main() {
               'offlineAccessRequested': false,
               'disconnectBarrierActive': true,
               'providerRevokeVerified': true,
+              'oldTokenDeniedAfterRevoke': true,
+              'providerRevokeHttpStatus': 401,
             };
         }
         return null;
@@ -70,29 +75,48 @@ void main() {
     expect(connected.isConnected, isTrue);
   });
 
-  test('revocation failure is never represented as connected', () {
-    const GmailConnectionSnapshot revokeNotEffective = GmailConnectionSnapshot(
-      state: 'REVOKE_NOT_EFFECTIVE',
-      disconnectBarrierActive: true,
-      providerRevokeVerified: false,
+  test('explicit reconnect may reuse a Google project grant after user action', () {
+    const GmailConnectionSnapshot reused = GmailConnectionSnapshot(
+      state: 'CONNECTED',
+      profileReachable: true,
+      historyAnchorObserved: true,
+      explicitReconnect: true,
+      consentResolutionObserved: false,
+      providerGrantReused: true,
+      disconnectBarrierActive: false,
     );
 
-    expect(revokeNotEffective.isConnected, isFalse);
-    expect(revokeNotEffective.revokeNeedsAttention, isTrue);
-    expect(revokeNotEffective.humanState, 'Revocación de Google no verificada');
-    expect(revokeNotEffective.menuSubtitle, contains('desconectado localmente'));
+    expect(reused.isConnected, isTrue);
+    expect(reused.providerGrantReused, isTrue);
+    expect(reused.supportingState, contains('reutilizó un permiso existente'));
   });
 
-  test('verified revoke remains disconnected behind the local barrier', () {
+  test('verified revoke is proven by denial of the previous bearer', () {
     const GmailConnectionSnapshot disconnected = GmailConnectionSnapshot(
       state: 'DISCONNECTED_VERIFIED',
       disconnectBarrierActive: true,
       providerRevokeVerified: true,
+      oldTokenDeniedAfterRevoke: true,
+      providerRevokeHttpStatus: 401,
     );
 
     expect(disconnected.isConnected, isFalse);
-    expect(disconnected.humanState, 'Revocación verificada');
-    expect(disconnected.menuSubtitle, 'Gmail · revocación verificada');
+    expect(disconnected.humanState, 'Desconectado');
+    expect(disconnected.menuSubtitle, 'Gmail · desconectado');
+    expect(disconnected.supportingState, contains('token anterior ya no accede'));
+  });
+
+  test('unverified provider revoke still stays locally disconnected', () {
+    const GmailConnectionSnapshot disconnected = GmailConnectionSnapshot(
+      state: 'DISCONNECTED',
+      disconnectBarrierActive: true,
+      providerRevokeVerified: false,
+    );
+
+    expect(disconnected.isConnected, isFalse);
+    expect(disconnected.humanState, 'Desconectado');
+    expect(disconnected.menuSubtitle, 'Gmail · desconectado');
+    expect(disconnected.supportingState, contains('barrera local permanece activa'));
   });
 
   testWidgets('Android connection surface starts disconnected and exposes privacy boundary', (tester) async {
@@ -150,7 +174,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('disconnect reports verified revoke and local barrier', (tester) async {
+  testWidgets('disconnect reports previous-bearer revoke proof and local barrier', (tester) async {
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -169,9 +193,11 @@ void main() {
     await tester.tap(find.text('Desconectar y revocar acceso'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Revocación verificada'), findsOneWidget);
+    expect(find.text('Desconectado'), findsOneWidget);
+    expect(find.text('Acceso local cerrado; el token anterior ya no accede a Gmail.'), findsOneWidget);
     expect(find.text('Barrera de desconexión'), findsOneWidget);
     expect(find.text('Revocación Google'), findsOneWidget);
+    expect(find.text('Verificada'), findsOneWidget);
     expect(find.text('Conectar Gmail'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
