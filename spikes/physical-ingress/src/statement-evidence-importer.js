@@ -1,5 +1,6 @@
 import {
-  evidenceToCandidate,
+  candidateFingerprint,
+  normalizeMerchant,
   resolveCandidates,
   stableEvidenceKey
 } from '../../canonical-resolver/src/resolver.js';
@@ -33,6 +34,29 @@ function ensureState(value) {
   return state;
 }
 
+function toCandidate(item) {
+  const candidate = {
+    tenantId: item.tenantId,
+    evidenceIds: [stableEvidenceKey(item)],
+    sourceTypes: [item.sourceType],
+    evidenceChannels: item.evidenceClass ? [item.evidenceClass] : [],
+    accountId: item.accountId ?? null,
+    instrumentId: item.instrumentId ?? null,
+    amount: Math.abs(Number(item.amount)),
+    currency: item.currency,
+    flowDirection: item.direction ?? null,
+    occurredAt: item.occurredAt,
+    rawMerchant: item.rawMerchant ?? null,
+    merchantCanonical: normalizeMerchant(item.rawMerchant ?? ''),
+    semanticType: item.semanticType ?? 'UNKNOWN',
+    state: 'CANDIDATE',
+    confidence: item.confidence ?? 0.7,
+    references: item.references ?? {}
+  };
+  candidate.fingerprint = candidateFingerprint(candidate);
+  return candidate;
+}
+
 export class StatementEvidenceImporter {
   constructor({ vault, now = () => new Date().toISOString() }) {
     if (!vault?.read || !vault?.write) throw new Error('statement importer requires encrypted local vault');
@@ -48,7 +72,7 @@ export class StatementEvidenceImporter {
       if (time !== 0) return time;
       return stableEvidenceKey(a).localeCompare(stableEvidenceKey(b));
     });
-    const result = resolveCandidates(ordered.map(evidenceToCandidate));
+    const result = resolveCandidates(ordered.map(toCandidate));
     state.canonical = result.canonical;
     state.review = result.review;
   }
