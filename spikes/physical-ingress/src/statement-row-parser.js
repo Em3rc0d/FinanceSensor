@@ -31,20 +31,33 @@ function isoDate(raw) {
   return date.toISOString();
 }
 
-function explicitSavingsDirection(description) {
+function savingsSemantic(description) {
   const text = lower(description);
-  if (/\b(abono|deposito|deposito recibido|transferencia recibida|te transfirieron|interes abonado|remuneracion|sueldo)\b/.test(text)) return 'IN';
-  if (/\b(retiro|compra|consumo|transferencia enviada|transferencia a |cargo|comision|pago|debito)\b/.test(text)) return 'OUT';
-  return null;
+  if (/\b(abono|deposito|deposito recibido|transferencia recibida|te transfirieron|interes abonado|remuneracion|sueldo)\b/.test(text)) {
+    return { direction: 'IN', semanticType: 'INCOME', hint: 'abono' };
+  }
+  if (/\b(comision|cargo por comision)\b/.test(text)) {
+    return { direction: 'OUT', semanticType: 'FEE', hint: 'comision' };
+  }
+  if (/\b(transferencia enviada|transferencia a )\b/.test(text)) {
+    return { direction: 'OUT', semanticType: 'EXTERNAL_TRANSFER', hint: 'transferencia' };
+  }
+  if (/\b(compra|consumo|cargo|pago|debito)\b/.test(text)) {
+    return { direction: 'OUT', semanticType: 'EXPENSE', hint: 'movimiento debito' };
+  }
+  if (/\b(retiro|cajero)\b/.test(text)) {
+    return { direction: 'OUT', semanticType: 'UNKNOWN', hint: 'retiro' };
+  }
+  return { direction: null, semanticType: 'UNKNOWN', hint: 'movimiento cuenta' };
 }
 
-function cardSemanticHint(description) {
+function cardSemantic(description) {
   const text = lower(description);
-  if (/\b(devolucion|reembolso|refund)\b/.test(text)) return { direction: 'IN', hint: 'reembolso' };
-  if (/\b(pago (de )?tarjeta|pago recibido|pago tc)\b/.test(text)) return { direction: null, hint: 'pago tarjeta' };
-  if (/\b(comision|membresia|seguro|interes|fee)\b/.test(text)) return { direction: 'OUT', hint: 'comision' };
-  if (/\b(compra|consumo|pos|establecimiento)\b/.test(text)) return { direction: 'OUT', hint: 'compra' };
-  return { direction: null, hint: 'movimiento tarjeta' };
+  if (/\b(devolucion|reembolso|refund)\b/.test(text)) return { direction: 'IN', semanticType: 'REFUND', hint: 'reembolso' };
+  if (/\b(pago (de )?tarjeta|pago recibido|pago tc)\b/.test(text)) return { direction: null, semanticType: 'CARD_PAYMENT', hint: 'pago tarjeta' };
+  if (/\b(comision|membresia|seguro|interes|fee)\b/.test(text)) return { direction: 'OUT', semanticType: 'FEE', hint: 'comision' };
+  if (/\b(compra|consumo|pos|establecimiento)\b/.test(text)) return { direction: 'OUT', semanticType: 'EXPENSE', hint: 'compra' };
+  return { direction: null, semanticType: 'UNKNOWN', hint: 'movimiento tarjeta' };
 }
 
 function candidateSegments(text) {
@@ -97,15 +110,11 @@ export function parseStatementRows({
     const parsed = parseSegment(segment);
     if (!parsed) continue;
 
-    let direction = null;
-    let hint = 'movimiento estado de cuenta';
+    let semantic = { direction: null, semanticType: 'UNKNOWN', hint: 'movimiento estado de cuenta' };
     if (profile === StatementProviderProfile.BCP_SAVINGS_REQUESTED) {
-      direction = explicitSavingsDirection(parsed.description);
-      hint = direction === 'IN' ? 'abono' : direction === 'OUT' ? 'movimiento debito' : 'movimiento cuenta';
+      semantic = savingsSemantic(parsed.description);
     } else if (profile === StatementProviderProfile.BCP_CREDIT || profile === StatementProviderProfile.RIPLEY_CREDIT) {
-      const semantic = cardSemanticHint(parsed.description);
-      direction = semantic.direction;
-      hint = semantic.hint;
+      semantic = cardSemantic(parsed.description);
     }
 
     rows.push({
@@ -114,12 +123,13 @@ export function parseStatementRows({
       instrumentId,
       amount: parsed.amount,
       currency: parsed.currency,
-      direction,
+      direction: semantic.direction,
+      semanticType: semantic.semanticType,
       occurredAt: parsed.occurredAt,
       rawMerchant: parsed.description || null,
-      subject: hint,
-      bodySnippet: hint,
-      confidence: direction ? 0.9 : 0.65,
+      subject: semantic.hint,
+      bodySnippet: semantic.hint,
+      confidence: semantic.direction || semantic.semanticType === 'CARD_PAYMENT' ? 0.9 : 0.65,
       evidenceClass: 'BANK_STATEMENT'
     });
   }
