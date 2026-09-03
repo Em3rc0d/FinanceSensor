@@ -202,6 +202,11 @@ class GmailConnectionSnapshot {
     this.responseBytes,
     this.disconnectBarrierActive = false,
     this.providerRevokeVerified = false,
+    this.oldTokenDeniedAfterRevoke = false,
+    this.explicitReconnect = false,
+    this.consentResolutionObserved = false,
+    this.providerGrantReused = false,
+    this.providerRevokeHttpStatus,
   });
 
   final String state;
@@ -213,17 +218,19 @@ class GmailConnectionSnapshot {
   final int? responseBytes;
   final bool disconnectBarrierActive;
   final bool providerRevokeVerified;
+  final bool oldTokenDeniedAfterRevoke;
+  final bool explicitReconnect;
+  final bool consentResolutionObserved;
+  final bool providerGrantReused;
+  final int? providerRevokeHttpStatus;
 
   bool get isConnected => state == 'CONNECTED';
   bool get isBusy => state == 'CHECKING';
-  bool get revokeNeedsAttention => state == 'REVOKE_NOT_EFFECTIVE';
 
   String get menuSubtitle {
     if (isConnected) return 'Gmail · conectado en Android';
     if (isBusy) return 'Gmail · comprobando autorización';
-    if (revokeNeedsAttention) return 'Gmail · desconectado localmente; revoke pendiente';
-    if (state == 'DISCONNECTED_VERIFIED') return 'Gmail · revocación verificada';
-    if (state == 'DISCONNECTED') return 'Gmail · desconectado';
+    if (state == 'DISCONNECTED_VERIFIED' || state == 'DISCONNECTED') return 'Gmail · desconectado';
     if (state == 'AUTH_FAILED_10') return 'Gmail · falta registrar firma Android';
     if (state == 'NATIVE_BRIDGE_UNAVAILABLE') return 'Gmail · bridge Android no disponible';
     return 'Gmail · listo para conectar';
@@ -234,9 +241,7 @@ class GmailConnectionSnapshot {
     if (state == 'AUTHORIZED') return 'Autorizado, verificando Gmail';
     if (state == 'READY_TO_CONNECT') return 'Listo para conectar';
     if (state == 'REAUTH_REQUIRED') return 'Reautorización necesaria';
-    if (state == 'DISCONNECTED') return 'Desconectado';
-    if (state == 'DISCONNECTED_VERIFIED') return 'Revocación verificada';
-    if (state == 'REVOKE_NOT_EFFECTIVE') return 'Revocación de Google no verificada';
+    if (state == 'DISCONNECTED' || state == 'DISCONNECTED_VERIFIED') return 'Desconectado';
     if (state == 'AUTH_FAILED_10') return 'Falta configurar el cliente Android';
     if (state == 'NATIVE_BRIDGE_UNAVAILABLE') return 'Bridge Android no disponible';
     if (state == 'CHECKING') return 'Comprobando';
@@ -244,11 +249,14 @@ class GmailConnectionSnapshot {
   }
 
   String get supportingState {
-    if (state == 'REVOKE_NOT_EFFECTIVE') {
-      return 'FinanceSensor bloqueó el acceso local, pero Google todavía devolvió el grant sin pedir consentimiento.';
+    if (isConnected && providerGrantReused) {
+      return 'Gmail respondió; Google reutilizó un permiso existente después de tu acción explícita.';
     }
     if (state == 'DISCONNECTED_VERIFIED') {
-      return 'Google ya no devuelve el grant sin consentimiento; la barrera local sigue activa.';
+      return 'Acceso local cerrado; el token anterior ya no accede a Gmail.';
+    }
+    if (state == 'DISCONNECTED' && disconnectBarrierActive) {
+      return 'FinanceSensor está desconectado y la barrera local permanece activa.';
     }
     if (historyAnchorObserved) return 'Gmail respondió y se observó un ancla de historial.';
     return 'Sin contenido financiero real cargado en la interfaz.';
@@ -270,6 +278,11 @@ class GmailConnectionSnapshot {
       responseBytes: integer('responseBytes'),
       disconnectBarrierActive: raw['disconnectBarrierActive'] == true,
       providerRevokeVerified: raw['providerRevokeVerified'] == true,
+      oldTokenDeniedAfterRevoke: raw['oldTokenDeniedAfterRevoke'] == true,
+      explicitReconnect: raw['explicitReconnect'] == true,
+      consentResolutionObserved: raw['consentResolutionObserved'] == true,
+      providerGrantReused: raw['providerGrantReused'] == true,
+      providerRevokeHttpStatus: integer('providerRevokeHttpStatus'),
     );
   }
 }
@@ -350,8 +363,13 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
             const _SecurityFact(label: 'Bearer hacia Flutter', value: 'No'),
             if (snapshot.disconnectBarrierActive)
               const _SecurityFact(label: 'Barrera de desconexión', value: 'Activa'),
-            if (snapshot.providerRevokeVerified)
-              const _SecurityFact(label: 'Revocación Google', value: 'Verificada'),
+            if (snapshot.disconnectBarrierActive)
+              _SecurityFact(
+                label: 'Revocación Google',
+                value: snapshot.providerRevokeVerified ? 'Verificada' : 'No verificada',
+              ),
+            if (snapshot.providerGrantReused)
+              const _SecurityFact(label: 'Grant Google', value: 'Reutilizado tras tu acción'),
             if (snapshot.messageCount != null)
               _SecurityFact(label: 'Mensajes reportados', value: '${snapshot.messageCount}'),
             if (snapshot.latencyMs != null)
@@ -359,12 +377,6 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
             const SizedBox(height: 12),
             if (actionBusy)
               const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
-            else if (snapshot.revokeNeedsAttention)
-              FilledButton.tonalIcon(
-                onPressed: () => _run(GmailPlatformBridge.disconnect),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar revocación'),
-              )
             else if (!snapshot.isConnected)
               FilledButton.icon(
                 onPressed: () => _run(GmailPlatformBridge.connect),
@@ -406,22 +418,19 @@ class _ConnectionStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool ok = snapshot.isConnected;
-    final bool warning = snapshot.revokeNeedsAttention;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: ok ? const Color(0xFF0C1D19) : warning ? const Color(0xFF241B10) : const Color(0xFF121A29),
-        border: Border.all(
-          color: ok ? const Color(0xFF214838) : warning ? const Color(0xFF69512B) : const Color(0xFF28364F),
-        ),
+        color: ok ? const Color(0xFF0C1D19) : const Color(0xFF121A29),
+        border: Border.all(color: ok ? const Color(0xFF214838) : const Color(0xFF28364F)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: <Widget>[
           Icon(
-            ok ? Icons.check_circle : warning ? Icons.warning_amber_rounded : Icons.link_outlined,
+            ok ? Icons.check_circle : Icons.link_outlined,
             size: 22,
-            color: ok ? const Color(0xFF8EF0BE) : warning ? const Color(0xFFFFC56F) : const Color(0xFFA9B7CE),
+            color: ok ? const Color(0xFF8EF0BE) : const Color(0xFFA9B7CE),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -490,6 +499,7 @@ void showConnectionLabSheet(BuildContext context) {
         lab.DetailLine(label: 'OAuth Android', value: 'Bridge real'),
         lab.DetailLine(label: 'Gmail profile probe', value: 'Nativo'),
         lab.DetailLine(label: 'Disconnect barrier', value: 'Nativo + durable'),
+        lab.DetailLine(label: 'Revoke proof', value: 'Bearer previo denegado'),
         lab.DetailLine(label: 'CI ejecuta OAuth real', value: 'NO'),
         lab.DetailLine(label: 'BUILD_READY', value: 'NO'),
       ],
