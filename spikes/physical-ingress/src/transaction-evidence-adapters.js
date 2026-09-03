@@ -6,6 +6,27 @@ const normalize = (value = '') => String(value ?? '')
 
 const lower = value => normalize(value).toLowerCase();
 
+function htmlBodyToText(value = '') {
+  const input = String(value ?? '');
+  if (!/<[a-z][\s\S]*?>/i.test(input)) return input;
+  return input
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<(?:br|p|div|li|tr|td|th|h[1-6])\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\r/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export const EvidenceClass = Object.freeze({
   BANK_NOTIFICATION: 'BANK_NOTIFICATION',
   PAYMENT_NOTIFICATION: 'PAYMENT_NOTIFICATION',
@@ -217,7 +238,7 @@ function genericReceipt(text) {
 
 export function extractAdaptedFinancialEvidence(fullMessage, metadataDecision = classifyTransactionMetadata(fullMessage?.headers ?? {})) {
   if (!metadataDecision?.candidate) return null;
-  const body = String(fullMessage?.body ?? '');
+  const body = htmlBodyToText(fullMessage?.body ?? '');
   let parsed = null;
 
   switch (metadataDecision.adapterId) {
