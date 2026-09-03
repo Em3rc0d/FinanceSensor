@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const contractPath = 'graph/gmail-historical-onboarding.json';
 const adrPath = 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md';
 const dpapiPhysicalEvidencePath = 'mk0/10-evidence/EV-WINDOWS-DPAPI-GMAIL-HISTORY-PARTIAL-PHYSICAL-2026-09-03.md';
+const gmail403EvidencePath = 'mk0/10-evidence/EV-GMAIL-HISTORICAL-PARTIAL-HTTP403-2026-09-03.md';
 const providerPath = 'spikes/physical-ingress/src/gmail-rest-provider.js';
 const importerPath = 'spikes/physical-ingress/src/historical-gmail-importer.js';
 const adaptersPath = 'spikes/physical-ingress/src/transaction-evidence-adapters.js';
@@ -14,8 +15,10 @@ const dpapiBackendPath = 'spikes/physical-ingress/src/windows-dpapi.js';
 const runnerPath = 'spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd';
 const resolverPath = 'spikes/canonical-resolver/src/resolver.js';
 const tests = [
+  'spikes/physical-ingress/test/gmail-rest-provider.test.js',
   'spikes/physical-ingress/test/transaction-evidence-adapters.test.js',
   'spikes/physical-ingress/test/historical-gmail-importer.test.js',
+  'spikes/physical-ingress/test/historical-gmail-legacy-repair.test.js',
   'spikes/physical-ingress/test/file-encrypted-vault.test.js',
   'spikes/physical-ingress/test/windows-dpapi.test.js',
   'spikes/canonical-resolver/test/evidence-channel-reconciliation.test.js'
@@ -27,6 +30,7 @@ for (const path of [
   contractPath,
   adrPath,
   dpapiPhysicalEvidencePath,
+  gmail403EvidencePath,
   providerPath,
   importerPath,
   adaptersPath,
@@ -46,6 +50,7 @@ if (!failures.length) {
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
   const adr = fs.readFileSync(adrPath, 'utf8');
   const dpapiPhysicalEvidence = fs.readFileSync(dpapiPhysicalEvidencePath, 'utf8');
+  const gmail403Evidence = fs.readFileSync(gmail403EvidencePath, 'utf8');
   const provider = fs.readFileSync(providerPath, 'utf8');
   const importer = fs.readFileSync(importerPath, 'utf8');
   const adapters = fs.readFileSync(adaptersPath, 'utf8');
@@ -57,7 +62,7 @@ if (!failures.length) {
   const runner = fs.readFileSync(runnerPath, 'utf8');
   const resolver = fs.readFileSync(resolverPath, 'utf8');
 
-  if (contract.schemaVersion !== 3) fail('historical contract schemaVersion must be 3');
+  if (contract.schemaVersion !== 4) fail('historical contract schemaVersion must be 4');
   if (contract.status !== 'STATIC_READY_REAL_GMAIL_OPEN') fail('historical contract must remain static-ready / real Gmail open');
   if (contract.coverageModes?.default !== 'ALL_AVAILABLE_ACTIVE_MAILBOX') fail('default coverage mode mismatch');
   if (contract.coverageModes?.includeSpamTrash !== false) fail('Spam/Trash must remain excluded by default');
@@ -69,16 +74,33 @@ if (!failures.length) {
   if (contract.enumeration?.messageConcurrencyMax !== 10) fail('message concurrency hard ceiling must remain 10');
   if (contract.enumeration?.pageCommitBarrier !== 'ALL_UNIQUE_MESSAGE_TASKS_TERMINAL') fail('page commit must wait for every unique message task');
   if (contract.enumeration?.completeWhen !== 'nextPageToken_absent') fail('coverage completion must be page-token exhaustion');
+  if (contract.enumeration?.providerQuotaUnitsPerMinutePerUserProject !== 6000) fail('provider per-user quota evidence must be 6000 units/min');
+  if (contract.enumeration?.localQuotaBudgetUnitsPerMinute !== 4800) fail('local quota budget must remain 4800 units/min');
+  if (contract.enumeration?.localQuotaHeadroomPercent !== 20) fail('quota headroom must remain 20 percent');
+  if (contract.enumeration?.messagesListQuotaUnits !== 5) fail('messages.list quota units mismatch');
+  if (contract.enumeration?.messagesGetQuotaUnits !== 20) fail('messages.get quota units mismatch');
+  if (contract.enumeration?.quotaGovernor !== 'METHOD_UNIT_PACED') fail('quota governor must pace by method units');
+  if (contract.providerErrorPolicy?.parseRawErrorBody !== 'MEMORY_ONLY') fail('raw provider error body classification must be memory-only');
+  if (contract.providerErrorPolicy?.persistRawErrorBody !== false) fail('raw provider error body persistence must remain forbidden');
+  if (contract.providerErrorPolicy?.persistProviderMessage !== false) fail('provider error prose persistence must remain forbidden');
+  if (contract.providerErrorPolicy?.boundedRetries !== 5) fail('bounded retry count must remain 5');
+  if (contract.providerErrorPolicy?.maxBackoffMs !== 30000) fail('max backoff must remain 30000 ms');
+  for (const reason of ['rateLimitExceeded', 'userRateLimitExceeded']) {
+    if (!contract.providerErrorPolicy?.retryable403Reasons?.includes(reason)) fail(`retryable 403 reason missing: ${reason}`);
+  }
   if (contract.resume?.invalidPageToken !== 'RESTART_FROM_BEGINNING_WITH_SOURCE_ID_DEDUP') fail('invalid cursor must restart safely');
   if (contract.resume?.skipUnknownRange !== false) fail('unknown ranges must never be skipped');
+  if (contract.resume?.legacyDerivedRepair !== 'REFETCH_BY_LOCAL_SOURCE_MESSAGE_ID_ONLY') fail('legacy repair must use local source message id only');
+  if (contract.resume?.legacyRepairRawBodyPersistence !== false) fail('legacy repair must not persist raw Gmail body');
   if (contract.incrementalCutover?.anchor !== 'GREATEST_VALID_OBSERVED_MESSAGE_HISTORY_ID') fail('incremental anchor must be message-derived');
   if (contract.incrementalCutover?.profileHistoryIdSubstitution !== false) fail('/profile.historyId substitution must remain rejected');
   if (contract.realMailboxValidation?.repositoryRawFixtures !== 'FORBIDDEN') fail('real Gmail fixtures must never enter repo');
-  if (contract.physicalExecution?.realOwnedGmail !== 'OPEN') fail('real Gmail historical completion must remain OPEN after partial controlled run');
+  if (contract.physicalExecution?.realOwnedGmail !== 'OPEN') fail('real Gmail historical completion must remain OPEN after partial controlled runs');
   if (contract.physicalExecution?.realHistoricalCoverageReceipt !== 'ABSENT') fail('real historical coverage receipt must remain absent until COMPLETE');
   if (contract.physicalExecution?.windowsDpapiRealPreflight !== 'PASS_USER_OBSERVED') fail('Windows DPAPI physical preflight must remain user-observed PASS');
   if (contract.physicalExecution?.windowsDpapiEvidence !== dpapiPhysicalEvidencePath) fail('Windows DPAPI evidence path mismatch');
-  if (contract.physicalExecution?.lastRealGmailRun !== 'PARTIAL_STOPPED_SAFE_GMAIL_API_ERROR') fail('last real Gmail run must remain partial STOPPED_SAFE until a later physical run supersedes it');
+  if (contract.physicalExecution?.lastRealGmailRun !== 'PARTIAL_STOPPED_SAFE_GMAIL_API_HTTP_403') fail('latest real Gmail run must remain partial HTTP 403 until superseded');
+  if (contract.physicalExecution?.lastRealGmailRunEvidence !== gmail403EvidencePath) fail('latest partial Gmail evidence path mismatch');
   if (contract.physicalExecution?.iosTouched !== false) fail('iOS must remain untouched for this path');
   if (contract.localViewer?.status !== 'STATIC_READY_REAL_OAUTH_OPEN') fail('real viewer must remain static-ready / real OAuth open');
   if (contract.localViewer?.oauthScope !== 'https://www.googleapis.com/auth/gmail.readonly') fail('viewer scope must be exact gmail.readonly');
@@ -108,8 +130,31 @@ if (!failures.length) {
     if (!dpapiPhysicalEvidence.includes(marker)) fail(`DPAPI physical evidence missing marker: ${marker}`);
   }
 
-  for (const marker of ['async listMessagePage', 'includeSpamTrash', 'GMAIL_API_HTTP_', 'error.retryable']) {
-    if (!provider.includes(marker)) fail(`Gmail provider missing historical/diagnostic marker: ${marker}`);
+  for (const marker of [
+    '**Sanitized stop class:** `GMAIL_API_HTTP_403`',
+    'HTTP_403_ALONE                         != RATE_LIMIT_PROVEN',
+    'EXACT 403 REASON                        OPEN',
+    'REAL HISTORICAL COVERAGE                OPEN'
+  ]) {
+    if (!gmail403Evidence.includes(marker)) fail(`HTTP 403 physical evidence missing marker: ${marker}`);
+  }
+
+  for (const marker of [
+    'async listMessagePage',
+    'includeSpamTrash',
+    'DEFAULT_QUOTA_BUDGET_PER_MINUTE = 4800',
+    "['userRateLimitExceeded', 'USER_RATE_LIMIT_EXCEEDED']",
+    'quotaUnitsFor(path)',
+    'async _acquireQuota(cost)',
+    'await response.text()',
+    'RETRYABLE_403_REASONS',
+    'error.retryable',
+    'maxRetries = DEFAULT_MAX_RETRIES'
+  ]) {
+    if (!provider.includes(marker)) fail(`Gmail provider missing quota/diagnostic marker: ${marker}`);
+  }
+  for (const forbidden of ['error.providerBody =', 'error.providerMessage =', 'rawProviderError']) {
+    if (provider.includes(forbidden)) fail(`Gmail provider contains forbidden raw error persistence marker: ${forbidden}`);
   }
 
   for (const marker of [
@@ -121,7 +166,11 @@ if (!failures.length) {
     'messageConcurrency = 6',
     'messageConcurrency > 10',
     'forEachConcurrent(uniqueIds, messageConcurrency',
-    "if (item.semanticType === 'CARD_PAYMENT') return item.rawMerchant || 'Pago de tarjeta'"
+    "if (item.semanticType === 'CARD_PAYMENT') return item.rawMerchant || 'Pago de tarjeta'",
+    'isLegacyMarkupMerchant',
+    'async _repairLegacyDerivedEvidence(state)',
+    'legacyDerivedRepairs',
+    'await this._repairLegacyDerivedEvidence(state)'
   ]) {
     if (!importer.includes(marker)) fail(`historical importer missing marker: ${marker}`);
   }
@@ -164,9 +213,6 @@ if (!failures.length) {
     if (viewer.includes(forbidden)) fail(`real viewer contains forbidden persistence marker: ${forbidden}`);
   }
 
-  // The one-click runner owns ordering, while DPAPI implementation is delegated to a
-  // dedicated local helper. Validate the complete topology rather than requiring the
-  // cryptographic implementation to be duplicated inline in the .cmd file.
   for (const marker of [
     'FINANCESENSOR_GOOGLE_CREDENTIALS_PATH',
     'gmail.readonly',
@@ -241,6 +287,14 @@ console.log('AGGREGATE_MESSAGE_LIMIT=NONE');
 console.log('RAW_BODY_FETCH=CANDIDATES_ONLY');
 console.log('MESSAGE_CONCURRENCY=6');
 console.log('MESSAGE_CONCURRENCY_MAX=10');
+console.log('GMAIL_PROVIDER_QUOTA_UNITS_PER_MINUTE=6000');
+console.log('LOCAL_QUOTA_BUDGET_UNITS_PER_MINUTE=4800');
+console.log('MESSAGES_GET_QUOTA_UNITS=20');
+console.log('MESSAGES_LIST_QUOTA_UNITS=5');
+console.log('QUOTA_GOVERNOR=METHOD_UNIT_PACED');
+console.log('RETRYABLE_403=RATE_LIMIT_EXCEEDED,USER_RATE_LIMIT_EXCEEDED');
+console.log('RAW_PROVIDER_ERROR_PERSISTENCE=0');
+console.log('LEGACY_DERIVED_REPAIR=REFETCH_BY_SOURCE_ID');
 console.log('PAGE_COMMIT_BARRIER=ALL_UNIQUE_MESSAGE_TASKS_TERMINAL');
 console.log('INVALID_CURSOR=RESTART_WITH_SOURCE_ID_DEDUP');
 console.log('INCREMENTAL_ANCHOR=MESSAGE_DERIVED_HISTORY_ID');
@@ -251,6 +305,6 @@ console.log('DPAPI_TOPOLOGY=RUNNER_TO_PREFLIGHT_TO_WINDOWS_BACKEND');
 console.log('WSL_UNC_LAUNCH=STATIC_READY');
 console.log('WINDOWS_DPAPI_PREFLIGHT=PASS_USER_OBSERVED');
 console.log('REAL_HISTORY_VIEWER=STATIC_READY_REAL_OAUTH_OPEN');
-console.log('REAL_GMAIL_EXECUTION=PARTIAL_STOPPED_SAFE_GMAIL_API_ERROR');
+console.log('REAL_GMAIL_EXECUTION=PARTIAL_STOPPED_SAFE_GMAIL_API_HTTP_403');
 console.log('REAL_HISTORICAL_COVERAGE=OPEN');
 console.log('IOS_TOUCHED=0');
