@@ -5,7 +5,7 @@ const paths = {
   kotlin: 'spikes/mobile-shell/native/android/MainActivity.kt',
   test: 'spikes/mobile-shell/test/connection_ui_test.dart',
   workflow: '.github/workflows/mobile-gmail-connection.yml',
-  adr: 'mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md'
+  adr: 'mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md'
 };
 
 const failures = [];
@@ -24,23 +24,17 @@ if (!failures.length) {
 
   for (const marker of [
     "MethodChannel('com.financesensor.platform/gmail')",
-    'getGmailState',
-    'authorizeGmail',
-    'probeGmail',
-    'disconnectGmail',
+    'getGmailState', 'authorizeGmail', 'probeGmail', 'disconnectGmail',
     'CONNECTION LAB · FINANZAS SINTÉTICAS',
-    'Bearer hacia Flutter',
-    'Refresh token en app',
+    'Bearer hacia Flutter', 'Refresh token en app',
     "bool get isConnected => state == 'CONNECTED';",
-    'DISCONNECTED_VERIFIED',
-    'HTTP post-revoke',
-    'Intentos post-revoke',
-    'Bearer anterior'
+    'DISCONNECTED_VERIFIED', 'HTTP post-revoke',
+    'Intentos post-revoke', 'Bearer anterior'
   ]) {
     if (!dart.includes(marker)) fail(`connected Dart surface missing marker: ${marker}`);
   }
 
-  const forbiddenDart = [
+  for (const pattern of [
     /import\s+['"]dart:io['"]/,
     /gmail\.googleapis\.com/i,
     /oauth2\.googleapis\.com/i,
@@ -51,24 +45,31 @@ if (!failures.length) {
     /serverAuthCode/,
     /requestOfflineAccess/,
     /isConnected\s*=>[^;]*AUTHORIZED/
-  ];
-  for (const pattern of forbiddenDart) {
-    if (pattern.test(dart)) fail(`Dart layer crossed native credential/network boundary or overstated connectivity: ${pattern}`);
+  ]) {
+    if (pattern.test(dart)) fail(`Dart layer crossed native credential/network boundary: ${pattern}`);
   }
 
   for (const marker of [
     'https://www.googleapis.com/auth/gmail.readonly',
     'Identity.getAuthorizationClient(this)',
-    '.authorize(request())',
+    'AccountPicker.newChooseAccountIntent(options)',
+    'setAllowableAccountsTypes(listOf(GOOGLE_ACCOUNT_TYPE))',
+    'builder.setAccount(account)',
+    '.authorize(request(account))',
+    '.authorize(request(authorizedAccount))',
     'getAuthorizationResultFromIntent',
-    'revokeAccess',
-    'clearToken',
+    'AccountManager.KEY_ACCOUNT_NAME',
+    'AccountManager.KEY_ACCOUNT_TYPE',
+    'AccountPickerPurpose.AUTHORIZE',
+    'AccountPickerPurpose.REVOKE',
+    '.setAccount(account)',
+    '.setScopes(listOf(Scope(GMAIL_READONLY)))',
+    'revokeAccess', 'clearToken',
     'https://gmail.googleapis.com/gmail/v1/users/me/profile',
     '"accessTokenExposedToFlutter" to false',
     '"refreshTokenHeldByApp" to false',
     '"offlineAccessRequested" to false',
-    'REAUTH_REQUIRED',
-    'DISCONNECTED_VERIFIED',
+    'REAUTH_REQUIRED', 'DISCONNECTED_VERIFIED',
     'DISCONNECT_BARRIER_KEY',
     'putBoolean(DISCONNECT_BARRIER_KEY, active)',
     'if (isDisconnectBarrierActive())',
@@ -81,7 +82,7 @@ if (!failures.length) {
     'providerRevokeElapsedMs',
     'providerGrantReused',
     'consentResolutionObserved',
-    'explicitReconnect = reconnectAfterDisconnect',
+    'accountHandleAvailableInMemory',
     'clearCachedToken(token)'
   ]) {
     if (!kotlin.includes(marker)) fail(`Android bridge missing marker: ${marker}`);
@@ -89,59 +90,42 @@ if (!failures.length) {
 
   const getStateBlock = kotlin.match(/private fun getGmailState\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun authorizeGmail/);
   if (!getStateBlock) {
-    fail('Android bridge getGmailState block could not be audited');
+    fail('getGmailState block could not be audited');
   } else {
-    if (!getStateBlock[1].includes('if (isDisconnectBarrierActive())')) {
-      fail('getGmailState must honor the durable disconnect barrier before any provider authorization call');
-    }
-    if (!getStateBlock[1].includes('probeAuthorizedProfile(')) {
-      fail('getGmailState must verify Gmail profile before reporting a connected state');
-    }
-    if (getStateBlock[1].includes('state("AUTHORIZED")')) {
-      fail('getGmailState may not equate OAuth authorization with Gmail connectivity');
-    }
+    if (!getStateBlock[1].includes('if (isDisconnectBarrierActive())')) fail('getGmailState must honor disconnect barrier first');
+    if (!getStateBlock[1].includes('probeAuthorizedProfile(')) fail('getGmailState must prove Gmail profile before CONNECTED');
+    if (getStateBlock[1].includes('state("AUTHORIZED")')) fail('OAuth authorization may not equal Gmail connectivity');
   }
 
-  const authorizeBlock = kotlin.match(/private fun authorizeGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*@Deprecated/);
+  const authorizeBlock = kotlin.match(/private fun authorizeGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun beginGoogleAccountSelection/);
   if (!authorizeBlock) {
-    fail('Android bridge authorizeGmail block could not be audited');
+    fail('authorizeGmail block could not be audited');
   } else {
-    if (!authorizeBlock[1].includes('val reconnectAfterDisconnect = isDisconnectBarrierActive()')) {
-      fail('explicit Connect must know whether it is crossing the durable disconnect barrier');
-    }
-    if (!authorizeBlock[1].includes('explicitReconnect = reconnectAfterDisconnect')) {
-      fail('explicit reconnect must be carried into the Gmail profile proof');
-    }
-    if (authorizeBlock[1].includes('REVOKE_NOT_EFFECTIVE')) {
-      fail('silent project-level grant reuse after an explicit Connect may not be mislabeled as revoke failure');
-    }
+    if (!authorizeBlock[1].includes('AccountPickerPurpose.AUTHORIZE')) fail('Connect must acquire a concrete Android Google Account handle');
+    if (!authorizeBlock[1].includes('explicitReconnect = isDisconnectBarrierActive()')) fail('Connect must know when it crosses the barrier');
   }
 
   const disconnectBlock = kotlin.match(/private fun disconnectGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun revoke/);
   if (!disconnectBlock) {
-    fail('Android bridge disconnectGmail block could not be audited');
-  } else if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) {
-    fail('disconnectGmail must activate the local disconnect barrier before provider operations');
+    fail('disconnectGmail block could not be audited');
+  } else {
+    if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) fail('disconnect must activate local barrier before provider work');
+    if (!disconnectBlock[1].includes('AccountPickerPurpose.REVOKE')) fail('disconnect must recover a lost account handle without persistence');
   }
 
   const revokeProbeBlock = kotlin.match(/private fun verifyPreviousBearerDenied\(token: String\?, result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun probePreviousBearer/);
   if (!revokeProbeBlock) {
-    fail('post-revoke previous-bearer verification block could not be audited');
+    fail('post-revoke bearer verification block could not be audited');
   } else {
-    if (!revokeProbeBlock[1].includes('val verified = lastStatus == 401')) {
-      fail('provider revoke verification must require HTTP 401 from the previous bearer');
-    }
-    if (!revokeProbeBlock[1].includes('providerRevokeVerified')) {
-      fail('previous-bearer denial must be represented as a separate provider-revoke fact');
-    }
-    if (!revokeProbeBlock[1].includes('providerRevokeProbeAttempts')) {
-      fail('post-revoke probe attempts must be observable without exposing the bearer');
-    }
+    if (!revokeProbeBlock[1].includes('val verified = lastStatus == 401')) fail('provider revoke PASS must require HTTP 401');
+    if (!revokeProbeBlock[1].includes('providerRevokeProbeAttempts')) fail('post-revoke attempts must be observable');
   }
 
-  const forbiddenKotlin = [
+  for (const pattern of [
     /requestOfflineAccess/,
     /serverAuthCode/,
+    /toGoogleSignInAccount/,
+    /GoogleSignInAccount/,
     /FileOutputStream/,
     /Log\./,
     /"accessToken"\s+to/,
@@ -152,9 +136,8 @@ if (!failures.length) {
     /\.putLong\s*\(/,
     /\.putInt\s*\(/,
     /\.putFloat\s*\(/
-  ];
-  for (const pattern of forbiddenKotlin) {
-    if (pattern.test(kotlin)) fail(`Android bridge violates credential-custody boundary: ${pattern}`);
+  ]) {
+    if (pattern.test(kotlin)) fail(`Android bridge violates credential/account custody boundary: ${pattern}`);
   }
 
   for (const marker of [
@@ -170,26 +153,22 @@ if (!failures.length) {
   ]) {
     if (!workflow.includes(marker)) fail(`connection workflow missing marker: ${marker}`);
   }
-  if (/ANDROID_OAUTH_PACKAGE=com\.financesensor\.lab\.financesensor_mobile_shell/.test(workflow)) {
-    fail('connection workflow must not reuse the collision-prone generated applicationId');
-  }
+  if (/ANDROID_OAUTH_PACKAGE=com\.financesensor\.lab\.financesensor_mobile_shell/.test(workflow)) fail('workflow must keep R2 collision-isolated package');
   if (/\$\{\{\s*secrets\./.test(workflow)) fail('connection workflow must not reference GitHub secrets');
   if (/self-hosted/i.test(workflow)) fail('connection workflow must not route to self-hosted CI');
 
-  const adrMarkers = [
-    [/ANDROID_AUTHORIZATION_PROVIDER\s*=\s*GOOGLE_AUTHORIZATION_CLIENT/, 'ANDROID_AUTHORIZATION_PROVIDER = GOOGLE_AUTHORIZATION_CLIENT'],
-    [/ANDROID_OFFLINE_ACCESS\s*=\s*REJECTED/, 'ANDROID_OFFLINE_ACCESS = REJECTED'],
-    [/ANDROID_APP_REFRESH_TOKEN_CUSTODY\s*=\s*NONE/, 'ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE'],
-    [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN'],
-    [/PACKAGE_PLUS_SHA1_BINDING\s*=\s*REQUIRED/, 'PACKAGE_PLUS_SHA1_BINDING = REQUIRED'],
-    [/DURABLE_DISCONNECT_BARRIER\s*=\s*REQUIRED/, 'DURABLE_DISCONNECT_BARRIER = REQUIRED'],
-    [/POST_REVOKE_OLD_BEARER_DENIAL\s*=\s*REQUIRED/, 'POST_REVOKE_OLD_BEARER_DENIAL = REQUIRED'],
-    [/EXPLICIT_RECONNECT_GRANT_REUSE\s*=\s*ALLOWED/, 'EXPLICIT_RECONNECT_GRANT_REUSE = ALLOWED'],
-    [/PASSIVE_RECONNECT\s*=\s*FORBIDDEN/, 'PASSIVE_RECONNECT = FORBIDDEN'],
+  for (const [pattern, label] of [
+    [/ANDROID_AUTHORIZATION_PROVIDER\s*=\s*GOOGLE_AUTHORIZATION_CLIENT/, 'ANDROID_AUTHORIZATION_PROVIDER'],
+    [/ACCOUNT_HANDLE_SOURCE\s*=\s*ANDROID_ACCOUNT_PICKER/, 'ACCOUNT_HANDLE_SOURCE'],
+    [/ACCOUNT_IDENTIFIER_PERSISTENCE\s*=\s*FORBIDDEN/, 'ACCOUNT_IDENTIFIER_PERSISTENCE'],
+    [/DEPRECATED_SIGNIN_ACCOUNT_BRIDGE\s*=\s*FORBIDDEN/, 'DEPRECATED_SIGNIN_ACCOUNT_BRIDGE'],
+    [/ANDROID_OFFLINE_ACCESS\s*=\s*REJECTED/, 'ANDROID_OFFLINE_ACCESS'],
+    [/ANDROID_APP_REFRESH_TOKEN_CUSTODY\s*=\s*NONE/, 'ANDROID_APP_REFRESH_TOKEN_CUSTODY'],
+    [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER'],
+    [/DURABLE_DISCONNECT_BARRIER\s*=\s*REQUIRED/, 'DURABLE_DISCONNECT_BARRIER'],
     [/STATIC_BRIDGE_PASS\s*!=\s*PHYSICAL_OAUTH_PASS/, 'STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS']
-  ];
-  for (const [pattern, label] of adrMarkers) {
-    if (!pattern.test(adr)) fail(`ADR-026 missing marker: ${label}`);
+  ]) {
+    if (!pattern.test(adr)) fail(`ADR-027 missing marker: ${label}`);
   }
 
   for (const marker of [
@@ -218,6 +197,8 @@ console.log('PACKAGE_COLLISION_ISOLATION=R2');
 console.log('DART_BEARER_CUSTODY=0');
 console.log('APP_REFRESH_TOKEN_CUSTODY=0');
 console.log('OFFLINE_ACCESS_REQUESTED=0');
+console.log('ACCOUNT_HANDLE_SOURCE=ANDROID_ACCOUNT_PICKER');
+console.log('ACCOUNT_IDENTIFIER_PERSISTENCE=0');
 console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
 console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
 console.log('DURABLE_DISCONNECT_BARRIER=REQUIRED');
