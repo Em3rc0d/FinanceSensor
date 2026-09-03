@@ -92,7 +92,7 @@ export function classifyTransactionMetadata(headers = {}) {
 }
 
 function parseLocalizedNumber(raw = '') {
-  const token = String(raw).replace(/[\u00A0 ]/g, '').replace(/[^0-9.,]/g, '');
+  const token = String(raw).replace(/[\u00A0 ]/g, '').replace(/[^0-9.,]/g, '').replace(/[.,]+$/, '');
   if (!token || !/\d/.test(token)) return null;
   const lastDot = token.lastIndexOf('.');
   const lastComma = token.lastIndexOf(',');
@@ -183,7 +183,8 @@ function servicePayment(text) {
 function interbankCardPurchase(text) {
   const money = moneyAfter(text, ['monto']) ?? firstMoney(text);
   if (!money) return null;
-  return { ...money, rawMerchant: field(text, ['comercio']) ?? null, direction: 'OUT', semanticType: 'EXPENSE' };
+  const merchant = normalize(String(text).match(/comercio\s*:\s*(.+?)(?=\s+monto\s*:|[;\n\r]|$)/i)?.[1] ?? '') || null;
+  return { ...money, rawMerchant: merchant, direction: 'OUT', semanticType: 'EXPENSE' };
 }
 
 function plinPayment(text) {
