@@ -669,12 +669,14 @@ async function start() {
       if (url.pathname === '/refresh-revoke' && req.method === 'POST') {
         if (!requireSession(url)) return sendHtml(res, 403, 'FinanceSensor P1', '<p>Invalid local session.</p>');
         await runRefreshRevokeSequence();
+        setTimeout(() => server.close(), 100);
         return sendHtml(res, 200, evidence.p1Pass === 'PASS' ? 'P1 physical lifecycle PASS candidate' : 'P1 completed with gaps', `<p><strong>${escapeHtml(evidence.result)}</strong></p><p>Revoke HTTP: ${escapeHtml(evidence.revocation.revokeHttpStatus)}. Post-revoke semantic: ${escapeHtml(evidence.revocation.denialSemantic)}. Scope: ${escapeHtml(evidence.scopeAfterRefresh)}.</p><p>Only sanitized aggregate evidence was written to <code>${RESULT_FILE}</code>. A separate receipt validator must still bind the controlled-edge result before P1 can be promoted.</p>`);
       }
 
       if (url.pathname === '/stop' && req.method === 'POST') {
         if (!requireSession(url)) return sendHtml(res, 403, 'FinanceSensor P1', '<p>Invalid local session.</p>');
         await bestEffortRevokeWithoutPass('STOPPED_BEFORE_P1_PASS');
+        setTimeout(() => server.close(), 100);
         return sendHtml(res, 200, 'P1 stopped safely', `<p>No PASS was claimed. Best-effort provider revoke ran before local authority was cleared.</p>`);
       }
 
@@ -685,6 +687,7 @@ async function start() {
         clearSensitiveMemory();
         await persist().catch(() => {});
       });
+      setTimeout(() => server.close(), 100);
       return sendHtml(res, 500, 'FinanceSensor P1 — stopped safely', `<p>The run stopped with <code>${escapeHtml(evidence.failureCode)}</code>.</p><p>No PASS was claimed. Best-effort provider revoke was attempted if authority existed.</p>`);
     }
   });
