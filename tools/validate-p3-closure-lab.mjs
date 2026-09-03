@@ -60,7 +60,7 @@ if (!failures.length) {
   if (p3?.status !== 'PHYSICAL_EVIDENCE_REQUIRED') fail('campaign P3 must remain physically open');
 
   for (const phrase of [
-    'CLOSURE LAB != PRODUCTION',
+    'CLOSURE_LAB != PRODUCTION',
     'real Gmail OAuth authority',
     'PAID PROVIDER ACTION REQUIRES COST APPROVAL'
   ]) {
