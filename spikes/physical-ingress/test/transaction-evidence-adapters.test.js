@@ -99,6 +99,32 @@ test('Interbank-like Plin is external transfer evidence, not automatically expen
   assert.equal(evidence.references.movementKind, 'P2P_PAYMENT');
 });
 
+test('Ripley-like successful card payment is CARD_PAYMENT with operation provenance', () => {
+  const message = msg({
+    from: 'Banco Ripley <bancoripley@notificaciones.bancoripley.com.pe>',
+    subject: 'Pago Tarjeta Ripley exitoso - Banco Ripley Peru',
+    body: 'Constancia Pago Tarjeta Ripley\nMonto total:\nS/ 23.83\nFecha:\n26/08/2026\nHora:\n11:33 a.m.\nN° Operación:\n2223643012'
+  });
+  const decision = classifyTransactionMetadata(message.headers);
+  const evidence = extractAdaptedFinancialEvidence(message, decision);
+  assert.equal(decision.adapterId, 'RIPLEY_CARD_PAYMENT');
+  assert.equal(evidence.evidenceClass, EvidenceClass.BANK_NOTIFICATION);
+  assert.equal(evidence.semanticType, 'CARD_PAYMENT');
+  assert.equal(evidence.amount, 23.83);
+  assert.equal(evidence.currency, 'PEN');
+  assert.equal(evidence.references.providerTransactionId, '2223643012');
+});
+
+test('Ripley promotional domain is rejected even when subject advertises money', () => {
+  const decision = classifyTransactionMetadata({
+    From: 'Promociones Banco Ripley <tarjetaripley@banco-ripley.com.pe>',
+    Subject: 'Te devolvemos S/50 por tus compras'
+  });
+  assert.equal(decision.candidate, false);
+  assert.equal(decision.adapterId, 'RIPLEY_PROMOTIONAL_DOMAIN');
+  assert.equal(decision.reason, 'KNOWN_BANK_NON_TRANSACTION');
+});
+
 test('known bank non-transaction account event is rejected', () => {
   const decision = classifyTransactionMetadata({
     From: 'Banco Demo <alerts@notificacionesbcp.com.pe>',
