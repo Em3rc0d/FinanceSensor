@@ -209,6 +209,21 @@ jobs:
 
           cat connection-debug-evidence.txt >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Package public Android signing tool
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$(find -L "$SDK_ROOT/build-tools" -name apksigner -print 2>/dev/null | sort -V | tail -1)"
+          TOOL_ROOT="$(dirname "$APKSIGNER")"
+          test -f "$TOOL_ROOT/lib/apksigner.jar"
+          mkdir -p public-signing-tool/lib
+          cp "$APKSIGNER" public-signing-tool/apksigner
+          cp "$TOOL_ROOT/lib/apksigner.jar" public-signing-tool/lib/apksigner.jar
+          chmod 0755 public-signing-tool/apksigner
+          echo 'PUBLIC_SIGNING_TOOL_ONLY=1' > public-signing-tool/README.txt
+          echo 'NO_PRIVATE_KEY_INCLUDED=1' >> public-signing-tool/README.txt
+
       - name: Upload Android Gmail connection APK
         uses: actions/upload-artifact@v4
         with:
@@ -217,5 +232,6 @@ jobs:
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
             spikes/mobile-shell/connection-debug-evidence.txt
+            spikes/mobile-shell/public-signing-tool/**
           if-no-files-found: error
           retention-days: 7
