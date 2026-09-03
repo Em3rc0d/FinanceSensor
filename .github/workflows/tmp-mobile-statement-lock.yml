@@ -33,8 +33,8 @@ jobs:
         run: |
           flutter --version
           flutter pub get
-          grep -A5 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.4.8"'
-          ! grep -A5 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.5.0"'
+          grep -A12 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.4.8"'
+          ! grep -A12 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.5.0"'
           echo 'PDFRX_LOCKED=2.4.8'
 
       - name: Reconcile ADR index runtime version
@@ -45,9 +45,10 @@ jobs:
           text = p.read_text()
           old = 'MOBILE PDF RUNTIME                 PDFRX 2.5.0 / PDFIUM'
           new = 'MOBILE PDF RUNTIME                 PDFRX 2.4.8 / PDFIUM'
-          if old not in text:
-              raise SystemExit('ADR_INDEX_2_5_RUNTIME_MARKER_NOT_FOUND')
-          text = text.replace(old, new)
+          if old in text:
+              text = text.replace(old, new)
+          elif new not in text:
+              raise SystemExit('ADR_INDEX_RUNTIME_MARKER_NOT_FOUND')
           p.write_text(text)
           PY
           grep -q 'MOBILE PDF RUNTIME                 PDFRX 2.4.8 / PDFIUM' mk0/11-decisions/ADR-INDEX.md
