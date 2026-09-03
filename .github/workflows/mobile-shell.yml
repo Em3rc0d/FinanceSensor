@@ -9,10 +9,12 @@ on:
       - 'spikes/mobile-shell/**'
       - 'tools/validate-mobile-shell.mjs'
       - 'tools/validate-mobile-stack.mjs'
+      - 'tools/validate-ios-gmail-custody.mjs'
       - 'tools/validate-implementation-baseline.mjs'
       - 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md'
       - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
       - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
+      - 'mk0/11-decisions/ADR-028-MOBILE-OAUTH-CUSTODY-SEMANTICS.md'
       - '.github/workflows/mobile-shell.yml'
 
 permissions:
@@ -105,7 +107,7 @@ jobs:
         working-directory: spikes/mobile-shell
         run: |
           test -f android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
-          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle* 
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
           grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
           ! grep -R -E -q 'minSdk(Version)?\s*[= ]\s*(2[0-9]|30)\b' android/app/build.gradle*
           echo 'ANDROID_LANGUAGE=KOTLIN'
@@ -151,3 +153,63 @@ jobs:
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
+
+  ios-gmail-custody-compile:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode toolchain evidence
+        run: |
+          xcodebuild -version
+          swift --version
+          uname -m
+
+      - name: Static iOS custody boundary
+        run: node tools/validate-ios-gmail-custody.mjs
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate isolated iOS compile project
+        working-directory: spikes/mobile-shell/native/ios/compile-check
+        run: |
+          xcodegen generate --spec project.yml
+          test -d FinanceSensorP2CustodyCompile.xcodeproj
+
+      - name: Resolve pinned Google Sign-In package
+        working-directory: spikes/mobile-shell/native/ios/compile-check
+        run: |
+          xcodebuild \
+            -project FinanceSensorP2CustodyCompile.xcodeproj \
+            -scheme FinanceSensorP2CustodyCompile \
+            -resolvePackageDependencies
+
+      - name: Compile iOS custody bridge for simulator
+        working-directory: spikes/mobile-shell/native/ios/compile-check
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project FinanceSensorP2CustodyCompile.xcodeproj \
+            -scheme FinanceSensorP2CustodyCompile \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build | tee xcodebuild.log
+
+      - name: iOS custody compile evidence
+        working-directory: spikes/mobile-shell/native/ios/compile-check
+        run: |
+          grep -q '\*\* BUILD SUCCEEDED \*\*' xcodebuild.log
+          echo 'FINANCESENSOR_IOS_GMAIL_CUSTODY_COMPILE=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'GOOGLE_SIGNIN_VERSION=9.2.0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'IOS_TARGET=SIMULATOR_ONLY' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_GMAIL=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'REAL_OAUTH=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'KEYCHAIN_CONTENTS_READ=0' >> "$GITHUB_STEP_SUMMARY"
+          echo 'IOS_PHYSICAL_CUSTODY_PASS=NO' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
