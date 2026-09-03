@@ -82,7 +82,7 @@ test('Interbank-like card notification extracts merchant and amount', () => {
   });
   const evidence = extractAdaptedFinancialEvidence(message);
   assert.equal(evidence.evidenceClass, EvidenceClass.BANK_NOTIFICATION);
-  assert.equal(evidence.rawMerchant, 'DEMO BOOKS Monto: S/. 19.90 Fecha: 03/09/2026 Hora: 10:30 AM');
+  assert.equal(evidence.rawMerchant, 'DEMO BOOKS');
   assert.equal(evidence.amount, 19.9);
   assert.equal(evidence.semanticType, 'EXPENSE');
 });
