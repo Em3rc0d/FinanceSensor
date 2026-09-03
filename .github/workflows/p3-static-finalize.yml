@@ -6,6 +6,7 @@ on:
       - jett/p3-static-harness
     paths:
       - '.github/workflows/p3-static-finalize.yml'
+      - 'tools/validate-p3-closure-lab.mjs'
 
 permissions:
   contents: write
