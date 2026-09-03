@@ -7,6 +7,12 @@ on:
     paths:
       - '.github/workflows/gmail-historical-finalize.yml'
       - 'tools/apply-gmail-historical-wiring.mjs'
+      - 'tools/validate-gmail-historical-onboarding.mjs'
+      - 'spikes/physical-ingress/src/historical-gmail-importer.js'
+      - 'spikes/physical-ingress/src/transaction-evidence-adapters.js'
+      - 'spikes/physical-ingress/test/historical-gmail-importer.test.js'
+      - 'spikes/physical-ingress/test/transaction-evidence-adapters.test.js'
+      - 'spikes/canonical-resolver/test/evidence-channel-reconciliation.test.js'
 
 permissions:
   contents: write
