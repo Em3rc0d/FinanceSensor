@@ -52,11 +52,6 @@ class MainActivity : FlutterActivity() {
         .setRequestedScopes(listOf(Scope(GMAIL_READONLY)))
         .build()
 
-    private fun request(account: Account): AuthorizationRequest = AuthorizationRequest.builder()
-        .setAccount(account)
-        .setRequestedScopes(listOf(Scope(GMAIL_READONLY)))
-        .build()
-
     private fun client() = Identity.getAuthorizationClient(this)
 
     private fun connectionPrefs() = getSharedPreferences(CONNECTION_PREFS, MODE_PRIVATE)
@@ -81,7 +76,12 @@ class MainActivity : FlutterActivity() {
                     clearMemory()
                     result.success(state("READY_TO_CONNECT"))
                 } else {
-                    probeAuthorizedProfile(authorization, result, explicitReconnect = false)
+                    probeAuthorizedProfile(
+                        authorization,
+                        result,
+                        explicitReconnect = false,
+                        consentResolutionObserved = false,
+                    )
                 }
             }
             .addOnFailureListener { error -> failAuthorization(result, error) }
@@ -119,20 +119,16 @@ class MainActivity : FlutterActivity() {
                         pendingAuthorizationWasExplicitReconnect = false
                         result.error("AUTH_RESOLUTION_FAILED", "Google authorization UI could not start", null)
                     }
-                } else if (reconnectAfterDisconnect) {
-                    clearReturnedToken(authorization)
-                    clearMemory()
-                    result.success(
-                        state("REVOKE_NOT_EFFECTIVE") + mapOf(
-                            "providerRevokeVerified" to false,
-                            "disconnectBarrierActive" to true,
-                        ),
-                    )
                 } else {
-                    probeAuthorizedProfile(authorization, result, explicitReconnect = false)
+                    probeAuthorizedProfile(
+                        authorization,
+                        result,
+                        explicitReconnect = reconnectAfterDisconnect,
+                        consentResolutionObserved = false,
+                    )
                 }
             }
-            .addOnFailureListener { error -> failAuthorization(result, error) }
+            .addOnFailureListener { error -> failAuthorization(result, error, preserveDisconnectBarrier = reconnectAfterDisconnect) }
     }
 
     @Deprecated("Android Activity callback required by FlutterActivity")
@@ -152,9 +148,14 @@ class MainActivity : FlutterActivity() {
 
         try {
             val authorization = client().getAuthorizationResultFromIntent(data)
-            probeAuthorizedProfile(authorization, result, explicitReconnect = explicitReconnect)
+            probeAuthorizedProfile(
+                authorization,
+                result,
+                explicitReconnect = explicitReconnect,
+                consentResolutionObserved = true,
+            )
         } catch (error: ApiException) {
-            failAuthorization(result, error)
+            failAuthorization(result, error, preserveDisconnectBarrier = explicitReconnect)
         }
     }
 
@@ -171,7 +172,12 @@ class MainActivity : FlutterActivity() {
                     clearMemory()
                     result.success(state("REAUTH_REQUIRED"))
                 } else {
-                    probeAuthorizedProfile(authorization, result, explicitReconnect = false)
+                    probeAuthorizedProfile(
+                        authorization,
+                        result,
+                        explicitReconnect = false,
+                        consentResolutionObserved = false,
+                    )
                 }
             }
             .addOnFailureListener { error -> failAuthorization(result, error) }
@@ -181,6 +187,7 @@ class MainActivity : FlutterActivity() {
         authorization: AuthorizationResult,
         result: MethodChannel.Result,
         explicitReconnect: Boolean,
+        consentResolutionObserved: Boolean,
     ) {
         val granted = authorization.grantedScopes ?: emptyList()
         if (!granted.contains(GMAIL_READONLY)) {
@@ -256,6 +263,9 @@ class MainActivity : FlutterActivity() {
                             "latencyMs" to latencyMs,
                             "responseBytes" to bodyBytes.size,
                             "disconnectBarrierActive" to isDisconnectBarrierActive(),
+                            "explicitReconnect" to explicitReconnect,
+                            "consentResolutionObserved" to consentResolutionObserved,
+                            "providerGrantReused" to (explicitReconnect && !consentResolutionObserved),
                         ),
                     )
                 }
@@ -288,6 +298,7 @@ class MainActivity : FlutterActivity() {
                         state("DISCONNECTED_VERIFIED") + mapOf(
                             "providerRevokeVerified" to true,
                             "disconnectBarrierActive" to true,
+                            "providerRevokeReason" to "NO_ACTIVE_GRANT",
                         ),
                     )
                     return@addOnSuccessListener
@@ -299,7 +310,13 @@ class MainActivity : FlutterActivity() {
                 if (account == null) {
                     clearReturnedToken(authorization)
                     clearMemory()
-                    result.error("ACCOUNT_HANDLE_UNAVAILABLE", "Google account handle unavailable for revoke", null)
+                    result.success(
+                        state("DISCONNECTED") + mapOf(
+                            "providerRevokeVerified" to false,
+                            "disconnectBarrierActive" to true,
+                            "providerRevokeReason" to "ACCOUNT_HANDLE_UNAVAILABLE",
+                        ),
+                    )
                 } else {
                     revoke(account, token, result)
                 }
@@ -315,38 +332,75 @@ class MainActivity : FlutterActivity() {
 
         client().revokeAccess(revokeRequest)
             .addOnSuccessListener {
-                clearCachedToken(token) {
-                    clearMemory()
-                    verifyRevoked(account, result)
-                }
+                verifyPreviousBearerDenied(token, result)
             }
             .addOnFailureListener { error -> failAuthorization(result, error, preserveDisconnectBarrier = true) }
     }
 
-    private fun verifyRevoked(account: Account, result: MethodChannel.Result) {
-        client().authorize(request(account))
-            .addOnSuccessListener { authorization ->
-                if (authorization.hasResolution()) {
-                    clearReturnedToken(authorization)
-                    clearMemory()
-                    result.success(
-                        state("DISCONNECTED_VERIFIED") + mapOf(
-                            "providerRevokeVerified" to true,
-                            "disconnectBarrierActive" to true,
-                        ),
-                    )
-                } else {
-                    clearReturnedToken(authorization)
-                    clearMemory()
-                    result.success(
-                        state("REVOKE_NOT_EFFECTIVE") + mapOf(
-                            "providerRevokeVerified" to false,
-                            "disconnectBarrierActive" to true,
-                        ),
-                    )
+    private fun verifyPreviousBearerDenied(token: String?, result: MethodChannel.Result) {
+        if (token.isNullOrBlank()) {
+            clearMemory()
+            result.success(
+                state("DISCONNECTED") + mapOf(
+                    "providerRevokeVerified" to false,
+                    "disconnectBarrierActive" to true,
+                    "providerRevokeReason" to "NO_PREVIOUS_TOKEN_TO_PROBE",
+                ),
+            )
+            return
+        }
+
+        ioExecutor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val started = System.nanoTime()
+                connection = (URL(GMAIL_PROFILE).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 12_000
+                    readTimeout = 12_000
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
                 }
+
+                val status = connection.responseCode
+                val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                val bodyBytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+                val latencyMs = ((System.nanoTime() - started) / 1_000_000L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                val denied = status == 401 || status == 403
+
+                clearCachedToken(token) {
+                    clearMemory()
+                    runOnUiThread {
+                        result.success(
+                            state(if (denied) "DISCONNECTED_VERIFIED" else "DISCONNECTED") + mapOf(
+                                "providerRevokeVerified" to denied,
+                                "oldTokenDeniedAfterRevoke" to denied,
+                                "providerRevokeHttpStatus" to status,
+                                "providerRevokeLatencyMs" to latencyMs,
+                                "providerRevokeResponseBytes" to bodyBytes.size,
+                                "disconnectBarrierActive" to true,
+                                "providerRevokeReason" to if (denied) "PREVIOUS_BEARER_DENIED" else "PREVIOUS_BEARER_NOT_DENIED",
+                            ),
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                clearCachedToken(token) {
+                    clearMemory()
+                    runOnUiThread {
+                        result.success(
+                            state("DISCONNECTED") + mapOf(
+                                "providerRevokeVerified" to false,
+                                "disconnectBarrierActive" to true,
+                                "providerRevokeReason" to "POST_REVOKE_PROBE_FAILED",
+                            ),
+                        )
+                    }
+                }
+            } finally {
+                connection?.disconnect()
             }
-            .addOnFailureListener { error -> failAuthorization(result, error, preserveDisconnectBarrier = true) }
+        }
     }
 
     private fun clearCachedToken(token: String?, done: () -> Unit) {
@@ -388,6 +442,10 @@ class MainActivity : FlutterActivity() {
         "historyAnchorObserved" to false,
         "disconnectBarrierActive" to isDisconnectBarrierActive(),
         "providerRevokeVerified" to false,
+        "oldTokenDeniedAfterRevoke" to false,
+        "explicitReconnect" to false,
+        "consentResolutionObserved" to false,
+        "providerGrantReused" to false,
     )
 
     private fun failAuthorization(
