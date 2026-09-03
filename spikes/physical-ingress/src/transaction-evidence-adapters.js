@@ -47,6 +47,8 @@ const SECURITY_ONLY = /\b(inicio de sesion|alerta de seguridad|cambio de clave|d
 
 const BCP_DOMAIN = 'notificacionesbcp.com.pe';
 const INTERBANK_DOMAIN = 'netinterbank.com.pe';
+const RIPLEY_NOTIFICATION_DOMAIN = 'notificaciones.bancoripley.com.pe';
+const RIPLEY_PROMO_DOMAIN = 'banco-ripley.com.pe';
 
 function subjectOf(headers) {
   return normalize(headerValue(headers, 'subject'));
@@ -77,6 +79,15 @@ export function classifyTransactionMetadata(headers = {}) {
     if (/^constancia de transferencia$/.test(s)) return decision('INTERBANK_TRANSFER', EvidenceClass.BANK_NOTIFICATION, { subject });
     if (/^constancia de pago$/.test(s)) return decision('INTERBANK_SERVICE_PAYMENT', EvidenceClass.BANK_NOTIFICATION, { subject });
     return { candidate: false, adapterId: 'INTERBANK_NON_TRANSACTION', reason: 'KNOWN_BANK_NON_TRANSACTION' };
+  }
+
+  if (domain === RIPLEY_NOTIFICATION_DOMAIN) {
+    if (/pago tarjeta ripley exitoso/.test(s)) return decision('RIPLEY_CARD_PAYMENT', EvidenceClass.BANK_NOTIFICATION, { subject });
+    return { candidate: false, adapterId: 'RIPLEY_NON_TRANSACTION', reason: 'KNOWN_BANK_NON_TRANSACTION' };
+  }
+
+  if (domain === RIPLEY_PROMO_DOMAIN || domain.endsWith(`.${RIPLEY_PROMO_DOMAIN}`)) {
+    return { candidate: false, adapterId: 'RIPLEY_PROMOTIONAL_DOMAIN', reason: 'KNOWN_BANK_NON_TRANSACTION' };
   }
 
   if (SECURITY_ONLY.test(s) || MARKETING_OR_ACCOUNT.test(s)) {
@@ -143,10 +154,10 @@ function field(text = '', labels = []) {
 }
 
 function operationReference(text = '') {
-  const value = field(text, ['numero de operacion', 'número de operación', 'codigo de operacion', 'código de operación', 'operation code', 'transaction id']);
-  if (!value) return null;
-  const token = value.match(/[A-Za-z0-9-]{4,64}/)?.[0];
-  return token ?? null;
+  const match = String(text).match(/(?:numero|n[uú]mero|nro|n[°ºo.]?)\s*(?:de\s*)?operaci[oó]n\s*[:#-]?\s*([A-Za-z0-9-]{4,64})/i)
+    ?? String(text).match(/(?:codigo|c[oó]digo)\s+de\s+operaci[oó]n\s*[:#-]?\s*([A-Za-z0-9-]{4,64})/i)
+    ?? String(text).match(/(?:operation code|transaction id)\s*[:#-]?\s*([A-Za-z0-9-]{4,64})/i);
+  return match?.[1] ?? null;
 }
 
 function bcpPurchase(text) {
@@ -169,7 +180,7 @@ function transfer(text, { internal = false } = {}) {
 }
 
 function cardPayment(text) {
-  const money = moneyAfter(text, ['monto pagado', 'monto']) ?? firstMoney(text);
+  const money = moneyAfter(text, ['monto total', 'monto pagado', 'monto']) ?? firstMoney(text);
   if (!money) return null;
   return { ...money, rawMerchant: 'Pago de tarjeta', direction: 'OUT', semanticType: 'CARD_PAYMENT' };
 }
@@ -220,6 +231,7 @@ export function extractAdaptedFinancialEvidence(fullMessage, metadataDecision = 
     case 'INTERBANK_PLIN_PAYMENT': parsed = plinPayment(body); break;
     case 'INTERBANK_TRANSFER': parsed = transfer(body); break;
     case 'INTERBANK_SERVICE_PAYMENT': parsed = servicePayment(body); break;
+    case 'RIPLEY_CARD_PAYMENT': parsed = cardPayment(body); break;
     case 'GENERIC_RECEIPT': parsed = genericReceipt(body); break;
     default: return null;
   }
