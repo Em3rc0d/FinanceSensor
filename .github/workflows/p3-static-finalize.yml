@@ -1,0 +1,120 @@
+name: FinanceSensor P3 Static Finalize
+
+on:
+  push:
+    branches:
+      - jett/p3-static-harness
+    paths:
+      - '.github/workflows/p3-static-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout P3 branch
+        uses: actions/checkout@v4
+        with:
+          ref: jett/p3-static-harness
+          fetch-depth: 0
+
+      - name: Bind P3 artifacts into evidence graph
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          def add_unique(items, value, key='path'):
+              if not any(x.get(key) == value.get(key) for x in items):
+                  items.append(value)
+
+          q4p = Path('graph/q004-evidence.json')
+          q4 = json.loads(q4p.read_text())
+          q4['proofBoundary']['p3StaticPreparation'] = 'CLOSURE_LAB_AND_RESURRECTION_BARRIER_READY_PROVIDER_OPEN'
+          for item in [
+              {'path':'mk0/11-decisions/ADR-029-MK0-CLOSURE-LAB-EVIDENCE-INFRASTRUCTURE.md','role':'pre-BUILD_READY synthetic cloud evidence boundary'},
+              {'path':'mk0/11-decisions/ADR-030-DELETION-RESURRECTION-BARRIER.md','role':'restore-domain-independent deletion barrier decision'},
+              {'path':'graph/p3-closure-lab.json','role':'P3 closure-lab machine contract'},
+              {'path':'spikes/e2ee-sync/src/deletion-resurrection.js','role':'P3 deletion/restore executable model'},
+              {'path':'spikes/e2ee-sync/test/deletion-resurrection.test.js','role':'P3 deletion/restore adversarial negative matrix'},
+              {'path':'tools/validate-p3-closure-lab.mjs','role':'P3 static fail-closed validator'}
+          ]:
+              add_unique(q4['artifacts'], item)
+          add_unique(q4['evidence'], {
+              'path':'mk0/10-evidence/EV-P3-CLOSURE-LAB-STATIC-READY-2026-09-03.md',
+              'proof':'P3_CLOSURE_LAB_AND_RESURRECTION_BARRIER_STATIC_READY_PROVIDER_OPEN',
+              'closesQ004':False
+          })
+          for promo in ['P3_STATIC_READY=>P3_PHYSICAL_PASS','SAME_DB_TOMBSTONE=>RESURRECTION_BARRIER_PASS','REGISTRY_UNAVAILABLE=>TENANT_ACTIVE']:
+              if promo not in q4['forbiddenPromotions']:
+                  q4['forbiddenPromotions'].append(promo)
+          q4p.write_text(json.dumps(q4, indent=2) + '\n')
+
+          q5p = Path('graph/q005-evidence.json')
+          q5 = json.loads(q5p.read_text())
+          q5['proofBoundary']['p3StaticPreparation'] = 'CLOSURE_LAB_AND_RESURRECTION_BARRIER_READY_PROVIDER_OPEN'
+          for item in [
+              {'path':'mk0/11-decisions/ADR-029-MK0-CLOSURE-LAB-EVIDENCE-INFRASTRUCTURE.md','role':'pre-BUILD_READY synthetic cloud evidence boundary'},
+              {'path':'mk0/11-decisions/ADR-030-DELETION-RESURRECTION-BARRIER.md','role':'restore-domain-independent deletion barrier decision'},
+              {'path':'graph/p3-closure-lab.json','role':'P3 closure-lab machine contract'},
+              {'path':'spikes/e2ee-sync/src/deletion-resurrection.js','role':'P3 deletion/restore executable model'},
+              {'path':'spikes/e2ee-sync/test/deletion-resurrection.test.js','role':'P3 deletion/restore adversarial negative matrix'},
+              {'path':'tools/validate-p3-closure-lab.mjs','role':'P3 static fail-closed validator'}
+          ]:
+              add_unique(q5['artifacts'], item)
+          add_unique(q5['evidence'], {
+              'path':'mk0/10-evidence/EV-P3-CLOSURE-LAB-STATIC-READY-2026-09-03.md',
+              'proof':'P3_CLOSURE_LAB_AND_RESURRECTION_BARRIER_STATIC_READY_PROVIDER_OPEN',
+              'closesQ005':False
+          })
+          for promo in ['P3_STATIC_READY=>P3_PHYSICAL_PASS','SAME_DB_TOMBSTONE=>RESURRECTION_BARRIER_PASS','REGISTRY_UNAVAILABLE=>TENANT_ACTIVE']:
+              if promo not in q5['forbiddenPromotions']:
+                  q5['forbiddenPromotions'].append(promo)
+          q5p.write_text(json.dumps(q5, indent=2) + '\n')
+          PY
+
+      - name: Reconcile ADR index
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('mk0/11-decisions/ADR-INDEX.md')
+          s = p.read_text()
+          anchor = '| ADR-025 | Mobile-first product surface | ACCEPTED FOR PRODUCT DIRECTION / IMPLEMENTATION STACK RESOLVED BY ADR-009 | physical mobile evidence |'
+          rows = '''| ADR-026 | Android Google Authorization boundary | ACCEPTED FOR PHYSICAL VALIDATION / PARTIAL PHYSICAL EVIDENCE | provider revoke retest / production lifecycle |\n| ADR-027 | Android Google Account handle custody | ACCEPTED FOR R2 PHYSICAL RETEST | provider revoke retest |\n| ADR-028 | Mobile OAuth custody semantics | ACCEPTED FOR P2 / ANDROID PHYSICAL EVIDENCE / IOS PHYSICAL OPEN | cross-platform P2 evidence |\n| ADR-029 | MK0 Closure Lab evidence infrastructure | ACCEPTED FOR MK0 EVIDENCE EXECUTION / NOT PRODUCT BUILD AUTHORITY | dedicated synthetic provider environment |\n| ADR-030 | Restore-domain-independent deletion barrier | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL P3 VALIDATION REQUIRED | provider backup/delete/restore campaign |'''
+          if '| ADR-029 |' not in s:
+              s = s.replace(anchor, anchor + '\n' + rows)
+          s = s.replace('**Next available ADR:** `ADR-026`.', '**Next available ADR:** `ADR-031`.')
+          p.write_text(s)
+          PY
+
+      - name: Validate P3 closure lab
+        run: node tools/validate-p3-closure-lab.mjs
+
+      - name: Run distributed regression suite
+        working-directory: spikes/e2ee-sync
+        run: npm test
+
+      - name: Validate Q-004 graph
+        run: node tools/validate-q004-evidence.mjs
+
+      - name: Validate Q-005 graph
+        run: node tools/validate-q005-evidence.mjs
+
+      - name: Validate physical campaign
+        run: node tools/validate-physical-campaign.mjs
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/p3-static-finalize.yml
+          git config user.name 'FinanceSensor Evidence Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add graph/q004-evidence.json graph/q005-evidence.json mk0/11-decisions/ADR-INDEX.md .github/workflows/p3-static-finalize.yml
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(p3): bind closure lab static evidence'
+            git push origin HEAD:jett/p3-static-harness
+          fi
