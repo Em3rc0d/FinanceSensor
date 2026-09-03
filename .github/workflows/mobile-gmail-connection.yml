@@ -129,13 +129,17 @@ jobs:
           grep -q 'Identity.getAuthorizationClient' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           grep -q 'DISCONNECT_BARRIER_KEY' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
-          grep -q 'verifyRevoked' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'verifyPreviousBearerDenied' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'oldTokenDeniedAfterRevoke' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'providerGrantReused' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2'
           echo 'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT'
           echo 'DURABLE_DISCONNECT_BARRIER=REQUIRED'
-          echo 'POST_REVOKE_PROVIDER_VERIFICATION=REQUIRED'
+          echo 'POST_REVOKE_OLD_BEARER_DENIAL=REQUIRED'
+          echo 'EXPLICIT_RECONNECT_GRANT_REUSE=ALLOWED'
+          echo 'PASSIVE_RECONNECT=FORBIDDEN'
 
       - name: Resolve dependencies
         working-directory: spikes/mobile-shell
@@ -194,7 +198,10 @@ jobs:
           DART_BEARER_CUSTODY=0
           OFFLINE_ACCESS_REQUESTED=0
           DURABLE_DISCONNECT_BARRIER=1
-          POST_REVOKE_PROVIDER_VERIFICATION=1
+          POST_REVOKE_OLD_BEARER_DENIAL=1
+          EXPLICIT_RECONNECT_GRANT_REUSE=ALLOWED
+          PASSIVE_RECONNECT=FORBIDDEN
+          PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL
           REAL_OAUTH_EXECUTED_BY_CI=0
           REAL_GMAIL_EXECUTED_BY_CI=0
           BUILD_READY=NO
