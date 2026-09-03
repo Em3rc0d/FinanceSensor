@@ -239,7 +239,7 @@ class GmailConnectionSnapshot {
   final int? latencyMs;
   final int? responseBytes;
 
-  bool get isConnected => state == 'CONNECTED' || state == 'AUTHORIZED';
+  bool get isConnected => state == 'CONNECTED';
 
   bool get isBusy => state == 'CHECKING';
 
@@ -253,7 +253,7 @@ class GmailConnectionSnapshot {
 
   String get humanState {
     if (state == 'CONNECTED') return 'Conectado';
-    if (state == 'AUTHORIZED') return 'Autorizado';
+    if (state == 'AUTHORIZED') return 'Autorizado, verificando Gmail';
     if (state == 'READY_TO_CONNECT') return 'Listo para conectar';
     if (state == 'REAUTH_REQUIRED') return 'Reautorización necesaria';
     if (state == 'DISCONNECTED') return 'Desconectado';
