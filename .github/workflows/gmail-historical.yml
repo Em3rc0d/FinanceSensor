@@ -7,12 +7,14 @@ on:
     paths:
       - 'spikes/physical-ingress/**'
       - 'spikes/canonical-resolver/**'
+      - 'spikes/mobile-shell/README.md'
       - 'graph/gmail-historical-onboarding.json'
       - 'graph/financial-source-coverage.json'
       - 'graph/q003-evidence.json'
       - 'tools/validate-gmail-historical-onboarding.mjs'
       - 'tools/validate-financial-source-coverage.mjs'
       - 'tools/validate-q003-evidence.mjs'
+      - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
       - 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md'
       - 'mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md'
       - 'mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md'
@@ -23,12 +25,14 @@ on:
     paths:
       - 'spikes/physical-ingress/**'
       - 'spikes/canonical-resolver/**'
+      - 'spikes/mobile-shell/README.md'
       - 'graph/gmail-historical-onboarding.json'
       - 'graph/financial-source-coverage.json'
       - 'graph/q003-evidence.json'
       - 'tools/validate-gmail-historical-onboarding.mjs'
       - 'tools/validate-financial-source-coverage.mjs'
       - 'tools/validate-q003-evidence.mjs'
+      - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
       - 'mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md'
       - 'mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md'
       - 'mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md'
@@ -103,7 +107,8 @@ jobs:
           test -f spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd
           test -f spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd
           test -f mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md
-          ! grep -R -E -n --exclude-dir=.git --exclude-dir=node_modules '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' spikes/physical-ingress graph/gmail-historical-onboarding.json graph/financial-source-coverage.json mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md tools/validate-gmail-historical-onboarding.mjs tools/validate-financial-source-coverage.mjs
+          test -f mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md
+          ! grep -R -E -n --exclude-dir=.git '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' spikes/physical-ingress graph/gmail-historical-onboarding.json graph/financial-source-coverage.json mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md tools/validate-gmail-historical-onboarding.mjs tools/validate-financial-source-coverage.mjs
 
       - name: PR iOS no-touch guard
         if: github.event_name == 'pull_request'
@@ -118,6 +123,9 @@ jobs:
         run: |
           echo 'FINANCESENSOR_GMAIL_HISTORICAL_CI=PASS' >> "$GITHUB_STEP_SUMMARY"
           echo 'FINANCESENSOR_FINANCIAL_SOURCE_COVERAGE=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PRODUCT_SURFACE=FLUTTER_MOBILE_APP' >> "$GITHUB_STEP_SUMMARY"
+          echo 'WINDOWS_STATEMENT_RUNNER=MK0_EVIDENCE_HARNESS_ONLY' >> "$GITHUB_STEP_SUMMARY"
           echo 'Synthetic/static only. No real Gmail OAuth, statement password, mailbox data or financial plaintext enter GitHub Actions.' >> "$GITHUB_STEP_SUMMARY"
           echo 'REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN until nextPageToken exhaustion.' >> "$GITHUB_STEP_SUMMARY"
           echo 'REAL_STATEMENT_PARSE remains physically OPEN.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'MOBILE_STATEMENT_PHYSICAL_PASS remains OPEN and cannot be promoted by a desktop harness.' >> "$GITHUB_STEP_SUMMARY"
