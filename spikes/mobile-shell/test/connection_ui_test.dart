@@ -52,6 +52,10 @@ void main() {
               'providerRevokeVerified': true,
               'oldTokenDeniedAfterRevoke': true,
               'providerRevokeHttpStatus': 401,
+              'providerRevokeLatencyMs': 88,
+              'providerRevokeProbeAttempts': 2,
+              'providerRevokeElapsedMs': 940,
+              'providerRevokeReason': 'PREVIOUS_BEARER_UNAUTHORIZED',
             };
         }
         return null;
@@ -91,32 +95,42 @@ void main() {
     expect(reused.supportingState, contains('reutilizó un permiso existente'));
   });
 
-  test('verified revoke is proven by denial of the previous bearer', () {
+  test('verified revoke requires HTTP 401 from the previous bearer', () {
     const GmailConnectionSnapshot disconnected = GmailConnectionSnapshot(
       state: 'DISCONNECTED_VERIFIED',
       disconnectBarrierActive: true,
       providerRevokeVerified: true,
       oldTokenDeniedAfterRevoke: true,
       providerRevokeHttpStatus: 401,
+      providerRevokeLatencyMs: 88,
+      providerRevokeProbeAttempts: 2,
+      providerRevokeElapsedMs: 940,
+      providerRevokeReason: 'PREVIOUS_BEARER_UNAUTHORIZED',
     );
 
     expect(disconnected.isConnected, isFalse);
     expect(disconnected.humanState, 'Desconectado');
     expect(disconnected.menuSubtitle, 'Gmail · desconectado');
-    expect(disconnected.supportingState, contains('token anterior ya no accede'));
+    expect(disconnected.supportingState, contains('HTTP 401'));
+    expect(disconnected.oldBearerLabel, 'Denegado · HTTP 401');
+    expect(disconnected.revokeReasonLabel, 'Bearer anterior inválido');
   });
 
-  test('unverified provider revoke still stays locally disconnected', () {
+  test('HTTP 200 after revoke stays unverified and locally disconnected', () {
     const GmailConnectionSnapshot disconnected = GmailConnectionSnapshot(
       state: 'DISCONNECTED',
       disconnectBarrierActive: true,
       providerRevokeVerified: false,
+      providerRevokeHttpStatus: 200,
+      providerRevokeProbeAttempts: 3,
+      providerRevokeReason: 'PREVIOUS_BEARER_STILL_VALID',
     );
 
     expect(disconnected.isConnected, isFalse);
     expect(disconnected.humanState, 'Desconectado');
     expect(disconnected.menuSubtitle, 'Gmail · desconectado');
-    expect(disconnected.supportingState, contains('barrera local permanece activa'));
+    expect(disconnected.supportingState, contains('HTTP 200'));
+    expect(disconnected.oldBearerLabel, 'Aún válido · HTTP 200');
   });
 
   testWidgets('Android connection surface starts disconnected and exposes privacy boundary', (tester) async {
@@ -174,7 +188,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('disconnect reports previous-bearer revoke proof and local barrier', (tester) async {
+  testWidgets('disconnect exposes HTTP 401 bearer-denial evidence without overflow', (tester) async {
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -194,10 +208,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Desconectado'), findsOneWidget);
-    expect(find.text('Acceso local cerrado; el token anterior ya no accede a Gmail.'), findsOneWidget);
+    expect(find.text('Acceso local cerrado; Gmail rechazó el bearer anterior con HTTP 401.'), findsOneWidget);
     expect(find.text('Barrera de desconexión'), findsOneWidget);
     expect(find.text('Revocación Google'), findsOneWidget);
     expect(find.text('Verificada'), findsOneWidget);
+    expect(find.text('Bearer anterior'), findsOneWidget);
+    expect(find.text('Denegado · HTTP 401'), findsOneWidget);
+    expect(find.text('HTTP post-revoke'), findsOneWidget);
+    expect(find.text('Intentos post-revoke'), findsOneWidget);
+    expect(find.text('Diagnóstico revoke'), findsOneWidget);
     expect(find.text('Conectar Gmail'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
