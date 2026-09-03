@@ -75,7 +75,41 @@
         "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
         "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL",
         "RESTORE_BEHAVIOR_DOCUMENTED"
-      ]
+      ],
+      "passedClaims": [
+        "ANDROID_PROTECTED_OAUTH_CUSTODY",
+        "RESTORE_BEHAVIOR_DOCUMENTED"
+      ],
+      "openClaims": [
+        "IOS_PROTECTED_OAUTH_CUSTODY",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL"
+      ],
+      "claimStates": {
+        "ANDROID_PROTECTED_OAUTH_CUSTODY": "PASS_BOUND_PHYSICAL_RECEIPT",
+        "IOS_PROTECTED_OAUTH_CUSTODY": "STATIC_READY_PHYSICAL_OPEN",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "RESTORE_BEHAVIOR_DOCUMENTED": "CONTRACT_PASS"
+      },
+      "subBoundaries": {
+        "android": {
+          "status": "PASS",
+          "claim": "ANDROID_PROTECTED_OAUTH_CUSTODY",
+          "receipt": "mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md",
+          "binding": "graph/physical-receipts/P2-ANDROID-2026-09-03.json",
+          "evidenceOrigin": "BOUND_EXISTING_OWNED_ANDROID_DEVICE_RECEIPTS"
+        },
+        "ios": {
+          "status": "STATIC_READY_PHYSICAL_OPEN",
+          "claim": "IOS_PROTECTED_OAUTH_CUSTODY",
+          "bridge": "spikes/mobile-shell/native/ios/GmailCredentialBroker.swift",
+          "staticValidator": "tools/validate-ios-gmail-custody.mjs",
+          "physicalReceiptRequired": true
+        }
+      }
     },
     {
       "id": "P3",
