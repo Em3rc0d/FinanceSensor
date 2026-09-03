@@ -30,7 +30,7 @@ REPOSITORY GOVERNANCE      OPEN
 BUILD_READY                NO
 ```
 
-`graph/closure-ledger.json` remains the authoritative source for node closure state. `graph/q003-evidence.json` carries the finer Q-003 physical/provider proof boundary.
+`graph/closure-ledger.json` remains the authoritative source for node closure state. `graph/q003-evidence.json` and `graph/q004-evidence.json` carry the finer physical/provider/privacy proof boundaries for their respective quarries.
 
 ## Financial heart
 
@@ -126,13 +126,54 @@ Q-003                                         ACTIVE
 
 ## Privacy boundary
 
+The static Q-004 privacy model is now machine-validated rather than merely documented:
+
+```text
+PRIVACY INVENTORY                            25 / 25 CLASSES VALIDATED
+CLOUD-VISIBLE CLASSES                        12 / EXHAUSTIVE BUDGET
+CLOUD-FORBIDDEN CLASSES                      13 / EXHAUSTIVE BUDGET
+UNCLASSIFIED CLOUD-VISIBLE FIELD             FAIL CLOSED
+PRIVACY INSPECTOR MEASUREMENT CONTRACT       STATIC CI PASS
+METADATA LEAKAGE BUDGET                      STATIC CI PASS
+Q-004 EVIDENCE SUBGRAPH                      STATIC CI PASS
+```
+
+S-10 Privacy Inspector is fail-closed against privacy theater:
+
+```text
+MISSING COUNTER                              != 0
+ARCHITECTURE FORBIDS PLAINTEXT               != MEASURED ZERO BYTES
+RAW CONTENT DISPOSAL DESIGN                  != MEASURED ZERO RETAINED EMAILS
+E2EE DESIGN                                  != VERIFIED CHECKMARK
+CI PASS                                      != PHYSICAL PRIVACY PASS
+```
+
+Consequently, the product may not display `Correos guardados = 0` until the matching P3 physical storage evidence passes, and may not display the E2EE verified checkmark until the complete P4 mobile crypto interoperability evidence passes.
+
+### Q-004 closure state
+
+Q-004 remains `ACTIVE`. The repository has a green static privacy contract, not physical privacy proof.
+
+```text
+P0 HARNESS INTEGRITY                          STATIC READY / PHYSICAL OPEN
+P2 MOBILE CREDENTIAL CUSTODY                  PHYSICAL OPEN
+P3 TRANSPORT/STORAGE/DELETION/BACKUP          PHYSICAL OPEN
+P4 MOBILE CRYPTO                              PHYSICAL OPEN FOR E2EE DISPLAY CLAIM
+P0+P2+P3 OPEN PHYSICAL CLAIMS                 20
+Q-004                                         ACTIVE
+```
+
+The open physical set is derived directly from `graph/physical-closure-campaign.json`; `tools/validate-q004-evidence.mjs` fails if the Q-004 subgraph drifts from those campaign claims.
+
+Stable trust boundaries remain:
+
 ```text
 PUBLIC_REPOSITORY != FINANCESENSOR_TRUSTED_EDGE
 GITHUB_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE
 CI_FIXTURES != REAL_FINANCIAL_DATA
+REAL GMAIL/OAUTH AUTHORITY = LOCAL EDGE ONLY
+REAL FINANCIAL PLAINTEXT = LOCAL EDGE ONLY
 ```
-
-Real Gmail/OAuth authority, stable private signing material and real financial plaintext remain LOCAL EDGE ONLY.
 
 ## Public-readiness contract
 
