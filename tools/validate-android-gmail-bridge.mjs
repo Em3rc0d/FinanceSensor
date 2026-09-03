@@ -24,14 +24,16 @@ if (!failures.length) {
 
   for (const marker of [
     "MethodChannel('com.financesensor.platform/gmail')",
-    "getGmailState",
-    "authorizeGmail",
-    "probeGmail",
-    "disconnectGmail",
-    "CONNECTION LAB · FINANZAS SINTÉTICAS",
-    "Bearer hacia Flutter",
-    "Refresh token en app",
-    "bool get isConnected => state == 'CONNECTED';"
+    'getGmailState',
+    'authorizeGmail',
+    'probeGmail',
+    'disconnectGmail',
+    'CONNECTION LAB · FINANZAS SINTÉTICAS',
+    'Bearer hacia Flutter',
+    'Refresh token en app',
+    "bool get isConnected => state == 'CONNECTED';",
+    'REVOKE_NOT_EFFECTIVE',
+    'DISCONNECTED_VERIFIED'
   ]) {
     if (!dart.includes(marker)) fail(`connected Dart surface missing marker: ${marker}`);
   }
@@ -64,7 +66,14 @@ if (!failures.length) {
     '"refreshTokenHeldByApp" to false',
     '"offlineAccessRequested" to false',
     'REAUTH_REQUIRED',
-    'probeAuthorizedProfile(authorization, result)'
+    'REVOKE_NOT_EFFECTIVE',
+    'DISCONNECTED_VERIFIED',
+    'DISCONNECT_BARRIER_KEY',
+    'putBoolean(DISCONNECT_BARRIER_KEY, active)',
+    'if (isDisconnectBarrierActive())',
+    'verifyRevoked(account, result)',
+    'clearCachedToken(token)',
+    'probeAuthorizedProfile(authorization, result, explicitReconnect = false)'
   ]) {
     if (!kotlin.includes(marker)) fail(`Android bridge missing marker: ${marker}`);
   }
@@ -73,7 +82,10 @@ if (!failures.length) {
   if (!getStateBlock) {
     fail('Android bridge getGmailState block could not be audited');
   } else {
-    if (!getStateBlock[1].includes('probeAuthorizedProfile(authorization, result)')) {
+    if (!getStateBlock[1].includes('if (isDisconnectBarrierActive())')) {
+      fail('getGmailState must honor the durable disconnect barrier before any provider authorization call');
+    }
+    if (!getStateBlock[1].includes('probeAuthorizedProfile(authorization, result, explicitReconnect = false)')) {
       fail('getGmailState must verify Gmail profile before reporting a connected state');
     }
     if (getStateBlock[1].includes('state("AUTHORIZED")')) {
@@ -81,15 +93,26 @@ if (!failures.length) {
     }
   }
 
+  const disconnectBlock = kotlin.match(/private fun disconnectGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun revoke/);
+  if (!disconnectBlock) {
+    fail('Android bridge disconnectGmail block could not be audited');
+  } else if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) {
+    fail('disconnectGmail must activate the local disconnect barrier before provider operations');
+  }
+
   const forbiddenKotlin = [
     /requestOfflineAccess/,
     /serverAuthCode/,
-    /SharedPreferences/,
     /FileOutputStream/,
     /Log\./,
     /"accessToken"\s+to/,
     /result\.success\s*\(\s*token/,
-    /result\.success\s*\(\s*shortLivedAccessToken/
+    /result\.success\s*\(\s*shortLivedAccessToken/,
+    /\.putString\s*\(/,
+    /\.putStringSet\s*\(/,
+    /\.putLong\s*\(/,
+    /\.putInt\s*\(/,
+    /\.putFloat\s*\(/
   ];
   for (const pattern of forbiddenKotlin) {
     if (pattern.test(kotlin)) fail(`Android bridge violates credential-custody boundary: ${pattern}`);
@@ -98,9 +121,9 @@ if (!failures.length) {
   for (const marker of [
     'play-services-auth:21.6.0',
     '--target lib/main_connected.dart',
-    'com.financesensor.lab.gmailconnection.r1',
-    'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r1',
-    'PACKAGE_COLLISION_ISOLATION=R1',
+    'com.financesensor.lab.gmailconnection.r2',
+    'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2',
+    'PACKAGE_COLLISION_ISOLATION=R2',
     'ANDROID_DEBUG_SHA1=',
     'REAL_OAUTH_EXECUTED_BY_CI=0',
     'REAL_GMAIL_EXECUTED_BY_CI=0',
@@ -120,6 +143,8 @@ if (!failures.length) {
     [/ANDROID_APP_REFRESH_TOKEN_CUSTODY\s*=\s*NONE/, 'ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE'],
     [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN'],
     [/PACKAGE_PLUS_SHA1_BINDING\s*=\s*REQUIRED/, 'PACKAGE_PLUS_SHA1_BINDING = REQUIRED'],
+    [/DURABLE_DISCONNECT_BARRIER\s*=\s*REQUIRED/, 'DURABLE_DISCONNECT_BARRIER = REQUIRED'],
+    [/POST_REVOKE_PROVIDER_VERIFICATION\s*=\s*REQUIRED/, 'POST_REVOKE_PROVIDER_VERIFICATION = REQUIRED'],
     [/STATIC_BRIDGE_PASS\s*!=\s*PHYSICAL_OAUTH_PASS/, 'STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS']
   ];
   for (const [pattern, label] of adrMarkers) {
@@ -131,7 +156,9 @@ if (!failures.length) {
     'No solicitado',
     'successful native authorization exposes only coarse Gmail state to Flutter',
     'OAuth authorization alone is not a verified Gmail connection',
-    'expect(authorized.isConnected, isFalse)'
+    'revocation failure is never represented as connected',
+    'expect(authorized.isConnected, isFalse)',
+    'expect(revokeNotEffective.isConnected, isFalse)'
   ]) {
     if (!test.includes(marker)) fail(`connection test missing marker: ${marker}`);
   }
@@ -146,13 +173,15 @@ if (failures.length) {
 console.log('FINANCESENSOR_ANDROID_GMAIL_BRIDGE=PASS');
 console.log('ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT');
 console.log('EXACT_SCOPE=gmail.readonly');
-console.log('PHYSICAL_TEST_PACKAGE=com.financesensor.lab.gmailconnection.r1');
-console.log('PACKAGE_COLLISION_ISOLATION=R1');
+console.log('PHYSICAL_TEST_PACKAGE=com.financesensor.lab.gmailconnection.r2');
+console.log('PACKAGE_COLLISION_ISOLATION=R2');
 console.log('DART_BEARER_CUSTODY=0');
 console.log('APP_REFRESH_TOKEN_CUSTODY=0');
 console.log('OFFLINE_ACCESS_REQUESTED=0');
 console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
 console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
+console.log('DURABLE_DISCONNECT_BARRIER=REQUIRED');
+console.log('POST_REVOKE_PROVIDER_VERIFICATION=REQUIRED');
 console.log('DISCONNECT_PROVIDER_REVOKE=DECLARED');
 console.log('REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('REAL_GMAIL_EXECUTED_BY_CI=0');
