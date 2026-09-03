@@ -59,8 +59,16 @@ if (!failures.length) {
   for (const marker of [
     'https://www.googleapis.com/auth/gmail.readonly',
     'Identity.getAuthorizationClient(this)',
-    '.authorize(request())',
+    'AccountPicker.newChooseAccountIntent(options)',
+    'setAllowableAccountsTypes(listOf(GOOGLE_ACCOUNT_TYPE))',
+    'builder.setAccount(account)',
+    '.authorize(request(account))',
+    '.authorize(request(authorizedAccount))',
     'getAuthorizationResultFromIntent',
+    'AccountManager.KEY_ACCOUNT_NAME',
+    'AccountManager.KEY_ACCOUNT_TYPE',
+    'AccountPickerPurpose.AUTHORIZE',
+    'AccountPickerPurpose.REVOKE',
     'revokeAccess',
     'clearToken',
     'https://gmail.googleapis.com/gmail/v1/users/me/profile',
@@ -81,8 +89,9 @@ if (!failures.length) {
     'providerRevokeElapsedMs',
     'providerGrantReused',
     'consentResolutionObserved',
-    'explicitReconnect = reconnectAfterDisconnect',
-    'clearCachedToken(token)'
+    'explicitReconnect = isDisconnectBarrierActive()',
+    'clearCachedToken(token)',
+    'accountHandleAvailableInMemory'
   ]) {
     if (!kotlin.includes(marker)) fail(`Android bridge missing marker: ${marker}`);
   }
@@ -102,15 +111,15 @@ if (!failures.length) {
     }
   }
 
-  const authorizeBlock = kotlin.match(/private fun authorizeGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*@Deprecated/);
+  const authorizeBlock = kotlin.match(/private fun authorizeGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun beginGoogleAccountSelection/);
   if (!authorizeBlock) {
     fail('Android bridge authorizeGmail block could not be audited');
   } else {
-    if (!authorizeBlock[1].includes('val reconnectAfterDisconnect = isDisconnectBarrierActive()')) {
-      fail('explicit Connect must know whether it is crossing the durable disconnect barrier');
+    if (!authorizeBlock[1].includes('AccountPickerPurpose.AUTHORIZE')) {
+      fail('explicit Connect must acquire a concrete Android Google Account handle');
     }
-    if (!authorizeBlock[1].includes('explicitReconnect = reconnectAfterDisconnect')) {
-      fail('explicit reconnect must be carried into the Gmail profile proof');
+    if (!authorizeBlock[1].includes('explicitReconnect = isDisconnectBarrierActive()')) {
+      fail('explicit Connect must know whether it is crossing the durable disconnect barrier');
     }
     if (authorizeBlock[1].includes('REVOKE_NOT_EFFECTIVE')) {
       fail('silent project-level grant reuse after an explicit Connect may not be mislabeled as revoke failure');
@@ -120,8 +129,13 @@ if (!failures.length) {
   const disconnectBlock = kotlin.match(/private fun disconnectGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun revoke/);
   if (!disconnectBlock) {
     fail('Android bridge disconnectGmail block could not be audited');
-  } else if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) {
-    fail('disconnectGmail must activate the local disconnect barrier before provider operations');
+  } else {
+    if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) {
+      fail('disconnectGmail must activate the local disconnect barrier before provider operations');
+    }
+    if (!disconnectBlock[1].includes('AccountPickerPurpose.REVOKE')) {
+      fail('disconnectGmail must be able to reacquire an account handle without persisting account identifiers');
+    }
   }
 
   const revokeProbeBlock = kotlin.match(/private fun verifyPreviousBearerDenied\(token: String\?, result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun probePreviousBearer/);
@@ -142,6 +156,8 @@ if (!failures.length) {
   const forbiddenKotlin = [
     /requestOfflineAccess/,
     /serverAuthCode/,
+    /toGoogleSignInAccount/,
+    /GoogleSignInAccount/,
     /FileOutputStream/,
     /Log\./,
     /"accessToken"\s+to/,
@@ -154,7 +170,7 @@ if (!failures.length) {
     /\.putFloat\s*\(/
   ];
   for (const pattern of forbiddenKotlin) {
-    if (pattern.test(kotlin)) fail(`Android bridge violates credential-custody boundary: ${pattern}`);
+    if (pattern.test(kotlin)) fail(`Android bridge violates credential/account custody boundary: ${pattern}`);
   }
 
   for (const marker of [
@@ -181,6 +197,8 @@ if (!failures.length) {
     [/ANDROID_OFFLINE_ACCESS\s*=\s*REJECTED/, 'ANDROID_OFFLINE_ACCESS = REJECTED'],
     [/ANDROID_APP_REFRESH_TOKEN_CUSTODY\s*=\s*NONE/, 'ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE'],
     [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN'],
+    [/ACCOUNT_HANDLE_SOURCE\s*=\s*ANDROID_ACCOUNT_PICKER/, 'ACCOUNT_HANDLE_SOURCE = ANDROID_ACCOUNT_PICKER'],
+    [/ACCOUNT_IDENTIFIER_PERSISTENCE\s*=\s*FORBIDDEN/, 'ACCOUNT_IDENTIFIER_PERSISTENCE = FORBIDDEN'],
     [/PACKAGE_PLUS_SHA1_BINDING\s*=\s*REQUIRED/, 'PACKAGE_PLUS_SHA1_BINDING = REQUIRED'],
     [/DURABLE_DISCONNECT_BARRIER\s*=\s*REQUIRED/, 'DURABLE_DISCONNECT_BARRIER = REQUIRED'],
     [/POST_REVOKE_OLD_BEARER_DENIAL\s*=\s*REQUIRED/, 'POST_REVOKE_OLD_BEARER_DENIAL = REQUIRED'],
@@ -218,6 +236,8 @@ console.log('PACKAGE_COLLISION_ISOLATION=R2');
 console.log('DART_BEARER_CUSTODY=0');
 console.log('APP_REFRESH_TOKEN_CUSTODY=0');
 console.log('OFFLINE_ACCESS_REQUESTED=0');
+console.log('ACCOUNT_HANDLE_SOURCE=ANDROID_ACCOUNT_PICKER');
+console.log('ACCOUNT_IDENTIFIER_PERSISTENCE=0');
 console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
 console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
 console.log('DURABLE_DISCONNECT_BARRIER=REQUIRED');
