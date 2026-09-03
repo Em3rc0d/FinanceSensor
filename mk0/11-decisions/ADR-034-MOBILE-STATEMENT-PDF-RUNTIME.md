@@ -13,7 +13,7 @@ The product now needs a mobile PDF runtime that can:
 - extract text locally without a server;
 - support Android and iOS;
 - avoid a commercial runtime dependency for the core statement parser;
-- fit the pinned Flutter 3.44.7 / Dart 3.12.x toolchain;
+- fit the pinned Flutter 3.44.7 / Dart 3.12.2 toolchain;
 - keep raw PDF bytes, decrypted text and password outside cloud/GitHub persistence.
 
 ## Decision
@@ -21,11 +21,11 @@ The product now needs a mobile PDF runtime that can:
 For the **mobile static spike**, FinanceSensor selects:
 
 ```text
-MOBILE_PDF_RUNTIME             pdfrx 2.5.0
+MOBILE_PDF_RUNTIME             pdfrx 2.4.8
 UNDERLYING_ENGINE              PDFium
 LICENSE                        MIT
 FLUTTER_TOOLCHAIN              3.44.7
-DART_BASELINE                  3.12.x
+DART_BASELINE                  3.12.2
 INPUT                          Uint8List in device memory
 PASSWORD                       ephemeral local operation only
 TEXT_EXTRACTION                PdfPage.loadText()
@@ -33,7 +33,20 @@ NETWORK_FOR_STATEMENT_PARSE    forbidden
 PRODUCT_TARGET                 Android first; iOS required
 ```
 
-`pdfrx` is exact-pinned for this spike. Its current API supports `PdfDocument.openData(Uint8List, passwordProvider: ...)`, explicit password providers, per-page text extraction, and explicit document disposal.
+`pdfrx 2.4.8` is exact-pinned for this spike. Its API exposes in-memory PDF opening with a password provider, per-page text extraction and document disposal while remaining compatible with the existing FinanceSensor Flutter baseline.
+
+### Rejected candidate: pdfrx 2.5.0
+
+The first candidate was `pdfrx 2.5.0`. The real FinanceSensor PR CI under Flutter 3.44.7 rejected it during dependency solving because pdfrx 2.5.0 requires Flutter >=3.47.0.
+
+FinanceSensor therefore rejects this promotion:
+
+```text
+DEPENDENCY_CONFLICT != SILENT_FRAMEWORK_UPGRADE_AUTHORITY
+PDF_LIBRARY_LATEST != PRODUCT_STACK_BASELINE_OVERRIDE
+```
+
+The correct response is to select the latest compatible runtime that preserves the already-frozen mobile stack. `pdfrx 2.4.8` is that bounded candidate. Upgrading Flutter remains a separate architectural/toolchain decision and is not smuggled into a PDF feature.
 
 This is a **technology selection for validation**, not a physical production claim.
 
@@ -89,7 +102,7 @@ If future threat modeling requires deterministic secret-memory erasure for the P
 
 ## Why not Syncfusion as the default core parser
 
-Syncfusion currently supports encrypted PDFs and text extraction, but its Flutter components are governed by commercial/community licensing terms. FinanceSensor does not need that dependency for the core statement-ingress spike when an MIT/PDFium path satisfies the required technical surface.
+Syncfusion supports encrypted PDFs and text extraction, but its Flutter components are governed by commercial/community licensing terms. FinanceSensor does not need that dependency for the core statement-ingress spike when an MIT/PDFium path satisfies the required technical surface.
 
 This does not prohibit Syncfusion for future UI features if independently justified.
 
@@ -107,21 +120,22 @@ No Windows dependency enters the mobile product architecture.
 
 ## Evidence required before promotion
 
-1. exact dependency resolution under Flutter 3.44.7;
-2. Flutter analyze/test PASS;
-3. Android debug APK build with pdfrx linked;
-4. synthetic mobile import-session tests proving no password/plaintext enters returned durable evidence;
-5. synthetic encrypted PDF opened and text extracted on an Android runtime;
-6. wrong-password failure remains sanitized and fail-closed;
-7. owned Android device real-statement parse without password/raw plaintext persistence;
-8. later iOS compile and owned-device proof before cross-platform production promotion.
+1. exact `pdfrx 2.4.8` dependency resolution under Flutter 3.44.7;
+2. committed reproducible `pubspec.lock` produced by that same toolchain;
+3. Flutter analyze/test PASS;
+4. Android debug APK build with pdfrx linked;
+5. synthetic mobile import-session tests proving no password/plaintext enters returned durable evidence;
+6. synthetic encrypted PDF opened and text extracted on an Android runtime;
+7. wrong-password failure remains sanitized and fail-closed;
+8. owned Android device real-statement parse without password/raw plaintext persistence;
+9. later iOS compile and owned-device proof before cross-platform production promotion.
 
 Until those are complete:
 
 ```text
 MOBILE_STATEMENT_STATIC_READY != MOBILE_STATEMENT_PHYSICAL_PASS
 ANDROID_APK_BUILD_PASS != REAL_STATEMENT_PARSE_PASS
-PD_FRX_SELECTED != BUILD_READY
+PDFRX_SELECTED != BUILD_READY
 ```
 
 ## Build authority
