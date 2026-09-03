@@ -152,7 +152,9 @@ export class HistoricalGmailImporter {
     const ordered = [...state.evidence].sort((a, b) => {
       const rank = evidenceAuthorityRank(b) - evidenceAuthorityRank(a);
       if (rank !== 0) return rank;
-      return String(a.occurredAt ?? '').localeCompare(String(b.occurredAt ?? ''));
+      const time = String(a.occurredAt ?? '').localeCompare(String(b.occurredAt ?? ''));
+      if (time !== 0) return time;
+      return stableEvidenceKey(a).localeCompare(stableEvidenceKey(b));
     });
     const result = resolveCandidates(ordered.map(toCandidate));
     state.canonical = result.canonical;
