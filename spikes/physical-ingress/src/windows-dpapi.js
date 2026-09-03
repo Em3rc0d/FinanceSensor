@@ -6,12 +6,12 @@ const MODES = new Set(['preflight', 'protect', 'unprotect']);
 const POWERSHELL_DPAPI = String.raw`
 $ErrorActionPreference = 'Stop'
 $mode = $env:FINANCESENSOR_DPAPI_MODE
+$major = $PSVersionTable.PSVersion.Major
+$edition = if ($PSVersionTable.PSObject.Properties.Name -contains 'PSEdition') { $PSVersionTable.PSEdition } else { 'Desktop' }
 
 function Fail-Dpapi([string]$stage, [System.Exception]$exception) {
   $type = if ($null -ne $exception) { $exception.GetType().FullName } else { 'UNKNOWN' }
   $hresult = if ($null -ne $exception) { $exception.HResult } else { 0 }
-  $major = $PSVersionTable.PSVersion.Major
-  $edition = if ($PSVersionTable.PSObject.Properties.Name -contains 'PSEdition') { $PSVersionTable.PSEdition } else { 'Desktop' }
   [Console]::Error.Write("FINANCESENSOR_DPAPI_FAILURE|stage=$stage|type=$type|hresult=$hresult|psmajor=$major|psedition=$edition")
   exit 91
 }
@@ -41,7 +41,7 @@ if ($mode -eq 'preflight') {
     Fail-Dpapi 'UNPROTECT' $_.Exception
   }
   if ([Text.Encoding]::UTF8.GetString($unprotected) -ne 'FinanceSensor-DPAPI-Preflight') {
-    [Console]::Error.Write("FINANCESENSOR_DPAPI_FAILURE|stage=ROUNDTRIP_MISMATCH|type=NONE|hresult=0|psmajor=$($PSVersionTable.PSVersion.Major)|psedition=$edition")
+    [Console]::Error.Write("FINANCESENSOR_DPAPI_FAILURE|stage=ROUNDTRIP_MISMATCH|type=NONE|hresult=0|psmajor=$major|psedition=$edition")
     exit 92
   }
   [Console]::Out.Write('PASS')
@@ -68,7 +68,7 @@ if ($mode -eq 'protect') {
     Fail-Dpapi 'UNPROTECT' $_.Exception
   }
 } else {
-  [Console]::Error.Write("FINANCESENSOR_DPAPI_FAILURE|stage=MODE_INVALID|type=NONE|hresult=0|psmajor=$($PSVersionTable.PSVersion.Major)|psedition=$edition")
+  [Console]::Error.Write("FINANCESENSOR_DPAPI_FAILURE|stage=MODE_INVALID|type=NONE|hresult=0|psmajor=$major|psedition=$edition")
   exit 93
 }
 
