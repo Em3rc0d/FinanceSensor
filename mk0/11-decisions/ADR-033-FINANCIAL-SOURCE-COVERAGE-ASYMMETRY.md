@@ -14,6 +14,8 @@ The mailbox also contains bank statements in two operational lanes:
 
 Many statement PDFs are password protected. The password may be derived from personal identity data, so FinanceSensor must treat it as a local ephemeral secret even when the bank uses a predictable convention.
 
+FinanceSensor is a **mobile-first product** under ADR-009. Any Windows/desktop statement runner created during MK0 exists only to obtain bounded physical evidence and to de-risk parsing/reconciliation. It is not a product surface, deployment target or authority boundary.
+
 ## Decision
 
 FinanceSensor models financial coverage by **direction and source**, not as one global Gmail-completeness claim.
@@ -26,7 +28,45 @@ CASHFLOW_COMPLETE REQUIRES OUTFLOW + INFLOW COVERAGE
 CREDIT_STATEMENT_AUTO != DEBIT_STATEMENT_AUTO
 DEBIT_STATEMENT_MANUAL_REQUEST != MANUAL_TRANSACTION_ENTRY
 CARD_STATEMENT != SAVINGS_ACCOUNT_INFLOW_PROOF
+WINDOWS_STATEMENT_RUNNER = MK0_EVIDENCE_HARNESS_ONLY
+DESKTOP_HARNESS_PASS != MOBILE_PRODUCT_PASS
+PRODUCT_STATEMENT_RUNTIME = MOBILE_DEVICE_LOCAL
 ```
+
+## Mobile product boundary
+
+The product implementation follows ADR-009:
+
+```text
+PRODUCT SURFACE
+Flutter / Dart mobile app
+
+PRIMARY PHYSICAL TARGET
+Android
+
+REQUIRED PRODUCTION TARGETS
+Android + iOS
+
+STATEMENT INGESTION
+mobile device local only
+
+FLUTTER / DART
+UI + deterministic application logic + statement-domain contracts
+
+ANDROID NATIVE BRIDGE
+Kotlin for platform-owned security / credential authority
+
+IOS NATIVE BRIDGE
+Swift for platform-owned security / credential authority
+```
+
+The Windows runner in `spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd` is therefore a **controlled MK0 laboratory harness**. It may prove or falsify parser, password-custody and reconciliation properties on an owned local edge, but:
+
+- it must never ship as the FinanceSensor product;
+- it must never redefine FinanceSensor as a desktop application;
+- its PASS cannot promote Android/iOS statement ingestion to physical PASS;
+- mobile password custody, encrypted local persistence, Gmail attachment ingestion and lifecycle behavior require their own mobile validation;
+- no architecture decision may depend on Windows DPAPI being available in production.
 
 ### Source lanes
 
@@ -72,13 +112,13 @@ PASSWORD_CLOUD_SYNC                 FORBIDDEN
 PASSWORD_GITHUB                     FORBIDDEN
 RAW_ENCRYPTED_PDF_CLOUD             FORBIDDEN NORMAL PATH
 RAW_DECRYPTED_PDF_DURABLE           FORBIDDEN
-DECRYPTED_TEXT_DURABLE               FORBIDDEN
+DECRYPTED_TEXT_DURABLE              FORBIDDEN
 DERIVED_FINANCIAL_EVIDENCE          ALLOWED LOCALLY UNDER EXISTING VAULT POLICY
 ```
 
-The UI may ask for `Clave del PDF` locally. It must not label or assume that the value is the DNI; FinanceSensor does not need to know the password's semantic origin.
+The mobile UI may ask for `Clave del PDF` locally. It must not label or assume that the value is the DNI; FinanceSensor does not need to know the password's semantic origin.
 
-A password may be retained only for the lifetime of the local statement-import process/session. No convenience feature may silently persist it.
+A password may be retained only for the lifetime of the local statement-import operation/session. No convenience feature may silently persist it.
 
 ## Statement ingestion boundary
 
@@ -89,9 +129,9 @@ STRICT STATEMENT SOURCE CLASSIFIER
         ↓
 ENCRYPTED PDF BYTES (TRANSIENT)
         ↓
-LOCAL PASSWORD PROMPT
+LOCAL MOBILE PASSWORD PROMPT
         ↓
-DECRYPT/PARSE IN PROCESS MEMORY
+DECRYPT/PARSE IN DEVICE MEMORY
         ↓
 STATEMENT ROW NORMALIZATION
         ↓
@@ -127,6 +167,18 @@ Outflow coverage                   independently measured
 
 A dashboard must not show a trustworthy net cash-flow claim for a period whose inflow coverage is unknown.
 
+The user-facing statement flow belongs inside the mobile product and should conceptually be:
+
+```text
+FinanceSensor mobile
+  → Estados de cuenta
+  → statement discovered / selected
+  → Clave del PDF · solo esta operación
+  → local parse
+  → reconciliation summary
+  → review ambiguous movements if needed
+```
+
 ## Evidence required
 
 Before statement ingestion can be promoted from design to physical PASS:
@@ -137,12 +189,16 @@ Before statement ingestion can be promoted from design to physical PASS:
 4. encrypted-PDF parser test using synthetic password-protected fixture only;
 5. row normalization tests for credit and debit statement formats;
 6. reconciliation tests proving no Gmail + statement double count;
-7. owned-device/local run showing a real statement can be decrypted and parsed without persisting password/raw plaintext;
-8. sanitized receipt that contains no account number, DNI/password, filename hash, transaction amount or raw statement text.
+7. controlled owned-edge harness showing a real statement can be decrypted and parsed without persisting password/raw plaintext;
+8. Android-owned-device run proving the mobile statement flow preserves the same password/raw-content boundary;
+9. iOS-owned-device run remains required before cross-platform production promotion;
+10. sanitized receipt that contains no account number, DNI/password, filename hash, transaction amount or raw statement text.
+
+A Windows harness can satisfy item 7 only. It cannot satisfy items 8 or 9.
 
 ## iOS boundary
 
-This ADR changes no iOS code and does not close any deferred iPhone debt.
+This ADR changes no iOS code and does not close any deferred iPhone debt. iOS remains a required production target and its physical statement-ingestion proof cannot be waived by an Android or Windows result.
 
 ## Build authority
 
