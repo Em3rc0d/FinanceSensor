@@ -32,7 +32,6 @@ if (!failures.length) {
     'Bearer hacia Flutter',
     'Refresh token en app',
     "bool get isConnected => state == 'CONNECTED';",
-    'REVOKE_NOT_EFFECTIVE',
     'DISCONNECTED_VERIFIED'
   ]) {
     if (!dart.includes(marker)) fail(`connected Dart surface missing marker: ${marker}`);
@@ -66,14 +65,17 @@ if (!failures.length) {
     '"refreshTokenHeldByApp" to false',
     '"offlineAccessRequested" to false',
     'REAUTH_REQUIRED',
-    'REVOKE_NOT_EFFECTIVE',
     'DISCONNECTED_VERIFIED',
     'DISCONNECT_BARRIER_KEY',
     'putBoolean(DISCONNECT_BARRIER_KEY, active)',
     'if (isDisconnectBarrierActive())',
-    'verifyRevoked(account, result)',
-    'clearCachedToken(token)',
-    'probeAuthorizedProfile(authorization, result, explicitReconnect = false)'
+    'verifyPreviousBearerDenied(token, result)',
+    'oldTokenDeniedAfterRevoke',
+    'providerRevokeHttpStatus',
+    'providerGrantReused',
+    'consentResolutionObserved',
+    'explicitReconnect = reconnectAfterDisconnect',
+    'clearCachedToken(token)'
   ]) {
     if (!kotlin.includes(marker)) fail(`Android bridge missing marker: ${marker}`);
   }
@@ -85,11 +87,26 @@ if (!failures.length) {
     if (!getStateBlock[1].includes('if (isDisconnectBarrierActive())')) {
       fail('getGmailState must honor the durable disconnect barrier before any provider authorization call');
     }
-    if (!getStateBlock[1].includes('probeAuthorizedProfile(authorization, result, explicitReconnect = false)')) {
+    if (!getStateBlock[1].includes('probeAuthorizedProfile(')) {
       fail('getGmailState must verify Gmail profile before reporting a connected state');
     }
     if (getStateBlock[1].includes('state("AUTHORIZED")')) {
       fail('getGmailState may not equate OAuth authorization with Gmail connectivity');
+    }
+  }
+
+  const authorizeBlock = kotlin.match(/private fun authorizeGmail\(result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*@Deprecated/);
+  if (!authorizeBlock) {
+    fail('Android bridge authorizeGmail block could not be audited');
+  } else {
+    if (!authorizeBlock[1].includes('val reconnectAfterDisconnect = isDisconnectBarrierActive()')) {
+      fail('explicit Connect must know whether it is crossing the durable disconnect barrier');
+    }
+    if (!authorizeBlock[1].includes('explicitReconnect = reconnectAfterDisconnect')) {
+      fail('explicit reconnect must be carried into the Gmail profile proof');
+    }
+    if (authorizeBlock[1].includes('REVOKE_NOT_EFFECTIVE')) {
+      fail('silent project-level grant reuse after an explicit Connect may not be mislabeled as revoke failure');
     }
   }
 
@@ -98,6 +115,18 @@ if (!failures.length) {
     fail('Android bridge disconnectGmail block could not be audited');
   } else if (!disconnectBlock[1].includes('setDisconnectBarrierActive(true)')) {
     fail('disconnectGmail must activate the local disconnect barrier before provider operations');
+  }
+
+  const revokeProbeBlock = kotlin.match(/private fun verifyPreviousBearerDenied\(token: String\?, result: MethodChannel\.Result\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*private fun clearCachedToken/);
+  if (!revokeProbeBlock) {
+    fail('post-revoke previous-bearer verification block could not be audited');
+  } else {
+    if (!revokeProbeBlock[1].includes('status == 401 || status == 403')) {
+      fail('provider revoke verification must require the previous bearer to be denied by Gmail');
+    }
+    if (!revokeProbeBlock[1].includes('providerRevokeVerified')) {
+      fail('previous-bearer denial must be represented as a separate provider-revoke fact');
+    }
   }
 
   const forbiddenKotlin = [
@@ -144,7 +173,9 @@ if (!failures.length) {
     [/SHORT_LIVED_BEARER_TO_FLUTTER\s*=\s*FORBIDDEN/, 'SHORT_LIVED_BEARER_TO_FLUTTER = FORBIDDEN'],
     [/PACKAGE_PLUS_SHA1_BINDING\s*=\s*REQUIRED/, 'PACKAGE_PLUS_SHA1_BINDING = REQUIRED'],
     [/DURABLE_DISCONNECT_BARRIER\s*=\s*REQUIRED/, 'DURABLE_DISCONNECT_BARRIER = REQUIRED'],
-    [/POST_REVOKE_PROVIDER_VERIFICATION\s*=\s*REQUIRED/, 'POST_REVOKE_PROVIDER_VERIFICATION = REQUIRED'],
+    [/POST_REVOKE_OLD_BEARER_DENIAL\s*=\s*REQUIRED/, 'POST_REVOKE_OLD_BEARER_DENIAL = REQUIRED'],
+    [/EXPLICIT_RECONNECT_GRANT_REUSE\s*=\s*ALLOWED/, 'EXPLICIT_RECONNECT_GRANT_REUSE = ALLOWED'],
+    [/PASSIVE_RECONNECT\s*=\s*FORBIDDEN/, 'PASSIVE_RECONNECT = FORBIDDEN'],
     [/STATIC_BRIDGE_PASS\s*!=\s*PHYSICAL_OAUTH_PASS/, 'STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS']
   ];
   for (const [pattern, label] of adrMarkers) {
@@ -156,9 +187,7 @@ if (!failures.length) {
     'No solicitado',
     'successful native authorization exposes only coarse Gmail state to Flutter',
     'OAuth authorization alone is not a verified Gmail connection',
-    'revocation failure is never represented as connected',
-    'expect(authorized.isConnected, isFalse)',
-    'expect(revokeNotEffective.isConnected, isFalse)'
+    'expect(authorized.isConnected, isFalse)'
   ]) {
     if (!test.includes(marker)) fail(`connection test missing marker: ${marker}`);
   }
@@ -181,8 +210,9 @@ console.log('OFFLINE_ACCESS_REQUESTED=0');
 console.log('NATIVE_GMAIL_PROFILE_PROBE=REQUIRED_FOR_CONNECTED');
 console.log('OAUTH_AUTHORIZED_ALONE_IS_CONNECTED=0');
 console.log('DURABLE_DISCONNECT_BARRIER=REQUIRED');
-console.log('POST_REVOKE_PROVIDER_VERIFICATION=REQUIRED');
-console.log('DISCONNECT_PROVIDER_REVOKE=DECLARED');
+console.log('POST_REVOKE_OLD_BEARER_DENIAL=REQUIRED');
+console.log('EXPLICIT_RECONNECT_GRANT_REUSE=ALLOWED');
+console.log('PASSIVE_RECONNECT=FORBIDDEN');
 console.log('REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('BUILD_READY=false');
