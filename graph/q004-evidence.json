@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "nodeId": "Q-004",
+  "nodeStateRequired": "ACTIVE",
+  "buildReadyRequired": false,
+  "asOf": "2026-09-03",
+  "proofBoundary": {
+    "privacyInventory": "25_CLASSES_MACHINE_VALIDATED",
+    "metadataLeakageBudget": "STATIC_CI_PASS_PHYSICAL_P3_OPEN",
+    "privacyInspectorMeasurement": "STATIC_CI_PASS_PHYSICAL_P3_P4_OPEN",
+    "physicalHarnessIntegrity": "STATIC_READY_PHYSICAL_P0_OPEN",
+    "mobileCredentialCustody": "PHYSICAL_P2_OPEN",
+    "transportStorageDeletionBackup": "PHYSICAL_P3_OPEN"
+  },
+  "artifacts": [
+    {
+      "path": "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
+      "role": "authoritative quarry contract"
+    },
+    {
+      "path": "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+      "role": "base privacy data-class inventory"
+    },
+    {
+      "path": "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
+      "role": "recovery privacy extension"
+    },
+    {
+      "path": "mk0/04-architecture/PRIVACY-DELETION-MATRIX.json",
+      "role": "deletion privacy extension"
+    },
+    {
+      "path": "mk0/04-architecture/PRIVACY-METADATA-BUDGET.json",
+      "role": "exhaustive cloud-visible metadata budget"
+    },
+    {
+      "path": "mk0/04-architecture/PRIVACY-MEASUREMENT-CONTRACT.json",
+      "role": "S-10 Privacy Inspector measurement authority"
+    },
+    {
+      "path": "mk0/06-wireframes/SIGNATURE-WIREFRAMES.md",
+      "role": "S-10 Privacy Inspector user-visible surface"
+    },
+    {
+      "path": "graph/physical-closure-campaign.json",
+      "role": "physical P0/P2/P3/P4 proof gates"
+    },
+    {
+      "path": "tools/physical-evidence-sanitizer.mjs",
+      "role": "physical receipt allowlist sanitizer"
+    },
+    {
+      "path": "tools/validate-physical-evidence-sanitizer.mjs",
+      "role": "synthetic adversarial sanitizer guard"
+    },
+    {
+      "path": "tools/validate-privacy-matrix.mjs",
+      "role": "privacy ECG aggregation guard"
+    },
+    {
+      "path": "tools/validate-privacy-metadata-budget.mjs",
+      "role": "metadata budget validator"
+    },
+    {
+      "path": "tools/validate-privacy-measurement.mjs",
+      "role": "Privacy Inspector measurement validator"
+    },
+    {
+      "path": "tools/validate-q004-evidence.mjs",
+      "role": "Q-004 evidence subgraph fail-closed validator"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md",
+      "proof": "BOUNDED_INGRESS_PRIVACY_HARNESS_PASS",
+      "closesQ004": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+      "proof": "STATIC_PRIVACY_AND_INGRESS_CONTRACT_BASELINE",
+      "closesQ004": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+      "proof": "BOUNDED_LOCAL_FIRST_PRIVACY_SPIKE_EVIDENCE",
+      "closesQ004": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md",
+      "proof": "BOUNDED_RECOVERY_PRIVACY_SPIKE_EVIDENCE",
+      "closesQ004": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q004-PRIVACY-MEASUREMENT-METADATA-BUDGET-2026-09-03.md",
+      "proof": "PRIVACY_MEASUREMENT_AND_METADATA_BUDGET_STATIC_CI_PASS_PHYSICAL_OPEN",
+      "closesQ004": false
+    }
+  ],
+  "openPhysicalGates": [
+    "OUTPUT_ALLOWLIST_ACTIVE",
+    "SECRET_VALUE_PRINTING_DISABLED",
+    "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT",
+    "PRIVATE_KEY_BYTES_ABSENT",
+    "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY",
+    "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED",
+    "ANDROID_PROTECTED_OAUTH_CUSTODY",
+    "IOS_PROTECTED_OAUTH_CUSTODY",
+    "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+    "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+    "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL",
+    "RESTORE_BEHAVIOR_DOCUMENTED",
+    "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+    "RAW_GMAIL_CONTENT_NOT_DURABLE",
+    "CLOUD_ENVELOPES_DELETED",
+    "CONTROL_METADATA_DELETED",
+    "WITNESS_NAMESPACE_RETIRED_OR_DELETED",
+    "DELETION_RESURRECTION_BARRIER_ACTIVE",
+    "PRE_DELETE_BACKUP_CANNOT_RESURRECT_AUTHORITY",
+    "BACKUP_RETENTION_WITHIN_35_DAY_CEILING"
+  ],
+  "dependentDisplayGates": [
+    {
+      "claim": "RAW_EMAILS_RETAINED_ZERO",
+      "requires": [
+        "P3",
+        "RAW_GMAIL_CONTENT_NOT_DURABLE"
+      ]
+    },
+    {
+      "claim": "PLAINTEXT_FINANCIAL_CLOUD_BYTES_ZERO",
+      "requires": [
+        "P3",
+        "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH"
+      ]
+    },
+    {
+      "claim": "E2EE_SYNC_VERIFIED_CHECKMARK",
+      "requires": [
+        "P4",
+        "ANDROID_WRAP_IOS_UNWRAP",
+        "IOS_WRAP_ANDROID_UNWRAP",
+        "ANDROID_SIGN_IOS_VERIFY",
+        "IOS_SIGN_ANDROID_VERIFY",
+        "NEGATIVE_MATRIX_FAILS_CLOSED",
+        "PROTECTED_KEY_USE_PROVEN",
+        "NO_SILENT_EXPORTABLE_KEY_FALLBACK"
+      ]
+    }
+  ],
+  "forbiddenPromotions": [
+    "STATIC_PRIVACY_MATRIX_PASS=>Q004_CLOSED",
+    "METADATA_BUDGET_CI_PASS=>PHYSICAL_NETWORK_PRIVACY_PASS",
+    "PRIVACY_INSPECTOR_CONTRACT_CI_PASS=>PHYSICAL_STORAGE_PRIVACY_PASS",
+    "ARCHITECTURE_FORBIDS_PLAINTEXT=>MEASURED_ZERO_PLAINTEXT_BYTES",
+    "RAW_CONTENT_DISPOSAL_DESIGN=>MEASURED_ZERO_RAW_EMAILS_RETAINED",
+    "E2EE_DESIGN=>E2EE_VERIFIED_CHECKMARK",
+    "SYNTHETIC_HARNESS_PASS=>P0_PHYSICAL_PASS",
+    "CI_PASS=>Q004_CLOSED"
+  ]
+}

@@ -232,6 +232,7 @@ if (failures.length > 0) {
 
 await import('./validate-privacy-metadata-budget.mjs');
 await import('./validate-privacy-measurement.mjs');
+await import('./validate-q004-evidence.mjs');
 
 console.log('PRIVACY_MATRIX_PASS');
 console.log(`classes=${classes.length}`);
@@ -243,3 +244,4 @@ console.log(`recoveryStatus=${recovery.status}`);
 console.log(`deletionStatus=${deletion.status}`);
 console.log('PRIVACY_METADATA_BUDGET_ATTACHED=PASS');
 console.log('PRIVACY_INSPECTOR_MEASUREMENT_ATTACHED=PASS');
+console.log('Q004_EVIDENCE_GRAPH_ATTACHED=PASS');
