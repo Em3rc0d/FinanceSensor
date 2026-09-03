@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "project": "FinanceSensor",
   "node": "Q-003",
   "status": "STATIC_READY_REAL_GMAIL_OPEN",
@@ -16,6 +16,10 @@
     "labelIds": "OMITTED",
     "aggregateMessageLimit": null,
     "pageSizeMax": 500,
+    "viewerPageSize": 50,
+    "messageConcurrencyDefault": 6,
+    "messageConcurrencyMax": 10,
+    "pageCommitBarrier": "ALL_UNIQUE_MESSAGE_TASKS_TERMINAL",
     "completeWhen": "nextPageToken_absent"
   },
   "privacyLadder": {
@@ -65,6 +69,9 @@
     "stateLocation": "WINDOWS_LOCALAPPDATA_FINANCESENSOR_GMAIL_HISTORY_DEV",
     "stateEncryption": "AES_256_GCM",
     "stateKeyProtection": "WINDOWS_DPAPI_CURRENT_USER",
+    "dpapiPreflightBeforeCredentialSelection": true,
+    "wslUncLaunchSupported": true,
+    "wslUncStrategy": "WINDOWS_CMD_PUSHD_TEMP_DRIVE_MAPPING",
     "refreshTokenDurablePersistence": "FORBIDDEN",
     "rawGmailBodyDurablePersistence": "FORBIDDEN",
     "dashboardBinding": "LOOPBACK_127_0_0_1_SESSION_SECRET",
@@ -81,6 +88,8 @@
     "NO_500_MESSAGE_AGGREGATE_LIMIT",
     "NO_QUERY_COMPLETENESS_DEPENDENCY",
     "PAGE_BY_PAGE_COMMIT",
+    "BOUNDED_MESSAGE_CONCURRENCY",
+    "PAGE_COMMIT_WAITS_FOR_ALL_MESSAGE_TASKS",
     "INVALID_CURSOR_RESTARTS_WITH_DEDUP",
     "KNOWN_BANK_PROMOTIONS_REJECTED",
     "BANK_AND_MERCHANT_EVIDENCE_RECONCILED",
@@ -89,17 +98,22 @@
     "RIPLEY_PROMOTIONAL_DOMAIN_REJECTED",
     "LOCAL_STATE_AES_256_GCM",
     "LOCAL_STATE_KEY_DPAPI_CURRENT_USER",
+    "DPAPI_PREFLIGHT_BEFORE_OAUTH_CREDENTIAL_SELECTION",
+    "WSL_UNC_ONE_CLICK_LAUNCH_SUPPORTED",
     "REAL_HISTORY_VIEWER_FAILS_CLOSED"
   ],
   "physicalExecution": {
     "realOwnedGmail": "OPEN",
     "realHistoricalCoverageReceipt": "ABSENT",
+    "windowsDpapiRealPreflight": "OPEN_UNTIL_USER_RUN",
     "p1LifecycleReceipt": "OPEN",
     "iosTouched": false
   },
   "forbiddenPromotions": [
     "STATIC_READY=>REAL_GMAIL_PASS",
     "VIEWER_STATIC_READY=>REAL_HISTORICAL_COVERAGE_PASS",
+    "CI_CONCURRENCY_PASS=>REAL_PROVIDER_PERFORMANCE_PASS",
+    "STATIC_WSL_LAUNCHER_READY=>WINDOWS_DPAPI_PHYSICAL_PASS",
     "SEARCH_QUERY_MATCHES=>HISTORICAL_COVERAGE_COMPLETE",
     "BANK_SENDER=>TRANSACTION",
     "KEYWORD_MATCH=>FINANCIAL_EVIDENCE",
