@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "nodeId": "Q-003",
   "nodeStateRequired": "ACTIVE",
   "buildReadyRequired": false,
@@ -14,6 +14,7 @@
     "androidR2Connection": "PHYSICAL_CONNECTIVITY_PASS",
     "androidR2AccountHandleBridge": "CI_PASS_PHYSICAL_RETEST_OPEN",
     "androidR2ProviderRevoke": "HTTP_401_PHYSICAL_OPEN",
+    "gmailHistoricalViewer": "STATIC_READY_REAL_GMAIL_OPEN",
     "productionVerification": "OPEN",
     "securityAssessmentProviderDetermination": "OPEN"
   },
@@ -26,6 +27,15 @@
     {"path": "mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md", "role": "Android Google AuthorizationClient credential boundary"},
     {"path": "mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md", "role": "Android Account handle ownership and provider revoke boundary"},
     {"path": "mk0/11-decisions/ADR-028-MOBILE-OAUTH-CUSTODY-SEMANTICS.md", "role": "cross-platform P2 credential custody semantics"},
+    {"path": "mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md", "role": "historical Gmail coverage semantics"},
+    {"path": "mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md", "role": "Windows controlled real Gmail history viewer boundary"},
+    {"path": "graph/gmail-historical-onboarding.json", "role": "machine-readable historical coverage and viewer contract"},
+    {"path": "spikes/physical-ingress/src/historical-gmail-importer.js", "role": "all-available resumable historical importer"},
+    {"path": "spikes/physical-ingress/src/transaction-evidence-adapters.js", "role": "BCP Interbank Ripley and conservative receipt adapters"},
+    {"path": "spikes/physical-ingress/src/file-encrypted-vault.js", "role": "persistent AES-256-GCM derived-state vault"},
+    {"path": "spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs", "role": "controlled Windows real Gmail historical viewer / physical open"},
+    {"path": "spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd", "role": "one-click Windows trusted-edge viewer runner"},
+    {"path": "tools/validate-gmail-historical-onboarding.mjs", "role": "historical onboarding and viewer fail-closed static guard"},
     {"path": "spikes/mobile-shell/native/android/MainActivity.kt", "role": "Android R2 native Gmail authorization and revoke bridge"},
     {"path": "spikes/mobile-shell/native/ios/GmailCredentialBroker.swift", "role": "iOS Google Sign-In custody reference bridge / physical open"},
     {"path": "tools/validate-android-gmail-bridge.mjs", "role": "Android Gmail bridge fail-closed static guard"},
@@ -57,6 +67,7 @@
     {"path": "mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md", "proof": "P2_ANDROID_PROTECTED_OAUTH_CUSTODY_PHYSICAL_PASS", "closesQ003": false}
   ],
   "openPhysicalGates": [
+    "REAL_HISTORICAL_GMAIL_COVERAGE",
     "ANDROID_PROVIDER_REVOKE_HTTP_401",
     "SUCCESSFUL_PRE_REVOKE_REFRESH",
     "REFRESHED_BEARER_GMAIL_USE",
@@ -80,6 +91,8 @@
     "ANY_NON_2XX_REFRESH=>OLD_REFRESH_AUTHORITY_DENIED",
     "ANDROID_P2_CUSTODY_PASS=>P2_PASS",
     "IOS_STATIC_READY=>IOS_P2_PHYSICAL_PASS",
+    "GMAIL_HISTORY_VIEWER_STATIC_READY=>REAL_HISTORICAL_GMAIL_COVERAGE",
+    "REAL_HISTORICAL_GMAIL_COVERAGE=>BANK_LEDGER_COMPLETENESS",
     "LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED",
     "LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS",
     "ANDROID_R2_ACCOUNT_HANDLE_BRIDGE_CI_PASS=>ANDROID_PROVIDER_REVOKE_PASS",

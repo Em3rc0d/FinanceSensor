@@ -109,6 +109,7 @@ export function evidenceToCandidate(evidence) {
     tenantId: evidence.tenantId,
     evidenceIds: [stableEvidenceKey(evidence)],
     sourceTypes: [evidence.sourceType],
+    evidenceChannels: evidence.evidenceClass ? [evidence.evidenceClass] : [],
     accountId: evidence.accountId ?? null,
     instrumentId: evidence.instrumentId ?? null,
     amount: Math.abs(Number(evidence.amount)),
@@ -155,7 +156,9 @@ export function sharedStrongReference(a, b) {
 }
 
 export function hasIndependentSources(a, b) {
-  return new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size > 1;
+  const sourceCount = new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size;
+  const channelCount = new Set([...(a.evidenceChannels ?? []), ...(b.evidenceChannels ?? [])].filter(Boolean)).size;
+  return sourceCount > 1 || channelCount > 1;
 }
 
 export function merchantsCompatibleForReview(a, b) {
@@ -223,6 +226,7 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
       if (strongReference && bestScore >= autoMergeThreshold) {
         best.evidenceIds = [...new Set([...best.evidenceIds, ...candidate.evidenceIds])];
         best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];
+        best.evidenceChannels = [...new Set([...(best.evidenceChannels ?? []), ...(candidate.evidenceChannels ?? [])])];
         best.confidence = Math.max(best.confidence, candidate.confidence, bestScore);
         continue;
       }

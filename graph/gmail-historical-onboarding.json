@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 2,
+  "project": "FinanceSensor",
+  "node": "Q-003",
+  "status": "STATIC_READY_REAL_GMAIL_OPEN",
+  "coverageClaim": "ALL_DETECTED_TRANSACTION_EVIDENCE_WITHIN_COMPLETED_GMAIL_MAILBOX_SCOPE",
+  "forbiddenClaim": "ALL_BANK_TRANSACTIONS_EXISTING_OUTSIDE_GMAIL",
+  "coverageModes": {
+    "default": "ALL_AVAILABLE_ACTIVE_MAILBOX",
+    "includeSpamTrash": false,
+    "spamTrashRequiresExplicitExtension": true
+  },
+  "enumeration": {
+    "gmailMethod": "users.messages.list",
+    "query": "OMITTED",
+    "labelIds": "OMITTED",
+    "aggregateMessageLimit": null,
+    "pageSizeMax": 500,
+    "completeWhen": "nextPageToken_absent"
+  },
+  "privacyLadder": {
+    "enumeration": "IDS_ONLY",
+    "everyEnumeratedMessage": "METADATA_FROM_SUBJECT_DATE",
+    "fullBody": "STRONG_CANDIDATES_ONLY",
+    "rawBodyDurableRetention": "FORBIDDEN",
+    "rawAttachmentDurableRetention": "FORBIDDEN",
+    "financialPlaintextCloud": "FORBIDDEN"
+  },
+  "resume": {
+    "pageTokenStorage": "LOCAL_ENCRYPTED_TRANSIENT_CURSOR",
+    "invalidPageToken": "RESTART_FROM_BEGINNING_WITH_SOURCE_ID_DEDUP",
+    "skipUnknownRange": false,
+    "partialRunMayClaimComplete": false
+  },
+  "incrementalCutover": {
+    "anchor": "GREATEST_VALID_OBSERVED_MESSAGE_HISTORY_ID",
+    "profileHistoryIdSubstitution": false,
+    "missingMessageDerivedAnchor": "COMPLETE_NO_INCREMENTAL_ANCHOR",
+    "staleHistoryCursor": "FULL_BOOTSTRAP_WITH_IDEMPOTENT_DEDUP"
+  },
+  "evidenceClasses": [
+    "BANK_NOTIFICATION",
+    "PAYMENT_NOTIFICATION",
+    "MERCHANT_RECEIPT",
+    "GENERIC_FINANCIAL_RECEIPT"
+  ],
+  "authorityOrder": [
+    "BANK_NOTIFICATION",
+    "PAYMENT_NOTIFICATION",
+    "MERCHANT_RECEIPT",
+    "GENERIC_FINANCIAL_RECEIPT"
+  ],
+  "issuerAdapters": {
+    "BCP": "STATIC_TESTED",
+    "INTERBANK": "STATIC_TESTED",
+    "RIPLEY": "STATIC_TESTED",
+    "unknownFormats": "CONSERVATIVE_FALLBACK_OR_NON_CANDIDATE"
+  },
+  "localViewer": {
+    "status": "STATIC_READY_REAL_OAUTH_OPEN",
+    "runner": "spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd",
+    "entrypoint": "spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs",
+    "oauthScope": "https://www.googleapis.com/auth/gmail.readonly",
+    "oauthClient": "EXISTING_FINANCESENSOR_DESKTOP_DEV_ONLY",
+    "stateLocation": "WINDOWS_LOCALAPPDATA_FINANCESENSOR_GMAIL_HISTORY_DEV",
+    "stateEncryption": "AES_256_GCM",
+    "stateKeyProtection": "WINDOWS_DPAPI_CURRENT_USER",
+    "refreshTokenDurablePersistence": "FORBIDDEN",
+    "rawGmailBodyDurablePersistence": "FORBIDDEN",
+    "dashboardBinding": "LOOPBACK_127_0_0_1_SESSION_SECRET",
+    "previewState": "NOT_COMPLETE",
+    "completeState": "ONLY_AFTER_NEXT_PAGE_TOKEN_ABSENT"
+  },
+  "realMailboxValidation": {
+    "allowedLocation": "TRUSTED_EDGE_ONLY",
+    "repositoryRawFixtures": "FORBIDDEN",
+    "repositoryFixtures": "SYNTHETIC_STRUCTURE_ONLY"
+  },
+  "requiredStaticProperties": [
+    "NO_90_DAY_LIMIT_IN_ALL_AVAILABLE_MODE",
+    "NO_500_MESSAGE_AGGREGATE_LIMIT",
+    "NO_QUERY_COMPLETENESS_DEPENDENCY",
+    "PAGE_BY_PAGE_COMMIT",
+    "INVALID_CURSOR_RESTARTS_WITH_DEDUP",
+    "KNOWN_BANK_PROMOTIONS_REJECTED",
+    "BANK_AND_MERCHANT_EVIDENCE_RECONCILED",
+    "MESSAGE_DERIVED_INCREMENTAL_ANCHOR",
+    "RIPLEY_CARD_PAYMENT_RECOGNIZED",
+    "RIPLEY_PROMOTIONAL_DOMAIN_REJECTED",
+    "LOCAL_STATE_AES_256_GCM",
+    "LOCAL_STATE_KEY_DPAPI_CURRENT_USER",
+    "REAL_HISTORY_VIEWER_FAILS_CLOSED"
+  ],
+  "physicalExecution": {
+    "realOwnedGmail": "OPEN",
+    "realHistoricalCoverageReceipt": "ABSENT",
+    "p1LifecycleReceipt": "OPEN",
+    "iosTouched": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_READY=>REAL_GMAIL_PASS",
+    "VIEWER_STATIC_READY=>REAL_HISTORICAL_COVERAGE_PASS",
+    "SEARCH_QUERY_MATCHES=>HISTORICAL_COVERAGE_COMPLETE",
+    "BANK_SENDER=>TRANSACTION",
+    "KEYWORD_MATCH=>FINANCIAL_EVIDENCE",
+    "PARTIAL_SCAN=>COMPLETE",
+    "GMAIL_EVIDENCE_COMPLETE=>BANK_LEDGER_COMPLETE",
+    "CONNECTED_GMAIL_TOOL=>FINANCESENSOR_OAUTH_PHYSICAL_PASS"
+  ]
+}

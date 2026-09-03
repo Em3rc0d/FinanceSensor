@@ -57,6 +57,7 @@ if (!failures.length) {
     mobileCredentialCustodyIos: 'P2_STATIC_READY_PHYSICAL_OPEN',
     levelCv7: 'PHYSICAL_PASS',
     levelCv8: 'HARNESS_READY_PHYSICAL_OPEN',
+    gmailHistoricalViewer: 'STATIC_READY_REAL_GMAIL_OPEN',
     productionVerification: 'OPEN',
     securityAssessmentProviderDetermination: 'OPEN'
   };
@@ -77,12 +78,18 @@ if (!failures.length) {
   for (const artifact of [
     'graph/p1-production-lifecycle.json',
     'spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs',
-    'tools/validate-p1-production-lifecycle.mjs'
+    'tools/validate-p1-production-lifecycle.mjs',
+    'graph/gmail-historical-onboarding.json',
+    'mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md',
+    'spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs',
+    'spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd',
+    'tools/validate-gmail-historical-onboarding.mjs'
   ]) {
-    if (!(index.artifacts ?? []).some(entry => entry.path === artifact)) fail(`Q-003 evidence index missing P1 artifact ${artifact}`);
+    if (!(index.artifacts ?? []).some(entry => entry.path === artifact)) fail(`Q-003 evidence index missing artifact ${artifact}`);
   }
 
   const requiredOpenPhysical = new Set([
+    'REAL_HISTORICAL_GMAIL_COVERAGE',
     'SUCCESSFUL_PRE_REVOKE_REFRESH',
     'REFRESHED_BEARER_GMAIL_USE',
     'MINIMUM_SCOPE_REFRESH_PHYSICAL',
@@ -113,6 +120,8 @@ if (!failures.length) {
     'ANY_NON_2XX_REFRESH=>OLD_REFRESH_AUTHORITY_DENIED',
     'ANDROID_P2_CUSTODY_PASS=>P2_PASS',
     'IOS_STATIC_READY=>IOS_P2_PHYSICAL_PASS',
+    'GMAIL_HISTORY_VIEWER_STATIC_READY=>REAL_HISTORICAL_GMAIL_COVERAGE',
+    'REAL_HISTORICAL_GMAIL_COVERAGE=>BANK_LEDGER_COMPLETENESS',
     'LEVEL_C_V7_PHYSICAL_PASS=>Q003_CLOSED',
     'LEVEL_C_V8_HARNESS_READY=>LEVEL_C_V8_PHYSICAL_PASS',
     'PACKAGE_DRAFTED=>GOOGLE_APPROVED',
@@ -152,6 +161,8 @@ console.log('P2_ANDROID_CUSTODY=PHYSICAL_PASS_BOUND_RECEIPT');
 console.log('P2_IOS_CUSTODY=STATIC_READY_PHYSICAL_OPEN');
 console.log('LEVEL_C_V7=PHYSICAL_PASS');
 console.log('LEVEL_C_V8=HARNESS_READY_PHYSICAL_OPEN');
+console.log('GMAIL_HISTORY_VIEWER=STATIC_READY_REAL_GMAIL_OPEN');
+console.log('REAL_HISTORICAL_GMAIL_COVERAGE=OPEN');
 console.log('PRODUCTION_VERIFICATION=OPEN');
 console.log('SECURITY_ASSESSMENT_PROVIDER_DETERMINATION=OPEN');
 console.log('BUILD_READY=false');

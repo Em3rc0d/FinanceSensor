@@ -107,6 +107,23 @@ export class GmailRestProvider {
     return response.json();
   }
 
+  async listMessagePage({ query, labelIds = [], maxResults = 100, pageToken, includeSpamTrash = false }) {
+    const boundedMax = Math.max(1, Math.min(500, Number(maxResults) || 100));
+    const labels = Array.isArray(labelIds) ? labelIds.filter(Boolean).map(String) : [];
+    const page = await this._request('/messages', {
+      q: query ? String(query) : undefined,
+      labelIds: labels,
+      maxResults: boundedMax,
+      pageToken: pageToken ? String(pageToken) : undefined,
+      includeSpamTrash: Boolean(includeSpamTrash)
+    });
+    return {
+      messages: Array.isArray(page.messages) ? page.messages.map(item => ({ id: item.id, threadId: item.threadId })) : [],
+      nextPageToken: page.nextPageToken ?? null,
+      resultSizeEstimate: safeCount(page.resultSizeEstimate)
+    };
+  }
+
   async listMessages({ after, query, labelIds = [], maxResults = 500 }) {
     const explicitQuery = typeof query === 'string' && query.trim() ? query.trim() : undefined;
     const date = new Date(after);
