@@ -55,8 +55,11 @@ Supersedes / superseded by
 | ADR-028 | Mobile OAuth custody semantics | ACCEPTED FOR P2 / ANDROID PHYSICAL EVIDENCE / IOS PHYSICAL OPEN | cross-platform P2 evidence |
 | ADR-029 | MK0 Closure Lab evidence infrastructure | ACCEPTED FOR MK0 EVIDENCE EXECUTION / NOT PRODUCT BUILD AUTHORITY | dedicated synthetic provider environment |
 | ADR-030 | Restore-domain-independent deletion barrier | ACCEPTED FOR PRODUCTION DESIGN / PHYSICAL P3 VALIDATION REQUIRED | provider backup/delete/restore campaign |
+| ADR-031 | Gmail historical onboarding coverage | ACCEPTED FOR PRODUCTION DESIGN / REAL HISTORICAL COMPLETE OPEN | owned-mailbox nextPageToken exhaustion |
+| ADR-032 | Windows local Gmail history viewer | ACCEPTED FOR DEV PHYSICAL HARNESS / REAL COVERAGE OPEN | owned Windows historical completion |
+| ADR-033 | Financial source coverage asymmetry and statement lane | ACCEPTED FOR MK0 DESIGN / STATEMENT PHYSICAL PARSE OPEN | encrypted statement local parse + reconciliation |
 
-**Next available ADR:** `ADR-031`.
+**Next available ADR:** `ADR-034`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
