@@ -188,6 +188,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import('./validate-q005-evidence.mjs');
+
 const counts = (matrix.groups ?? []).reduce((acc, group) => {
   acc[group.status] = (acc[group.status] ?? 0) + group.invariants.length;
   return acc;
@@ -203,3 +205,4 @@ console.log(`contradictions=${ledgerContradictions.length}`);
 console.log(`releaseGate=${releaseGate?.status ?? 'MISSING'}`);
 console.log(`buildReady=${ledger.buildReady}`);
 console.log(`states=${JSON.stringify(counts)}`);
+console.log('Q005_EVIDENCE_BOUNDARY_ATTACHED=PASS');
