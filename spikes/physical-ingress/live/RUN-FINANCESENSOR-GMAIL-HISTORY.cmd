@@ -1,15 +1,36 @@
 @echo off
 setlocal EnableExtensions
-cd /d "%~dp0.."
+
+pushd "%~dp0.." >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor no pudo abrir su runtime local desde esta ruta.
+  echo No se hizo ninguna solicitud OAuth y Gmail no fue accedido.
+  echo.
+  pause
+  exit /b 1
+)
 
 title FinanceSensor - Gmail Transaction History DEV
 
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
-  echo FinanceSensor necesita Node.js instalado en esta computadora.
+  echo FinanceSensor necesita Node.js para Windows disponible en PATH.
   echo No se hizo ninguna solicitud OAuth y Gmail no fue accedido.
   echo.
+  popd
+  pause
+  exit /b 1
+)
+
+powershell.exe -NoProfile -NonInteractive -Command "$v='FinanceSensor-DPAPI-Preflight';$b=[Text.Encoding]::UTF8.GetBytes($v);$p=[Security.Cryptography.ProtectedData]::Protect($b,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);$u=[Security.Cryptography.ProtectedData]::Unprotect($p,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);if([Text.Encoding]::UTF8.GetString($u)-ne $v){exit 2}" >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor no pudo validar Windows DPAPI para tu usuario.
+  echo Se detuvo antes de seleccionar credenciales y antes de acceder a Gmail.
+  echo.
+  popd
   pause
   exit /b 1
 )
@@ -19,6 +40,8 @@ echo ---------------------------------------------
 echo Todo este flujo corre en el edge local controlado.
 echo Scope exacto: gmail.readonly
 echo iOS: NO TOCADO
+echo Windows DPAPI: PREFLIGHT PASS
+echo Ruta WSL/UNC: SOPORTADA MEDIANTE PUSHD
 echo.
 echo Selecciona el JSON OAuth Desktop DEV de FinanceSensor.
 echo El archivo queda local y su contenido nunca se imprime.
@@ -32,6 +55,7 @@ if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
   echo No seleccionaste credencial. FinanceSensor se detuvo antes de OAuth.
   echo Gmail no fue accedido.
   echo.
+  popd
   pause
   exit /b 1
 )
@@ -52,7 +76,7 @@ echo.
 echo Estado local derivado:
 echo   %%LOCALAPPDATA%%\FinanceSensor\gmail-history-dev
 echo La snapshot queda cifrada AES-256-GCM y la clave queda protegida con
- echo Windows DPAPI para tu usuario. No se persisten cuerpos Gmail ni tokens.
+echo Windows DPAPI para tu usuario. No se persisten cuerpos Gmail ni tokens.
 echo.
 
 node live\owned-oauth-gmail-history-viewer.mjs
@@ -67,5 +91,6 @@ if "%FS_EXIT%"=="0" (
   echo completados permanecen locales y pueden reutilizarse en el siguiente run.
 )
 echo.
+popd
 pause
 exit /b %FS_EXIT%

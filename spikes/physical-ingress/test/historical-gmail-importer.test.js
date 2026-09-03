@@ -163,3 +163,35 @@ test('complete empty mailbox does not invent a message-derived history anchor', 
   assert.equal(state.historyCursor, null);
   assert.equal(state.historyCursorSource, null);
 });
+
+test('bounded message concurrency accelerates a page without exceeding configured limit', async () => {
+  const ids = Array.from({ length: 12 }, (_, index) => `m${index + 1}`);
+  const messages = Object.fromEntries(ids.map((id, index) => [id, marketingMessage(id, 500 + index)]));
+  const base = new FakeProvider({
+    pages: { FIRST: { messages: ids.map(id => ({ id })), nextPageToken: null } },
+    messages
+  });
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const provider = {
+    listMessagePage: args => base.listMessagePage(args),
+    async getMessage(args) {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 8));
+        return await base.getMessage(args);
+      } finally {
+        inFlight -= 1;
+      }
+    }
+  };
+
+  const { engine } = importer(provider);
+  const state = await engine.runAllAvailableActiveMailbox({ pageSize: 12, messageConcurrency: 4 });
+  assert.equal(state.historicalBootstrap.status, 'COMPLETE');
+  assert.equal(state.historicalBootstrap.metadataInspected, 12);
+  assert.equal(state.historicalBootstrap.pagesCompleted, 1);
+  assert.ok(maxInFlight > 1);
+  assert.ok(maxInFlight <= 4);
+});

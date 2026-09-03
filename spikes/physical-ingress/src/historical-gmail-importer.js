@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import {
   candidateFingerprint,
   normalizeMerchant,
@@ -71,6 +72,28 @@ function maxHistoryId(a, b) {
   }
 }
 
+async function forEachConcurrent(items, limit, worker) {
+  if (!items.length) return;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      await worker(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+}
+
+function stableProjectionId(item) {
+  const evidenceIds = [...new Set(item.evidenceIds ?? [])].map(String).sort();
+  const payload = evidenceIds.length
+    ? evidenceIds.join('|')
+    : [item.fingerprint, item.occurredAt, item.amount, item.currency, item.semanticType].map(value => String(value ?? '')).join('|');
+  return `tx_${crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)}`;
+}
+
 function durableEvidence(sourceMessageId, extracted) {
   return {
     tenantId: 'tenant-ingress',
@@ -138,7 +161,9 @@ export class HistoricalGmailImporter {
     const ordered = [...state.evidence].sort((a, b) => {
       const rank = evidenceAuthorityRank(b) - evidenceAuthorityRank(a);
       if (rank !== 0) return rank;
-      return String(a.occurredAt ?? '').localeCompare(String(b.occurredAt ?? ''));
+      const time = String(a.occurredAt ?? '').localeCompare(String(b.occurredAt ?? ''));
+      if (time !== 0) return time;
+      return stableEvidenceKey(a).localeCompare(stableEvidenceKey(b));
     });
     const result = resolveCandidates(ordered.map(toCandidate));
     state.canonical = result.canonical;
@@ -183,9 +208,16 @@ export class HistoricalGmailImporter {
     processed.add(id);
   }
 
-  async runAllAvailableActiveMailbox({ pageSize = 100, maxPagesPerRun = Number.POSITIVE_INFINITY } = {}) {
+  async runAllAvailableActiveMailbox({
+    pageSize = 100,
+    maxPagesPerRun = Number.POSITIVE_INFINITY,
+    messageConcurrency = 6
+  } = {}) {
     this._requireAuth();
     if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500) throw new Error('pageSize must be 1..500');
+    if (!Number.isInteger(messageConcurrency) || messageConcurrency < 1 || messageConcurrency > 10) {
+      throw new Error('messageConcurrency must be 1..10');
+    }
     if (!(Number.isFinite(maxPagesPerRun) || maxPagesPerRun === Number.POSITIVE_INFINITY) || maxPagesPerRun <= 0) {
       throw new Error('maxPagesPerRun must be positive');
     }
@@ -224,10 +256,10 @@ export class HistoricalGmailImporter {
 
       const messages = Array.isArray(page.messages) ? page.messages : [];
       bootstrap.messagesEnumerated += messages.length;
-      for (const item of messages) {
-        if (!item?.id) continue;
-        await this._processMessage(String(item.id), state, processed);
-      }
+      const uniqueIds = [...new Set(messages.map(item => item?.id ? String(item.id) : null).filter(Boolean))];
+      await forEachConcurrent(uniqueIds, messageConcurrency, async id => {
+        await this._processMessage(id, state, processed);
+      });
 
       state.processedSourceIds = [...processed];
       bootstrap.pagesCompleted += 1;
@@ -275,9 +307,13 @@ export class HistoricalGmailImporter {
       coverage: structuredClone(state.historicalBootstrap),
       historyCursorSource: state.historyCursorSource,
       transactions: [...state.canonical]
-        .sort((a, b) => String(b.occurredAt ?? '').localeCompare(String(a.occurredAt ?? '')))
+        .sort((a, b) => {
+          const time = String(b.occurredAt ?? '').localeCompare(String(a.occurredAt ?? ''));
+          if (time !== 0) return time;
+          return stableProjectionId(a).localeCompare(stableProjectionId(b));
+        })
         .map(item => ({
-          id: item.id,
+          id: stableProjectionId(item),
           occurredAt: item.occurredAt,
           amount: item.amount,
           currency: item.currency,
