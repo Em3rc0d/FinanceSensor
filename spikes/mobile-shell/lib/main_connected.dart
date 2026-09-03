@@ -63,26 +63,10 @@ class _ConnectedFinanceSensorShellState extends State<ConnectedFinanceSensorShel
         selectedIndex: index,
         onDestinationSelected: (int value) => setState(() => index = value),
         destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Mov.',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.auto_awesome_outlined),
-            selectedIcon: Icon(Icons.auto_awesome),
-            label: 'Sensor',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Tú',
-          ),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Mov.'),
+          NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Sensor'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Tú'),
         ],
       ),
     );
@@ -108,12 +92,7 @@ class ConnectionLabBanner extends StatelessWidget {
           SizedBox(width: 6),
           Text(
             'CONNECTION LAB · FINANZAS SINTÉTICAS',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: .35,
-              color: Color(0xFF9ACDF1),
-            ),
+            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: .35, color: Color(0xFF9ACDF1)),
           ),
         ],
       ),
@@ -156,12 +135,7 @@ class _ConnectedYouPageState extends State<ConnectedYouPage> {
         children: <Widget>[
           const lab.PageHeader(eyebrow: 'Tu espacio financiero', title: 'Tú'),
           const SizedBox(height: 11),
-          lab.MenuCard(
-            icon: Icons.link,
-            title: 'Conexiones',
-            subtitle: snapshot.menuSubtitle,
-            onTap: _openConnections,
-          ),
+          lab.MenuCard(icon: Icons.link, title: 'Conexiones', subtitle: snapshot.menuSubtitle, onTap: _openConnections),
           const SizedBox(height: 8),
           lab.MenuCard(
             icon: Icons.repeat,
@@ -201,11 +175,8 @@ class GmailPlatformBridge {
   static const MethodChannel _channel = MethodChannel('com.financesensor.platform/gmail');
 
   static Future<GmailConnectionSnapshot> getState() => _invoke('getGmailState');
-
   static Future<GmailConnectionSnapshot> connect() => _invoke('authorizeGmail');
-
   static Future<GmailConnectionSnapshot> probe() => _invoke('probeGmail');
-
   static Future<GmailConnectionSnapshot> disconnect() => _invoke('disconnectGmail');
 
   static Future<GmailConnectionSnapshot> _invoke(String method) async {
@@ -229,6 +200,8 @@ class GmailConnectionSnapshot {
     this.threadCount,
     this.latencyMs,
     this.responseBytes,
+    this.disconnectBarrierActive = false,
+    this.providerRevokeVerified = false,
   });
 
   final String state;
@@ -238,14 +211,19 @@ class GmailConnectionSnapshot {
   final int? threadCount;
   final int? latencyMs;
   final int? responseBytes;
+  final bool disconnectBarrierActive;
+  final bool providerRevokeVerified;
 
   bool get isConnected => state == 'CONNECTED';
-
   bool get isBusy => state == 'CHECKING';
+  bool get revokeNeedsAttention => state == 'REVOKE_NOT_EFFECTIVE';
 
   String get menuSubtitle {
     if (isConnected) return 'Gmail · conectado en Android';
     if (isBusy) return 'Gmail · comprobando autorización';
+    if (revokeNeedsAttention) return 'Gmail · desconectado localmente; revoke pendiente';
+    if (state == 'DISCONNECTED_VERIFIED') return 'Gmail · revocación verificada';
+    if (state == 'DISCONNECTED') return 'Gmail · desconectado';
     if (state == 'AUTH_FAILED_10') return 'Gmail · falta registrar firma Android';
     if (state == 'NATIVE_BRIDGE_UNAVAILABLE') return 'Gmail · bridge Android no disponible';
     return 'Gmail · listo para conectar';
@@ -257,10 +235,23 @@ class GmailConnectionSnapshot {
     if (state == 'READY_TO_CONNECT') return 'Listo para conectar';
     if (state == 'REAUTH_REQUIRED') return 'Reautorización necesaria';
     if (state == 'DISCONNECTED') return 'Desconectado';
+    if (state == 'DISCONNECTED_VERIFIED') return 'Revocación verificada';
+    if (state == 'REVOKE_NOT_EFFECTIVE') return 'Revocación de Google no verificada';
     if (state == 'AUTH_FAILED_10') return 'Falta configurar el cliente Android';
     if (state == 'NATIVE_BRIDGE_UNAVAILABLE') return 'Bridge Android no disponible';
     if (state == 'CHECKING') return 'Comprobando';
     return 'No conectado';
+  }
+
+  String get supportingState {
+    if (state == 'REVOKE_NOT_EFFECTIVE') {
+      return 'FinanceSensor bloqueó el acceso local, pero Google todavía devolvió el grant sin pedir consentimiento.';
+    }
+    if (state == 'DISCONNECTED_VERIFIED') {
+      return 'Google ya no devuelve el grant sin consentimiento; la barrera local sigue activa.';
+    }
+    if (historyAnchorObserved) return 'Gmail respondió y se observó un ancla de historial.';
+    return 'Sin contenido financiero real cargado en la interfaz.';
   }
 
   factory GmailConnectionSnapshot.fromMap(Map<Object?, Object?> raw) {
@@ -277,6 +268,8 @@ class GmailConnectionSnapshot {
       threadCount: integer('threadCount'),
       latencyMs: integer('latencyMs'),
       responseBytes: integer('responseBytes'),
+      disconnectBarrierActive: raw['disconnectBarrierActive'] == true,
+      providerRevokeVerified: raw['providerRevokeVerified'] == true,
     );
   }
 }
@@ -286,9 +279,7 @@ Future<void> showGmailConnectionSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: const Color(0xFF0F1725),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (BuildContext context) => const GmailConnectionPanel(),
   );
 }
@@ -340,10 +331,7 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
               child: Container(
                 width: 38,
                 height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF34425A),
-                  borderRadius: BorderRadius.circular(99),
-                ),
+                decoration: BoxDecoration(color: const Color(0xFF34425A), borderRadius: BorderRadius.circular(99)),
               ),
             ),
             const SizedBox(height: 13),
@@ -360,6 +348,10 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
             const _SecurityFact(label: 'Offline access', value: 'No solicitado'),
             const _SecurityFact(label: 'Refresh token en app', value: 'No'),
             const _SecurityFact(label: 'Bearer hacia Flutter', value: 'No'),
+            if (snapshot.disconnectBarrierActive)
+              const _SecurityFact(label: 'Barrera de desconexión', value: 'Activa'),
+            if (snapshot.providerRevokeVerified)
+              const _SecurityFact(label: 'Revocación Google', value: 'Verificada'),
             if (snapshot.messageCount != null)
               _SecurityFact(label: 'Mensajes reportados', value: '${snapshot.messageCount}'),
             if (snapshot.latencyMs != null)
@@ -367,6 +359,12 @@ class _GmailConnectionPanelState extends State<GmailConnectionPanel> {
             const SizedBox(height: 12),
             if (actionBusy)
               const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
+            else if (snapshot.revokeNeedsAttention)
+              FilledButton.tonalIcon(
+                onPressed: () => _run(GmailPlatformBridge.disconnect),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar revocación'),
+              )
             else if (!snapshot.isConnected)
               FilledButton.icon(
                 onPressed: () => _run(GmailPlatformBridge.connect),
@@ -408,19 +406,22 @@ class _ConnectionStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool ok = snapshot.isConnected;
+    final bool warning = snapshot.revokeNeedsAttention;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: ok ? const Color(0xFF0C1D19) : const Color(0xFF121A29),
-        border: Border.all(color: ok ? const Color(0xFF214838) : const Color(0xFF28364F)),
+        color: ok ? const Color(0xFF0C1D19) : warning ? const Color(0xFF241B10) : const Color(0xFF121A29),
+        border: Border.all(
+          color: ok ? const Color(0xFF214838) : warning ? const Color(0xFF69512B) : const Color(0xFF28364F),
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: <Widget>[
           Icon(
-            ok ? Icons.check_circle : Icons.link_outlined,
+            ok ? Icons.check_circle : warning ? Icons.warning_amber_rounded : Icons.link_outlined,
             size: 22,
-            color: ok ? const Color(0xFF8EF0BE) : const Color(0xFFA9B7CE),
+            color: ok ? const Color(0xFF8EF0BE) : warning ? const Color(0xFFFFC56F) : const Color(0xFFA9B7CE),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -429,12 +430,7 @@ class _ConnectionStateCard extends StatelessWidget {
               children: <Widget>[
                 Text(snapshot.humanState, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(
-                  snapshot.historyAnchorObserved
-                      ? 'Gmail respondió y se observó un ancla de historial.'
-                      : 'Sin contenido financiero real cargado en la interfaz.',
-                  style: const TextStyle(fontSize: 8, color: Color(0xFF8FA0B9)),
-                ),
+                Text(snapshot.supportingState, style: const TextStyle(fontSize: 8, color: Color(0xFF8FA0B9))),
               ],
             ),
           ),
@@ -493,6 +489,7 @@ void showConnectionLabSheet(BuildContext context) {
         lab.DetailLine(label: 'Dashboard financiero', value: 'Sintético'),
         lab.DetailLine(label: 'OAuth Android', value: 'Bridge real'),
         lab.DetailLine(label: 'Gmail profile probe', value: 'Nativo'),
+        lab.DetailLine(label: 'Disconnect barrier', value: 'Nativo + durable'),
         lab.DetailLine(label: 'CI ejecuta OAuth real', value: 'NO'),
         lab.DetailLine(label: 'BUILD_READY', value: 'NO'),
       ],
