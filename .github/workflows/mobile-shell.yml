@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - jett/mk0-foundation
+      - jett/p2-ios-compile-proof
     paths:
       - 'spikes/mobile-shell/**'
       - 'tools/validate-mobile-shell.mjs'
