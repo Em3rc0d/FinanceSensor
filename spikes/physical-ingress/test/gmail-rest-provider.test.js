@@ -9,6 +9,12 @@ function jsonResponse(status, payload) {
   });
 }
 
+const noWait = {
+  quotaBudgetPerMinute: 1_000_000_000,
+  sleepImpl: async () => {},
+  randomImpl: () => 0
+};
+
 test('GMAIL-AUTH-001 provider can obtain a short-lived access token from a credential provider', async () => {
   let tokenReads = 0;
   const credentialProvider = {
@@ -17,6 +23,7 @@ test('GMAIL-AUTH-001 provider can obtain a short-lived access token from a crede
   const seenAuth = [];
   const provider = new GmailRestProvider({
     credentialProvider,
+    ...noWait,
     fetchImpl: async (_url, init) => {
       seenAuth.push(init.headers.Authorization);
       return jsonResponse(200, { historyId: '42' });
@@ -37,6 +44,7 @@ test('GMAIL-AUTH-002 a 401 becomes explicit REAUTH_REQUIRED without silently ret
   };
   const provider = new GmailRestProvider({
     credentialProvider,
+    ...noWait,
     fetchImpl: async () => { calls += 1; return jsonResponse(401, { error: { message: 'Invalid Credentials' } }); }
   });
 
@@ -54,6 +62,8 @@ test('GMAIL-AUTH-003 Gmail API error text cannot echo the bearer token and expos
   const secret = 'token-that-must-never-appear';
   const provider = new GmailRestProvider({
     accessToken: secret,
+    ...noWait,
+    maxRetries: 0,
     fetchImpl: async () => new Response(`upstream accidentally reflected ${secret}`, { status: 500 })
   });
 
@@ -66,24 +76,100 @@ test('GMAIL-AUTH-003 Gmail API error text cannot echo the bearer token and expos
   });
 });
 
-test('GMAIL-AUTH-004 non-transient Gmail status remains sanitized and non-retryable', async () => {
+test('GMAIL-AUTH-004 unknown 403 remains sanitized and non-retryable', async () => {
   const provider = new GmailRestProvider({
     accessToken: 'safe-test-token',
+    ...noWait,
     fetchImpl: async () => jsonResponse(403, { error: { message: 'private upstream detail' } })
   });
 
   await assert.rejects(provider.getCurrentHistoryId(), error => {
     assert.equal(error.code, 'GMAIL_API_HTTP_403');
     assert.equal(error.status, 403);
+    assert.equal(error.reason, 'UNKNOWN');
     assert.equal(error.retryable, false);
     assert.equal(String(error.message).includes('private upstream detail'), false);
     return true;
   });
 });
 
+test('GMAIL-AUTH-005 userRateLimitExceeded is allowlisted, retried, and raw provider message is discarded', async () => {
+  let calls = 0;
+  const sleeps = [];
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    quotaBudgetPerMinute: 1_000_000_000,
+    sleepImpl: async ms => { sleeps.push(ms); },
+    randomImpl: () => 0,
+    maxRetries: 2,
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) {
+        return jsonResponse(403, {
+          error: {
+            errors: [{ reason: 'userRateLimitExceeded', message: 'private rate detail' }],
+            message: 'private provider detail'
+          }
+        });
+      }
+      return jsonResponse(200, { historyId: '84' });
+    }
+  });
+
+  assert.equal(await provider.getCurrentHistoryId(), '84');
+  assert.equal(calls, 2);
+  assert.ok(sleeps.some(ms => ms >= 2000));
+});
+
+test('GMAIL-AUTH-006 non-retryable domainPolicy remains explicit but does not expose provider prose', async () => {
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    ...noWait,
+    fetchImpl: async () => jsonResponse(403, {
+      error: {
+        errors: [{ reason: 'domainPolicy', message: 'private admin policy prose' }]
+      }
+    })
+  });
+
+  await assert.rejects(provider.getCurrentHistoryId(), error => {
+    assert.equal(error.code, 'GMAIL_API_HTTP_403_DOMAIN_POLICY');
+    assert.equal(error.reason, 'DOMAIN_POLICY');
+    assert.equal(error.retryable, false);
+    assert.equal(String(error.message).includes('private admin policy prose'), false);
+    return true;
+  });
+});
+
+test('GMAIL-QUOTA-001 messages.get calls are paced by quota units instead of raw request count', async () => {
+  let now = 10_000;
+  const sleeps = [];
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    quotaBudgetPerMinute: 4800,
+    quotaWindowMs: 60_000,
+    nowImpl: () => now,
+    sleepImpl: async ms => { sleeps.push(ms); now += ms; },
+    randomImpl: () => 0,
+    fetchImpl: async url => {
+      const id = new URL(url).pathname.split('/').pop();
+      return jsonResponse(200, {
+        id,
+        historyId: '90',
+        payload: { headers: [], body: { data: '' } }
+      });
+    }
+  });
+
+  await provider.getMessage({ id: 'm1', format: 'METADATA' });
+  await provider.getMessage({ id: 'm2', format: 'METADATA' });
+  assert.ok(sleeps.some(ms => ms >= 250));
+});
+
 test('GMAIL-MIME-001 FULL message returns attachment descriptors without downloading attachment bytes', async () => {
   const provider = new GmailRestProvider({
     accessToken: 'safe-test-token',
+    ...noWait,
     fetchImpl: async () => jsonResponse(200, {
       id: 'msg-1',
       historyId: '9',
@@ -112,6 +198,7 @@ test('GMAIL-BOOTSTRAP-001 bounded bootstrap can list only recent INBOX IDs witho
   let seenUrl;
   const provider = new GmailRestProvider({
     accessToken: 'safe-test-token',
+    ...noWait,
     fetchImpl: async url => {
       seenUrl = new URL(url);
       return jsonResponse(200, { messages: [{ id: 'recent-1', threadId: 'thread-1' }] });
