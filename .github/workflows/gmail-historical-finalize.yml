@@ -6,6 +6,7 @@ on:
       - jett/gmail-historical-onboarding
     paths:
       - '.github/workflows/gmail-historical-finalize.yml'
+      - 'tools/apply-gmail-historical-wiring.mjs'
 
 permissions:
   contents: write
@@ -20,77 +21,8 @@ jobs:
           ref: jett/gmail-historical-onboarding
           fetch-depth: 0
 
-      - name: Wire paged provider, evidence channels and parser boundary
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          provider_path = Path('spikes/physical-ingress/src/gmail-rest-provider.js')
-          provider = provider_path.read_text()
-          needle = '  async listMessages({ after, query, labelIds = [], maxResults = 500 }) {'
-          if 'async listMessagePage' not in provider:
-              method = '''  async listMessagePage({ query, labelIds = [], maxResults = 100, pageToken, includeSpamTrash = false }) {
-            const boundedMax = Math.max(1, Math.min(500, Number(maxResults) || 100));
-            const labels = Array.isArray(labelIds) ? labelIds.filter(Boolean).map(String) : [];
-            const page = await this._request('/messages', {
-              q: query ? String(query) : undefined,
-              labelIds: labels,
-              maxResults: boundedMax,
-              pageToken: pageToken ? String(pageToken) : undefined,
-              includeSpamTrash: Boolean(includeSpamTrash)
-            });
-            return {
-              messages: Array.isArray(page.messages) ? page.messages.map(item => ({ id: item.id, threadId: item.threadId })) : [],
-              nextPageToken: page.nextPageToken ?? null,
-              resultSizeEstimate: safeCount(page.resultSizeEstimate)
-            };
-          }
-
-'''
-              if needle not in provider:
-                  raise SystemExit('provider listMessages insertion point not found')
-              provider = provider.replace(needle, method + needle, 1)
-              provider_path.write_text(provider)
-
-          resolver_path = Path('spikes/canonical-resolver/src/resolver.js')
-          resolver = resolver_path.read_text()
-          old = '    sourceTypes: [evidence.sourceType],\n'
-          new = '    sourceTypes: [evidence.sourceType],\n    evidenceChannels: evidence.evidenceClass ? [evidence.evidenceClass] : [],\n'
-          if 'evidenceChannels: evidence.evidenceClass' not in resolver:
-              if old not in resolver:
-                  raise SystemExit('resolver evidenceToCandidate insertion point not found')
-              resolver = resolver.replace(old, new, 1)
-
-          old_fn = '''export function hasIndependentSources(a, b) {
-            return new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size > 1;
-          }'''
-          new_fn = '''export function hasIndependentSources(a, b) {
-            const sourceCount = new Set([...(a.sourceTypes ?? []), ...(b.sourceTypes ?? [])].filter(Boolean)).size;
-            const channelCount = new Set([...(a.evidenceChannels ?? []), ...(b.evidenceChannels ?? [])].filter(Boolean)).size;
-            return sourceCount > 1 || channelCount > 1;
-          }'''
-          if 'const channelCount = new Set' not in resolver:
-              if old_fn not in resolver:
-                  raise SystemExit('resolver hasIndependentSources block not found')
-              resolver = resolver.replace(old_fn, new_fn, 1)
-
-          old_merge = '        best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];\n        best.confidence'
-          new_merge = '        best.sourceTypes = [...new Set([...best.sourceTypes, ...candidate.sourceTypes])];\n        best.evidenceChannels = [...new Set([...(best.evidenceChannels ?? []), ...(candidate.evidenceChannels ?? [])])];\n        best.confidence'
-          if 'best.evidenceChannels = [...new Set' not in resolver:
-              if old_merge not in resolver:
-                  raise SystemExit('resolver merge insertion point not found')
-              resolver = resolver.replace(old_merge, new_merge, 1)
-          resolver_path.write_text(resolver)
-
-          adapters_path = Path('spikes/physical-ingress/src/transaction-evidence-adapters.js')
-          adapters = adapters_path.read_text()
-          old_line = "  return { ...money, rawMerchant: field(text, ['comercio']) ?? null, direction: 'OUT', semanticType: 'EXPENSE' };"
-          new_line = "  const merchant = normalize(String(text).match(/comercio\\s*:\\s*(.+?)(?=\\s+monto\\s*:|[;\\n\\r]|$)/i)?.[1] ?? '') || null;\n  return { ...money, rawMerchant: merchant, direction: 'OUT', semanticType: 'EXPENSE' };"
-          if old_line in adapters:
-              adapters = adapters.replace(old_line, new_line, 1)
-          adapters_path.write_text(adapters)
-          PY
+      - name: Apply deterministic historical wiring
+        run: node tools/apply-gmail-historical-wiring.mjs
 
       - name: Syntax check historical path
         run: |
@@ -124,13 +56,13 @@ jobs:
       - name: Validate physical campaign
         run: node tools/validate-physical-campaign.mjs
 
-      - name: Commit wiring and remove one-shot workflow
+      - name: Commit wiring and remove one-shot machinery
         shell: bash
         run: |
-          rm -f .github/workflows/gmail-historical-finalize.yml
+          rm -f .github/workflows/gmail-historical-finalize.yml tools/apply-gmail-historical-wiring.mjs
           git config user.name 'FinanceSensor Evidence Bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add spikes/physical-ingress/src/gmail-rest-provider.js spikes/physical-ingress/src/transaction-evidence-adapters.js spikes/canonical-resolver/src/resolver.js .github/workflows/gmail-historical-finalize.yml
+          git add spikes/physical-ingress/src/gmail-rest-provider.js spikes/physical-ingress/src/transaction-evidence-adapters.js spikes/canonical-resolver/src/resolver.js .github/workflows/gmail-historical-finalize.yml tools/apply-gmail-historical-wiring.mjs
           if ! git diff --cached --quiet; then
             git commit -m 'chore(gmail): wire historical provider and evidence reconciliation'
             git push origin HEAD:jett/gmail-historical-onboarding
