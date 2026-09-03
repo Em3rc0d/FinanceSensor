@@ -2,6 +2,8 @@ import fs from 'node:fs';
 
 const graph = JSON.parse(fs.readFileSync('graph/financial-source-coverage.json', 'utf8'));
 const adr = fs.readFileSync('mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md', 'utf8');
+const mobileStackAdr = fs.readFileSync('mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md', 'utf8');
+const mobileShell = fs.readFileSync('spikes/mobile-shell/README.md', 'utf8');
 const adapters = fs.readFileSync('spikes/physical-ingress/src/statement-source-adapters.js', 'utf8');
 const session = fs.readFileSync('spikes/physical-ingress/src/statement-import-session.js', 'utf8');
 const pdf = fs.readFileSync('spikes/physical-ingress/src/pdfjs-statement-parser.js', 'utf8');
@@ -37,6 +39,21 @@ assert(graph.laws.cashflowCompleteRequiresBothDirections === true, 'cashflow com
 assert(graph.laws.creditStatementAutoIsNotDebitStatementAuto === true, 'credit/debit statement acquisition must stay distinct');
 assert(graph.laws.debitStatementManualRequestIsNotManualTransactionEntry === true, 'requested statement is not manual transaction entry');
 assert(graph.laws.cardStatementDoesNotProveSavingsInflows === true, 'card statement inflow boundary missing');
+assert(graph.laws.windowsStatementRunnerIsEvidenceHarnessOnly === true, 'Windows runner must stay evidence-only');
+assert(graph.laws.desktopHarnessPassIsNotMobileProductPass === true, 'desktop harness cannot promote mobile product PASS');
+assert(graph.laws.productStatementRuntimeIsMobile === true, 'statement product runtime must remain mobile');
+
+assert(graph.productRuntimeBoundary.productSurface === 'FLUTTER_MOBILE_APP', 'product surface must remain Flutter mobile');
+assert(graph.productRuntimeBoundary.primaryPhysicalTarget === 'ANDROID', 'Android must remain primary physical target');
+assert(JSON.stringify(graph.productRuntimeBoundary.requiredProductionTargets) === JSON.stringify(['ANDROID', 'IOS']), 'Android+iOS must remain required production targets');
+assert(graph.productRuntimeBoundary.productStatementIngress === 'MOBILE_DEVICE_LOCAL', 'statement ingress must be device-local in product');
+assert(graph.productRuntimeBoundary.nativeSecurityBridge.android === 'KOTLIN', 'Android security bridge must be Kotlin');
+assert(graph.productRuntimeBoundary.nativeSecurityBridge.ios === 'SWIFT', 'iOS security bridge must be Swift');
+assert(graph.productRuntimeBoundary.windowsStatementRunner === 'MK0_EVIDENCE_HARNESS_ONLY', 'Windows statement runner classification mismatch');
+assert(graph.productRuntimeBoundary.windowsRunnerShipsInProduct === false, 'Windows runner must never ship in product');
+assert(graph.productRuntimeBoundary.desktopProductClaimAllowed === false, 'desktop product claim must remain forbidden');
+assert(graph.productRuntimeBoundary.desktopHarnessCanPromoteMobilePass === false, 'desktop harness must not promote mobile PASS');
+
 assert(graph.statementPasswordBoundary.localMemoryOnly === true, 'statement password must be memory-only');
 for (const key of ['persist', 'log', 'cloud', 'github', 'chat']) {
   assert(graph.statementPasswordBoundary[key] === false, `statement password ${key} must be false`);
@@ -53,12 +70,20 @@ for (const law of [
   'OUTFLOW_COVERAGE != INFLOW_COVERAGE',
   'GMAIL_BOOTSTRAP_COMPLETE != CASHFLOW_COMPLETE',
   'CREDIT_STATEMENT_AUTO != DEBIT_STATEMENT_AUTO',
-  'CARD_STATEMENT != SAVINGS_ACCOUNT_INFLOW_PROOF'
+  'CARD_STATEMENT != SAVINGS_ACCOUNT_INFLOW_PROOF',
+  'WINDOWS_STATEMENT_RUNNER = MK0_EVIDENCE_HARNESS_ONLY',
+  'DESKTOP_HARNESS_PASS != MOBILE_PRODUCT_PASS',
+  'PRODUCT_STATEMENT_RUNTIME = MOBILE_DEVICE_LOCAL'
 ]) {
   assert(adr.includes(law), `ADR missing law ${law}`);
 }
 assert(adr.includes('STATEMENT_PDF_PASSWORD              LOCAL_MEMORY_ONLY'), 'ADR password boundary missing');
 assert(adr.includes('NEVER_REQUESTED_IN_CHAT'), 'ADR must forbid requesting identity-derived password in chat');
+assert(adr.includes('A Windows harness can satisfy item 7 only. It cannot satisfy items 8 or 9.'), 'ADR must bound desktop evidence authority');
+assert(mobileStackAdr.includes('FinanceSensor as a mobile-first product'), 'ADR-009 mobile-first authority missing');
+assert(mobileStackAdr.includes('Flutter / Dart'), 'ADR-009 Flutter product stack missing');
+assert(mobileShell.includes('FLUTTER MOBILE APP SHELL'), 'mobile shell product surface marker missing');
+assert(mobileShell.includes('PRIMARY TARGET         ANDROID DEBUG APK'), 'mobile shell Android-first marker missing');
 
 for (const marker of ['BCP_CREDIT', 'RIPLEY_CREDIT', 'BCP_SAVINGS_REQUESTED', 'NOT_STATEMENT']) {
   assert(adapters.includes(marker), `statement adapter missing ${marker}`);
@@ -107,6 +132,10 @@ for (const pattern of forbiddenPersistence) {
 }
 
 console.log('FINANCESENSOR_FINANCIAL_SOURCE_COVERAGE=PASS');
+console.log('PRODUCT_SURFACE=FLUTTER_MOBILE_APP');
+console.log('PRIMARY_PHYSICAL_TARGET=ANDROID');
+console.log('WINDOWS_STATEMENT_RUNNER=MK0_EVIDENCE_HARNESS_ONLY');
+console.log('DESKTOP_HARNESS_CAN_PROMOTE_MOBILE_PASS=0');
 console.log('OUTFLOW_COVERAGE_SPLIT=PASS');
 console.log('INFLOW_REQUIRES_STATEMENT_OR_OTHER_SOURCE=PASS');
 console.log('CREDIT_STATEMENT_AUTO_LANE=PASS');
@@ -116,5 +145,6 @@ console.log('STATEMENT_PASSWORD_PERSISTENCE=0');
 console.log('RAW_DECRYPTED_STATEMENT_DURABILITY=0');
 console.log('INTERBANK_STATEMENT_COVERAGE=UNPROVEN');
 console.log('REAL_STATEMENT_PARSE=OPEN');
+console.log('MOBILE_STATEMENT_PHYSICAL_PASS=OPEN');
 console.log('IOS_TOUCHED=0');
 console.log('BUILD_READY=false');
