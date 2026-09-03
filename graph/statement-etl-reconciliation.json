@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "status": "DESIGN_ACCEPTED_REAL_FORMAT_EVIDENCE_OPEN",
+  "asOf": "2026-09-03",
+  "product": {
+    "surface": "FLUTTER_MOBILE_APP",
+    "primaryPhysicalTarget": "ANDROID",
+    "requiredProductionTargets": ["ANDROID", "IOS"],
+    "desktopHarnessAuthority": false
+  },
+  "sourceModel": {
+    "liveTransactional": "GMAIL_TRANSACTION_EVIDENCE",
+    "periodLedger": "BANK_STATEMENT",
+    "law": "REALTIME_SENSOR != BANK_LEDGER",
+    "inflowLaw": "NO_GMAIL_INFLOW != ZERO_INFLOW",
+    "outflowLaw": "OBSERVED_OUTFLOW != RECONCILED_OUTFLOW"
+  },
+  "etl": {
+    "extract": {
+      "nativePdfTextFirst": true,
+      "ocrFallback": true,
+      "ocrIsPrimary": false,
+      "rawDurable": false,
+      "passwordDurable": false
+    },
+    "transform": {
+      "strategy": "VERSIONED_BANK_PRODUCT_ADAPTER",
+      "bankSpecificLayoutInCore": false,
+      "normalizedContract": "STATEMENT_MOVEMENT_EVIDENCE",
+      "separateBalanceEffectFromCashflowDirection": true
+    },
+    "load": {
+      "durableEncryptedLineage": true,
+      "durableDerivedEvidence": true,
+      "durableRawPdf": false,
+      "durableRawEmailBody": false,
+      "durableOcrText": false,
+      "idempotentReplayRequired": true
+    }
+  },
+  "normalizedDirections": {
+    "balanceEffect": ["INCREASE", "DECREASE", "NONE", "UNKNOWN"],
+    "cashflowDirection": ["INFLOW", "OUTFLOW", "NEUTRAL", "UNKNOWN"]
+  },
+  "reconciliation": {
+    "outcomes": [
+      "CONFIRMED_MATCH",
+      "PROBABLE_MATCH",
+      "STATEMENT_ONLY",
+      "EMAIL_ONLY_PENDING",
+      "CONFLICT",
+      "REVIEW_REQUIRED",
+      "NON_TRANSACTION"
+    ],
+    "weakAmountDateOnlyAutoMerge": false,
+    "gmailAndStatementSameEventCreatesDuplicate": false,
+    "statementOnlyMayCreateIncome": true,
+    "cardPaymentMayBecomeIncome": false
+  },
+  "monthlyClose": {
+    "states": [
+      "OPEN_LIVE",
+      "WAITING_FOR_STATEMENTS",
+      "IMPORTING",
+      "RECONCILING",
+      "REVIEW_REQUIRED",
+      "RECONCILED",
+      "REOPENED"
+    ],
+    "coverageDimensions": [
+      "OUTFLOW_OBSERVATION",
+      "INFLOW_LEDGER",
+      "STATEMENT_PERIOD",
+      "ACCOUNT_SCOPE",
+      "RECONCILIATION",
+      "REVIEW_RESOLUTION"
+    ],
+    "singleCompletenessPercentAuthoritative": false,
+    "reconciledMeansProductionReady": false
+  },
+  "truthLaws": [
+    "BANK_FORMAT_A != BANK_FORMAT_B",
+    "BANK_ADAPTER != CORE_FINANCIAL_MODEL",
+    "RAW_LAYOUT != CANONICAL_SEMANTICS",
+    "OCR_OUTPUT != FINANCIAL_EVENT",
+    "STATEMENT_ROW != CANONICAL_EVENT",
+    "GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE",
+    "APK_COMPILED != REAL_EECC_PROVEN",
+    "REAL_EECC_PROVEN != PRODUCTION_READY",
+    "MONTH_RECONCILED != PRODUCTION_READY"
+  ],
+  "evidence": {
+    "architectureDocumented": "PASS",
+    "dataModelDocumented": "PASS",
+    "monthlyCloseUxDocumented": "PASS",
+    "realFormatCorpus": "OPEN",
+    "nativeTextRealParse": "OPEN",
+    "ocrPhysical": "OPEN",
+    "multiBankReconciliationPhysical": "OPEN",
+    "androidRealStatement": "OPEN",
+    "iosRealStatement": "DEFERRED_REQUIRED"
+  },
+  "references": [
+    "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
+    "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
+    "mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md",
+    "mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md",
+    "mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md",
+    "mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md"
+  ],
+  "buildReady": false,
+  "iosTouched": false
+}
