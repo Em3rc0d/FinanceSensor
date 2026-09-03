@@ -1,25 +1,29 @@
 # ADR-026 — Android Google Authorization boundary
 
-**Status:** ACCEPTED FOR PHYSICAL VALIDATION / NOT YET PHYSICALLY PROVEN  
+**Status:** ACCEPTED FOR PHYSICAL VALIDATION / PARTIAL PHYSICAL EVIDENCE / REVOKE OPEN  
 **Date:** 2026-09-02
 
 ## Context
 
-FinanceSensor now has a compilable Android product shell and is entering the physical connection campaign. ADR-017 correctly rejected treating a secret embedded in a distributed Android binary as a confidential OAuth boundary, but it left the final Android authorization mechanism open.
+FinanceSensor has a compilable Android product shell and is entering the physical connection campaign. ADR-017 correctly rejected treating a secret embedded in a distributed Android binary as a confidential OAuth boundary, but it left the final Android authorization mechanism open.
 
-Current Google/Android guidance recommends `AuthorizationClient` from Google Identity Services for Android applications that need access to Google user data. This mechanism can return a short-lived access token to the native application and can launch provider-owned consent UI when a grant is missing.
+Current Google/Android guidance uses `AuthorizationClient` from Google Identity Services for Android applications that need access to Google user data. This mechanism can return a short-lived access token to the native application and can launch provider-owned consent UI when a grant is missing.
 
 FinanceSensor does not need ordinary Gmail access from a server. Its Gmail data plane is device-local. Therefore requesting offline access merely to obtain a server authorization code and refresh token would enlarge the trust boundary without serving MK0.
+
+The first Android R1 physical campaign demonstrated real `gmail.readonly` authorization, Gmail profile reachability and a history anchor. It also exposed an important lifecycle failure: after user-requested disconnect, the application could later observe authorization again without having proven that provider revocation had become effective. Therefore UI disconnect and provider revocation must be modeled as separate facts.
 
 ## Decision
 
 ```text
-ANDROID_AUTHORIZATION_PROVIDER = GOOGLE_AUTHORIZATION_CLIENT
-ANDROID_SCOPE                  = gmail.readonly
-ANDROID_OFFLINE_ACCESS         = REJECTED
+ANDROID_AUTHORIZATION_PROVIDER    = GOOGLE_AUTHORIZATION_CLIENT
+ANDROID_SCOPE                     = gmail.readonly
+ANDROID_OFFLINE_ACCESS            = REJECTED
 ANDROID_APP_REFRESH_TOKEN_CUSTODY = NONE
-SHORT_LIVED_BEARER_TO_FLUTTER  = FORBIDDEN
-PACKAGE_PLUS_SHA1_BINDING      = REQUIRED
+SHORT_LIVED_BEARER_TO_FLUTTER     = FORBIDDEN
+PACKAGE_PLUS_SHA1_BINDING         = REQUIRED
+DURABLE_DISCONNECT_BARRIER        = REQUIRED
+POST_REVOKE_PROVIDER_VERIFICATION = REQUIRED
 ```
 
 ### 1. Android authorization path
@@ -56,8 +60,6 @@ serverAuthCode
 
 for the ordinary local Gmail path.
 
-The reason is architectural:
-
 ```text
 DEVICE-LOCAL GMAIL PLANE
         +
@@ -70,7 +72,7 @@ If a future feature genuinely requires server-side Gmail execution, it requires 
 
 ### 3. Token custody
 
-`AuthorizationClient` / Google Play Services owns the provider authorization/token cache behavior. FinanceSensor may hold a short-lived access token only in Kotlin process memory while making an authorized request.
+`AuthorizationClient` / Google Play Services owns provider authorization/token-cache behavior. FinanceSensor may hold a short-lived access token only in Kotlin process memory while making an authorized request.
 
 FinanceSensor Android does not persist a refresh token because this selected path does not request one.
 
@@ -82,6 +84,8 @@ SHORT TOKEN IN LOGS                 FORBIDDEN
 SHORT TOKEN IN EVIDENCE             FORBIDDEN
 SHORT TOKEN IN CLOUD CONTROL PLANE  FORBIDDEN
 ```
+
+A local disconnect barrier is explicitly allowed to persist as a boolean because it is non-secret control state, not provider authority. The Android implementation may persist only that boolean through the narrow connection-state store. Tokens, account identifiers, message data and OAuth credentials remain forbidden there.
 
 ### 4. Gmail probe boundary
 
@@ -116,27 +120,64 @@ AuthorizationClient.clearToken(invalid token)
 REAUTH_REQUIRED
 ```
 
-No hidden retry is performed by the Gmail operation.
+No hidden Gmail retry is performed by the operation.
 
-### 6. Disconnect
+### 6. Disconnect and revoke
 
-User-requested disconnect invokes `AuthorizationClient.revokeAccess()` for the connected Google account and clears FinanceSensor's in-memory authorization state.
+User-requested disconnect is an authorization-destruction operation, not a UI toggle.
 
-Google documents that revoke removes the application's previously granted access for that user and clears locally cached tokens. FinanceSensor therefore treats disconnect as an authorization-destruction operation, consistent with ADR-023.
+The implementation MUST perform these steps in order:
+
+```text
+USER TAPS DISCONNECT
+        ↓
+DURABLE LOCAL DISCONNECT BARRIER = ACTIVE
+        ↓
+AuthorizationClient.revokeAccess(account, gmail.readonly)
+        ↓
+AuthorizationClient.clearToken(previous short token)
+        ↓
+clear FinanceSensor in-memory authorization state
+        ↓
+AuthorizationClient.authorize(account + gmail.readonly)
+        ↓
+resolution required ?
+   YES → DISCONNECTED_VERIFIED
+   NO  → REVOKE_NOT_EFFECTIVE
+```
+
+Google documents `revokeAccess()` as revoking access given to the current application and states that future authorization attempts should require the user to re-consent. Google separately documents `clearToken()` as removing an access token from the local cache. FinanceSensor therefore does not assume that a successful `revokeAccess()` task alone proves both provider revocation and local token-cache destruction.
+
+```text
+REVOKE_TASK_SUCCESS != PROVIDER_REVOKE_VERIFIED
+REVOKE_ACCESS        != CLEAR_TOKEN
+UI_DISCONNECTED      != PROVIDER_REVOKED
+```
+
+The local disconnect barrier is activated before provider operations and survives process/app restart. While active:
+
+- `getGmailState()` MUST NOT silently call provider authorization and restore `CONNECTED`;
+- `probeGmail()` MUST NOT restore access;
+- Flutter MUST report a disconnected state;
+- only an explicit user `Connect Gmail` action may start reauthorization;
+- if Google still returns the existing grant without a resolution/consent path, FinanceSensor MUST remain disconnected and report `REVOKE_NOT_EFFECTIVE`.
+
+The barrier is removed only after an explicit reauthorization flow reaches a successful Gmail profile probe.
 
 ### 7. Android OAuth identity binding
 
 Google's Android OAuth client registration binds the application package name and signing-certificate SHA-1.
 
-FinanceSensor DEV connection APK currently uses:
+Physical debug packages are isolated per executable campaign because GitHub-hosted debug signing identities are ephemeral:
 
 ```text
-package = com.financesensor.lab.financesensor_mobile_shell
+R1 = com.financesensor.lab.gmailconnection.r1
+R2 = com.financesensor.lab.gmailconnection.r2
 ```
 
 The exact signing SHA-1 is emitted by the connection build workflow for the produced APK.
 
-A GitHub-hosted debug build may use an ephemeral debug signing certificate. Therefore a physical DEV OAuth experiment must either:
+A physical DEV OAuth experiment must either:
 
 1. register the exact package + SHA-1 of the APK being physically tested; or
 2. use a controlled local DEV signing identity outside repository/CI custody.
@@ -152,7 +193,8 @@ Public CI may:
 - run synthetic MethodChannel/widget tests;
 - build a debug APK;
 - emit the public signing-certificate SHA-1 for that debug artifact;
-- prove that no offline-access or token-to-Flutter path exists statically.
+- prove statically that no offline-access or token-to-Flutter path exists;
+- verify that only a boolean disconnect barrier may use local preference storage.
 
 Public CI may not:
 
@@ -182,12 +224,14 @@ REQUEST/RESPONSE BYTES                        RECORDED SANITIZED
 LATENCY                                       RECORDED SANITIZED
 APP-HELD REFRESH TOKEN                        ABSENT
 FLUTTER BEARER EXPOSURE                       ABSENT
+LOCAL DISCONNECT BARRIER                      PASS
 DISCONNECT / PROVIDER REVOKE                  PASS
 POST-REVOKE AUTHORIZATION REQUIRES CONSENT    PASS
+EXPLICIT RECONNECT AFTER REVOKE               PASS
 LOG / EVIDENCE SECRET LEAK                    ABSENT
 ```
 
-These facts require physical receipts. A green build is not enough.
+The R1 campaign currently proves the connect/profile/history portion but **does not close** provider revoke. The R2 campaign exists specifically to retest the lifecycle with a durable local barrier and explicit post-revoke verification.
 
 ## Consequences
 
@@ -195,26 +239,26 @@ Positive:
 
 - no refresh token is introduced into FinanceSensor Android storage;
 - no confidential client secret is embedded in the APK;
-- the provider-supported Android authorization mechanism owns consent/grant handling;
 - Flutter remains outside the credential boundary;
-- disconnect has a provider-native revoke operation;
-- native Gmail access can be incrementally expanded without changing UI architecture.
+- a user disconnect cannot be undone by passive app state refresh;
+- provider revoke is verified rather than inferred from a successful API task;
+- failures are surfaced as `REVOKE_NOT_EFFECTIVE` instead of being mislabeled `CONNECTED`.
 
 Costs:
 
 - Android OAuth client registration must match package + signing SHA-1;
 - hosted debug APK identities are unsuitable as a long-term signing strategy;
-- Google Play Services availability becomes part of the Android connection capability check;
+- connection-state logic is now explicitly stateful because disconnect intent must survive app restart;
+- Google Play Services availability and provider propagation become part of the physical lifecycle campaign;
 - iOS still requires its own physical authorization/custody proof.
 
 ## External anchors reviewed
 
-Official documentation reviewed on 2026-09-02:
+Official Google documentation reviewed on 2026-09-02 and rechecked after the R1 physical finding:
 
-- Android Developers — Authorize access to Google user data;
 - Google Play services — `AuthorizationClient`;
-- Google Play services — `AuthorizationResult`;
 - Google Play services — `RevokeAccessRequest`;
+- Google Play services release notes for `revokeAccess` and `clearToken`;
 - Google OAuth 2.0 policies;
 - Gmail API OAuth scopes.
 
@@ -222,15 +266,9 @@ Release-time versions and provider behavior must be revalidated.
 
 ## Reconciliation
 
-ADR-026 refines the Android-specific production-mobile section of ADR-017 and the Android credential-custody requirement in ADR-009:
+ADR-026 refines the Android-specific production-mobile section of ADR-017 and the Android credential-custody requirement in ADR-009.
 
-```text
-PROTECTED_APP_REFRESH_TOKEN_CUSTODY
-```
-
-is not required when the selected platform authorization mechanism does not give FinanceSensor a refresh token at all.
-
-For Android under this ADR, the stronger property is:
+For Android under this ADR:
 
 ```text
 APP_HELD_LONG_LIVED_GMAIL_AUTHORITY = NONE
@@ -246,6 +284,9 @@ PLATFORM_AUTHORIZATION > EMBEDDED_CLIENT_SECRET
 NO_PRODUCT_NEED_FOR_OFFLINE_ACCESS => DO_NOT_REQUEST_OFFLINE_ACCESS
 NO_REFRESH_TOKEN > PROTECTED_REFRESH_TOKEN
 PROVIDER_REVOKE != UI_DISCONNECT_ONLY
+REVOKE_TASK_SUCCESS != PROVIDER_REVOKE_VERIFIED
+PASSIVE_STATE_REFRESH != EXPLICIT_RECONNECT
+DISCONNECT_BARRIER_ACTIVE => AUTO_RECONNECT_FORBIDDEN
 STATIC_BRIDGE_PASS != PHYSICAL_OAUTH_PASS
 PHYSICAL_OAUTH_PASS != Q-003_CLOSED
 GREEN_APK != BUILD_READY
