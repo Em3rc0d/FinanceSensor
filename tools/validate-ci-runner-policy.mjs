@@ -17,7 +17,8 @@ const RETIRED_WORKFLOWS = new Set([
   'gmail-live-spike.yml',
 ]);
 
-const REQUIRED_RUNNER = 'runs-on: ubuntu-latest';
+const DEFAULT_RUNNER = 'runs-on: ubuntu-latest';
+const IOS_COMPILE_RUNNER = 'runs-on: macos-15';
 const failures = [];
 
 function fail(file, message) {
@@ -59,9 +60,13 @@ for (const file of ACTIVE_WORKFLOWS) {
     fail(file, 'active workflow has no runs-on declaration');
   }
 
+  const allowedRunners = file === 'mobile-shell.yml'
+    ? new Set([DEFAULT_RUNNER, IOS_COMPILE_RUNNER])
+    : new Set([DEFAULT_RUNNER]);
+
   for (const line of runnerLines) {
-    if (line !== REQUIRED_RUNNER) {
-      fail(file, `public CI routing must be exactly: ${REQUIRED_RUNNER}`);
+    if (!allowedRunners.has(line)) {
+      fail(file, `public CI routing is not approved: ${line}`);
     }
   }
 
@@ -82,12 +87,26 @@ for (const file of ACTIVE_WORKFLOWS) {
   }
 }
 
-// The mobile shell workflow is allowed only as a synthetic build surface.
-// Registration here must never become permission to execute real provider authority.
+// The mobile shell workflow is a synthetic build + compile surface only.
+// Its macOS job may compile the iOS security bridge, but must not execute
+// Google authorization, read Keychain credential contents or receive real data.
 if (workflowFiles.includes('mobile-shell.yml')) {
   const text = read('mobile-shell.yml');
+  const runnerLines = runsOnLines(text);
+  if (runnerLines.filter(line => line === DEFAULT_RUNNER).length !== 1) {
+    fail('mobile-shell.yml', 'mobile shell must keep exactly one ubuntu-latest Android job');
+  }
+  if (runnerLines.filter(line => line === IOS_COMPILE_RUNNER).length !== 1) {
+    fail('mobile-shell.yml', 'mobile shell must keep exactly one macos-15 iOS compile job');
+  }
+
   const requiredMarkers = [
     'flutter build apk --debug',
+    'FinanceSensorP2CustodyCompile.xcodeproj',
+    'GOOGLE_SIGNIN_VERSION=9.2.0',
+    'IOS_TARGET=SIMULATOR_ONLY',
+    'KEYCHAIN_CONTENTS_READ=0',
+    'IOS_PHYSICAL_CUSTODY_PASS=NO',
     'REAL_GMAIL=0',
     'REAL_OAUTH=0',
     'REAL_FINANCIAL_DATA=0',
@@ -157,13 +176,15 @@ if (failures.length > 0) {
 console.log('FINANCESENSOR_CI_RUNNER_POLICY=PASS');
 console.log(`ACTIVE_WORKFLOWS=${ACTIVE_WORKFLOWS.size}`);
 console.log(`RETIRED_WORKFLOWS=${RETIRED_WORKFLOWS.size}`);
-console.log('RUNNER_ROUTE=ubuntu-latest');
+console.log('RUNNER_ROUTES=ubuntu-latest,macos-15');
+console.log('MACOS_ROUTE_SCOPE=IOS_STATIC_COMPILE_ONLY');
 console.log('ACTIVE_SELF_HOSTED_PATHS=0');
 console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
 console.log('MOBILE_SHELL_REAL_GMAIL=0');
 console.log('MOBILE_SHELL_REAL_OAUTH=0');
 console.log('MOBILE_SHELL_REAL_FINANCIAL_DATA=0');
+console.log('MOBILE_SHELL_IOS_KEYCHAIN_CONTENTS_READ=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
