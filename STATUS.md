@@ -80,7 +80,7 @@ P0/P2 PARTIAL PROGRESS != BUILD_READY
 ## Financial heart
 
 ```text
-CANONICAL RESOLVER           98 / 98 PASS
+CANONICAL RESOLVER           101 / 101 PASS
 SEMANTIC CORPUS              54 bounded cases PASS
 Q-002 ADVERSARIAL DECISIONS  28 / 28 PASS
 UNSAFE FALSE MERGES          0
@@ -127,8 +127,11 @@ Q-005                                      ACTIVE
 Contract-level ingress remains green:
 
 ```text
-PHYSICAL INGRESS / OAUTH CONTRACTS     53 / 53 PASS
-CANONICAL RESOLVER                      98 / 98 PASS
+PHYSICAL INGRESS / OAUTH / HISTORY TESTS   75 / 75 PASS
+CANONICAL RESOLVER                          101 / 101 PASS
+GMAIL HISTORICAL CONTRACT                   PASS
+ISSUER ADAPTERS                             BCP / INTERBANK / RIPLEY
+REAL HISTORICAL GMAIL COVERAGE              PHYSICAL OPEN
 ```
 
 ### Android R2 physical connection and P2 custody boundary
@@ -172,7 +175,7 @@ PROVIDER_REVOKE_VERIFIED      = PREVIOUS_BEARER_HTTP_401
 
 ### iOS P2 boundary
 
-The iOS credential architecture is now frozen against the current Google Sign-In SDK surface, but it is not physically proven.
+The iOS credential architecture is frozen against the current Google Sign-In SDK surface, but it is not physically proven and is intentionally untouched by the Gmail historical viewer work.
 
 ```text
 IOS GOOGLE AUTHORITY                     GOOGLE SIGN-IN SDK
@@ -184,13 +187,56 @@ RESTORE                                  BARRIER-GUARDED
 DISCONNECT                               BARRIER FIRST + SDK DISCONNECT
 IOS BRIDGE                               STATIC READY
 IOS PHYSICAL CUSTODY                     OPEN
+IOS TOUCHED BY GMAIL HISTORY WORK        0
 ```
 
-`spikes/mobile-shell/native/ios/GmailCredentialBroker.swift` is a reference bridge and `tools/validate-ios-gmail-custody.mjs` is only a static fail-closed guard. An owned iPhone run is still required before the iOS claim can pass.
+`spikes/mobile-shell/native/ios/GmailCredentialBroker.swift` remains a reference bridge and `tools/validate-ios-gmail-custody.mjs` remains only a static fail-closed guard. No iPhone action is part of the current test frontier.
+
+### Gmail historical viewer / first-run readiness
+
+ADR-031 freezes historical mailbox coverage and ADR-032 freezes the Windows controlled DEV viewer. The executable path is now static-ready but intentionally not promoted to real Gmail PASS before user execution.
+
+```text
+COVERAGE MODE                           ALL_AVAILABLE_ACTIVE_MAILBOX
+COMPLETENESS QUERY                      OMITTED
+AGGREGATE MESSAGE LIMIT                 NONE
+SPAM / TRASH                            EXCLUDED BY DEFAULT
+METADATA                                EVERY ENUMERATED MESSAGE
+FULL BODY                               STRONG CANDIDATES ONLY
+MESSAGE CONCURRENCY                     6 DEFAULT / 10 HARD MAX
+PAGE COMMIT                             ALL UNIQUE MESSAGE TASKS TERMINAL
+INVALID PAGE CURSOR                     RESTART + SOURCE-ID DEDUP
+INCREMENTAL ANCHOR                      MESSAGE-DERIVED historyId
+VIEWER TRANSACTION ID                   STABLE DERIVED PROJECTION ID
+LOCAL DERIVED STATE                     AES-256-GCM
+STATE KEY PROTECTION                    WINDOWS DPAPI CURRENT USER
+WINDOWS DPAPI PREFLIGHT                 BEFORE CREDENTIAL PICKER / PHYSICAL OPEN
+WSL / UNC ONE-CLICK LAUNCH              STATIC READY VIA CMD PUSHD
+DASHBOARD                               127.0.0.1 + PROCESS SESSION SECRET
+OAUTH CLIENT                            EXISTING FINANCESENSOR DESKTOP DEV ONLY
+OAUTH SCOPE                             gmail.readonly EXACT
+DURABLE REFRESH TOKEN                   FORBIDDEN
+DURABLE RAW GMAIL BODY                  FORBIDDEN
+REAL OAUTH                              PHYSICAL OPEN
+REAL HISTORICAL GMAIL COVERAGE          PHYSICAL OPEN
+IOS TOUCHED                             0
+```
+
+The historical CI proves synthetic/static properties only. In particular:
+
+```text
+CONCURRENCY != COVERAGE RELAXATION
+CI CONCURRENCY PASS != REAL PROVIDER PERFORMANCE PASS
+VIEWER STATIC READY != REAL GMAIL PASS
+DPAPI STATIC READY != WINDOWS DPAPI PHYSICAL PASS
+PREVIEW != COMPLETE
+COMPLETE GMAIL EVIDENCE != BANK LEDGER COMPLETENESS
+CONNECTED CHATGPT GMAIL != FINANCESENSOR OAUTH PHYSICAL PASS
+```
 
 ### Q-003 closure state
 
-Q-003 remains `ACTIVE`. Shared P0 is PASS; Android P2 credential custody is physically PASS; Level C v7 proves DEV feasibility; Android R2 proves physical mobile connectivity. Production/provider and cross-platform gates remain open.
+Q-003 remains `ACTIVE`. Shared P0 is PASS; Android P2 credential custody is physically PASS; Level C v7 proves DEV feasibility; Android R2 proves physical mobile connectivity; and the Windows Gmail historical viewer is now static-ready for a controlled owned-account run. Production/provider and cross-platform gates remain open.
 
 ```text
 P0 HARNESS INTEGRITY                          PHYSICAL PASS / BOUND RECEIPT
@@ -199,6 +245,9 @@ P2 IOS CREDENTIAL CUSTODY                     STATIC READY / PHYSICAL OPEN
 LEVEL C PHYSICAL EXECUTION                    PASS
 ANDROID R2 PHYSICAL CONNECTIVITY              PASS
 ANDROID R2 ACCOUNT-HANDLE BRIDGE              CI PASS / PHYSICAL RETEST OPEN
+GMAIL HISTORY VIEWER                          STATIC READY / REAL GMAIL OPEN
+REAL HISTORICAL GMAIL COVERAGE                OPEN
+WINDOWS DPAPI REAL PREFLIGHT                  OPEN UNTIL USER RUN
 ANDROID PROVIDER REVOKE HTTP 401               OPEN
 SUCCESSFUL PHYSICAL REFRESH BEFORE REVOKE     OPEN
 REQUEST PAYLOAD BYTE ACCOUNTING               OPEN
