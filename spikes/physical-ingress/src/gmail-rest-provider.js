@@ -1,5 +1,16 @@
 import { HistoryExpiredError } from './provider.js';
 
+const DEFAULT_QUOTA_BUDGET_PER_MINUTE = 4800;
+const DEFAULT_QUOTA_WINDOW_MS = 60_000;
+const DEFAULT_MAX_RETRIES = 5;
+const SAFE_GMAIL_REASONS = new Map([
+  ['rateLimitExceeded', 'RATE_LIMIT_EXCEEDED'],
+  ['userRateLimitExceeded', 'USER_RATE_LIMIT_EXCEEDED'],
+  ['dailyLimitExceeded', 'DAILY_LIMIT_EXCEEDED'],
+  ['domainPolicy', 'DOMAIN_POLICY']
+]);
+const RETRYABLE_403_REASONS = new Set(['RATE_LIMIT_EXCEEDED', 'USER_RATE_LIMIT_EXCEEDED']);
+
 function decodeBase64Url(data = '') {
   const normalized = String(data).replace(/-/g, '+').replace(/_/g, '/');
   return Buffer.from(normalized, 'base64').toString('utf8');
@@ -47,12 +58,49 @@ function collectAttachmentDescriptors(payload, output = []) {
   return output;
 }
 
-function sanitizedApiError(status) {
-  const safeStatus = Number.isInteger(Number(status)) ? Number(status) : 0;
+function quotaUnitsFor(path) {
+  if (path === '/profile') return 1;
+  if (path === '/history') return 2;
+  if (path === '/messages') return 5;
+  if (/^\/messages\/[^/]+$/.test(path)) return 20;
+  return 20;
+}
+
+function safeReasonFromPayload(payload) {
+  const errors = Array.isArray(payload?.error?.errors) ? payload.error.errors : [];
+  const rawReason = errors.map(item => item?.reason).find(Boolean);
+  return SAFE_GMAIL_REASONS.get(String(rawReason ?? '')) ?? 'UNKNOWN';
+}
+
+async function sanitizedApiError(response) {
+  const safeStatus = Number.isInteger(Number(response?.status)) ? Number(response.status) : 0;
+  let reason = 'UNKNOWN';
+  try {
+    const raw = await response.text();
+    if (raw) reason = safeReasonFromPayload(JSON.parse(raw));
+  } catch {
+    reason = 'UNKNOWN';
+  }
+
   const error = new Error(`Gmail API request failed with status ${safeStatus || 'unknown'}`);
-  error.code = safeStatus === 401 ? 'REAUTH_REQUIRED' : `GMAIL_API_HTTP_${safeStatus || 'UNKNOWN'}`;
+  error.code = safeStatus === 401
+    ? 'REAUTH_REQUIRED'
+    : safeStatus === 403 && reason !== 'UNKNOWN'
+      ? `GMAIL_API_HTTP_403_${reason}`
+      : `GMAIL_API_HTTP_${safeStatus || 'UNKNOWN'}`;
   error.status = safeStatus || null;
-  error.retryable = [429, 500, 502, 503, 504].includes(safeStatus);
+  error.reason = reason;
+  error.retryable = [429, 500, 502, 503, 504].includes(safeStatus)
+    || (safeStatus === 403 && RETRYABLE_403_REASONS.has(reason));
+  return error;
+}
+
+function sanitizedNetworkError() {
+  const error = new Error('Gmail network request failed');
+  error.code = 'GMAIL_NETWORK_ERROR';
+  error.status = null;
+  error.reason = 'NETWORK';
+  error.retryable = true;
   return error;
 }
 
@@ -60,19 +108,46 @@ function safeCount(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
 
+const defaultSleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 export class GmailRestProvider {
-  constructor({ accessToken, credentialProvider, fetchImpl = globalThis.fetch, userId = 'me' }) {
+  constructor({
+    accessToken,
+    credentialProvider,
+    fetchImpl = globalThis.fetch,
+    userId = 'me',
+    quotaBudgetPerMinute = DEFAULT_QUOTA_BUDGET_PER_MINUTE,
+    quotaWindowMs = DEFAULT_QUOTA_WINDOW_MS,
+    maxRetries = DEFAULT_MAX_RETRIES,
+    sleepImpl = defaultSleep,
+    nowImpl = Date.now,
+    randomImpl = Math.random
+  }) {
     if (!accessToken && !credentialProvider) throw new Error('Gmail access token or credential provider required');
     if (credentialProvider && typeof credentialProvider.getAccessToken !== 'function') {
       throw new Error('credentialProvider.getAccessToken required');
     }
     if (typeof fetchImpl !== 'function') throw new Error('fetch implementation required');
+    if (!Number.isFinite(quotaBudgetPerMinute) || quotaBudgetPerMinute <= 0) throw new Error('quotaBudgetPerMinute must be positive');
+    if (!Number.isFinite(quotaWindowMs) || quotaWindowMs <= 0) throw new Error('quotaWindowMs must be positive');
+    if (!Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 8) throw new Error('maxRetries must be 0..8');
+    if (typeof sleepImpl !== 'function' || typeof nowImpl !== 'function' || typeof randomImpl !== 'function') {
+      throw new Error('quota/retry clock dependencies must be functions');
+    }
     this.accessToken = accessToken ? String(accessToken) : null;
     this.credentialProvider = credentialProvider ?? null;
     this.fetch = fetchImpl;
     this.userId = userId;
     this.base = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(userId)}`;
     this.calls = [];
+    this.quotaBudgetPerMinute = Number(quotaBudgetPerMinute);
+    this.quotaWindowMs = Number(quotaWindowMs);
+    this.maxRetries = maxRetries;
+    this.sleep = sleepImpl;
+    this.now = nowImpl;
+    this.random = randomImpl;
+    this.nextQuotaAt = 0;
+    this.quotaGate = Promise.resolve();
   }
 
   async _token() {
@@ -87,6 +162,29 @@ export class GmailRestProvider {
     return String(token);
   }
 
+  async _acquireQuota(cost) {
+    let release;
+    const previous = this.quotaGate;
+    this.quotaGate = new Promise(resolve => { release = resolve; });
+    await previous;
+    try {
+      const now = Number(this.now());
+      const scheduledAt = Math.max(now, this.nextQuotaAt);
+      const waitMs = Math.max(0, scheduledAt - now);
+      const spacingMs = (Math.max(1, Number(cost)) / this.quotaBudgetPerMinute) * this.quotaWindowMs;
+      this.nextQuotaAt = scheduledAt + spacingMs;
+      if (waitMs > 0) await this.sleep(waitMs);
+    } finally {
+      release();
+    }
+  }
+
+  _backoffMs(attempt) {
+    const base = Math.min(30_000, 2_000 * (2 ** attempt));
+    const jitter = Math.floor(Math.max(0, Math.min(1, Number(this.random()) || 0)) * 250);
+    return base + jitter;
+  }
+
   async _request(path, query = {}) {
     const url = new URL(`${this.base}${path}`);
     for (const [key, value] of Object.entries(query)) {
@@ -95,18 +193,40 @@ export class GmailRestProvider {
       else url.searchParams.set(key, String(value));
     }
     this.calls.push({ path, query: structuredClone(query) });
-    const token = await this._token();
-    const response = await this.fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) {
+    const quotaCost = quotaUnitsFor(path);
+
+    for (let attempt = 0; ; attempt += 1) {
+      await this._acquireQuota(quotaCost);
+      const token = await this._token();
+      let response;
+      try {
+        response = await this.fetch(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch {
+        const error = sanitizedNetworkError();
+        if (attempt < this.maxRetries) {
+          await this.sleep(this._backoffMs(attempt));
+          continue;
+        }
+        error.retryAttempts = attempt;
+        throw error;
+      }
+
+      if (response.ok) return response.json();
       if (response.status === 404 && path === '/history') throw new HistoryExpiredError('Gmail historyId expired');
+
+      const error = await sanitizedApiError(response);
       if (response.status === 401 && this.credentialProvider?.onUnauthorized) {
         await this.credentialProvider.onUnauthorized({ status: 401 });
       }
-      throw sanitizedApiError(response.status);
+      if (error.retryable && attempt < this.maxRetries) {
+        await this.sleep(this._backoffMs(attempt));
+        continue;
+      }
+      error.retryAttempts = attempt;
+      throw error;
     }
-    return response.json();
   }
 
   async listMessagePage({ query, labelIds = [], maxResults = 100, pageToken, includeSpamTrash = false }) {
