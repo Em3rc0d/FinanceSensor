@@ -39,6 +39,19 @@ test('BCP-like card notification extracts authoritative purchase evidence', () =
   assert.equal(evidence.references.providerTransactionId, 'DEMO-1020');
 });
 
+test('HTML-only BCP notification strips markup before merchant extraction', () => {
+  const message = msg({
+    from: 'Banco Demo <alerts@notificacionesbcp.com.pe>',
+    subject: 'Realizaste un consumo con tu Tarjeta de Debito BCP - Servicio de Notificaciones BCP',
+    body: '<html><body><div>Realizaste un consumo de <span style="font-weight:bold">S/ 23.83</span> con tu Tarjeta de Debito BCP en <span style="font-weight:bold">DEMO MARKET</span>.</div><div>Numero de operacion: DEMO-HTML-1</div></body></html>'
+  });
+  const evidence = extractAdaptedFinancialEvidence(message);
+  assert.equal(evidence.amount, 23.83);
+  assert.equal(evidence.rawMerchant, 'DEMO MARKET');
+  assert.equal(evidence.rawMerchant.includes('span'), false);
+  assert.equal(evidence.references.providerTransactionId, 'DEMO-HTML-1');
+});
+
 test('BCP-like own-account transfer is neutral transfer semantics', () => {
   const message = msg({
     from: 'Banco Demo <alerts@notificacionesbcp.com.pe>',
