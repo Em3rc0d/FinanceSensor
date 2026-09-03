@@ -26,6 +26,7 @@ function defaultBootstrap() {
     reviewCandidates: 0,
     highestMessageHistoryId: null,
     restartedFromInvalidCursor: 0,
+    legacyDerivedRepairs: 0,
     includeSpamTrash: false
   };
 }
@@ -97,6 +98,14 @@ function stableProjectionId(item) {
 function projectionMerchant(item) {
   if (item.semanticType === 'CARD_PAYMENT') return item.rawMerchant || 'Pago de tarjeta';
   return item.merchantCanonical || item.rawMerchant || null;
+}
+
+function isLegacyMarkupMerchant(value = '') {
+  const text = String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!text) return false;
+  return /(?:^|\s)span\s+style\b/.test(text)
+    || /\bfont\s+weight\b/.test(text)
+    || /<[^>]+>/.test(text);
 }
 
 function durableEvidence(sourceMessageId, extracted) {
@@ -176,6 +185,40 @@ export class HistoricalGmailImporter {
     state.historicalBootstrap.reviewCandidates = result.review.length;
   }
 
+  async _repairLegacyDerivedEvidence(state) {
+    const affected = state.evidence.filter(item =>
+      item?.sourceType === 'GMAIL'
+      && item?.sourceMessageId
+      && isLegacyMarkupMerchant(item.rawMerchant)
+    );
+    const sourceIds = [...new Set(affected.map(item => String(item.sourceMessageId)))];
+    if (!sourceIds.length) return 0;
+
+    const replacements = [];
+    for (const id of sourceIds) {
+      const metadata = await this.provider.getMessage({
+        id,
+        format: 'METADATA',
+        metadataHeaders: ['From', 'Date', 'Subject']
+      });
+      const metadataDecision = classifyTransactionMetadata(metadata.headers);
+      if (!metadataDecision.candidate) continue;
+      const full = await this.provider.getMessage({ id, format: 'FULL' });
+      const extracted = extractAdaptedFinancialEvidence(full, metadataDecision);
+      if (extracted) replacements.push(durableEvidence(id, extracted));
+    }
+
+    const repairIds = new Set(sourceIds);
+    state.evidence = state.evidence
+      .filter(item => !repairIds.has(String(item?.sourceMessageId ?? '')))
+      .concat(replacements);
+    state.historicalBootstrap.legacyDerivedRepairs += sourceIds.length;
+    state.historicalBootstrap.financialEvidenceCreated = state.evidence.length;
+    this._rebuildCanonical(state);
+    this._save(state);
+    return sourceIds.length;
+  }
+
   async _processMessage(id, state, processed) {
     if (processed.has(id)) return;
 
@@ -228,6 +271,7 @@ export class HistoricalGmailImporter {
     }
 
     const state = this._load();
+    await this._repairLegacyDerivedEvidence(state);
     const bootstrap = state.historicalBootstrap;
     if (bootstrap.status === 'COMPLETE') return structuredClone(state);
 
@@ -279,7 +323,8 @@ export class HistoricalGmailImporter {
         messagesEnumerated: bootstrap.messagesEnumerated,
         metadataInspected: bootstrap.metadataInspected,
         financialEvidenceCreated: bootstrap.financialEvidenceCreated,
-        reviewCandidates: bootstrap.reviewCandidates
+        reviewCandidates: bootstrap.reviewCandidates,
+        legacyDerivedRepairs: bootstrap.legacyDerivedRepairs
       });
 
       if (!pageToken) {
