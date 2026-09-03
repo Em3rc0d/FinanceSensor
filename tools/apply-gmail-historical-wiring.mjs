@@ -60,6 +60,12 @@ const adaptersPath = 'spikes/physical-ingress/src/transaction-evidence-adapters.
 let adapters = fs.readFileSync(adaptersPath, 'utf8');
 adapters = replaceOnce(
   adapters,
+  "  const token = String(raw).replace(/[\\u00A0 ]/g, '').replace(/[^0-9.,]/g, '');",
+  "  const token = String(raw).replace(/[\\u00A0 ]/g, '').replace(/[^0-9.,]/g, '').replace(/[.,]+$/, '');",
+  'adapter.trailingMoneyPunctuation'
+);
+adapters = replaceOnce(
+  adapters,
   "  return { ...money, rawMerchant: field(text, ['comercio']) ?? null, direction: 'OUT', semanticType: 'EXPENSE' };",
   "  const merchant = normalize(String(text).match(/comercio\\s*:\\s*(.+?)(?=\\s+monto\\s*:|[;\\n\\r]|$)/i)?.[1] ?? '') || null;\n  return { ...money, rawMerchant: merchant, direction: 'OUT', semanticType: 'EXPENSE' };",
   'adapter.interbankMerchantBoundary'
