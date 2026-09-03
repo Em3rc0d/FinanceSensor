@@ -1,0 +1,77 @@
+name: FinanceSensor Mobile Statement Lock Finalize
+
+on:
+  push:
+    branches:
+      - jett/mobile-statement-ingress
+    paths:
+      - '.github/workflows/tmp-mobile-statement-lock.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: jett/mobile-statement-ingress
+          fetch-depth: 0
+
+      - name: Setup Flutter 3.44.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          channel: stable
+          cache: true
+
+      - name: Resolve exact mobile dependency graph
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter --version
+          flutter pub get
+          grep -A5 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.4.8"'
+          ! grep -A5 '^  pdfrx:$' pubspec.lock | grep -q 'version: "2.5.0"'
+          echo 'PDFRX_LOCKED=2.4.8'
+
+      - name: Reconcile ADR index runtime version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('mk0/11-decisions/ADR-INDEX.md')
+          text = p.read_text()
+          old = 'MOBILE PDF RUNTIME                 PDFRX 2.5.0 / PDFIUM'
+          new = 'MOBILE PDF RUNTIME                 PDFRX 2.4.8 / PDFIUM'
+          if old not in text:
+              raise SystemExit('ADR_INDEX_2_5_RUNTIME_MARKER_NOT_FOUND')
+          text = text.replace(old, new)
+          p.write_text(text)
+          PY
+          grep -q 'MOBILE PDF RUNTIME                 PDFRX 2.4.8 / PDFIUM' mk0/11-decisions/ADR-INDEX.md
+          grep -q 'Next available ADR.*ADR-035' mk0/11-decisions/ADR-INDEX.md
+
+      - name: Validate static contracts
+        run: |
+          node tools/validate-mobile-shell.mjs
+          node tools/validate-mobile-stack.mjs
+          node tools/validate-mobile-statement-ingress.mjs
+          node tools/validate-implementation-baseline.mjs
+
+      - name: Analyze and tests
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: Commit lockfile and self-delete
+        run: |
+          rm .github/workflows/tmp-mobile-statement-lock.yml
+          git config user.name 'financesensor-ci'
+          git config user.email 'financesensor-ci@users.noreply.github.com'
+          git add spikes/mobile-shell/pubspec.lock mk0/11-decisions/ADR-INDEX.md .github/workflows/tmp-mobile-statement-lock.yml
+          git diff --cached --check
+          git commit -m 'build(mobile): lock compatible statement runtime'
+          git push origin HEAD:jett/mobile-statement-ingress
