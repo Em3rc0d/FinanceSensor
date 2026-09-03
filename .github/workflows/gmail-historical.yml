@@ -56,18 +56,20 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install exact-pinned ingress dependency
+      - name: Install locked minimal PDF runtime
         working-directory: spikes/physical-ingress
-        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+        run: npm ci --omit=optional --ignore-scripts --no-audit --no-fund
 
       - name: Viewer syntax guard
         run: |
           node --check spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs
+          node --check spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs
           node --check spikes/physical-ingress/src/file-encrypted-vault.js
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
           node --check spikes/physical-ingress/src/statement-source-adapters.js
           node --check spikes/physical-ingress/src/statement-import-session.js
           node --check spikes/physical-ingress/src/statement-row-parser.js
+          node --check spikes/physical-ingress/src/statement-evidence-importer.js
           node --check tools/validate-gmail-historical-onboarding.mjs
           node --check tools/validate-financial-source-coverage.mjs
           node --check tools/validate-q003-evidence.mjs
@@ -99,8 +101,9 @@ jobs:
       - name: No real Gmail or credential material in test path
         run: |
           test -f spikes/physical-ingress/live/RUN-FINANCESENSOR-GMAIL-HISTORY.cmd
+          test -f spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd
           test -f mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md
-          ! grep -R -E -n --exclude-dir=.git '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' spikes/physical-ingress graph/gmail-historical-onboarding.json graph/financial-source-coverage.json mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md tools/validate-gmail-historical-onboarding.mjs tools/validate-financial-source-coverage.mjs
+          ! grep -R -E -n --exclude-dir=.git --exclude-dir=node_modules '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' spikes/physical-ingress graph/gmail-historical-onboarding.json graph/financial-source-coverage.json mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md mk0/11-decisions/ADR-032-WINDOWS-LOCAL-GMAIL-HISTORY-VIEWER.md mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md tools/validate-gmail-historical-onboarding.mjs tools/validate-financial-source-coverage.mjs
 
       - name: PR iOS no-touch guard
         if: github.event_name == 'pull_request'
