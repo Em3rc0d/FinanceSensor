@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import {
   candidateFingerprint,
   normalizeMerchant,
@@ -83,6 +84,14 @@ async function forEachConcurrent(items, limit, worker) {
     }
   });
   await Promise.all(workers);
+}
+
+function stableProjectionId(item) {
+  const evidenceIds = [...new Set(item.evidenceIds ?? [])].map(String).sort();
+  const payload = evidenceIds.length
+    ? evidenceIds.join('|')
+    : [item.fingerprint, item.occurredAt, item.amount, item.currency, item.semanticType].map(value => String(value ?? '')).join('|');
+  return `tx_${crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)}`;
 }
 
 function durableEvidence(sourceMessageId, extracted) {
@@ -298,9 +307,13 @@ export class HistoricalGmailImporter {
       coverage: structuredClone(state.historicalBootstrap),
       historyCursorSource: state.historyCursorSource,
       transactions: [...state.canonical]
-        .sort((a, b) => String(b.occurredAt ?? '').localeCompare(String(a.occurredAt ?? '')))
+        .sort((a, b) => {
+          const time = String(b.occurredAt ?? '').localeCompare(String(a.occurredAt ?? ''));
+          if (time !== 0) return time;
+          return stableProjectionId(a).localeCompare(stableProjectionId(b));
+        })
         .map(item => ({
-          id: item.id,
+          id: stableProjectionId(item),
           occurredAt: item.occurredAt,
           amount: item.amount,
           currency: item.currency,
