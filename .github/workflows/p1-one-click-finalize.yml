@@ -1,0 +1,79 @@
+name: FinanceSensor P1 One-Click Finalize
+
+on:
+  push:
+    branches:
+      - jett/p1-one-click-controlled-run
+    paths:
+      - '.github/workflows/p1-one-click-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout proof branch
+        uses: actions/checkout@v4
+        with:
+          ref: jett/p1-one-click-controlled-run
+          fetch-depth: 0
+
+      - name: Add terminal local-server auto-close
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs')
+          text = path.read_text()
+          replacements = [
+              (
+                  "        await runRefreshRevokeSequence();\n        return sendHtml(res, 200,",
+                  "        await runRefreshRevokeSequence();\n        setTimeout(() => server.close(), 100);\n        return sendHtml(res, 200,"
+              ),
+              (
+                  "        await bestEffortRevokeWithoutPass('STOPPED_BEFORE_P1_PASS');\n        return sendHtml(res, 200,",
+                  "        await bestEffortRevokeWithoutPass('STOPPED_BEFORE_P1_PASS');\n        setTimeout(() => server.close(), 100);\n        return sendHtml(res, 200,"
+              ),
+              (
+                  "      await bestEffortRevokeWithoutPass('FAIL').catch(async () => {\n        clearSensitiveMemory();\n        await persist().catch(() => {});\n      });\n      return sendHtml(res, 500,",
+                  "      await bestEffortRevokeWithoutPass('FAIL').catch(async () => {\n        clearSensitiveMemory();\n        await persist().catch(() => {});\n      });\n      setTimeout(() => server.close(), 100);\n      return sendHtml(res, 500,"
+              )
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'P1_AUTO_CLOSE_PATCH=FAIL: expected exactly one match for {old[:60]!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          print('P1_TERMINAL_SERVER_AUTO_CLOSE=APPLIED')
+          PY
+
+      - name: Syntax check P1 runner
+        run: node --check spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs
+
+      - name: Validate P1 lifecycle harness
+        run: node tools/validate-p1-production-lifecycle.mjs
+
+      - name: Validate P1 result reducer
+        run: node tools/validate-p1-result-reducer.mjs
+
+      - name: Validate P1 one-click path
+        run: node tools/validate-p1-one-click-run.mjs
+
+      - name: Validate Q-003 evidence boundary
+        run: node tools/validate-q003-evidence.mjs
+
+      - name: Validate physical campaign
+        run: node tools/validate-physical-campaign.mjs
+
+      - name: Remove one-shot workflow and commit finalization
+        shell: bash
+        run: |
+          rm .github/workflows/p1-one-click-finalize.yml
+          git config user.name "FinanceSensor CI Repair"
+          git config user.email "actions@users.noreply.github.com"
+          git add spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs .github/workflows/p1-one-click-finalize.yml
+          git commit -m "fix(p1): close local server after terminal lifecycle state"
+          git push origin HEAD:jett/p1-one-click-controlled-run
