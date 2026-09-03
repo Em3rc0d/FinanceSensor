@@ -139,6 +139,7 @@
     "windowsDpapiRealPreflight": "PASS_USER_OBSERVED",
     "windowsDpapiEvidence": "mk0/10-evidence/EV-WINDOWS-DPAPI-GMAIL-HISTORY-PARTIAL-PHYSICAL-2026-09-03.md",
     "lastRealGmailRun": "PARTIAL_STOPPED_SAFE_GMAIL_API_HTTP_403",
+    "lastRealGmailRunEvidence": "mk0/10-evidence/EV-GMAIL-HISTORICAL-PARTIAL-HTTP403-2026-09-03.md",
     "lastRealGmailRunProgress": "ADVANCED_BEYOND_PRIOR_CHECKPOINT",
     "p1LifecycleReceipt": "OPEN",
     "iosTouched": false
