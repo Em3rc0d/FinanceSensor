@@ -1,4 +1,4 @@
-# EV-Q003 — Android R2 local disconnect PASS / provider revoke UNVERIFIED
+# EV-Q003 — Android R2 local disconnect PASS / provider revoke retest required
 
 Date: 2026-09-02
 Surface: owned Android device
@@ -24,43 +24,50 @@ DURABLE DISCONNECT BARRIER                  PASS
 APP REOPEN REMAINS DISCONNECTED             PASS
 PASSIVE STATE REFRESH RECONNECT             NOT OBSERVED
 EXPLICIT CONNECT AFTER DISCONNECT            EXECUTED
-PROVIDER FORCED RE-CONSENT                   NOT OBSERVED
-PROVIDER REVOKE VERIFIED                     NO
-FAIL-CLOSED UI ON SILENT GRANT               PASS
+FRESH CONSENT SCREEN                        NOT OBSERVED
+FAIL-CLOSED LOCAL BARRIER                    PASS
 ```
 
 After user disconnect, FinanceSensor remained disconnected across screen reopen/app state refresh and exposed the local disconnect barrier as active. This closes the R1 defect where passive state observation could restore a connected state.
 
-On a later explicit connection attempt, Google AuthorizationClient returned an existing grant without requiring a fresh consent resolution. FinanceSensor therefore reported the provider revoke as not verified and kept the local access barrier active instead of representing the account as connected.
+## Reconciliation: fresh consent UI is not a valid universal revoke oracle
 
-## Provider contract comparison
+The initial interpretation treated a silent grant after explicit reconnect as evidence that provider revoke had failed. That interpretation is now superseded.
 
-Google documents `AuthorizationClient.revokeAccess()` as revoking access for the current application and states that future sign-in or authorization attempts should require the user to re-consent to requested scopes. Google separately documents `clearToken()` as clearing an access token from local cache.
+Google documents cross-client identity for OAuth clients in the same Cloud Project. Consent for a scope may be shared across those client IDs because they represent one logical application/project. FinanceSensor DEV has multiple OAuth client types in the same project. Therefore a later explicit Android `Connect Gmail` can validly receive a reusable project-level grant without displaying a new consent screen.
 
-Google also documents cross-client identity: consent granted for a scope to one OAuth client ID in a Cloud project is treated as trust in the logical application/project, and another reliably authenticated client in the same project can potentially obtain that scope without another consent prompt.
+Accordingly:
 
-FinanceSensor development currently has multiple OAuth client identities in the same Google Cloud project, including earlier desktop proof clients and Android physical-test clients. Therefore the silent post-disconnect grant has at least two plausible provider-side explanations and cannot yet be classified as a proven `revokeAccess()` implementation failure:
+```text
+NO_FRESH_CONSENT_UI_AFTER_EXPLICIT_CONNECT != REVOKE_FAILURE
+```
 
-1. the R2 client grant was not fully revoked; or
-2. Google cross-client authorization satisfied the Android request from project-level prior approval associated with another FinanceSensor client.
+The provider revoke criterion has been replaced with a direct test:
 
-References:
-- https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient
-- https://developer.android.com/identity/authorization
-- https://developers.google.com/identity/protocols/oauth2/cross-client-identity
-- https://developers.google.com/android/guides/releases
+```text
+BEFORE REVOKE
+  previous bearer -> Gmail profile 2xx
 
-The observed R2 behavior therefore does not satisfy FinanceSensor's physical acceptance criterion for verified provider revoke, but the root cause remains unresolved.
+revokeAccess(account, gmail.readonly)
 
-## Result
+AFTER REVOKE
+  SAME previous bearer -> Gmail profile 401/403
+       ↓
+  PROVIDER_REVOKE_VERIFIED
+```
+
+This direct old-bearer denial test is implemented in the current R2 code and requires a new owned-device physical run.
+
+## Current result
 
 ```text
 ANDROID_GMAIL_CONNECTIVITY                  PASS
 LOCAL_DISCONNECT_DURABILITY                 PASS
-FAIL_CLOSED_REVOKE_SEMANTICS                PASS
-PROVIDER_REVOKE                             UNVERIFIED / FAIL FOR CLOSURE
-POST_REVOKE_FRESH_CONSENT                   NOT PROVEN
-CROSS_CLIENT_AUTHORIZATION                  PLAUSIBLE CONFOUNDER
+PASSIVE_AUTO_RECONNECT_BLOCKED              PASS
+FAIL_CLOSED_LOCAL_SEMANTICS                 PASS
+FRESH_CONSENT_ORACLE                        RETIRED / INVALID FOR MULTI-CLIENT PROJECT
+OLD_BEARER_POST_REVOKE_DENIAL               NOT YET PHYSICALLY RUN
+PROVIDER_REVOKE                             RETEST REQUIRED
 Q-003                                       ACTIVE
 BUILD_READY                                 NO
 ```
@@ -71,12 +78,18 @@ BUILD_READY                                 NO
 LOCAL_DISCONNECT_PASS != PROVIDER_REVOKE_PASS
 REVOKE_TASK_SUCCESS != PROVIDER_REVOKE_VERIFIED
 CLEAR_TOKEN != REVOKE_ACCESS
-SILENT_GRANT_AFTER_REVOKE != FRESH_CONSENT
-CROSS_CLIENT_GRANT != CURRENT_CLIENT_REVOKE_FAILURE
-FAIL_CLOSED_UI = REQUIRED
+OLD_BEARER_DENIAL > CONSENT_SCREEN_INFERENCE
+PASSIVE_RECONNECT = FORBIDDEN
+EXPLICIT_USER_RECONNECT MAY USE GOOGLE CROSS_CLIENT GRANT
 PASS != CLOSED
 ```
 
 ## Next physical requirement
 
-Before Q-003 provider lifecycle closure, run an isolated Android revoke experiment whose OAuth project does not contain a previously approved sibling client for the same scope, or otherwise prove account/client identity strongly enough to exclude cross-client authorization. Preserve the durable local disconnect barrier and do not weaken the acceptance criterion merely to turn the test green.
+Use the same fixed R2 package and stable LAB signing identity. Do not create R3/R4 package identities merely for iteration.
+
+The next physical run must observe the post-revoke HTTP status produced when the **pre-revoke bearer** is used once more against Gmail. The bearer itself must never be logged, exported to Flutter, committed or included in public evidence.
+
+References:
+- https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient
+- https://developers.google.com/identity/protocols/oauth2/cross-client-identity
