@@ -39,25 +39,74 @@ function safeIso(year, month, day) {
   return date.toISOString();
 }
 
-function bcpStatementYear(pages = []) {
-  const text = normalizeLayoutText(pages.map(pagePlainText).join(' '));
-  const match = text.match(/DEL\s+\d{1,2}\/\d{1,2}\/(\d{2,4})\s+AL\s+\d{1,2}\/\d{1,2}\/\d{2,4}/);
-  if (!match) return null;
-  const value = Number(match[1]);
-  return match[1].length === 2 ? 2000 + value : value;
+function expandBcpYear(token) {
+  const value = Number(token);
+  if (!Number.isInteger(value)) return null;
+  return String(token).length === 2 ? 2000 + value : value;
 }
 
-function parseBcpDate(token, year) {
+function bcpStatementPeriod(pages = []) {
+  const text = normalizeLayoutText(pages.map(pagePlainText).join(' '));
+  const matches = [...text.matchAll(/DEL\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+AL\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/g)];
+  const periods = [];
+
+  for (const match of matches) {
+    const startYear = expandBcpYear(match[3]);
+    const endYear = expandBcpYear(match[6]);
+    if (!startYear || !endYear) continue;
+    const startIso = safeIso(startYear, Number(match[2]), Number(match[1]));
+    const endIso = safeIso(endYear, Number(match[5]), Number(match[4]));
+    if (!startIso || !endIso) continue;
+    const start = Date.parse(startIso);
+    const end = Date.parse(endIso);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) continue;
+    periods.push({ start, end, startYear, endYear });
+  }
+
+  const unique = new Map(periods.map(period => [`${period.start}:${period.end}`, period]));
+  return unique.size === 1 ? [...unique.values()][0] : null;
+}
+
+function distanceToPeriod(time, period) {
+  if (time < period.start) return period.start - time;
+  if (time > period.end) return time - period.end;
+  return 0;
+}
+
+function parseBcpDate(token, period) {
   // pdf.js can split a visually contiguous DDMMM token into adjacent text items.
   // lineToColumns joins those fragments with spaces, so normalize representation-only
   // whitespace before applying the observed BCP DDMMM grammar.
   const compact = normalizeLayoutText(token).replace(/\s+/g, '');
   const match = compact.match(new RegExp(`^(\\d{2})${BCP_DATE_TOKEN_PATTERN}$`));
-  if (!match || !year) return null;
-  return safeIso(year, MONTHS[match[2]], Number(match[1]));
+  if (!match || !period) return null;
+
+  const day = Number(match[1]);
+  const month = MONTHS[match[2]];
+  const years = [...new Set([period.startYear, period.endYear])];
+  const candidates = years
+    .map(year => safeIso(year, month, day))
+    .filter(Boolean)
+    .map(iso => ({ iso, time: Date.parse(iso) }))
+    .filter(candidate => Number.isFinite(candidate.time));
+  if (candidates.length === 0) return null;
+
+  const within = candidates.filter(candidate => candidate.time >= period.start && candidate.time <= period.end);
+  if (within.length === 1) return within[0].iso;
+  if (within.length > 1) return null;
+  if (candidates.length === 1) return candidates[0].iso;
+
+  // Preserve an out-of-range candidate for fail-closed audit diagnostics rather than
+  // silently dropping the movement. Across a year boundary, choose only when one
+  // candidate is uniquely nearer to the declared statement period.
+  const ranked = candidates
+    .map(candidate => ({ ...candidate, distance: distanceToPeriod(candidate.time, period) }))
+    .sort((a, b) => a.distance - b.distance);
+  if (ranked[0].distance === ranked[1].distance) return null;
+  return ranked[0].iso;
 }
 
-function leadingBcpDatePair(line, boundaries, year) {
+function leadingBcpDatePair(line, boundaries, period) {
   const description = boundaries.find(boundary => boundary.id === 'description');
   if (!description || !Number.isFinite(description.minX)) return null;
 
@@ -74,7 +123,7 @@ function leadingBcpDatePair(line, boundaries, year) {
   const matches = [...compact.matchAll(new RegExp(`(\\d{2})${BCP_DATE_TOKEN_PATTERN}`, 'g'))];
   if (matches.length !== 2) return null;
 
-  const dates = matches.map(match => parseBcpDate(`${match[1]}${match[2]}`, year));
+  const dates = matches.map(match => parseBcpDate(`${match[1]}${match[2]}`, period));
   if (dates.some(value => !value)) return null;
   return { occurredAt: dates[0], valueAt: dates[1] };
 }
@@ -144,8 +193,8 @@ function zeroRowDiagnostic({
 export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null } = {}) {
   const rows = [];
   const review = [];
-  const year = bcpStatementYear(pages);
-  if (!year) return { rows, review: [{ code: 'STATEMENT_PERIOD_AMBIGUOUS' }] };
+  const period = bcpStatementPeriod(pages);
+  if (!period) return { rows, review: [{ code: 'STATEMENT_PERIOD_AMBIGUOUS' }] };
 
   let ledgerPages = 0;
   let processDateLines = 0;
@@ -175,10 +224,10 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
       const hasCredit = credit !== null && credit > 0;
       if (hasDebit || hasCredit) amountColumnLines += 1;
 
-      let occurredAt = parseBcpDate(columns.processDate, year);
-      let valueAt = parseBcpDate(columns.valueDate, year);
+      let occurredAt = parseBcpDate(columns.processDate, period);
+      let valueAt = parseBcpDate(columns.valueDate, period);
       if (!occurredAt || !valueAt) {
-        const pair = leadingBcpDatePair(line, geometry.boundaries, year);
+        const pair = leadingBcpDatePair(line, geometry.boundaries, period);
         occurredAt = occurredAt ?? pair?.occurredAt ?? null;
         valueAt = valueAt ?? pair?.valueAt ?? null;
       }
