@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "status": "S2_PROFILE_SPEC_V1_STATIC_ONLY",
+  "asOf": "2026-09-03",
+  "privacy": {
+    "derivedFromPrivateOwnedStructuralReview": true,
+    "rawPrivateDocumentsCommitted": false,
+    "rawPrivateTextCommitted": false,
+    "realFinancialValuesCommitted": false,
+    "realIdentityValuesCommitted": false
+  },
+  "layoutContract": {
+    "strategy": "HEADER_ANCHORED_GEOMETRIC_COLUMNS",
+    "absoluteDeviceCoordinatesForbidden": true,
+    "pageTextFlatteningSufficientForColumnSemantics": false,
+    "textItemGeometryRequiredWhenColumnIdentityCarriesMeaning": true,
+    "pageRoleBeforeRegion": true,
+    "regionBeforeRow": true,
+    "unknownHeaderGeometryFailsClosed": true
+  },
+  "profiles": [
+    {
+      "profileId": "PE-BCP-SAVINGS-REQUESTED",
+      "profileVersion": "1.0.0-static",
+      "status": "FIXTURE_READY",
+      "realParse": "OPEN",
+      "institution": "BCP",
+      "productType": "SAVINGS",
+      "documentMarkers": [
+        "Estado de Cuenta de Ahorros Cuenta Digital BCP",
+        "FECHA PROC.",
+        "FECHA VALOR",
+        "CARGOS / DEBE",
+        "ABONOS / HABER"
+      ],
+      "ledgerPageMarkers": [
+        "FECHA PROC.",
+        "FECHA VALOR",
+        "DESCRIPCION",
+        "CARGOS / DEBE",
+        "ABONOS / HABER"
+      ],
+      "columns": [
+        {"id": "processDate", "header": "FECHA PROC.", "role": "DATE_PROCESS"},
+        {"id": "valueDate", "header": "FECHA VALOR", "role": "DATE_VALUE"},
+        {"id": "description", "header": "DESCRIPCION", "role": "DESCRIPTION"},
+        {"id": "debit", "header": "CARGOS / DEBE", "role": "MOVEMENT_AMOUNT_DEBIT"},
+        {"id": "credit", "header": "ABONOS / HABER", "role": "MOVEMENT_AMOUNT_CREDIT"}
+      ],
+      "dateGrammar": {
+        "rowToken": "DDMMM",
+        "monthTokens": ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","SET","OCT","NOV","DIC"],
+        "yearSource": "STATEMENT_PERIOD_HEADER",
+        "periodHeaderGrammar": "DEL_DD_MM_YY_AL_DD_MM_YY"
+      },
+      "rowRules": {
+        "requiresProcessAndValueDate": true,
+        "debitColumnMeansBalanceEffect": "DECREASE",
+        "debitColumnCashflowDirection": "OUTFLOW",
+        "creditColumnMeansBalanceEffect": "INCREASE",
+        "creditColumnCashflowDirection": "INFLOW",
+        "bothDebitAndCreditPopulated": "REVIEW_REQUIRED",
+        "neitherDebitNorCreditPopulated": "NOT_A_MOVEMENT"
+      },
+      "excludedRows": ["SALDO ANTERIOR","TOTAL MOVIMIENTO","SALDO"],
+      "multiPageLedgerContinuation": true,
+      "syntheticFixture": "spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js"
+    },
+    {
+      "profileId": "PE-INTERBANK-SAVINGS-REQUESTED",
+      "profileVersion": "1.0.0-static",
+      "status": "FIXTURE_READY",
+      "realParse": "OPEN",
+      "institution": "INTERBANK",
+      "productType": "SAVINGS",
+      "documentMarkers": [
+        "ESTADO DE CUENTA",
+        "CUENTA SIMPLE SOLES",
+        "DETALLE DE MOVIMIENTOS"
+      ],
+      "ledgerPageMarkers": [
+        "Fecha",
+        "Concepto",
+        "Ingresos",
+        "Gastos",
+        "Saldo Contable"
+      ],
+      "columns": [
+        {"id": "date", "header": "Fecha", "role": "DATE_POSTED"},
+        {"id": "concept", "header": "Concepto", "role": "DESCRIPTION"},
+        {"id": "income", "header": "Ingresos", "role": "MOVEMENT_AMOUNT_CREDIT"},
+        {"id": "expense", "header": "Gastos", "role": "MOVEMENT_AMOUNT_DEBIT"},
+        {"id": "runningBalance", "header": "Saldo Contable", "role": "RUNNING_BALANCE_NOT_MOVEMENT_AMOUNT"}
+      ],
+      "dateGrammar": {
+        "rowToken": "DD/MM/YYYY",
+        "yearSource": "ROW"
+      },
+      "rowRules": {
+        "incomeColumnMeansBalanceEffect": "INCREASE",
+        "incomeColumnCashflowDirection": "INFLOW",
+        "expenseColumnMeansBalanceEffect": "DECREASE",
+        "expenseColumnCashflowDirection": "OUTFLOW",
+        "runningBalanceCreatesMovement": false,
+        "bothIncomeAndExpensePopulated": "REVIEW_REQUIRED",
+        "neitherIncomeNorExpensePopulated": "NOT_A_MOVEMENT"
+      },
+      "excludedRows": ["EMPEZASTE", "SALDO CONTABLE AL"],
+      "excludedPageRoles": ["INFORMATIONAL","EDUCATIONAL_REFERENCE"],
+      "syntheticFixture": "spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js"
+    },
+    {
+      "profileId": "PE-BCP-CREDIT-MONTHLY",
+      "profileVersion": "1.0.0-spec",
+      "status": "FORMAT_OBSERVED",
+      "realParse": "OPEN",
+      "institution": "BCP",
+      "productType": "CREDIT_CARD",
+      "columns": [
+        {"id": "processDate", "header": "Fecha de proceso", "role": "DATE_PROCESS"},
+        {"id": "consumptionDate", "header": "Fecha de consumo", "role": "DATE_AUTHORIZED"},
+        {"id": "description", "header": "Descripción", "role": "DESCRIPTION"},
+        {"id": "operationType", "header": "Tipo de Operación", "role": "MOVEMENT_KIND"},
+        {"id": "pen", "header": "Soles", "role": "MOVEMENT_AMOUNT_PEN"},
+        {"id": "usd", "header": "Dólares", "role": "MOVEMENT_AMOUNT_USD"}
+      ],
+      "dateGrammar": {"rowToken": "DDMMM", "yearSource": "BILLING_CYCLE"},
+      "excludedRegions": ["PAYMENT_MINIMUM_CALCULATION","INSTALLMENT_PLAN","LOYALTY_PROGRAM","DEBT_COMPOSITION","EDUCATIONAL_REFERENCE"],
+      "semanticRules": {"PAGO": "CARD_PAYMENT", "CONSUMO": "EXPENSE"},
+      "trailingNegativePaymentSupported": true,
+      "syntheticFixture": "OPEN_S3"
+    },
+    {
+      "profileId": "PE-RIPLEY-CREDIT-MONTHLY",
+      "profileVersion": "1.0.0-spec",
+      "status": "FORMAT_OBSERVED",
+      "realParse": "OPEN",
+      "institution": "BANCO_RIPLEY",
+      "productType": "CREDIT_CARD",
+      "columns": [
+        {"id": "operationDate", "header": "Fecha de operación", "role": "DATE_AUTHORIZED"},
+        {"id": "processDate", "header": "Fecha de proceso", "role": "DATE_PROCESS"},
+        {"id": "ticket", "header": "Nº Ticket", "role": "EXTERNAL_REFERENCE"},
+        {"id": "description", "header": "Descripción", "role": "DESCRIPTION"},
+        {"id": "transactionType", "header": "T/A", "role": "MOVEMENT_KIND_HINT"},
+        {"id": "amount", "header": "Monto", "role": "MOVEMENT_AMOUNT"},
+        {"id": "rate", "header": "TEA / TNA", "role": "RATE_NOT_MOVEMENT_AMOUNT"},
+        {"id": "installments", "header": "Nº de cuotas", "role": "INSTALLMENT_METADATA"},
+        {"id": "installmentValue", "header": "Valor Cuota", "role": "INSTALLMENT_METADATA"}
+      ],
+      "excludedRegions": ["PAYMENT_FORMULA","MEMBERSHIP_RENEWAL","POINTS","INFORMATIONAL"],
+      "syntheticFixture": "OPEN_S3"
+    }
+  ],
+  "truthLaws": [
+    "FLATTENED_TEXT != COLUMN_SEMANTICS",
+    "HEADER_POSITION != ABSOLUTE_DEVICE_COORDINATE",
+    "RUNNING_BALANCE != MOVEMENT_AMOUNT",
+    "SUMMARY_AMOUNT != MOVEMENT_AMOUNT",
+    "FIXTURE_READY != REAL_PARSE_PASS",
+    "STATIC_ADAPTER_PASS != ANDROID_PHYSICAL_PASS"
+  ],
+  "buildReady": false,
+  "iosTouched": false
+}

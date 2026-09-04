@@ -7,10 +7,12 @@ on:
     paths:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
+      - 'graph/statement-profile-specs-v1.json'
       - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
       - 'mk0/03-design/PRODUCT-DESIGN.md'
       - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md'
       - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
       - 'mk0/05-data-model/CORE-DATA-MODEL.md'
       - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
@@ -18,11 +20,16 @@ on:
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
       - 'mk0/11-decisions/ADR-INDEX.md'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
+      - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
       - 'spikes/physical-ingress/src/statement-source-adapters.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
+      - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
       - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -34,10 +41,12 @@ on:
     paths:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
+      - 'graph/statement-profile-specs-v1.json'
       - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
       - 'mk0/03-design/PRODUCT-DESIGN.md'
       - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md'
       - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
       - 'mk0/05-data-model/CORE-DATA-MODEL.md'
       - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
@@ -45,11 +54,16 @@ on:
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
       - 'mk0/11-decisions/ADR-INDEX.md'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
+      - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
       - 'spikes/physical-ingress/src/statement-source-adapters.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
+      - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
       - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -70,15 +84,18 @@ jobs:
       - name: Validate statement ETL architecture
         run: node tools/validate-statement-etl-reconciliation.mjs
 
-      - name: Statement page-scope regression
+      - name: Statement structural regression
         run: |
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
+          node --check spikes/physical-ingress/src/statement-layout-geometry.js
           node --check spikes/physical-ingress/src/statement-page-classifier.js
+          node --check spikes/physical-ingress/src/statement-profile-row-adapters.js
           node --check spikes/physical-ingress/src/statement-row-parser.js
           node --check spikes/physical-ingress/src/statement-source-adapters.js
           node --test \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
+            spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
             spikes/physical-ingress/test/statement-source-adapters.test.js
 
@@ -87,10 +104,12 @@ jobs:
           ! grep -R -E -i "(password[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|dni[[:space:]]*[:=][[:space:]]*[0-9]{6,}|account(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,}|card(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,})" \
             graph/statement-etl-reconciliation.json \
             graph/statement-format-registry.json \
+            graph/statement-profile-specs-v1.json \
             mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md \
             mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
             mk0/03-design/PRODUCT-DESIGN.md \
             mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md \
+            mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md \
             mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md \
             mk0/05-data-model/CORE-DATA-MODEL.md \
             mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md \
@@ -98,11 +117,16 @@ jobs:
             mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md \
             mk0/11-decisions/ADR-INDEX.md \
             spikes/physical-ingress/src/pdfjs-statement-parser.js \
+            spikes/physical-ingress/src/statement-layout-geometry.js \
             spikes/physical-ingress/src/statement-page-classifier.js \
+            spikes/physical-ingress/src/statement-profile-row-adapters.js \
             spikes/physical-ingress/src/statement-row-parser.js \
             spikes/physical-ingress/src/statement-source-adapters.js \
+            spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js \
+            spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
+            spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
             spikes/physical-ingress/test/statement-source-adapters.test.js
           echo 'REAL_STATEMENT_DATA_IN_CI=0'
