@@ -24,6 +24,15 @@ test('trusted-edge viewer uses geometric layout path for the physically enabled 
   assert.match(viewer, /BCP_SAVINGS_LAYOUT_PHYSICAL_HARNESS=ENABLED/);
 });
 
+test('BCP savings reconciliation audit is local and does not write through StatementEvidenceImporter', () => {
+  assert.match(viewer, /reconcileStatementProfileLayout/);
+  assert.match(viewer, /BCP_SAVINGS_BALANCE_AUDIT=ENABLED/);
+  assert.match(viewer, /formaction="\$\{auditAction\}"/);
+  const auditBlock = viewer.match(/async function auditProfile\([\s\S]*?\n}\n\nserver = http\.createServer/)?.[0] ?? '';
+  assert.match(auditBlock, /reconcileStatementLayout/);
+  assert.equal(auditBlock.includes('statementImporter.importEvidence'), false);
+});
+
 test('credit statement import remains physically blocked instead of falling back to generic text parser', () => {
   const setBlock = viewer.match(/const PHYSICAL_LAYOUT_IMPORT_PROFILES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
   assert.equal(setBlock.includes('BCP_CREDIT'), false);
