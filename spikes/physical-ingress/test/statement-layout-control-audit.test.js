@@ -7,6 +7,13 @@ import { reconcileBcpSavingsStatement } from '../src/statement-layout-reconcilia
 
 const clone = value => structuredClone(value);
 
+function statementTotalPages() {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  const printedDebitTotal = pages[0].items.find(item => item.text === '20.50' && item.y === 575);
+  printedDebitTotal.text = '90.50';
+  return pages;
+}
+
 function parseRows(pages) {
   const parsed = parseBcpSavingsLayout({
     pages: clone(pages),
@@ -18,7 +25,7 @@ function parseRows(pages) {
 }
 
 test('BCP control audit matches parsed debit and credit sums to printed TOTAL MOVIMIENTO', () => {
-  const pages = clone(bcpSavingsLayoutV1.pages);
+  const pages = statementTotalPages();
   const rows = parseRows(pages);
   const audit = auditBcpStatementControls({ pages, rows });
 
@@ -32,12 +39,12 @@ test('BCP control audit matches parsed debit and credit sums to printed TOTAL MO
     totalCreditExact: true
   });
   assert.equal(JSON.stringify(audit).includes('125'), false);
-  assert.equal(JSON.stringify(audit).includes('20.50'), false);
+  assert.equal(JSON.stringify(audit).includes('90.50'), false);
 });
 
 test('BCP control audit remains exact when TOTAL MOVIMIENTO amounts have nearby baseline drift', () => {
-  const pages = clone(bcpSavingsLayoutV1.pages);
-  pages[0].items.find(item => item.text === '20.50' && item.y === 575).y -= 8;
+  const pages = statementTotalPages();
+  pages[0].items.find(item => item.text === '90.50' && item.y === 575).y -= 8;
   pages[0].items.find(item => item.text === '125.00' && item.y === 575).y += 8;
   const rows = parseRows(pages);
   const audit = auditBcpStatementControls({ pages, rows });
@@ -50,7 +57,7 @@ test('BCP control audit remains exact when TOTAL MOVIMIENTO amounts have nearby 
 });
 
 test('BCP control audit detects parsed movement drift without exposing the discrepancy amount', () => {
-  const pages = clone(bcpSavingsLayoutV1.pages);
+  const pages = statementTotalPages();
   const rows = parseRows(pages);
   rows[0].amount += 0.01;
   const result = reconcileBcpSavingsStatement({ pages, rows });
@@ -63,7 +70,7 @@ test('BCP control audit detects parsed movement drift without exposing the discr
 });
 
 test('BCP control audit distinguishes a missing closing label from missing balance binding', () => {
-  const pages = clone(bcpSavingsLayoutV1.pages);
+  const pages = statementTotalPages();
   pages[1].items = pages[1].items.filter(item => item.text !== 'SALDO');
   const rows = parseRows(pages);
   const audit = auditBcpStatementControls({ pages, rows });
