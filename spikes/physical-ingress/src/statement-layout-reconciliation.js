@@ -89,6 +89,25 @@ function nearestBalanceValue(lines, labelLine, boundaries) {
   return nearest.length === 1 ? nearest[0].cents : null;
 }
 
+function balanceControlLabel(line, boundaries) {
+  const debit = boundaries.find(boundary => boundary.id === 'debit');
+  if (!debit || !Number.isFinite(debit.minX)) return null;
+
+  // Real BCP control labels are visually in the ledger's left/control region, but
+  // their pdf.js x origin can straddle the synthetic DESCRIPCION bucket boundary.
+  // Match the exact control phrase using every text item strictly left of CARGOS,
+  // while amount extraction remains restricted to CARGOS/ABONOS.
+  const leftText = normalizeLayoutText((line?.items ?? [])
+    .filter(item => Number.isFinite(item?.x) && item.x < debit.minX)
+    .map(item => String(item?.text ?? '').trim())
+    .filter(Boolean)
+    .join(' '));
+
+  if (leftText === 'SALDO ANTERIOR') return 'SALDO ANTERIOR';
+  if (leftText === 'SALDO') return 'SALDO';
+  return null;
+}
+
 function balanceAnchors(pages = []) {
   const opening = [];
   const closing = [];
@@ -106,12 +125,11 @@ function balanceAnchors(pages = []) {
     const lines = groupPageItemsIntoLines(page);
     for (const labelLine of lines) {
       if (labelLine.y >= geometry.headerY - 1) continue;
-      const labelColumns = lineToColumns(labelLine, geometry.boundaries);
-      const description = normalizeLayoutText(labelColumns.description);
-      if (description !== 'SALDO ANTERIOR' && description !== 'SALDO') continue;
+      const label = balanceControlLabel(labelLine, geometry.boundaries);
+      if (!label) continue;
       const cents = nearestBalanceValue(lines, labelLine, geometry.boundaries);
       if (cents === null) continue;
-      if (description === 'SALDO ANTERIOR') opening.push(cents);
+      if (label === 'SALDO ANTERIOR') opening.push(cents);
       else closing.push(cents);
     }
   }
@@ -124,14 +142,14 @@ function balanceAnchors(pages = []) {
   };
 }
 
-function dateRangeDiagnostic(rows = [], period = null) {
+function classifyDateRange(values = [], period = null) {
   if (!period) return 'PERIOD_UNAVAILABLE';
   let before = 0;
   let after = 0;
   let invalid = 0;
 
-  for (const row of rows) {
-    const time = Date.parse(String(row?.occurredAt ?? ''));
+  for (const value of values) {
+    const time = Date.parse(String(value ?? ''));
     if (!Number.isFinite(time)) invalid += 1;
     else if (time < period.start) before += 1;
     else if (time > period.end) after += 1;
@@ -143,6 +161,19 @@ function dateRangeDiagnostic(rows = [], period = null) {
   if (before > 0) return 'BEFORE_PERIOD';
   if (after > 0) return 'AFTER_PERIOD';
   return 'INVALID_DATE';
+}
+
+function dateRangeDiagnostic(rows = [], period = null) {
+  const processRange = classifyDateRange(rows.map(row => row?.occurredAt), period);
+  const valueRange = classifyDateRange(rows.map(row => row?.auditValueAt), period);
+
+  // Keep the governing audit fail-closed on FECHA PROC. for now. The value-date
+  // classification is diagnostic only and lets the physical corpus tell us whether
+  // an out-of-period process date is nevertheless accounted inside the statement by
+  // FECHA VALOR. No dates themselves are emitted by this function.
+  if (processRange === 'BEFORE_PERIOD' && valueRange === 'NONE') return 'PROCESS_BEFORE_VALUE_IN_PERIOD';
+  if (processRange === 'AFTER_PERIOD' && valueRange === 'NONE') return 'PROCESS_AFTER_VALUE_IN_PERIOD';
+  return processRange;
 }
 
 function rowIntegrity(rows = [], period = null) {
