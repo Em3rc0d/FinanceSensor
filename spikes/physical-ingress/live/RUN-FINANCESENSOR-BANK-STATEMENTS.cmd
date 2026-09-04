@@ -99,8 +99,10 @@ echo Nunca pegues una clave de PDF en ChatGPT ni en GitHub.
 rem FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN
 echo.
 
+set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS=1"
 node live\owned-oauth-bank-statements-viewer.mjs
 set "FS_EXIT=%ERRORLEVEL%"
+set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS="
 set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
 
 echo.

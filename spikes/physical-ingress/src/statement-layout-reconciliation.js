@@ -103,10 +103,6 @@ function balanceAnchors(pages = []) {
     const geometry = pageGeometry(page);
     if (!geometry) continue;
 
-    // Control rows are audited separately from movement rows. Find the exact label on
-    // its strict pdf.js line, then bind only the nearest single monetary line within a
-    // small vertical band. This tolerates label/value baseline drift without widening
-    // transaction row grouping or absorbing TOTAL MOVIMIENTO / neighboring movements.
     const lines = groupPageItemsIntoLines(page);
     for (const labelLine of lines) {
       if (labelLine.y >= geometry.headerY - 1) continue;
@@ -126,6 +122,27 @@ function balanceAnchors(pages = []) {
     openingCents: opening.length === 1 ? opening[0] : null,
     closingCents: closing.length === 1 ? closing[0] : null
   };
+}
+
+function dateRangeDiagnostic(rows = [], period = null) {
+  if (!period) return 'PERIOD_UNAVAILABLE';
+  let before = 0;
+  let after = 0;
+  let invalid = 0;
+
+  for (const row of rows) {
+    const time = Date.parse(String(row?.occurredAt ?? ''));
+    if (!Number.isFinite(time)) invalid += 1;
+    else if (time < period.start) before += 1;
+    else if (time > period.end) after += 1;
+  }
+
+  const classes = Number(before > 0) + Number(after > 0) + Number(invalid > 0);
+  if (classes === 0) return 'NONE';
+  if (classes > 1) return 'MIXED';
+  if (before > 0) return 'BEFORE_PERIOD';
+  if (after > 0) return 'AFTER_PERIOD';
+  return 'INVALID_DATE';
 }
 
 function rowIntegrity(rows = [], period = null) {
@@ -175,6 +192,28 @@ function rowIntegrityFailureCode(checks = {}) {
   return 'STMT_AUDIT_ROW_INTEGRITY';
 }
 
+function finalizeAudit(result) {
+  if (process.env.FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS === '1') {
+    const checks = result?.checks ?? {};
+    const diagnostics = result?.diagnostics ?? {};
+    const bit = value => value === true ? 1 : 0;
+    console.log([
+      'FINANCESENSOR_STMT_AUDIT_SHAPE',
+      `status=${String(result?.status ?? 'UNKNOWN')}`,
+      `code=${String(result?.code ?? 'UNKNOWN')}`,
+      `period=${bit(checks.periodUnique)}`,
+      `date=${bit(checks.datesWithinPeriod)}`,
+      `direction=${bit(checks.directionalSemantics)}`,
+      `amount=${bit(checks.positiveAmounts)}`,
+      `summary=${bit(checks.summaryRowsExcluded)}`,
+      `opening=${bit(checks.openingBalanceUnique)}`,
+      `closing=${bit(checks.closingBalanceUnique)}`,
+      `range=${String(diagnostics.dateRange ?? 'UNKNOWN')}`
+    ].join(';'));
+  }
+  return result;
+}
+
 export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
   const period = observedPeriod(pages);
   const anchors = balanceAnchors(pages);
@@ -191,6 +230,10 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     balanceEquationExact: null
   };
 
+  const diagnostics = {
+    dateRange: dateRangeDiagnostic(rows, period)
+  };
+
   const rowIntegrityPass = checks.periodUnique
     && checks.datesWithinPeriod
     && checks.directionalSemantics
@@ -198,27 +241,29 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     && checks.summaryRowsExcluded;
 
   if (!rowIntegrityPass) {
-    return {
+    return finalizeAudit({
       profileId: StatementProviderProfile.BCP_SAVINGS_REQUESTED,
       status: 'FAIL',
       code: rowIntegrityFailureCode(checks),
       movementRows: rows.length,
       inflowRows: integrity.inflowRows,
       outflowRows: integrity.outflowRows,
-      checks
-    };
+      checks,
+      diagnostics
+    });
   }
 
   if (!anchors.openingUnique || !anchors.closingUnique) {
-    return {
+    return finalizeAudit({
       profileId: StatementProviderProfile.BCP_SAVINGS_REQUESTED,
       status: 'OPEN',
       code: 'STMT_AUDIT_BALANCE_ANCHOR_OPEN',
       movementRows: rows.length,
       inflowRows: integrity.inflowRows,
       outflowRows: integrity.outflowRows,
-      checks
-    };
+      checks,
+      diagnostics
+    });
   }
 
   const inflowCents = rows
@@ -229,15 +274,16 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     .reduce((sum, row) => sum + toCents(row.amount), 0);
   checks.balanceEquationExact = anchors.openingCents + inflowCents - outflowCents === anchors.closingCents;
 
-  return {
+  return finalizeAudit({
     profileId: StatementProviderProfile.BCP_SAVINGS_REQUESTED,
     status: checks.balanceEquationExact ? 'PASS' : 'FAIL',
     code: checks.balanceEquationExact ? 'STMT_AUDIT_PASS' : 'STMT_AUDIT_BALANCE_MISMATCH',
     movementRows: rows.length,
     inflowRows: integrity.inflowRows,
     outflowRows: integrity.outflowRows,
-    checks
-  };
+    checks,
+    diagnostics
+  });
 }
 
 export function reconcileStatementProfileLayout({ providerProfile, pages = [], rows = [] } = {}) {
@@ -251,6 +297,7 @@ export function reconcileStatementProfileLayout({ providerProfile, pages = [], r
     movementRows: Array.isArray(rows) ? rows.length : 0,
     inflowRows: 0,
     outflowRows: 0,
-    checks: {}
+    checks: {},
+    diagnostics: { dateRange: 'PERIOD_UNAVAILABLE' }
   };
 }
