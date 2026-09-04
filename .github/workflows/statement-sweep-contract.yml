@@ -1,0 +1,83 @@
+name: FinanceSensor Statement Sweep Contract
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
+      - 'spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs'
+      - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-sweep-profile-adapters.js'
+      - 'spikes/physical-ingress/src/statement-sweep-engine.js'
+      - 'spikes/physical-ingress/test/statement-sweep-profile-adapters.test.js'
+      - '.github/workflows/statement-sweep-contract.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
+      - 'spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs'
+      - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-sweep-profile-adapters.js'
+      - 'spikes/physical-ingress/src/statement-sweep-engine.js'
+      - 'spikes/physical-ingress/test/statement-sweep-profile-adapters.test.js'
+      - '.github/workflows/statement-sweep-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sweep-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked PDF runtime
+        working-directory: spikes/physical-ingress
+        run: npm ci --omit=optional --ignore-scripts --no-audit --no-fund
+
+      - name: Sweep syntax boundary
+        run: |
+          node --check spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs
+          node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
+          node --check spikes/physical-ingress/src/statement-sweep-profile-adapters.js
+          node --check spikes/physical-ingress/src/statement-sweep-engine.js
+
+      - name: Sweep synthetic regression
+        working-directory: spikes/physical-ingress
+        run: node --test test/statement-sweep-profile-adapters.test.js test/pdfjs-statement-parser.test.js test/statement-profile-row-adapters.test.js test/statement-page-classifier.test.js
+
+      - name: Full physical-ingress regression
+        working-directory: spikes/physical-ingress
+        run: npm test
+
+      - name: Privacy and no-secret boundary
+        run: |
+          ! grep -R -E -n --exclude-dir=.git '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' \
+            spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd \
+            spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs \
+            spikes/physical-ingress/src/statement-sweep-profile-adapters.js \
+            spikes/physical-ingress/src/statement-sweep-engine.js \
+            spikes/physical-ingress/test/statement-sweep-profile-adapters.test.js
+          echo 'REAL_STATEMENT_DATA_IN_CI=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'STATEMENT_SWEEP_VAULT_WRITES=0'
+          echo 'IOS_TOUCHED=0'
+          echo 'BUILD_READY=false'
+
+      - name: iOS no-touch guard
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -E '^spikes/mobile-shell/native/ios/|^.*ios.*$'; then
+            echo 'Statement sweep PR unexpectedly touches iOS.' >&2
+            exit 1
+          fi
