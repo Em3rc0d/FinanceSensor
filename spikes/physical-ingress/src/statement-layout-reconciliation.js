@@ -19,7 +19,7 @@ const BCP_HEADERS = Object.freeze([
 ]);
 
 const SUMMARY_LABELS = new Set(['SALDO ANTERIOR', 'TOTAL MOVIMIENTO', 'SALDO']);
-const SUMMARY_ROW_Y_TOLERANCE = 6;
+const BALANCE_VALUE_Y_TOLERANCE = 10;
 
 function toCents(value) {
   const amount = Number(value);
@@ -73,6 +73,22 @@ function balanceValue(columns = {}) {
   return toCents(values[0]);
 }
 
+function nearestBalanceValue(lines, labelLine, boundaries) {
+  const candidates = [];
+  for (const line of lines) {
+    const distance = Math.abs(Number(line?.y) - Number(labelLine?.y));
+    if (!Number.isFinite(distance) || distance > BALANCE_VALUE_Y_TOLERANCE) continue;
+    const cents = balanceValue(lineToColumns(line, boundaries));
+    if (cents === null) continue;
+    candidates.push({ cents, distance });
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.distance - b.distance);
+  const nearestDistance = candidates[0].distance;
+  const nearest = candidates.filter(candidate => candidate.distance === nearestDistance);
+  return nearest.length === 1 ? nearest[0].cents : null;
+}
+
 function balanceAnchors(pages = []) {
   const opening = [];
   const closing = [];
@@ -87,17 +103,20 @@ function balanceAnchors(pages = []) {
     const geometry = pageGeometry(page);
     if (!geometry) continue;
 
-    // Summary/control rows are not transaction rows. Their labels and numeric values
-    // may have slightly different pdf.js baselines even when they are visually on the
-    // same printed row. Use a bounded audit-only tolerance without widening movement parsing.
-    for (const line of groupPageItemsIntoLines(page, { yTolerance: SUMMARY_ROW_Y_TOLERANCE })) {
-      if (line.y >= geometry.headerY - 1) continue;
-      const columns = lineToColumns(line, geometry.boundaries);
-      const description = normalizeLayoutText(columns.description);
-      const cents = balanceValue(columns);
+    // Control rows are audited separately from movement rows. Find the exact label on
+    // its strict pdf.js line, then bind only the nearest single monetary line within a
+    // small vertical band. This tolerates label/value baseline drift without widening
+    // transaction row grouping or absorbing TOTAL MOVIMIENTO / neighboring movements.
+    const lines = groupPageItemsIntoLines(page);
+    for (const labelLine of lines) {
+      if (labelLine.y >= geometry.headerY - 1) continue;
+      const labelColumns = lineToColumns(labelLine, geometry.boundaries);
+      const description = normalizeLayoutText(labelColumns.description);
+      if (description !== 'SALDO ANTERIOR' && description !== 'SALDO') continue;
+      const cents = nearestBalanceValue(lines, labelLine, geometry.boundaries);
       if (cents === null) continue;
       if (description === 'SALDO ANTERIOR') opening.push(cents);
-      else if (description === 'SALDO') closing.push(cents);
+      else closing.push(cents);
     }
   }
 
