@@ -11,7 +11,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-title FinanceSensor - Bank Statement Recovery DEV
+title FinanceSensor - Statement Sweep DEV
 
 where node >nul 2>nul
 if errorlevel 1 (
@@ -50,10 +50,8 @@ if errorlevel 1 (
 node live\recover-stale-historical-writer.mjs
 if errorlevel 1 (
   echo.
-  echo FinanceSensor detecto que Gmail History aun puede ser propietario del vault.
-  echo Si la ventana de Gmail Transaction History sigue abierta, cierrala y vuelve a intentar.
-  echo Si no puede verificar que el escritor historico termino, se detiene de forma segura.
-  echo No se seleccionaron credenciales y no se accedio a Gmail en este intento.
+  echo FinanceSensor no pudo resolver de forma segura el estado del escritor historico.
+  echo Cierra Gmail Transaction History si sigue abierto y vuelve a intentar.
   echo.
   popd
   pause
@@ -61,19 +59,17 @@ if errorlevel 1 (
 )
 
 echo.
-echo FinanceSensor - Bank Statement Recovery DEV
-echo --------------------------------------------
+echo FinanceSensor - Statement Sweep DEV
+echo -----------------------------------
 echo Scope exacto: gmail.readonly
-echo PDF password: SOLO MEMORIA LOCAL / NO SE GUARDA
-echo PDF descifrado y geometria: NO DURABLE
-echo Parser fisico habilitado ahora: BCP AHORRO solicitado por Gmail
-echo Perfiles de credito: DETECTABLES pero IMPORTACION FISICA BLOQUEADA
-echo Interbank ahorro por archivo local: TODAVIA OPEN
+echo Barrido: SOLO LECTURA / NO ESCRIBE NUEVAS EVIDENCIAS
+echo Passwords PDF: SOLO MEMORIA LOCAL / NO SE GUARDAN
+echo PDF descifrado, texto y geometria: NO DURABLE
+echo BCP ahorro: SWEEP ENABLED
+echo BCP credito: SWEEP ENABLED
+echo Ripley credito: SWEEP ENABLED
+echo Interbank ahorro: archivo local opcional en esta misma ejecucion
 echo iOS: NO TOCADO
-echo.
-echo IMPORTANTE: si Gmail History sigue RUNNING, el importador se negara a
-echo escribir el vault hasta que ese proceso termine o se detenga.
-echo Un RUNNING antiguo sin proceso vivo se recupera localmente como PAUSED antes de OAuth.
 echo.
 echo Selecciona el JSON OAuth Desktop DEV de FinanceSensor.
 echo.
@@ -91,23 +87,37 @@ if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
 )
 
 echo.
+echo Opcional: selecciona un EECC Interbank Cuenta Simple para incluirlo en el mismo barrido.
+echo Si cancelas, el barrido continuara solo con los EECC detectados en Gmail.
+echo.
+
+set "FINANCESENSOR_INTERBANK_STATEMENT_PATH="
+for /f "usebackq delims=" %%I in (`powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = 'Estado de cuenta PDF (*.pdf)|*.pdf'; $d.Title = 'Opcional - selecciona EECC Interbank Cuenta Simple'; $d.Multiselect = $false; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($d.FileName) }"`) do set "FINANCESENSOR_INTERBANK_STATEMENT_PATH=%%I"
+
+if defined FINANCESENSOR_INTERBANK_STATEMENT_PATH (
+  echo Interbank local: SELECTED
+) else (
+  echo Interbank local: NOT SELECTED
+)
+
+echo.
 echo El navegador se abrira automaticamente.
-echo Si FinanceSensor detecta un EECC BCP Ahorro compatible, podras escribir
-echo su clave en el formulario LOCAL para probar el adapter geometrico.
-echo Los EECC de credito se mostraran como detectados pero no se importaran aun.
+echo Escribe las claves solo en el formulario LOCAL y pulsa una sola vez:
+echo Auditar todos los EECC.
 echo Nunca pegues una clave de PDF en ChatGPT ni en GitHub.
 rem FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN
 echo.
 
 set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS=1"
-node --import ./live/audit-web-summary-preload.mjs ./live/owned-oauth-bank-statements-viewer.mjs
+node ./live/owned-oauth-bank-statements-sweep.mjs
 set "FS_EXIT=%ERRORLEVEL%"
 set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS="
 set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
+set "FINANCESENSOR_INTERBANK_STATEMENT_PATH="
 
 echo.
 if "%FS_EXIT%"=="0" (
-  echo FinanceSensor Bank Statement Recovery finalizo.
+  echo FinanceSensor Statement Sweep finalizo.
 ) else (
   echo FinanceSensor se detuvo de forma segura.
 )
