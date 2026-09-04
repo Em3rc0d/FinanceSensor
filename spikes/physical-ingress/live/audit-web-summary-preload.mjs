@@ -21,6 +21,7 @@ const CHECK_KEYS = Object.freeze([
 ]);
 
 let pendingShapes = [];
+const responseContentTypes = new WeakMap();
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -95,6 +96,20 @@ function auditSummaryHtml(shapes) {
   return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores y categorías. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
 }
 
+function suppliedHeader(headers, wanted) {
+  if (!headers) return null;
+  const target = String(wanted).toLowerCase();
+  if (Array.isArray(headers)) {
+    for (let i = 0; i + 1 < headers.length; i += 2) {
+      if (String(headers[i]).toLowerCase() === target) return headers[i + 1];
+    }
+    return null;
+  }
+  if (typeof headers !== 'object') return null;
+  const key = Object.keys(headers).find(name => name.toLowerCase() === target);
+  return key ? headers[key] : null;
+}
+
 const originalLog = console.log.bind(console);
 console.log = (...args) => {
   const shape = parseShape(args[0]);
@@ -105,10 +120,22 @@ console.log = (...args) => {
   return originalLog(...args);
 };
 
+const originalWriteHead = http.ServerResponse.prototype.writeHead;
+http.ServerResponse.prototype.writeHead = function patchedWriteHead(statusCode, statusMessage, headers) {
+  try {
+    const supplied = headers ?? ((statusMessage && typeof statusMessage === 'object') ? statusMessage : null);
+    const contentType = suppliedHeader(supplied, 'content-type') ?? this.getHeader('content-type') ?? '';
+    responseContentTypes.set(this, String(contentType));
+  } catch {
+    responseContentTypes.set(this, '');
+  }
+  return originalWriteHead.apply(this, arguments);
+};
+
 const originalEnd = http.ServerResponse.prototype.end;
 http.ServerResponse.prototype.end = function patchedEnd(chunk, encoding, callback) {
   try {
-    const contentType = String(this.getHeader('content-type') ?? '');
+    const contentType = responseContentTypes.get(this) ?? String(this.getHeader('content-type') ?? '');
     if (pendingShapes.length > 0 && contentType.includes('text/html') && chunk !== undefined && chunk !== null) {
       const wasBuffer = Buffer.isBuffer(chunk);
       const text = wasBuffer ? chunk.toString('utf8') : typeof chunk === 'string' ? chunk : null;
