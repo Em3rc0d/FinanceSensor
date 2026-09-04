@@ -46,7 +46,7 @@ jobs:
 
       - name: Public trust boundary
         run: |
-          ! grep -R -E -i '(password\s*[:=]\s*["'"'][^"'"']+|dni\s*[:=]\s*[0-9]{6,}|account(number)?\s*[:=]\s*[0-9]{8,}|card(number)?\s*[:=]\s*[0-9]{8,})' \
+          ! grep -R -E -i "(password[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|dni[[:space:]]*[:=][[:space:]]*[0-9]{6,}|account(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,}|card(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,})" \
             graph/statement-etl-reconciliation.json \
             graph/statement-format-registry.json \
             mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
