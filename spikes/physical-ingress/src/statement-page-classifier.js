@@ -42,7 +42,12 @@ function isEducational(text) {
 const MONTH_TOKEN = '(?:ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)';
 
 function hasBcpCreditMovementPair(text) {
-  return new RegExp(`\\b\\d{1,2}${MONTH_TOKEN}\\s+\\d{1,2}${MONTH_TOKEN}\\b`, 'i').test(text.replace(/\s+/g, ' '));
+  // pdf.js may split a visual DDMMM token into separate text items (for example
+  // "27" + "Jul"). pagePlainText then inserts whitespace even though the row
+  // adapter can safely compact the token back to DDMMM inside its date column.
+  // Keep page-role recognition at least as tolerant as the downstream parser.
+  return new RegExp(`\\b\\d{1,2}\\s*${MONTH_TOKEN}\\s+\\d{1,2}\\s*${MONTH_TOKEN}\\b`, 'i')
+    .test(text.replace(/\s+/g, ' '));
 }
 
 function hasRipleyCreditMovementDates(text) {
@@ -62,8 +67,12 @@ export function classifyStatementPage({ text, providerProfile } = {}) {
   }
 
   if (providerProfile === StatementProviderProfile.BCP_CREDIT) {
-    const ledgerHeader = value.includes('estado de cuenta tarjeta visa')
-      && hasAll(value, ['proceso', 'consumo', 'descripcion', 'operacion', 'soles', 'dolares']);
+    // The Gmail/source classifier already established the BCP credit profile.
+    // A transaction continuation page therefore does not need to repeat the exact
+    // document title; column headers plus a real process/consumption date pair are
+    // the bounded row-evidence requirement. Summary pages without that evidence
+    // still fail closed below.
+    const ledgerHeader = hasAll(value, ['proceso', 'consumo', 'descripcion', 'operacion', 'soles', 'dolares']);
     if (ledgerHeader && hasBcpCreditMovementPair(value)) return StatementPageRole.TRANSACTION_LEDGER;
     if (value.includes('monto total facturado') || value.includes('como esta compuesta su deuda')) {
       return StatementPageRole.SUMMARY;
