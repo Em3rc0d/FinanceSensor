@@ -78,15 +78,20 @@ export async function importStatementLayoutSession({
   attachmentIdentity,
   statementClassification,
   decryptAndExtractLayout,
-  parseStatementLayout
+  parseStatementLayout,
+  reconcileStatementLayout = null
 }) {
   if (typeof password !== 'string' || password.length === 0) throw new Error('STATEMENT_PASSWORD_REQUIRED');
   if (typeof decryptAndExtractLayout !== 'function') throw new TypeError('STATEMENT_LAYOUT_DECRYPTOR_REQUIRED');
   if (typeof parseStatementLayout !== 'function') throw new TypeError('STATEMENT_LAYOUT_PARSER_REQUIRED');
+  if (reconcileStatementLayout !== null && typeof reconcileStatementLayout !== 'function') {
+    throw new TypeError('STATEMENT_LAYOUT_RECONCILER_INVALID');
+  }
 
   const encrypted = ensureBuffer(encryptedPdfBytes);
   let layout = null;
   let parsed = null;
+  let reconciliation = null;
 
   try {
     layout = await decryptAndExtractLayout({
@@ -118,6 +123,19 @@ export async function importStatementLayoutSession({
       throw error;
     }
 
+    if (reconcileStatementLayout) {
+      reconciliation = await reconcileStatementLayout({
+        layout,
+        pages: layout.pages,
+        rows,
+        parsed,
+        classification: statementClassification
+      });
+      if (!reconciliation || !['PASS', 'OPEN', 'FAIL'].includes(reconciliation.status)) {
+        throw new Error('STATEMENT_LAYOUT_RECONCILIATION_RESULT_INVALID');
+      }
+    }
+
     return {
       evidence: decorateRows({
         rows,
@@ -126,7 +144,8 @@ export async function importStatementLayoutSession({
         statementClassification
       }),
       reviewCount: 0,
-      pageCount: layout.pages.length
+      pageCount: layout.pages.length,
+      reconciliation: reconciliation ? structuredClone(reconciliation) : null
     };
   } finally {
     // Layout item text is transient source plaintext. JS strings cannot be deterministically zeroed,
@@ -134,6 +153,7 @@ export async function importStatementLayoutSession({
     if (Buffer.isBuffer(encrypted)) encrypted.fill(0);
     layout = null;
     parsed = null;
+    reconciliation = null;
   }
 }
 

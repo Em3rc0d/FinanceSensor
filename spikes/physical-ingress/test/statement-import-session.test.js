@@ -84,8 +84,59 @@ test('layout session returns only derived evidence and aggregate page count', as
   assert.equal(result.evidence.length, 1);
   assert.equal(result.pageCount, 1);
   assert.equal(result.reviewCount, 0);
+  assert.equal(result.reconciliation, null);
   assert.equal(JSON.stringify(result).includes(password), false);
   assert.equal(JSON.stringify(result).includes('PRIVATE TRANSIENT SYNTHETIC TEXT'), false);
+  assert.equal(raw.every(byte => byte === 0), true);
+});
+
+test('layout session can run a transient safe reconciliation before dropping private layout scope', async () => {
+  const password = 'LOCAL-ONLY-SYNTHETIC-PASSWORD';
+  const raw = Buffer.from('encrypted synthetic audit layout');
+  const privateMarker = 'PRIVATE BALANCE MARKER';
+  const result = await importStatementLayoutSession({
+    encryptedPdfBytes: raw,
+    password,
+    sourceMessageId: 'synthetic-audit-message',
+    attachmentIdentity: 'synthetic-audit-attachment',
+    statementClassification: classification,
+    decryptAndExtractLayout: async () => ({
+      pages: [{ pageNumber: 1, items: [{ text: privateMarker, x: 10, y: 20, width: 20, height: 10 }] }]
+    }),
+    parseStatementLayout: async () => ({
+      rows: [{
+        tenantId: 'tenant-synthetic',
+        amount: 10,
+        currency: 'PEN',
+        direction: 'OUT',
+        balanceEffect: 'DECREASE',
+        cashflowDirection: 'OUTFLOW',
+        occurredAt: '2026-09-02T12:00:00Z',
+        rawMerchant: 'Synthetic expense'
+      }],
+      review: []
+    }),
+    reconcileStatementLayout: async ({ pages, rows, classification: receivedClassification }) => {
+      assert.equal(pages[0].items[0].text, privateMarker);
+      assert.equal(rows.length, 1);
+      assert.equal(receivedClassification.providerProfile, StatementProviderProfile.BCP_SAVINGS_REQUESTED);
+      return {
+        status: 'PASS',
+        code: 'STMT_AUDIT_PASS',
+        movementRows: 1,
+        checks: { balanceEquationExact: true }
+      };
+    }
+  });
+
+  assert.deepEqual(result.reconciliation, {
+    status: 'PASS',
+    code: 'STMT_AUDIT_PASS',
+    movementRows: 1,
+    checks: { balanceEquationExact: true }
+  });
+  assert.equal(JSON.stringify(result).includes(privateMarker), false);
+  assert.equal(JSON.stringify(result).includes(password), false);
   assert.equal(raw.every(byte => byte === 0), true);
 });
 

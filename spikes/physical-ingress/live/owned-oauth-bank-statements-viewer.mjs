@@ -27,6 +27,7 @@ import { fetchGmailStatementAttachment } from '../src/gmail-statement-attachment
 import { extractPasswordProtectedPdfLayout } from '../src/pdfjs-statement-parser.js';
 import { importStatementLayoutSession } from '../src/statement-import-session.js';
 import { parseStatementProfileLayout } from '../src/statement-profile-row-adapters.js';
+import { reconcileStatementProfileLayout } from '../src/statement-layout-reconciliation.js';
 import { StatementEvidenceImporter } from '../src/statement-evidence-importer.js';
 
 const EXPECTED_CLIENT_ID = '150834461062-b32pvpc84plkl0ftftm2vcfqfoq1ff8t.apps.googleusercontent.com';
@@ -96,7 +97,7 @@ function sendHtml(res, status, title, body) {
     'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; form-action 'self'; script-src 'none'; connect-src 'self'; img-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
   });
   res.end(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
-  :root{color-scheme:light dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3}.wrap{max-width:980px;margin:0 auto;padding:28px}.brand{font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#8b949e}.title{font-size:32px;margin:8px 0}.muted{color:#8b949e}.panel{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:18px;margin-top:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric strong{display:block;font-size:24px;margin-top:5px}.status{display:inline-flex;padding:7px 11px;border-radius:999px;background:#21262d;border:1px solid #30363d;font-weight:700}.ok{color:#3fb950}.warn{color:#d29922}.bad{color:#f85149}button,a.button{border:0;border-radius:10px;background:#238636;color:#fff;padding:11px 15px;font-weight:700;text-decoration:none;cursor:pointer}input[type=password]{width:100%;max-width:380px;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:9px;padding:11px 12px;margin:8px 0 12px}.group{border-top:1px solid #30363d;padding-top:16px;margin-top:16px}.footer{margin-top:18px;color:#8b949e;font-size:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{padding:18px}}
+  :root{color-scheme:light dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3}.wrap{max-width:980px;margin:0 auto;padding:28px}.brand{font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#8b949e}.title{font-size:32px;margin:8px 0}.muted{color:#8b949e}.panel{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:18px;margin-top:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric strong{display:block;font-size:24px;margin-top:5px}.status{display:inline-flex;padding:7px 11px;border-radius:999px;background:#21262d;border:1px solid #30363d;font-weight:700}.ok{color:#3fb950}.warn{color:#d29922}.bad{color:#f85149}button,a.button{border:0;border-radius:10px;background:#238636;color:#fff;padding:11px 15px;font-weight:700;text-decoration:none;cursor:pointer;margin-right:8px}input[type=password]{width:100%;max-width:380px;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:9px;padding:11px 12px;margin:8px 0 12px}.group{border-top:1px solid #30363d;padding-top:16px;margin-top:16px}.footer{margin-top:18px;color:#8b949e;font-size:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{padding:18px}}
   </style></head><body><div class="wrap">${body}</div></body></html>`);
 }
 
@@ -262,10 +263,12 @@ function groupControl(group) {
   if (!physicalImportEnabled(group.profile)) {
     return `<p class="muted">Formato detectado, pero su parser físico permanece cerrado en este harness. No se importará con un parser genérico.</p>`;
   }
+  const auditAction = `/audit?profile=${encodeURIComponent(group.profile)}&s=${sessionSecret}`;
   return `<form method="post" action="/import?profile=${encodeURIComponent(group.profile)}&s=${sessionSecret}" autocomplete="off">
     <label>Clave del PDF · solo esta sesión</label><br>
     <input type="password" name="password" required maxlength="128" autocomplete="off" spellcheck="false">
-    <br><button type="submit">Probar importación geométrica</button>
+    <br><button type="submit" formaction="${auditAction}">Auditar reconciliación</button><button type="submit">Probar importación geométrica</button>
+    <p class="muted">La auditoría vuelve a leer los EECC en memoria y no escribe nuevas evidencias al vault.</p>
   </form>`;
 }
 
@@ -351,6 +354,80 @@ async function importProfile(profile, password) {
   return { statementsParsed, evidenceAdded, pagesParsed, failures, lastFailure };
 }
 
+async function auditProfile(profile, password) {
+  if (!physicalImportEnabled(profile)) {
+    const error = new Error('STATEMENT_PROFILE_PHYSICAL_HARNESS_NOT_ENABLED');
+    error.code = error.message;
+    throw error;
+  }
+
+  const selected = discovered.filter(item => item.classification.providerProfile === profile);
+  if (!selected.length) throw new Error('STATEMENT_PROFILE_EMPTY');
+
+  let statementsAudited = 0;
+  let pagesAudited = 0;
+  let movementsAudited = 0;
+  let reconciliationPass = 0;
+  let reconciliationOpen = 0;
+  let reconciliationFail = 0;
+  let parserFailures = 0;
+  let lastFailure = null;
+
+  for (const descriptor of selected) {
+    try {
+      const encryptedPdfBytes = await fetchGmailStatementAttachment({
+        provider: gmailProvider,
+        messageId: descriptor.messageId,
+        attachmentId: descriptor.attachmentId
+      });
+      const layoutResult = await importStatementLayoutSession({
+        encryptedPdfBytes,
+        password,
+        sourceMessageId: descriptor.messageId,
+        attachmentIdentity: descriptor.attachmentId,
+        statementClassification: descriptor.classification,
+        decryptAndExtractLayout: extractPasswordProtectedPdfLayout,
+        parseStatementLayout: ({ pages, classification }) => parseStatementProfileLayout({
+          providerProfile: classification?.providerProfile,
+          pages,
+          tenantId: 'tenant-audit'
+        }),
+        reconcileStatementLayout: ({ pages, rows, classification }) => reconcileStatementProfileLayout({
+          providerProfile: classification?.providerProfile,
+          pages,
+          rows
+        })
+      });
+
+      statementsAudited += 1;
+      pagesAudited += layoutResult.pageCount;
+      movementsAudited += layoutResult.evidence.length;
+      const audit = layoutResult.reconciliation;
+      if (audit?.status === 'PASS') reconciliationPass += 1;
+      else if (audit?.status === 'OPEN') reconciliationOpen += 1;
+      else {
+        reconciliationFail += 1;
+        lastFailure = safeError({ code: audit?.code || 'STMT_AUDIT_FAIL' });
+      }
+    } catch (error) {
+      parserFailures += 1;
+      lastFailure = safeError(error);
+    }
+  }
+
+  return {
+    selected: selected.length,
+    statementsAudited,
+    pagesAudited,
+    movementsAudited,
+    reconciliationPass,
+    reconciliationOpen,
+    reconciliationFail,
+    parserFailures,
+    lastFailure
+  };
+}
+
 server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, rootRedirectUri());
@@ -384,6 +461,36 @@ server = http.createServer(async (req, res) => {
       await discoverStatements();
       res.writeHead(302, { location: `/?s=${sessionSecret}`, 'cache-control': 'no-store' });
       res.end();
+      return;
+    }
+
+    if (url.pathname === '/audit' && req.method === 'POST') {
+      if (!requireSession(url) || !authorized || !gmailProvider) {
+        sendHtml(res, 403, 'Forbidden', '<p>Sesión local no autorizada.</p>');
+        return;
+      }
+      const form = await readSmallForm(req);
+      let password = String(form.get('password') ?? '');
+      const profile = String(url.searchParams.get('profile') ?? '');
+      if (!password) throw new Error('STATEMENT_PASSWORD_REQUIRED');
+      let result;
+      try {
+        result = await auditProfile(profile, password);
+      } finally {
+        password = '';
+      }
+
+      const allPass = result.selected > 0
+        && result.statementsAudited === result.selected
+        && result.reconciliationPass === result.selected
+        && result.reconciliationOpen === 0
+        && result.reconciliationFail === 0
+        && result.parserFailures === 0;
+      const hasFailure = result.reconciliationFail > 0 || result.parserFailures > 0;
+      const tone = allPass ? 'ok' : 'warn';
+      const label = allPass ? 'AUDIT PASS' : hasFailure ? 'AUDIT DISCREPANCY / SAFE' : 'AUDIT OPEN / SAFE';
+      const extra = `<div class="panel"><p><span class="status ${tone}">${label}</span></p><p>EECC seleccionados: <strong>${result.selected}</strong><br>EECC auditados: <strong>${result.statementsAudited}</strong><br>Páginas auditadas: <strong>${result.pagesAudited}</strong><br>Movimientos auditados: <strong>${result.movementsAudited}</strong><br>Ecuación de saldo PASS: <strong>${result.reconciliationPass}</strong><br>Reconciliación OPEN: <strong>${result.reconciliationOpen}</strong><br>Discrepancias: <strong>${result.reconciliationFail}</strong><br>Fallos de parseo: <strong>${result.parserFailures}</strong>${result.lastFailure ? `<br>Código local: <code>${escapeHtml(result.lastFailure)}</code>` : ''}</p><p class="muted">Chequeo local: saldo inicial + abonos - cargos = saldo final. No se muestran importes ni descripciones y esta auditoría no escribe nuevas evidencias al vault.</p></div>`;
+      sendHtml(res, 200, 'FinanceSensor Statement Audit', homeBody(extra));
       return;
     }
 
@@ -425,6 +532,7 @@ server.listen(0, HOST, () => {
   console.log('FINANCESENSOR_STATEMENT_VIEWER=READY');
   console.log('SCOPE=gmail.readonly');
   console.log('BCP_SAVINGS_LAYOUT_PHYSICAL_HARNESS=ENABLED');
+  console.log('BCP_SAVINGS_BALANCE_AUDIT=ENABLED');
   console.log('CREDIT_STATEMENT_PHYSICAL_IMPORT=OPEN');
   console.log('INTERBANK_LOCAL_FILE_IMPORT=OPEN');
   console.log('STATEMENT_PASSWORD_PERSISTENCE=0');
