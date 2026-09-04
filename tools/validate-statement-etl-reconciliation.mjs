@@ -8,6 +8,7 @@ const files = {
   adr: 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md',
   adrIndex: 'mk0/11-decisions/ADR-INDEX.md',
   architecture: 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md',
+  geometryArchitecture: 'mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md',
   model: 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md',
   coreModel: 'mk0/05-data-model/CORE-DATA-MODEL.md',
   design: 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md',
@@ -37,6 +38,7 @@ if (!failures.length) {
   const adr = fs.readFileSync(files.adr, 'utf8');
   const adrIndex = fs.readFileSync(files.adrIndex, 'utf8');
   const architecture = fs.readFileSync(files.architecture, 'utf8');
+  const geometryArchitecture = fs.readFileSync(files.geometryArchitecture, 'utf8');
   const model = fs.readFileSync(files.model, 'utf8');
   const coreModel = fs.readFileSync(files.coreModel, 'utf8');
   const design = fs.readFileSync(files.design, 'utf8');
@@ -54,8 +56,8 @@ if (!failures.length) {
   if (graph.schemaVersion !== 3) fail('ETL graph schema must be v3');
   if (registry.schemaVersion !== 3) fail('format registry schema must be v3');
   if (specs.schemaVersion !== 1) fail('profile spec schema must be v1');
-  if (graph.status !== 'DESIGN_ACCEPTED_S3_FIXTURES_S4_SAVINGS_ADAPTERS_AWAITING_CI') fail('ETL graph status drifted');
-  if (registry.status !== 'S3_FIXTURES_READY_S4_SAVINGS_ADAPTERS_AWAITING_CI') fail('format registry status drifted');
+  if (graph.status !== 'S4_SAVINGS_STATIC_READY_REAL_PARSE_OPEN') fail('ETL graph status drifted');
+  if (registry.status !== 'S4_SAVINGS_STATIC_READY_REAL_PARSE_OPEN') fail('format registry status drifted');
   if (specs.status !== 'S2_PROFILE_SPEC_V1_STATIC_ONLY') fail('profile spec status drifted');
 
   if (graph.product?.surface !== 'FLUTTER_MOBILE_APP') fail('product surface drifted from Flutter mobile');
@@ -109,6 +111,7 @@ if (!failures.length) {
     'HEADER_POSITION != ABSOLUTE_DEVICE_COORDINATE',
     'FIXTURE_READY != REAL_PARSE_PASS',
     'STATIC_ADAPTER_PASS != REAL_PARSE_PASS',
+    'STATIC_READY != ANDROID_PHYSICAL_PROVEN',
     'OCR_OUTPUT != FINANCIAL_EVENT',
     'GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE',
     'APK_COMPILED != REAL_EECC_PROVEN',
@@ -122,6 +125,9 @@ if (!failures.length) {
   }
   for (const law of ['DOCUMENT_CLASSIFIED != ROWS_TRUSTED','PAGE_ROLE_UNKNOWN != PARSE_ANYWAY','EDUCATIONAL_REFERENCE_PAGE != TRANSACTION_LEDGER','PDF_ACTIVE_CONTENT != FINANCIAL_AUTHORITY','NATIVE_TEXT_PRESENT != REAL_ROW_PARSE_PASS']) {
     if (!discovery.includes(law)) fail(`real-format discovery missing law: ${law}`);
+  }
+  for (const law of ['FLATTENED_TEXT != COLUMN_SEMANTICS','HEADER_POSITION != ABSOLUTE_DEVICE_COORDINATE','RUNNING_BALANCE != MOVEMENT_AMOUNT','STATIC_ADAPTER_PASS != ANDROID_PHYSICAL_PASS']) {
+    if (!geometryArchitecture.includes(law)) fail(`geometry architecture missing law: ${law}`);
   }
 
   const rules = registry.rules ?? {};
@@ -145,7 +151,8 @@ if (!failures.length) {
   const staticWork = registry.staticWork ?? {};
   if (staticWork.profileSpec !== files.specs) fail('profile spec path mismatch');
   if (staticWork.geometricFixtures !== 2 || staticWork.implementedSavingsAdapters !== 2) fail('static savings work counts drifted');
-  if (staticWork.ciStatus !== 'AWAITING_PR_CI') fail('static work prematurely marked CI pass');
+  if (staticWork.ciStatus !== 'PASS_SYNTHETIC') fail('static savings CI is not recorded as synthetic pass');
+  if (staticWork.ciRunId !== 33828461944 || staticWork.ciJobId !== 100886097801) fail('synthetic CI receipt identifiers drifted');
   if (staticWork.realParseClaimed !== false) fail('static work falsely claims real parse');
 
   const profiles = registry.profiles ?? [];
@@ -155,18 +162,18 @@ if (!failures.length) {
   const ripleyCredit = profiles.find(p => p.profileId === 'PE-RIPLEY-CREDIT-MONTHLY');
   const interbankCredit = profiles.find(p => p.profileId === 'PE-INTERBANK-CREDIT-MONTHLY');
   for (const profile of [bcpSavings, interbankSavings]) {
-    if (!profile || profile.adapterStatus !== 'FIXTURE_READY' || profile.staticAdapter !== 'IMPLEMENTED_AWAITING_CI' || profile.realParse !== 'OPEN') fail('savings profile must remain FIXTURE_READY / awaiting CI / realParse OPEN');
+    if (!profile || profile.adapterStatus !== 'STATIC_READY' || profile.staticAdapter !== 'PASS_SYNTHETIC_CI' || profile.realParse !== 'OPEN') fail('savings profile must be STATIC_READY / PASS_SYNTHETIC_CI / realParse OPEN');
   }
   for (const profile of [bcpCredit, ripleyCredit]) {
     if (!profile || profile.adapterStatus !== 'FORMAT_OBSERVED' || profile.realParse !== 'OPEN') fail('credit profile promoted beyond format observation');
   }
   if (!interbankCredit || interbankCredit.adapterStatus !== 'UNPROVEN' || interbankCredit.realParse !== 'OPEN') fail('Interbank credit must remain UNPROVEN');
-  if (profiles.some(p => ['STATIC_READY','ANDROID_PHYSICAL_PROVEN','CROSS_PLATFORM_PHYSICAL_PROVEN','PHYSICAL_PROVEN','SUPPORTED','PRODUCTION_CANDIDATE'].includes(p.adapterStatus))) fail('profile promoted beyond current evidence');
+  if (profiles.some(p => ['ANDROID_PHYSICAL_PROVEN','CROSS_PLATFORM_PHYSICAL_PROVEN','PHYSICAL_PROVEN','SUPPORTED','PRODUCTION_CANDIDATE'].includes(p.adapterStatus))) fail('profile promoted beyond current evidence');
 
   for (const required of ['HEADER_GEOMETRY_TESTS','EMBEDDED_EXAMPLE_NEGATIVE_FIXTURE','ACTIVE_CONTENT_NON_EXECUTION_GUARD']) {
     if (!registry.promotionRequirements?.includes(required)) fail(`registry missing promotion requirement ${required}`);
   }
-  for (const forbidden of ['FIXTURE_READY=>REAL_PARSE_PASS','STATIC_ADAPTER_PASS=>REAL_PARSE_PASS','ANDROID_PARSE_PASS=>IOS_PARSE_PASS']) {
+  for (const forbidden of ['FIXTURE_READY=>REAL_PARSE_PASS','STATIC_ADAPTER_PASS=>REAL_PARSE_PASS','STATIC_READY=>ANDROID_PHYSICAL_PROVEN','ANDROID_PARSE_PASS=>IOS_PARSE_PASS']) {
     if (!registry.forbiddenPromotions?.includes(forbidden)) fail(`registry missing forbidden promotion ${forbidden}`);
   }
 
@@ -181,7 +188,7 @@ if (!failures.length) {
   const specProfiles = specs.profiles ?? [];
   for (const id of ['PE-BCP-SAVINGS-REQUESTED','PE-INTERBANK-SAVINGS-REQUESTED']) {
     const profile = specProfiles.find(p => p.profileId === id);
-    if (!profile || profile.status !== 'FIXTURE_READY' || profile.realParse !== 'OPEN') fail(`${id} profile spec not FIXTURE_READY / realParse OPEN`);
+    if (!profile || profile.status !== 'FIXTURE_READY' || profile.realParse !== 'OPEN') fail(`${id} design spec must remain FIXTURE_READY / realParse OPEN`);
   }
   for (const id of ['PE-BCP-CREDIT-MONTHLY','PE-RIPLEY-CREDIT-MONTHLY']) {
     const profile = specProfiles.find(p => p.profileId === id);
@@ -190,6 +197,12 @@ if (!failures.length) {
   for (const law of ['FLATTENED_TEXT != COLUMN_SEMANTICS','RUNNING_BALANCE != MOVEMENT_AMOUNT','FIXTURE_READY != REAL_PARSE_PASS','STATIC_ADAPTER_PASS != ANDROID_PHYSICAL_PASS']) {
     if (!specs.truthLaws?.includes(law)) fail(`profile spec missing truth law ${law}`);
   }
+
+  if (graph.evidence?.profileRowAdapters !== 'SAVINGS_2_STATIC_READY_SYNTHETIC') fail('graph static adapter evidence state drifted');
+  if (graph.evidence?.syntheticAdapterCi !== 'PASS_RUN_33828461944_JOB_100886097801') fail('graph synthetic CI receipt drifted');
+  if (graph.evidence?.nativeTextRealParse !== 'OPEN') fail('real native parse was falsely closed');
+  if (graph.evidence?.androidRealStatement !== 'OPEN') fail('Android real statement was falsely closed');
+  if (graph.evidence?.iosRealStatement !== 'DEFERRED_REQUIRED') fail('iOS debt was altered');
 
   for (const marker of ['StatementPageRole','EDUCATIONAL_REFERENCE','TRANSACTION_LEDGER']) {
     if (!pageClassifier.includes(marker)) fail(`page classifier missing ${marker}`);
@@ -243,9 +256,8 @@ console.log('ROW_ELIGIBLE_PAGE_ROLE=TRANSACTION_LEDGER_ONLY');
 console.log('PDF_ACTIVE_CONTENT_EXECUTION=0');
 console.log('PRIVATE_FORMAT_DOCUMENTS=4');
 console.log('PRIVATE_FORMAT_INSTITUTIONS=3');
-console.log('SAVINGS_FIXTURE_READY_PROFILES=2');
-console.log('SAVINGS_STATIC_ADAPTERS_IMPLEMENTED=2');
-console.log('STATIC_ADAPTER_CI=AWAITING_PR_CI');
+console.log('SAVINGS_STATIC_READY_PROFILES=2');
+console.log('SAVINGS_STATIC_ADAPTERS_SYNTHETIC_CI=PASS');
 console.log('REAL_ROW_PARSE=OPEN');
 console.log('ANDROID_REAL_STATEMENT=OPEN');
 console.log('IOS_TOUCHED=0');
