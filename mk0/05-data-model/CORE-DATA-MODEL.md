@@ -611,3 +611,54 @@ ERD REVIEW               PASS
 ```
 
 Do not turn this draft directly into migrations until those gates close.
+
+
+## 16. Statement and monthly reconciliation extension
+
+ADR-035 extends this core model without placing bank-specific layouts inside canonical entities. The detailed model is [`STATEMENT-RECONCILIATION-MODEL.md`](STATEMENT-RECONCILIATION-MODEL.md).
+
+New durable concepts are:
+
+```text
+ExtractionRun
+StatementFormatProfile
+StatementPeriod
+StatementMovementEvidence
+ReconciliationLink
+AccountPeriodCoverage
+MonthlyClose
+MonthlyCloseAccount
+AccountBalanceEvidence
+```
+
+Raw email bodies, raw PDF bytes, decrypted text, OCR page images/text and raw statement rows remain **transient processing contracts**, not normal durable database entities. `SourceArtifact` remains the durable lineage anchor.
+
+The canonical chain becomes:
+
+```text
+SourceArtifact
+   ↓
+ExtractionRun
+   ↓
+FinancialEvidence (email / statement / receipt channels)
+   ↓
+FinancialEventCandidate
+   ↓
+CanonicalFinancialEvent
+   ↓
+ReconciliationLink + AccountPeriodCoverage
+   ↓
+MonthlyClose / derived summaries
+```
+
+Required laws:
+
+```text
+BANK_ADAPTER != CORE_FINANCIAL_MODEL
+STATEMENT_ROW != CANONICAL_EVENT
+GMAIL + STATEMENT SAME EVENT => ONE CANONICAL EVENT
+NO_GMAIL_INFLOW != ZERO_INFLOW
+OBSERVED != RECONCILED
+```
+
+No physical migrations are authorized by this extension. Existing schema-freeze gates remain in force.

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "status": "FORMAT_DISCOVERY_OPEN",
+  "asOf": "2026-09-03",
+  "rules": {
+    "unit": "INSTITUTION_PLUS_PRODUCT_PLUS_STATEMENT_FAMILY",
+    "oneUniversalParser": false,
+    "unknownSignatureFailsClosed": true,
+    "realPrivateContentInRepository": false,
+    "adapterVersionRequired": true
+  },
+  "profiles": [
+    {
+      "profileId": "PE-BCP-CREDIT-MONTHLY",
+      "institution": "BCP",
+      "productType": "CREDIT_CARD",
+      "statementFamily": "MONTHLY_CARD_STATEMENT",
+      "delivery": "AUTO_GMAIL_OBSERVED",
+      "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
+      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
+      "adapterStatus": "DISCOVERY",
+      "realParse": "OPEN",
+      "ocrNeed": "UNKNOWN"
+    },
+    {
+      "profileId": "PE-BCP-SAVINGS-REQUESTED",
+      "institution": "BCP",
+      "productType": "SAVINGS",
+      "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
+      "delivery": "USER_REQUEST_THEN_GMAIL_OBSERVED",
+      "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
+      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
+      "adapterStatus": "DISCOVERY",
+      "realParse": "OPEN",
+      "ocrNeed": "UNKNOWN"
+    },
+    {
+      "profileId": "PE-RIPLEY-CREDIT-MONTHLY",
+      "institution": "BANCO_RIPLEY",
+      "productType": "CREDIT_CARD",
+      "statementFamily": "MONTHLY_CARD_STATEMENT",
+      "delivery": "AUTO_GMAIL_OBSERVED",
+      "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
+      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
+      "adapterStatus": "DISCOVERY",
+      "realParse": "OPEN",
+      "ocrNeed": "UNKNOWN"
+    },
+    {
+      "profileId": "PE-INTERBANK-SAVINGS-REQUESTED",
+      "institution": "INTERBANK",
+      "productType": "SAVINGS",
+      "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
+      "delivery": "USER_REQUEST_EXPECTED",
+      "availabilityEvidence": "UNPROVEN",
+      "formatFixture": "ABSENT",
+      "adapterStatus": "UNPROVEN",
+      "realParse": "OPEN",
+      "ocrNeed": "UNKNOWN"
+    },
+    {
+      "profileId": "PE-INTERBANK-CREDIT-MONTHLY",
+      "institution": "INTERBANK",
+      "productType": "CREDIT_CARD",
+      "statementFamily": "MONTHLY_CARD_STATEMENT",
+      "delivery": "UNKNOWN",
+      "availabilityEvidence": "UNPROVEN",
+      "formatFixture": "ABSENT",
+      "adapterStatus": "UNPROVEN",
+      "realParse": "OPEN",
+      "ocrNeed": "UNKNOWN"
+    }
+  ],
+  "promotionRequirements": [
+    "SANITIZED_STRUCTURAL_FIXTURE",
+    "DOCUMENT_CLASSIFIER_TESTS",
+    "NEGATIVE_FIXTURES",
+    "ROW_NORMALIZATION_TESTS",
+    "AMOUNT_DATE_LOCALE_TESTS",
+    "RECONCILIATION_TESTS",
+    "OWNED_DEVICE_PHYSICAL_PROOF"
+  ],
+  "forbiddenPromotions": [
+    "ONE_REAL_PDF_PARSED=>PROFILE_SUPPORTED",
+    "PRIVATE_CORPUS_OBSERVED=>FORMAT_PROVEN",
+    "DESKTOP_PARSE_PASS=>MOBILE_PARSE_PASS",
+    "ANDROID_PARSE_PASS=>IOS_PARSE_PASS"
+  ]
+}
