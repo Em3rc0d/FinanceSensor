@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "status": "FORMAT_CORPUS_OBSERVED_PARSE_OPEN",
+  "schemaVersion": 3,
+  "status": "S3_FIXTURES_READY_S4_SAVINGS_ADAPTERS_AWAITING_CI",
   "asOf": "2026-09-03",
   "rules": {
     "unit": "INSTITUTION_PLUS_PRODUCT_PLUS_STATEMENT_FAMILY",
@@ -11,6 +11,9 @@
     "activePdfContentExecutionForbidden": true,
     "formFieldsAreFinancialAuthority": false,
     "documentIdentityConsistencyBeforeRows": true,
+    "geometryRequiredWhenColumnsCarrySemantics": true,
+    "flattenedTextIsColumnAuthority": false,
+    "absoluteDeviceCoordinatesForbidden": true,
     "realPrivateContentInRepository": false,
     "adapterVersionRequired": true
   },
@@ -27,6 +30,13 @@
     "activeContentObservedInSomeCopies": true,
     "embeddedEducationalReferenceObserved": true,
     "physicalRowParseClaimed": false
+  },
+  "staticWork": {
+    "profileSpec": "graph/statement-profile-specs-v1.json",
+    "geometricFixtures": 2,
+    "implementedSavingsAdapters": 2,
+    "ciStatus": "AWAITING_PR_CI",
+    "realParseClaimed": false
   },
   "pageRoles": [
     "TRANSACTION_LEDGER",
@@ -70,21 +80,25 @@
       "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
       "delivery": "USER_REQUEST_THEN_GMAIL_OBSERVED",
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
-      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
-      "adapterStatus": "FORMAT_OBSERVED",
+      "formatFixture": "SANITIZED_GEOMETRIC_FIXTURE_V1",
+      "profileSpec": "graph/statement-profile-specs-v1.json",
+      "adapterStatus": "FIXTURE_READY",
+      "staticAdapter": "IMPLEMENTED_AWAITING_CI",
       "realParse": "OPEN",
       "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
       "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
       "pageScope": {
         "multiPageLedgerContinuation": "OBSERVED",
         "debitColumn": "CARGOS_DEBE",
-        "creditColumn": "ABONOS_HABER"
+        "creditColumn": "ABONOS_HABER",
+        "columnAuthority": "HEADER_ANCHORED_GEOMETRY"
       },
       "risks": [
         "PAGE_BREAK_IS_NOT_LEDGER_END",
         "OPENING_BALANCE_NOT_TRANSACTION",
         "TOTALS_NOT_TRANSACTION",
-        "DAY_MONTH_ABBREVIATION_DATE_GRAMMAR"
+        "DAY_MONTH_ABBREVIATION_DATE_GRAMMAR",
+        "FLATTENED_TEXT_LOSES_DEBIT_CREDIT_IDENTITY"
       ]
     },
     {
@@ -118,20 +132,24 @@
       "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
       "delivery": "USER_REQUEST_EXPECTED",
       "availabilityEvidence": "PRIVATE_OWNED_COPY_OBSERVED",
-      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
-      "adapterStatus": "FORMAT_OBSERVED",
+      "formatFixture": "SANITIZED_GEOMETRIC_FIXTURE_V1",
+      "profileSpec": "graph/statement-profile-specs-v1.json",
+      "adapterStatus": "FIXTURE_READY",
+      "staticAdapter": "IMPLEMENTED_AWAITING_CI",
       "realParse": "OPEN",
       "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
       "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
       "pageScope": {
         "ledgerPage": "OBSERVED",
         "informationalPage": "OBSERVED_EXCLUDE",
-        "educationalReferencePage": "OBSERVED_EXCLUDE"
+        "educationalReferencePage": "OBSERVED_EXCLUDE",
+        "columnAuthority": "HEADER_ANCHORED_GEOMETRY"
       },
       "risks": [
         "RUNNING_BALANCE_NOT_MOVEMENT_AMOUNT",
         "INCOME_AND_EXPENSE_COLUMNS_SEPARATE",
-        "EDUCATIONAL_SAMPLE_CONTAINS_TRANSACTION_LIKE_ROWS"
+        "EDUCATIONAL_SAMPLE_CONTAINS_TRANSACTION_LIKE_ROWS",
+        "FLATTENED_TEXT_LOSES_COLUMN_IDENTITY"
       ]
     },
     {
@@ -152,6 +170,7 @@
     "SANITIZED_STRUCTURAL_FIXTURE",
     "DOCUMENT_CLASSIFIER_TESTS",
     "PAGE_ROLE_CLASSIFIER_TESTS",
+    "HEADER_GEOMETRY_TESTS",
     "EMBEDDED_EXAMPLE_NEGATIVE_FIXTURE",
     "ACTIVE_CONTENT_NON_EXECUTION_GUARD",
     "NEGATIVE_FIXTURES",
@@ -164,7 +183,9 @@
     "ONE_REAL_PDF_PARSED=>PROFILE_SUPPORTED",
     "PRIVATE_CORPUS_OBSERVED=>FORMAT_PROVEN",
     "FORMAT_OBSERVED=>REAL_PARSE_PASS",
+    "FIXTURE_READY=>REAL_PARSE_PASS",
     "NATIVE_TEXT_PRESENT=>ADAPTER_SUPPORTED",
+    "STATIC_ADAPTER_PASS=>REAL_PARSE_PASS",
     "DESKTOP_PARSE_PASS=>MOBILE_PARSE_PASS",
     "ANDROID_PARSE_PASS=>IOS_PARSE_PASS"
   ]
