@@ -5,6 +5,9 @@ const normalize = (value = '') => String(value ?? '')
   .trim()
   .toUpperCase();
 
+const MONEY_COLUMN_IDS = new Set(['debit', 'credit', 'income', 'expense', 'runningBalance']);
+const MONEY_FRAGMENT_TOUCH_TOLERANCE = 4;
+
 export function pagePlainText(page = {}) {
   return (page.items ?? [])
     .slice()
@@ -104,6 +107,57 @@ export function columnBoundaries(headers = [], anchors = {}) {
   }));
 }
 
+function normalColumnText(items = []) {
+  return items.map(item => String(item.text ?? '').trim()).filter(Boolean).join(' ').trim();
+}
+
+function numericMoneyFragment(item) {
+  const raw = String(item?.text ?? '').trim();
+  if (!raw) return false;
+  const token = raw.replace(/^S\/\.?\s*/i, '');
+  return /\d/.test(token) && /^[0-9\s.,()+-]+$/.test(token);
+}
+
+function itemRight(item) {
+  const x = Number(item?.x);
+  const width = Number(item?.width);
+  return Number.isFinite(x) ? x + (Number.isFinite(width) && width > 0 ? width : 0) : Number.NEGATIVE_INFINITY;
+}
+
+function looksLikeCompleteMoney(value) {
+  const token = String(value ?? '')
+    .trim()
+    .replace(/^S\/\.?\s*/i, '')
+    .replace(/\s+/g, '');
+  return /^-?(?:\d{1,3}(?:[.,]\d{3})+|\d+)[.,]\d{2}$/.test(token);
+}
+
+function monetaryColumnText(items = []) {
+  const numericItems = items
+    .filter(numericMoneyFragment)
+    .slice()
+    .sort((a, b) => (a.x - b.x) || (a.sequence - b.sequence));
+
+  if (numericItems.length === 0) return normalColumnText(items);
+
+  let start = numericItems.length - 1;
+  while (start > 0) {
+    const previous = numericItems[start - 1];
+    const current = numericItems[start];
+    const gap = Number(current?.x) - itemRight(previous);
+    if (!Number.isFinite(gap) || gap > MONEY_FRAGMENT_TOUCH_TOLERANCE) break;
+    start -= 1;
+  }
+
+  const cluster = numericItems.slice(start);
+  const joined = normalColumnText(cluster);
+  if (looksLikeCompleteMoney(joined)) return joined;
+
+  const rightmost = String(numericItems.at(-1)?.text ?? '').trim();
+  if (parseFlexibleMoney(rightmost) !== null) return rightmost;
+  return joined;
+}
+
 export function lineToColumns(line, boundaries = []) {
   const result = {};
   for (const boundary of boundaries) result[boundary.id] = [];
@@ -113,7 +167,7 @@ export function lineToColumns(line, boundaries = []) {
   }
   const text = {};
   for (const [key, items] of Object.entries(result)) {
-    text[key] = items.map(item => String(item.text ?? '').trim()).filter(Boolean).join(' ').trim();
+    text[key] = MONEY_COLUMN_IDS.has(key) ? monetaryColumnText(items) : normalColumnText(items);
   }
   return text;
 }
