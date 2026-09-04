@@ -4,9 +4,11 @@ import fs from 'node:fs';
 
 const viewerPath = new URL('../live/owned-oauth-bank-statements-viewer.mjs', import.meta.url);
 const runnerPath = new URL('../live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd', import.meta.url);
+const recoveryPath = new URL('../live/recover-stale-historical-writer.mjs', import.meta.url);
 
 const viewer = fs.readFileSync(viewerPath, 'utf8');
 const runner = fs.readFileSync(runnerPath, 'utf8');
+const recovery = fs.readFileSync(recoveryPath, 'utf8');
 
 test('trusted-edge viewer uses geometric layout path for the physically enabled savings profile', () => {
   assert.match(viewer, /extractPasswordProtectedPdfLayout/);
@@ -33,4 +35,15 @@ test('real harness remains local, password non-durable and iOS untouched', () =>
   assert.match(viewer, /IOS_TOUCHED=0/);
   assert.match(runner, /windows-dpapi-preflight\.mjs/);
   assert.match(runner, /FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/);
+});
+
+test('statement launcher recovers stale historical RUNNING only before OAuth and fails closed on a live owner', () => {
+  assert.match(runner, /recover-stale-historical-writer\.mjs/);
+  assert.ok(runner.indexOf('recover-stale-historical-writer.mjs') < runner.indexOf('OpenFileDialog'));
+  assert.match(recovery, /Get-CimInstance Win32_Process/);
+  assert.match(recovery, /FINANCESENSOR_HISTORICAL_WRITER=ACTIVE/);
+  assert.match(recovery, /FINANCESENSOR_HISTORICAL_WRITER=UNKNOWN_FAIL_CLOSED/);
+  assert.match(recovery, /status: 'PAUSED'/);
+  assert.match(recovery, /FINANCESENSOR_HISTORICAL_STALE_RUNNING_RECOVERED=1/);
+  assert.equal(/console\.(?:log|error)\([^\n]*(?:snapshot|mailbox|password|access_token|refresh_token)/i.test(recovery), false);
 });
