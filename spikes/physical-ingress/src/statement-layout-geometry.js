@@ -47,7 +47,7 @@ function fragmentedHeaderMatch(lines, target) {
       for (let end = start; end < Math.min(items.length, start + 6); end += 1) {
         combined = [combined, String(items[end]?.text ?? '').trim()].filter(Boolean).join(' ');
         const normalized = normalize(combined);
-        if (normalized.includes(target)) {
+        if (normalized === target) {
           return {
             x: items[start].x,
             y: line.y,
