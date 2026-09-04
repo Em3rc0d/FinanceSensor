@@ -40,6 +40,23 @@ test('BCP savings balance audit proves the synthetic ledger equation without exp
   assert.equal(JSON.stringify(result).includes('84.5'), false);
 });
 
+test('BCP savings balance audit tolerates small summary-label/value baseline offsets without widening movement parsing', () => {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  const openingAmount = pages[0].items.find(item => item.text === '50.00' && item.y === 675);
+  const closingAmount = pages[1].items.find(item => item.text === '84.50' && item.y === 575);
+  openingAmount.y -= 4;
+  closingAmount.y += 4;
+
+  const rows = parsed({ pages });
+  const result = reconcileBcpSavingsStatement({ pages, rows });
+
+  assert.equal(result.status, 'PASS');
+  assert.equal(result.code, 'STMT_AUDIT_PASS');
+  assert.equal(result.checks.openingBalanceUnique, true);
+  assert.equal(result.checks.closingBalanceUnique, true);
+  assert.equal(result.checks.balanceEquationExact, true);
+});
+
 test('BCP savings balance audit fails closed when parsed movement value breaks the ledger equation', () => {
   const pages = clone(bcpSavingsLayoutV1.pages);
   const rows = parsed({ pages });
@@ -64,18 +81,29 @@ test('BCP savings balance audit remains OPEN when the closing balance anchor is 
   assert.equal(result.checks.balanceEquationExact, null);
 });
 
-test('BCP savings balance audit rejects direction semantic drift even when amounts remain unchanged', () => {
+test('BCP savings balance audit exposes only a compact direction diagnostic on semantic drift', () => {
   const pages = clone(bcpSavingsLayoutV1.pages);
   const rows = parsed({ pages });
   rows[0].cashflowDirection = 'OUTFLOW';
 
   const result = reconcileBcpSavingsStatement({ pages, rows });
   assert.equal(result.status, 'FAIL');
-  assert.equal(result.code, 'STMT_AUDIT_ROW_INTEGRITY');
+  assert.equal(result.code, 'STMT_AUDIT_DIRECTION');
   assert.equal(result.checks.directionalSemantics, false);
 });
 
-test('BCP savings balance audit rejects summary rows if one ever leaks into movement evidence', () => {
+test('BCP savings balance audit exposes only a compact date-range diagnostic', () => {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  const rows = parsed({ pages });
+  rows[0].occurredAt = '2026-08-01T12:00:00.000Z';
+
+  const result = reconcileBcpSavingsStatement({ pages, rows });
+  assert.equal(result.status, 'FAIL');
+  assert.equal(result.code, 'STMT_AUDIT_DATE_RANGE');
+  assert.equal(result.checks.datesWithinPeriod, false);
+});
+
+test('BCP savings balance audit rejects summary rows with a compact leak diagnostic', () => {
   const pages = clone(bcpSavingsLayoutV1.pages);
   const rows = parsed({ pages });
   rows.push({
@@ -86,6 +114,6 @@ test('BCP savings balance audit rejects summary rows if one ever leaks into move
 
   const result = reconcileBcpSavingsStatement({ pages, rows });
   assert.equal(result.status, 'FAIL');
-  assert.equal(result.code, 'STMT_AUDIT_ROW_INTEGRITY');
+  assert.equal(result.code, 'STMT_AUDIT_SUMMARY_LEAK');
   assert.equal(result.checks.summaryRowsExcluded, false);
 });
