@@ -19,8 +19,6 @@ on:
       - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
       - 'mk0/11-decisions/ADR-INDEX.md'
-      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
-      - 'spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
       - 'spikes/physical-ingress/src/statement-import-session.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
@@ -32,7 +30,6 @@ on:
       - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
-      - 'spikes/physical-ingress/test/statement-live-layout-policy.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
@@ -58,8 +55,6 @@ on:
       - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
       - 'mk0/11-decisions/ADR-INDEX.md'
-      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
-      - 'spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
       - 'spikes/physical-ingress/src/statement-import-session.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
@@ -71,7 +66,6 @@ on:
       - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
-      - 'spikes/physical-ingress/test/statement-live-layout-policy.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
@@ -96,7 +90,6 @@ jobs:
 
       - name: Statement structural regression
         run: |
-          node --check spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
           node --check spikes/physical-ingress/src/statement-import-session.js
           node --check spikes/physical-ingress/src/statement-layout-geometry.js
@@ -107,7 +100,6 @@ jobs:
           node --test \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-import-session.test.js \
-            spikes/physical-ingress/test/statement-live-layout-policy.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
@@ -130,8 +122,6 @@ jobs:
             mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md \
             mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md \
             mk0/11-decisions/ADR-INDEX.md \
-            spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd \
-            spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs \
             spikes/physical-ingress/src/pdfjs-statement-parser.js \
             spikes/physical-ingress/src/statement-import-session.js \
             spikes/physical-ingress/src/statement-layout-geometry.js \
@@ -143,7 +133,6 @@ jobs:
             spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-import-session.test.js \
-            spikes/physical-ingress/test/statement-live-layout-policy.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
