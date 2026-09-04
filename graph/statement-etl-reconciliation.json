@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "status": "DESIGN_ACCEPTED_REAL_FORMAT_CORPUS_OBSERVED_PARSE_OPEN",
+  "schemaVersion": 3,
+  "status": "DESIGN_ACCEPTED_S3_FIXTURES_S4_SAVINGS_ADAPTERS_AWAITING_CI",
   "asOf": "2026-09-03",
   "product": {
     "surface": "FLUTTER_MOBILE_APP",
@@ -21,6 +21,8 @@
       "ocrFallback": true,
       "ocrIsPrimary": false,
       "pageBoundaryPreserved": true,
+      "textItemGeometryPreserved": true,
+      "flattenedTextColumnAuthority": false,
       "pageRoleClassificationBeforeRows": true,
       "activePdfContentExecution": false,
       "formFieldFinancialAuthority": false,
@@ -44,6 +46,8 @@
     "transform": {
       "strategy": "VERSIONED_BANK_PRODUCT_ADAPTER",
       "bankSpecificLayoutInCore": false,
+      "headerAnchoredGeometryAdapters": true,
+      "absoluteDeviceCoordinateParsers": false,
       "normalizedContract": "STATEMENT_MOVEMENT_EVIDENCE",
       "separateBalanceEffectFromCashflowDirection": true
     },
@@ -105,6 +109,10 @@
     "EDUCATIONAL_REFERENCE_PAGE != TRANSACTION_LEDGER",
     "PDF_ACTIVE_CONTENT != FINANCIAL_AUTHORITY",
     "NATIVE_TEXT_PRESENT != REAL_ROW_PARSE_PASS",
+    "FLATTENED_TEXT != COLUMN_SEMANTICS",
+    "HEADER_POSITION != ABSOLUTE_DEVICE_COORDINATE",
+    "FIXTURE_READY != REAL_PARSE_PASS",
+    "STATIC_ADAPTER_PASS != REAL_PARSE_PASS",
     "OCR_OUTPUT != FINANCIAL_EVENT",
     "STATEMENT_ROW != CANONICAL_EVENT",
     "GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE",
@@ -119,14 +127,17 @@
     "realFormatCorpus": "PRIVATE_4_DOCUMENT_3_INSTITUTION_OBSERVED",
     "realFormatStructuralReview": "PASS_PRIVATE_ONLY",
     "nativeTextPresenceInSharedCopies": "OBSERVED_4_OF_4",
+    "profileSpecV1": "COMMITTED",
+    "syntheticGeometricFixtures": "BCP_SAVINGS_PLUS_INTERBANK_SAVINGS",
+    "profileRowAdapters": "SAVINGS_2_IMPLEMENTED_AWAITING_STATIC_CI",
     "nativeTextRealParse": "OPEN",
-    "profileRowAdapters": "OPEN",
     "ocrPhysical": "OPEN",
     "multiBankReconciliationPhysical": "OPEN",
     "androidRealStatement": "OPEN",
     "iosRealStatement": "DEFERRED_REQUIRED"
   },
   "references": [
+    "graph/statement-profile-specs-v1.json",
     "mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md",
     "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
     "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
