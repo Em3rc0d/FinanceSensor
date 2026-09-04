@@ -1,0 +1,76 @@
+name: FinanceSensor Statement Docs Index Reconcile
+
+on:
+  push:
+    branches:
+      - jett/mobile-statement-ingress
+    paths:
+      - '.github/workflows/tmp-reconcile-statement-doc-indexes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: jett/mobile-statement-ingress
+          fetch-depth: 0
+
+      - name: Reconcile ADR and core documentation indexes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          adr = Path('mk0/11-decisions/ADR-INDEX.md')
+          text = adr.read_text()
+          row34 = '| ADR-034 | Mobile statement PDF runtime | ACCEPTED FOR MOBILE STATIC SPIKE / PHYSICAL DEVICE VALIDATION REQUIRED | Android encrypted-PDF runtime + owned-device statement proof; iOS remains open |'
+          row35 = '| ADR-035 | Statement ETL and monthly reconciliation | ACCEPTED FOR MK0 DESIGN / REAL FORMAT EVIDENCE OPEN | sanitized multi-bank format corpus + Android monthly-close proof |'
+          if row35 not in text:
+              if row34 not in text:
+                  raise SystemExit('ADR_034_INDEX_ROW_NOT_FOUND')
+              text = text.replace(row34, row34 + '\n' + row35)
+          if '**Next available ADR:** `ADR-035`.' in text:
+              text = text.replace('**Next available ADR:** `ADR-035`.', '**Next available ADR:** `ADR-036`.')
+          elif '**Next available ADR:** `ADR-036`.' not in text:
+              raise SystemExit('ADR_NEXT_MARKER_UNEXPECTED')
+          adr.write_text(text)
+
+          design = Path('mk0/03-design/PRODUCT-DESIGN.md')
+          text = design.read_text()
+          marker = '## Monthly financial close'
+          if marker not in text:
+              text += '''\n\n## Monthly financial close\n\nFinanceSensor uses two financial truth states rather than pretending Gmail is a complete bank ledger.\n\n```text\nDURING MONTH   → observed activity, especially outflows\nMONTH END      → statement import and reconciliation\nCLOSED MONTH   → reconciled inflows/outflows for declared account scope\n```\n\nThe signature product interaction is **Cerrar mi mes**. The app prompts the user after a period ends to request/download the relevant statements from their banking apps and share/open them with FinanceSensor. Weekly banking-web copy/paste is not a product requirement.\n\nTruth language:\n\n```text\nOBSERVED != RECONCILED\nRECONCILED != BANK_AVAILABLE_BALANCE\nMONTH_RECONCILED != PRODUCTION_READY\n```\n\nSee [`MONTHLY-CLOSE-EXPERIENCE.md`](MONTHLY-CLOSE-EXPERIENCE.md), [`../04-architecture/STATEMENT-ETL-RECONCILIATION.md`](../04-architecture/STATEMENT-ETL-RECONCILIATION.md), and ADR-035.\n'''
+          design.write_text(text)
+
+          model = Path('mk0/05-data-model/CORE-DATA-MODEL.md')
+          text = model.read_text()
+          marker = '## 16. Statement and monthly reconciliation extension'
+          if marker not in text:
+              text += '''\n\n## 16. Statement and monthly reconciliation extension\n\nADR-035 extends this core model without placing bank-specific layouts inside canonical entities. The detailed model is [`STATEMENT-RECONCILIATION-MODEL.md`](STATEMENT-RECONCILIATION-MODEL.md).\n\nNew durable concepts are:\n\n```text\nExtractionRun\nStatementFormatProfile\nStatementPeriod\nStatementMovementEvidence\nReconciliationLink\nAccountPeriodCoverage\nMonthlyClose\nMonthlyCloseAccount\nAccountBalanceEvidence\n```\n\nRaw email bodies, raw PDF bytes, decrypted text, OCR page images/text and raw statement rows remain **transient processing contracts**, not normal durable database entities. `SourceArtifact` remains the durable lineage anchor.\n\nThe canonical chain becomes:\n\n```text\nSourceArtifact\n   ↓\nExtractionRun\n   ↓\nFinancialEvidence (email / statement / receipt channels)\n   ↓\nFinancialEventCandidate\n   ↓\nCanonicalFinancialEvent\n   ↓\nReconciliationLink + AccountPeriodCoverage\n   ↓\nMonthlyClose / derived summaries\n```\n\nRequired laws:\n\n```text\nBANK_ADAPTER != CORE_FINANCIAL_MODEL\nSTATEMENT_ROW != CANONICAL_EVENT\nGMAIL + STATEMENT SAME EVENT => ONE CANONICAL EVENT\nNO_GMAIL_INFLOW != ZERO_INFLOW\nOBSERVED != RECONCILED\n```\n\nNo physical migrations are authorized by this extension. Existing schema-freeze gates remain in force.\n'''
+          model.write_text(text)
+          PY
+
+          grep -q 'ADR-035 | Statement ETL and monthly reconciliation' mk0/11-decisions/ADR-INDEX.md
+          grep -q 'Next available ADR.*ADR-036' mk0/11-decisions/ADR-INDEX.md
+          grep -q '## Monthly financial close' mk0/03-design/PRODUCT-DESIGN.md
+          grep -q '## 16. Statement and monthly reconciliation extension' mk0/05-data-model/CORE-DATA-MODEL.md
+
+      - name: Validate contracts
+        run: |
+          node tools/validate-statement-etl-reconciliation.mjs
+          git diff --check
+
+      - name: Commit and self-delete
+        run: |
+          rm .github/workflows/tmp-reconcile-statement-doc-indexes.yml
+          git config user.name 'financesensor-ci'
+          git config user.email 'financesensor-ci@users.noreply.github.com'
+          git add mk0/11-decisions/ADR-INDEX.md mk0/03-design/PRODUCT-DESIGN.md mk0/05-data-model/CORE-DATA-MODEL.md .github/workflows/tmp-reconcile-statement-doc-indexes.yml
+          git diff --cached --check
+          git commit -m 'docs(statements): reconcile ETL architecture indexes'
+          git push origin HEAD:jett/mobile-statement-ingress
