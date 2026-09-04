@@ -4,9 +4,12 @@ const files = {
   graph: 'graph/statement-etl-reconciliation.json',
   registry: 'graph/statement-format-registry.json',
   adr: 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md',
+  adrIndex: 'mk0/11-decisions/ADR-INDEX.md',
   architecture: 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md',
   model: 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md',
+  coreModel: 'mk0/05-data-model/CORE-DATA-MODEL.md',
   design: 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md',
+  productDesign: 'mk0/03-design/PRODUCT-DESIGN.md',
   tests: 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md',
   plan: 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md',
 };
@@ -20,9 +23,12 @@ if (!failures.length) {
   const graph = JSON.parse(fs.readFileSync(files.graph, 'utf8'));
   const registry = JSON.parse(fs.readFileSync(files.registry, 'utf8'));
   const adr = fs.readFileSync(files.adr, 'utf8');
+  const adrIndex = fs.readFileSync(files.adrIndex, 'utf8');
   const architecture = fs.readFileSync(files.architecture, 'utf8');
   const model = fs.readFileSync(files.model, 'utf8');
+  const coreModel = fs.readFileSync(files.coreModel, 'utf8');
   const design = fs.readFileSync(files.design, 'utf8');
+  const productDesign = fs.readFileSync(files.productDesign, 'utf8');
   const tests = fs.readFileSync(files.tests, 'utf8');
   const plan = fs.readFileSync(files.plan, 'utf8');
 
@@ -89,6 +95,9 @@ if (!failures.length) {
     if (!adr.includes(marker)) failures.push(`ADR-035 missing marker: ${marker}`);
   }
 
+  if (!adrIndex.includes('| ADR-035 | Statement ETL and monthly reconciliation |')) failures.push('ADR index missing ADR-035');
+  if (!adrIndex.includes('**Next available ADR:** `ADR-036`.')) failures.push('ADR index next-ADR marker is not ADR-036');
+
   for (const marker of [
     'RawMailMessage',
     'RawStatementDocument',
@@ -102,6 +111,15 @@ if (!failures.length) {
     'AccountBalanceEvidence',
   ]) {
     if (!model.includes(marker)) failures.push(`data model missing ${marker}`);
+  }
+
+  for (const marker of [
+    '## 16. Statement and monthly reconciliation extension',
+    'Raw email bodies, raw PDF bytes, decrypted text, OCR page images/text and raw statement rows remain **transient processing contracts**',
+    'GMAIL + STATEMENT SAME EVENT => ONE CANONICAL EVENT',
+    'No physical migrations are authorized by this extension.',
+  ]) {
+    if (!coreModel.includes(marker)) failures.push(`core data model missing statement extension marker: ${marker}`);
   }
 
   for (const marker of [
@@ -123,6 +141,15 @@ if (!failures.length) {
     'No weekly web copy/paste workflow becomes a product requirement.',
   ]) {
     if (!design.includes(marker)) failures.push(`monthly-close design missing ${marker}`);
+  }
+
+  for (const marker of [
+    '## Monthly financial close',
+    'The signature product interaction is **Cerrar mi mes**.',
+    'OBSERVED != RECONCILED',
+    'MONTH_RECONCILED != PRODUCTION_READY',
+  ]) {
+    if (!productDesign.includes(marker)) failures.push(`product design missing monthly-close integration marker: ${marker}`);
   }
 
   for (const marker of [
@@ -150,6 +177,7 @@ if (failures.length) {
 
 console.log('FINANCESENSOR_STATEMENT_ETL_RECONCILIATION=PASS');
 console.log('PRODUCT_SURFACE=FLUTTER_MOBILE_APP');
+console.log('CORE_DOC_INDEXES_BOUND=1');
 console.log('RAW_SOURCE_DURABLE=0');
 console.log('NATIVE_PDF_TEXT_FIRST=1');
 console.log('OCR_FALLBACK=1');
