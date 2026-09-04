@@ -1,5 +1,6 @@
 import { classifyStatementPage, StatementPageRole } from './statement-page-classifier.js';
 import { StatementProviderProfile } from './statement-source-adapters.js';
+import { auditBcpStatementControls } from './statement-layout-control-audit.js';
 import {
   columnBoundaries,
   findHeaderAnchors,
@@ -93,10 +94,6 @@ function balanceControlLabel(line, boundaries) {
   const debit = boundaries.find(boundary => boundary.id === 'debit');
   if (!debit || !Number.isFinite(debit.minX)) return null;
 
-  // Real BCP control labels are visually in the ledger's left/control region, but
-  // their pdf.js x origin can straddle the synthetic DESCRIPCION bucket boundary.
-  // Match the exact control phrase using every text item strictly left of CARGOS,
-  // while amount extraction remains restricted to CARGOS/ABONOS.
   const leftText = normalizeLayoutText((line?.items ?? [])
     .filter(item => Number.isFinite(item?.x) && item.x < debit.minX)
     .map(item => String(item?.text ?? '').trim())
@@ -167,12 +164,20 @@ function dateRangeDiagnostic(rows = [], period = null) {
   const processRange = classifyDateRange(rows.map(row => row?.occurredAt), period);
   const valueRange = classifyDateRange(rows.map(row => row?.auditValueAt), period);
 
-  // Keep the governing audit fail-closed on FECHA PROC. for now. The value-date
-  // classification is diagnostic only and lets the physical corpus tell us whether
-  // an out-of-period process date is nevertheless accounted inside the statement by
-  // FECHA VALOR. No dates themselves are emitted by this function.
-  if (processRange === 'BEFORE_PERIOD' && valueRange === 'NONE') return 'PROCESS_BEFORE_VALUE_IN_PERIOD';
-  if (processRange === 'AFTER_PERIOD' && valueRange === 'NONE') return 'PROCESS_AFTER_VALUE_IN_PERIOD';
+  if (processRange === 'BEFORE_PERIOD') {
+    if (valueRange === 'NONE') return 'PROCESS_BEFORE_VALUE_IN_PERIOD';
+    if (valueRange === 'BEFORE_PERIOD') return 'PROCESS_BEFORE_VALUE_BEFORE_PERIOD';
+    if (valueRange === 'AFTER_PERIOD') return 'PROCESS_BEFORE_VALUE_AFTER_PERIOD';
+    if (valueRange === 'INVALID_DATE') return 'PROCESS_BEFORE_VALUE_INVALID';
+    if (valueRange === 'MIXED') return 'PROCESS_BEFORE_VALUE_MIXED';
+  }
+  if (processRange === 'AFTER_PERIOD') {
+    if (valueRange === 'NONE') return 'PROCESS_AFTER_VALUE_IN_PERIOD';
+    if (valueRange === 'BEFORE_PERIOD') return 'PROCESS_AFTER_VALUE_BEFORE_PERIOD';
+    if (valueRange === 'AFTER_PERIOD') return 'PROCESS_AFTER_VALUE_AFTER_PERIOD';
+    if (valueRange === 'INVALID_DATE') return 'PROCESS_AFTER_VALUE_INVALID';
+    if (valueRange === 'MIXED') return 'PROCESS_AFTER_VALUE_MIXED';
+  }
   return processRange;
 }
 
@@ -239,6 +244,13 @@ function finalizeAudit(result) {
       `summary=${bit(checks.summaryRowsExcluded)}`,
       `opening=${bit(checks.openingBalanceUnique)}`,
       `closing=${bit(checks.closingBalanceUnique)}`,
+      `openinglabel=${bit(diagnostics.openingLabelUnique)}`,
+      `closinglabel=${bit(diagnostics.closingLabelUnique)}`,
+      `totallabel=${bit(diagnostics.totalMovementLabelUnique)}`,
+      `totaldebit=${bit(diagnostics.totalDebitAvailable)}`,
+      `totalcredit=${bit(diagnostics.totalCreditAvailable)}`,
+      `debitmatch=${bit(diagnostics.totalDebitExact)}`,
+      `creditmatch=${bit(diagnostics.totalCreditExact)}`,
       `range=${String(diagnostics.dateRange ?? 'UNKNOWN')}`
     ].join(';'));
   }
@@ -249,6 +261,7 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
   const period = observedPeriod(pages);
   const anchors = balanceAnchors(pages);
   const integrity = rowIntegrity(rows, period);
+  const controlAudit = auditBcpStatementControls({ pages, rows });
 
   const checks = {
     periodUnique: Boolean(period),
@@ -262,7 +275,8 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
   };
 
   const diagnostics = {
-    dateRange: dateRangeDiagnostic(rows, period)
+    dateRange: dateRangeDiagnostic(rows, period),
+    ...controlAudit
   };
 
   const rowIntegrityPass = checks.periodUnique
