@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 3,
-  "status": "S4_SAVINGS_STATIC_READY_REAL_PARSE_OPEN",
+  "schemaVersion": 4,
+  "status": "S5_BCP_SAVINGS_TRUSTED_EDGE_HARNESS_AWAITING_CI_PHYSICAL_OPEN",
   "asOf": "2026-09-03",
   "product": {
     "surface": "FLUTTER_MOBILE_APP",
@@ -60,6 +60,24 @@
       "idempotentReplayRequired": true
     }
   },
+  "trustedEdgeHarness": {
+    "runtime": "WINDOWS_NODE_MK0_EVIDENCE_HARNESS_ONLY",
+    "launcher": "spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd",
+    "viewer": "spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs",
+    "oauthScope": "gmail.readonly",
+    "vault": "WINDOWS_DPAPI_CURRENT_USER_AES_GCM",
+    "historicalWriterConcurrencyGuard": true,
+    "enabledProfiles": ["PE-BCP-SAVINGS-REQUESTED"],
+    "enabledPath": "GMAIL_ATTACHMENT_TO_PASSIVE_PDF_LAYOUT_TO_BCP_SAVINGS_ADAPTER",
+    "creditImportPolicy": "BLOCKED_UNTIL_PROFILE_ADAPTER_READY",
+    "interbankSavingsLocalFilePath": "OPEN_NOT_IMPLEMENTED",
+    "layoutReviewPolicy": "FAIL_CLOSED_BEFORE_VAULT_MUTATION",
+    "zeroMovementPolicy": "FAIL_CLOSED_BEFORE_VAULT_MUTATION",
+    "rawPdfDurable": false,
+    "layoutPlaintextDurable": false,
+    "passwordDurable": false,
+    "physicalExecution": "OPEN"
+  },
   "normalizedDirections": {
     "balanceEffect": ["INCREASE", "DECREASE", "NONE", "UNKNOWN"],
     "cashflowDirection": ["INFLOW", "OUTFLOW", "NEUTRAL", "UNKNOWN"]
@@ -114,6 +132,9 @@
     "FIXTURE_READY != REAL_PARSE_PASS",
     "STATIC_ADAPTER_PASS != REAL_PARSE_PASS",
     "STATIC_READY != ANDROID_PHYSICAL_PROVEN",
+    "TRUSTED_EDGE_HARNESS_READY != PHYSICAL_PASS",
+    "DESKTOP_HARNESS_PASS != MOBILE_PHYSICAL_PASS",
+    "CREDIT_PROFILE_DETECTED != CREDIT_PROFILE_IMPORT_ENABLED",
     "OCR_OUTPUT != FINANCIAL_EVENT",
     "STATEMENT_ROW != CANONICAL_EVENT",
     "GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE",
@@ -132,7 +153,11 @@
     "syntheticGeometricFixtures": "BCP_SAVINGS_PLUS_INTERBANK_SAVINGS",
     "profileRowAdapters": "SAVINGS_2_STATIC_READY_SYNTHETIC",
     "syntheticAdapterCi": "PASS_RUN_33828461944_JOB_100886097801",
+    "bcpSavingsTrustedEdgeHarness": "IMPLEMENTED_AWAITING_CI",
     "nativeTextRealParse": "OPEN",
+    "bcpSavingsRealParse": "OPEN",
+    "creditStatementRealParse": "OPEN_BLOCKED",
+    "interbankSavingsLocalFileImport": "OPEN",
     "ocrPhysical": "OPEN",
     "multiBankReconciliationPhysical": "OPEN",
     "androidRealStatement": "OPEN",
