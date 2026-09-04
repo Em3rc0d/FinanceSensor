@@ -7,6 +7,8 @@ test('maps known structural review reasons to compact non-content diagnostics', 
   assert.equal(compactStatementReviewCode([{ code: 'STATEMENT_HEADER_GEOMETRY_UNKNOWN', pageNumber: 4 }]), 'STMT_HEADER_GEOMETRY');
   assert.equal(compactStatementReviewCode([{ code: 'STATEMENT_ROW_BOTH_DEBIT_CREDIT', lineY: 123.45 }]), 'STMT_ROW_BOTH_SIDES');
   assert.equal(compactStatementReviewCode([{ code: 'STATEMENT_ROW_BOTH_INCOME_EXPENSE' }]), 'STMT_ROW_BOTH_SIDES');
+  assert.equal(compactStatementReviewCode([{ code: 'STATEMENT_ROW_VALUE_DATE_NOT_FOUND' }]), 'STMT_ROW_VALUE_DATE');
+  assert.equal(compactStatementReviewCode([{ code: 'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION' }]), 'STMT_ROW_DATE_SPLIT');
 });
 
 test('unknown review metadata never crosses the local diagnostic boundary', () => {
