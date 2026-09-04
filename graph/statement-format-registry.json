@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "status": "S3_FIXTURES_READY_S4_SAVINGS_ADAPTERS_AWAITING_CI",
+  "status": "S4_SAVINGS_STATIC_READY_REAL_PARSE_OPEN",
   "asOf": "2026-09-03",
   "rules": {
     "unit": "INSTITUTION_PLUS_PRODUCT_PLUS_STATEMENT_FAMILY",
@@ -35,7 +35,9 @@
     "profileSpec": "graph/statement-profile-specs-v1.json",
     "geometricFixtures": 2,
     "implementedSavingsAdapters": 2,
-    "ciStatus": "AWAITING_PR_CI",
+    "ciStatus": "PASS_SYNTHETIC",
+    "ciRunId": 33828461944,
+    "ciJobId": 100886097801,
     "realParseClaimed": false
   },
   "pageRoles": [
@@ -82,8 +84,8 @@
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
       "formatFixture": "SANITIZED_GEOMETRIC_FIXTURE_V1",
       "profileSpec": "graph/statement-profile-specs-v1.json",
-      "adapterStatus": "FIXTURE_READY",
-      "staticAdapter": "IMPLEMENTED_AWAITING_CI",
+      "adapterStatus": "STATIC_READY",
+      "staticAdapter": "PASS_SYNTHETIC_CI",
       "realParse": "OPEN",
       "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
       "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
@@ -134,8 +136,8 @@
       "availabilityEvidence": "PRIVATE_OWNED_COPY_OBSERVED",
       "formatFixture": "SANITIZED_GEOMETRIC_FIXTURE_V1",
       "profileSpec": "graph/statement-profile-specs-v1.json",
-      "adapterStatus": "FIXTURE_READY",
-      "staticAdapter": "IMPLEMENTED_AWAITING_CI",
+      "adapterStatus": "STATIC_READY",
+      "staticAdapter": "PASS_SYNTHETIC_CI",
       "realParse": "OPEN",
       "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
       "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
@@ -186,6 +188,7 @@
     "FIXTURE_READY=>REAL_PARSE_PASS",
     "NATIVE_TEXT_PRESENT=>ADAPTER_SUPPORTED",
     "STATIC_ADAPTER_PASS=>REAL_PARSE_PASS",
+    "STATIC_READY=>ANDROID_PHYSICAL_PROVEN",
     "DESKTOP_PARSE_PASS=>MOBILE_PARSE_PASS",
     "ANDROID_PARSE_PASS=>IOS_PARSE_PASS"
   ]
