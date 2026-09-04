@@ -1,5 +1,7 @@
 # EV-STATEMENT — BCP savings owned-corpus physical import PASS
 
+> **Revalidation note — 2026-09-04:** This receipt remains a historical record of what baseline `69e45e0` physically emitted. The later balance-audit campaign triggered its stated revalidation condition by exposing systematic debit-column contamination. PR #53 repaired that parser boundary. The corrected baseline now audits 359 movements with printed debit and credit controls exact in 9/9 statements. For current reconciliation claims, use `EV-STATEMENT-BCP-SAVINGS-BALANCE-AUDIT-PHYSICAL-2026-09-04.md`. The historical `368` count must not be treated as the current reconciled movement count.
+
 **Date:** 2026-09-04  
 **Profile:** `PE-BCP-SAVINGS-REQUESTED`  
 **Runtime:** controlled Windows local-edge evidence harness  
@@ -103,10 +105,10 @@ PE-BCP-SAVINGS-REQUESTED
 OWNED_CORPUS_PHYSICAL_PARSE             PASS
 STATEMENTS                              9 / 9
 PAGES                                   16
-DERIVED_EVIDENCE                        368
+DERIVED_EVIDENCE                        368  (HISTORICAL BASELINE OUTPUT)
 UNPROCESSED                             0
 GENERALIZED_PROFILE_SUPPORT             OPEN
-RECONCILIATION                          OPEN
+RECONCILIATION                          SUPERSEDED BY BALANCE-AUDIT RECEIPT
 MOBILE_PHYSICAL_PROOF                   OPEN
 BUILD_READY                             NO
 IOS_TOUCHED                             0
