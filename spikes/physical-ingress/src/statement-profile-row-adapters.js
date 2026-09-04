@@ -100,15 +100,32 @@ function pageColumns(page, headers) {
   return { boundaries, headerY };
 }
 
+function zeroRowDiagnostic({ ledgerPages, processDateLines, pairedDateLines, amountColumnLines, pairedDateAmountLines }) {
+  if (ledgerPages === 0) return 'STATEMENT_LEDGER_PAGE_NOT_FOUND';
+  if (processDateLines === 0) return 'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND';
+  if (pairedDateLines === 0) return 'STATEMENT_ROW_DATE_PAIR_NOT_FOUND';
+  if (pairedDateAmountLines === 0 && amountColumnLines > 0) return 'STATEMENT_ROW_VERTICAL_FRAGMENTATION';
+  if (pairedDateAmountLines === 0) return 'STATEMENT_ROW_AMOUNT_NOT_FOUND';
+  return 'STATEMENT_LAYOUT_NO_MOVEMENTS';
+}
+
 export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null } = {}) {
   const rows = [];
   const review = [];
   const year = bcpStatementYear(pages);
   if (!year) return { rows, review: [{ code: 'STATEMENT_PERIOD_AMBIGUOUS' }] };
 
+  let ledgerPages = 0;
+  let processDateLines = 0;
+  let pairedDateLines = 0;
+  let amountColumnLines = 0;
+  let pairedDateAmountLines = 0;
+
   for (const page of pages) {
     const role = classifyStatementPage({ text: pagePlainText(page), providerProfile: StatementProviderProfile.BCP_SAVINGS_REQUESTED });
     if (role !== StatementPageRole.TRANSACTION_LEDGER) continue;
+    ledgerPages += 1;
+
     const geometry = pageColumns(page, BCP_HEADERS);
     if (!geometry) {
       review.push({ code: 'STATEMENT_HEADER_GEOMETRY_UNKNOWN', pageNumber: page.pageNumber });
@@ -118,14 +135,20 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
     for (const line of groupPageItemsIntoLines(page)) {
       if (line.y >= geometry.headerY - 1) continue;
       const columns = lineToColumns(line, geometry.boundaries);
-      const occurredAt = parseBcpDate(columns.processDate, year);
-      const valueAt = parseBcpDate(columns.valueDate, year);
-      if (!occurredAt || !valueAt) continue;
 
       const debit = parseFlexibleMoney(columns.debit);
       const credit = parseFlexibleMoney(columns.credit);
       const hasDebit = debit !== null && debit > 0;
       const hasCredit = credit !== null && credit > 0;
+      if (hasDebit || hasCredit) amountColumnLines += 1;
+
+      const occurredAt = parseBcpDate(columns.processDate, year);
+      const valueAt = parseBcpDate(columns.valueDate, year);
+      if (occurredAt) processDateLines += 1;
+      if (!occurredAt || !valueAt) continue;
+      pairedDateLines += 1;
+      if (hasDebit || hasCredit) pairedDateAmountLines += 1;
+
       if (hasDebit && hasCredit) {
         review.push({ code: 'STATEMENT_ROW_BOTH_DEBIT_CREDIT', pageNumber: page.pageNumber, lineY: line.y });
         continue;
@@ -143,6 +166,18 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
         sourceSequence: rows.length
       }));
     }
+  }
+
+  if (rows.length === 0 && review.length === 0) {
+    review.push({
+      code: zeroRowDiagnostic({
+        ledgerPages,
+        processDateLines,
+        pairedDateLines,
+        amountColumnLines,
+        pairedDateAmountLines
+      })
+    });
   }
 
   return { rows, review };
