@@ -20,12 +20,13 @@ import {
 import {
   classifyStatementMessage,
   selectStatementPdfAttachment,
+  StatementProviderProfile,
   StatementSourceClass
 } from '../src/statement-source-adapters.js';
 import { fetchGmailStatementAttachment } from '../src/gmail-statement-attachment.js';
-import { extractPasswordProtectedPdfText } from '../src/pdfjs-statement-parser.js';
-import { importStatementSession } from '../src/statement-import-session.js';
-import { parseStatementRows } from '../src/statement-row-parser.js';
+import { extractPasswordProtectedPdfLayout } from '../src/pdfjs-statement-parser.js';
+import { importStatementLayoutSession } from '../src/statement-import-session.js';
+import { parseStatementProfileLayout } from '../src/statement-profile-row-adapters.js';
 import { StatementEvidenceImporter } from '../src/statement-evidence-importer.js';
 
 const EXPECTED_CLIENT_ID = '150834461062-b32pvpc84plkl0ftftm2vcfqfoq1ff8t.apps.googleusercontent.com';
@@ -44,13 +45,16 @@ const DISCOVERY_QUERIES = Object.freeze([
   'from:bcpalertasyavisos@bcp.com.pe subject:"Constancia de solicitud de copia de estado de cuenta" has:attachment'
 ]);
 
+const PHYSICAL_LAYOUT_IMPORT_PROFILES = new Set([
+  StatementProviderProfile.BCP_SAVINGS_REQUESTED
+]);
+
 let server;
 let desktopClientSecret = null;
 let shortAccessToken = null;
 let refreshToken = null;
 let gmailProvider = null;
 let authorized = false;
-let authorizedMailbox = null;
 let discovered = [];
 let discoveryError = null;
 let vault = null;
@@ -73,6 +77,10 @@ function openBrowser(url) {
 function rootRedirectUri() {
   const address = server.address();
   return `http://${HOST}:${address.port}`;
+}
+
+function oauthRedirectUri() {
+  return `${rootRedirectUri()}/oauth/callback`;
 }
 
 function requireSession(url) {
@@ -100,6 +108,10 @@ function safeError(error) {
 function header(headers = {}, wanted = '') {
   const key = Object.keys(headers).find(name => name.toLowerCase() === String(wanted).toLowerCase());
   return key ? String(headers[key] ?? '') : '';
+}
+
+function physicalImportEnabled(profile) {
+  return PHYSICAL_LAYOUT_IMPORT_PROFILES.has(profile);
 }
 
 function loadVault() {
@@ -142,7 +154,7 @@ async function exchangeAuthorizationCode(code) {
   const request = buildTokenExchangeRequest({
     clientId: EXPECTED_CLIENT_ID,
     clientSecret: desktopClientSecret,
-    redirectUri: rootRedirectUri(),
+    redirectUri: oauthRedirectUri(),
     code,
     codeVerifier: pkce.codeVerifier
   });
@@ -224,8 +236,7 @@ async function discoverStatements() {
           descriptorId,
           messageId: id,
           attachmentId: attachment.attachmentId,
-          classification,
-          occurredAt: header(full.headers, 'Date') || null
+          classification
         });
       }
     }
@@ -247,6 +258,17 @@ function groupedCounts() {
   return [...out.values()].sort((a, b) => a.profile.localeCompare(b.profile));
 }
 
+function groupControl(group) {
+  if (!physicalImportEnabled(group.profile)) {
+    return `<p class="muted">Formato detectado, pero su parser físico permanece cerrado en este harness. No se importará con un parser genérico.</p>`;
+  }
+  return `<form method="post" action="/import?profile=${encodeURIComponent(group.profile)}&s=${sessionSecret}" autocomplete="off">
+    <label>Clave del PDF · solo esta sesión</label><br>
+    <input type="password" name="password" required maxlength="128" autocomplete="off" spellcheck="false">
+    <br><button type="submit">Probar importación geométrica</button>
+  </form>`;
+}
+
 function homeBody(extra = '') {
   if (!authorized) {
     return `<div class="brand">FinanceSensor · Trusted local edge</div><h1 class="title">Bank Statement Recovery</h1><p class="muted">Solo Gmail <code>gmail.readonly</code>. Los PDF y su clave no salen de este proceso local.</p><div class="panel"><p><span class="status warn">NOT AUTHORIZED</span></p><a class="button" href="/connect?s=${sessionSecret}">Conectar Gmail</a></div>${extra}`;
@@ -257,16 +279,12 @@ function homeBody(extra = '') {
     <div class="group">
       <h3>${escapeHtml(group.profile)}</h3>
       <p>${group.count} estado(s) detectado(s) · ${escapeHtml(group.sourceClass)}</p>
-      <form method="post" action="/import?profile=${encodeURIComponent(group.profile)}&s=${sessionSecret}" autocomplete="off">
-        <label>Clave del PDF · solo esta sesión</label><br>
-        <input type="password" name="password" required maxlength="128" autocomplete="off" spellcheck="false">
-        <br><button type="submit">Importar este grupo</button>
-      </form>
+      ${groupControl(group)}
     </div>`).join('') : '<p class="muted">No se detectaron estados de cuenta compatibles todavía.</p>';
 
-  return `<div class="brand">FinanceSensor · Trusted local edge</div><h1 class="title">Bank Statement Recovery</h1><p class="muted">Cuenta Gmail autorizada localmente. La clave del PDF nunca se persiste.</p>
+  return `<div class="brand">FinanceSensor · Trusted local edge</div><h1 class="title">Bank Statement Recovery</h1><p class="muted">Gmail autorizado localmente. La clave del PDF nunca se persiste.</p>
   <div class="panel"><div class="grid"><div class="metric">EECC detectados<strong>${discovered.length}</strong></div><div class="metric">Perfiles<strong>${groups.length}</strong></div><div class="metric">Scope<strong>readonly</strong></div></div>${discoveryError ? `<p class="bad">${escapeHtml(discoveryError)}</p>` : ''}</div>
-  <div class="panel"><h2>Fuentes detectadas</h2>${groupHtml}</div>${extra}<div class="footer">Crédito automático y débito/ahorro solicitado son coberturas distintas. Ningún EECC de tarjeta se usa como prueba de ingresos de una cuenta de ahorro.</div>`;
+  <div class="panel"><h2>Fuentes detectadas</h2>${groupHtml}</div>${extra}<div class="footer">BCP ahorro usa el adapter geométrico estático. Los perfiles de crédito permanecen bloqueados para importación física hasta tener su adapter específico. Interbank ahorro necesita todavía el carril de archivo local.</div>`;
 }
 
 async function readSmallForm(req) {
@@ -282,10 +300,17 @@ async function readSmallForm(req) {
 
 async function importProfile(profile, password) {
   assertHistoricalWriterInactive();
+  if (!physicalImportEnabled(profile)) {
+    const error = new Error('STATEMENT_PROFILE_PHYSICAL_HARNESS_NOT_ENABLED');
+    error.code = error.message;
+    throw error;
+  }
+
   const selected = discovered.filter(item => item.classification.providerProfile === profile);
   if (!selected.length) throw new Error('STATEMENT_PROFILE_EMPTY');
   let statementsParsed = 0;
   let evidenceAdded = 0;
+  let pagesParsed = 0;
   let failures = 0;
   let lastFailure = null;
 
@@ -297,32 +322,33 @@ async function importProfile(profile, password) {
         messageId: descriptor.messageId,
         attachmentId: descriptor.attachmentId
       });
-      const evidence = await importStatementSession({
+      const layoutResult = await importStatementLayoutSession({
         encryptedPdfBytes,
         password,
         sourceMessageId: descriptor.messageId,
         attachmentIdentity: descriptor.attachmentId,
         statementClassification: descriptor.classification,
-        decryptAndExtractText: extractPasswordProtectedPdfText,
-        parseStatementText: ({ text, classification }) => parseStatementRows({
-          text,
-          classification,
+        decryptAndExtractLayout: extractPasswordProtectedPdfLayout,
+        parseStatementLayout: ({ pages, classification }) => parseStatementProfileLayout({
+          providerProfile: classification?.providerProfile,
+          pages,
           tenantId: 'tenant-ingress'
         })
       });
       const result = statementImporter.importEvidence({
-        evidence,
+        evidence: layoutResult.evidence,
         sourceClass: descriptor.classification.sourceClass
       });
       statementsParsed += 1;
       evidenceAdded += result.addedEvidence;
+      pagesParsed += layoutResult.pageCount;
     } catch (error) {
       failures += 1;
       lastFailure = safeError(error);
     }
   }
 
-  return { statementsParsed, evidenceAdded, failures, lastFailure };
+  return { statementsParsed, evidenceAdded, pagesParsed, failures, lastFailure };
 }
 
 server = http.createServer(async (req, res) => {
@@ -338,7 +364,7 @@ server = http.createServer(async (req, res) => {
       if (!requireSession(url)) { sendHtml(res, 403, 'Forbidden', '<p>Sesión local inválida.</p>'); return; }
       const request = createAuthorizationRequest({
         clientId: EXPECTED_CLIENT_ID,
-        redirectUri: `${rootRedirectUri()}/oauth/callback`,
+        redirectUri: oauthRedirectUri(),
         state: oauthState,
         codeVerifier: pkce.codeVerifier,
         scopes: [GMAIL_READONLY_SCOPE]
@@ -353,8 +379,7 @@ server = http.createServer(async (req, res) => {
       const tokens = await exchangeAuthorizationCode(callback.code);
       const credentialProvider = buildCredentialProvider(tokens);
       gmailProvider = new GmailRestProvider({ credentialProvider });
-      const profile = await gmailProvider.getProfile();
-      authorizedMailbox = profile.emailAddress || null;
+      await gmailProvider.getProfile();
       authorized = true;
       await discoverStatements();
       res.writeHead(302, { location: `/?s=${sessionSecret}`, 'cache-control': 'no-store' });
@@ -378,7 +403,7 @@ server = http.createServer(async (req, res) => {
         password = '';
       }
       const tone = result.failures === 0 ? 'ok' : 'warn';
-      const extra = `<div class="panel"><p><span class="status ${tone}">${result.failures === 0 ? 'IMPORT FINISHED' : 'PARTIAL / SAFE'}</span></p><p>EECC procesados: <strong>${result.statementsParsed}</strong><br>Evidencias nuevas: <strong>${result.evidenceAdded}</strong><br>EECC no procesados: <strong>${result.failures}</strong>${result.lastFailure ? `<br>Código local: <code>${escapeHtml(result.lastFailure)}</code>` : ''}</p><p class="muted">La clave no fue guardada. El PDF y el texto descifrado no fueron persistidos.</p></div>`;
+      const extra = `<div class="panel"><p><span class="status ${tone}">${result.failures === 0 ? 'IMPORT FINISHED' : 'PARTIAL / SAFE'}</span></p><p>EECC procesados: <strong>${result.statementsParsed}</strong><br>Páginas procesadas: <strong>${result.pagesParsed}</strong><br>Evidencias nuevas: <strong>${result.evidenceAdded}</strong><br>EECC no procesados: <strong>${result.failures}</strong>${result.lastFailure ? `<br>Código local: <code>${escapeHtml(result.lastFailure)}</code>` : ''}</p><p class="muted">La clave no fue guardada. El PDF, texto y geometría descifrados no fueron persistidos.</p></div>`;
       sendHtml(res, 200, 'FinanceSensor Statements', homeBody(extra));
       return;
     }
@@ -399,8 +424,12 @@ server.listen(0, HOST, () => {
   const url = `${rootRedirectUri()}/?s=${sessionSecret}`;
   console.log('FINANCESENSOR_STATEMENT_VIEWER=READY');
   console.log('SCOPE=gmail.readonly');
+  console.log('BCP_SAVINGS_LAYOUT_PHYSICAL_HARNESS=ENABLED');
+  console.log('CREDIT_STATEMENT_PHYSICAL_IMPORT=OPEN');
+  console.log('INTERBANK_LOCAL_FILE_IMPORT=OPEN');
   console.log('STATEMENT_PASSWORD_PERSISTENCE=0');
   console.log('RAW_DECRYPTED_STATEMENT_DURABILITY=0');
+  console.log('LAYOUT_PLAINTEXT_DURABILITY=0');
   console.log('IOS_TOUCHED=0');
   openBrowser(url);
 });
@@ -410,7 +439,6 @@ function shutdown() {
   refreshToken = null;
   desktopClientSecret = null;
   discovered = [];
-  authorizedMailbox = null;
   try { vault?.destroyKeyMaterial?.(); } catch {}
   server?.close?.(() => process.exit(0));
 }

@@ -105,14 +105,16 @@ assert(viewer.includes("error.code = 'HISTORICAL_SCAN_ACTIVE'"), 'concurrent wri
 assert(viewer.includes('Clave del PDF · solo esta sesión'), 'local password input must describe session-only custody');
 assert(viewer.includes('autocomplete="off"'), 'local password form must disable autocomplete');
 assert(viewer.includes('fetchGmailStatementAttachment'), 'statement bytes must be fetched through local Gmail boundary');
-assert(viewer.includes('extractPasswordProtectedPdfText'), 'statement viewer must use local password-aware PDF parser');
+assert(viewer.includes('extractPasswordProtectedPdfLayout'), 'statement viewer must use local password-aware geometric PDF parser');
+assert(viewer.includes('importStatementLayoutSession'), 'statement viewer must use the layout session boundary');
+assert(viewer.includes('parseStatementProfileLayout'), 'statement viewer must dispatch to the profile-specific layout adapter');
 assert(viewer.includes('password = \'\''), 'statement password reference must be dropped after local import');
 assertNoPasswordValueLogging(viewer, 'viewer');
 assert(!/writeFile[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*password\b)/i.test(viewer), 'viewer must never write statement password value');
 
 assert(launcher.includes('npm ci --omit=optional --ignore-scripts --no-audit --no-fund'), 'launcher must use locked minimal dependency install');
 assert(launcher.includes('windows-dpapi-preflight.mjs'), 'launcher must validate DPAPI before OAuth');
-assert(launcher.includes('Nunca pegues esa clave en ChatGPT ni en GitHub'), 'launcher must keep statement password out of chat/repo');
+assert(launcher.includes('FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN'), 'launcher must keep statement password out of chat/repo');
 assert(launcher.indexOf('windows-dpapi-preflight.mjs') < launcher.indexOf('OpenFileDialog'), 'DPAPI preflight must precede OAuth credential selection');
 
 assert(pkg.dependencies?.['pdfjs-dist'] === '6.3.289', 'PDF.js must be exact-pinned');
