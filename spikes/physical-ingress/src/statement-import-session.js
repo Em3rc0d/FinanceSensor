@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { compactStatementReviewCode } from './statement-local-diagnostic.js';
 
 function ensureBuffer(bytes) {
   if (Buffer.isBuffer(bytes)) return bytes;
@@ -106,13 +107,14 @@ export async function importStatementLayoutSession({
     const review = Array.isArray(parsed?.review) ? parsed.review : [];
     if (!Array.isArray(rows)) throw new Error('STATEMENT_ROWS_INVALID');
     if (review.length > 0) {
+      const diagnosticCode = compactStatementReviewCode(review);
       const error = new Error('STATEMENT_LAYOUT_REVIEW_REQUIRED');
-      error.code = error.message;
+      error.code = diagnosticCode;
       throw error;
     }
     if (rows.length === 0) {
       const error = new Error('STATEMENT_LAYOUT_NO_MOVEMENTS');
-      error.code = error.message;
+      error.code = 'STMT_NO_MOVEMENTS';
       throw error;
     }
 

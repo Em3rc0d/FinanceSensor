@@ -89,7 +89,7 @@ test('layout session returns only derived evidence and aggregate page count', as
   assert.equal(raw.every(byte => byte === 0), true);
 });
 
-test('layout review fails closed before evidence can be returned', async () => {
+test('layout review fails closed and exposes only a compact structural diagnostic', async () => {
   const raw = Buffer.from('encrypted synthetic layout');
   await assert.rejects(
     importStatementLayoutSession({
@@ -104,12 +104,12 @@ test('layout review fails closed before evidence can be returned', async () => {
         review: [{ code: 'STATEMENT_ROW_BOTH_DEBIT_CREDIT' }]
       })
     }),
-    error => error.code === 'STATEMENT_LAYOUT_REVIEW_REQUIRED'
+    error => error.code === 'STMT_ROW_BOTH_SIDES' && error.message === 'STATEMENT_LAYOUT_REVIEW_REQUIRED'
   );
   assert.equal(raw.every(byte => byte === 0), true);
 });
 
-test('layout with no movement rows fails closed instead of reporting a false parse', async () => {
+test('layout with no movement rows fails closed with a compact local diagnostic', async () => {
   await assert.rejects(
     importStatementLayoutSession({
       encryptedPdfBytes: Buffer.from('encrypted synthetic layout'),
@@ -120,7 +120,7 @@ test('layout with no movement rows fails closed instead of reporting a false par
       decryptAndExtractLayout: async () => ({ pages: [{ pageNumber: 1, items: [{ text: 'header only' }] }] }),
       parseStatementLayout: async () => ({ rows: [], review: [] })
     }),
-    error => error.code === 'STATEMENT_LAYOUT_NO_MOVEMENTS'
+    error => error.code === 'STMT_NO_MOVEMENTS' && error.message === 'STATEMENT_LAYOUT_NO_MOVEMENTS'
   );
 });
 
