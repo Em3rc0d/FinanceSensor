@@ -1,0 +1,61 @@
+name: FinanceSensor Statement ETL Contract
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/statement-etl-reconciliation.json'
+      - 'graph/statement-format-registry.json'
+      - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
+      - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
+      - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'tools/validate-statement-etl-reconciliation.mjs'
+      - '.github/workflows/statement-etl-contract.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/statement-etl-reconciliation.json'
+      - 'graph/statement-format-registry.json'
+      - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
+      - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
+      - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'tools/validate-statement-etl-reconciliation.mjs'
+      - '.github/workflows/statement-etl-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate statement ETL architecture
+        run: node tools/validate-statement-etl-reconciliation.mjs
+
+      - name: Public trust boundary
+        run: |
+          ! grep -R -E -i '(password\s*[:=]\s*["'"'][^"'"']+|dni\s*[:=]\s*[0-9]{6,}|account(number)?\s*[:=]\s*[0-9]{8,}|card(number)?\s*[:=]\s*[0-9]{8,})' \
+            graph/statement-etl-reconciliation.json \
+            graph/statement-format-registry.json \
+            mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
+            mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md \
+            mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md \
+            mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md \
+            mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md \
+            mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md
+          echo 'REAL_STATEMENT_DATA_IN_CI=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'IOS_TOUCHED=0'
+          echo 'BUILD_READY=false'
