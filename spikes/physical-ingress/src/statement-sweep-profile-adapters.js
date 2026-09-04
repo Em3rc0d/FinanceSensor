@@ -86,7 +86,9 @@ function highestAnchor(page, alternatives = []) {
   }
 
   // pdf.js may split a visual header such as "Fecha de proceso" into adjacent items.
-  // Search only short contiguous windows on the same line, and anchor to the first item.
+  // A fragmented match is authoritative only when the matched header begins at the
+  // first item in the candidate window. This prevents an earlier neighboring header
+  // from stealing the x-origin of a later column.
   for (const line of groupPageItemsIntoLines(page)) {
     const items = line.items ?? [];
     for (let start = 0; start < items.length; start += 1) {
@@ -95,7 +97,8 @@ function highestAnchor(page, alternatives = []) {
         combined = [combined, String(items[end]?.text ?? '').trim()].filter(Boolean).join(' ');
         const normalized = normalizeLayoutText(combined);
         for (const alternative of alternatives) {
-          if (!matchOffset(normalized, alternative)) continue;
+          const match = matchOffset(normalized, alternative);
+          if (!match || match.index !== 0) continue;
           candidates.push({ x: Number(items[start]?.x), y: Number(line.y), text: combined });
         }
       }
@@ -141,9 +144,6 @@ function parseShortMonthDate(token, years = []) {
   const month = MONTHS[match[2]];
   const candidates = years.map(year => safeIso(year, month, day)).filter(Boolean);
   if (candidates.length === 1) return candidates[0];
-
-  // Real card statements can contain multiple full dates around one billing cycle.
-  // Prefer the earliest observed year rather than future schedule years.
   return candidates[0] ?? null;
 }
 
@@ -251,11 +251,11 @@ function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
 const RIPLEY_SPECS = Object.freeze([
   { id: 'operationDate', alternatives: [/fecha\s+de\s+operacion/, /^operacion$/] },
   { id: 'processDate', alternatives: [/fecha\s+de\s+proceso/, /^proceso$/] },
-  { id: 'ticket', alternatives: [/ticket/] },
+  { id: 'ticket', alternatives: ['ticket', /n.? ticket/] },
   { id: 'description', alternatives: [/^descripcion$/] },
   { id: 'type', alternatives: [/^t\s*\/\s*a$/, /^ta$/] },
   { id: 'amount', alternatives: [/^monto$/] },
-  { id: 'rate', alternatives: [/tea/] }
+  { id: 'rate', alternatives: [/^tea/] }
 ]);
 
 function parseRipleyCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
