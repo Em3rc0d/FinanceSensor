@@ -45,23 +45,63 @@ function parseSignedMoney(value) {
   return (trailingMinus || leadingMinus) ? -amount : amount;
 }
 
-function textItems(page = []) {
-  return (page?.items ?? []).filter(item => String(item?.text ?? '').trim());
+function normalizedPattern(alternative) {
+  if (typeof alternative === 'string') return { kind: 'string', value: normalizeLayoutText(alternative) };
+  const flags = alternative.flags.replace(/g/g, '').includes('i')
+    ? alternative.flags.replace(/g/g, '')
+    : `${alternative.flags.replace(/g/g, '')}i`;
+  return { kind: 'regex', value: new RegExp(alternative.source, flags) };
 }
 
-function anchorAlternativeMatches(text, alternative) {
-  if (typeof alternative === 'string') return text === normalizeLayoutText(alternative);
-  const flags = alternative.flags.includes('i') ? alternative.flags : `${alternative.flags}i`;
-  return new RegExp(alternative.source, flags).test(text);
+function matchOffset(text, alternative) {
+  const pattern = normalizedPattern(alternative);
+  if (pattern.kind === 'string') {
+    const index = text.indexOf(pattern.value);
+    return index >= 0 ? { index, length: pattern.value.length } : null;
+  }
+  const match = text.match(pattern.value);
+  return match && Number.isInteger(match.index) ? { index: match.index, length: match[0].length } : null;
+}
+
+function estimatedItemAnchor(item, match) {
+  const text = normalizeLayoutText(item?.text);
+  const x = Number(item?.x);
+  const width = Math.max(0, Number(item?.width) || 0);
+  if (!Number.isFinite(x)) return null;
+  const ratio = text.length > 0 ? match.index / text.length : 0;
+  return { x: x + width * ratio, y: Number(item?.y), text: item?.text };
 }
 
 function highestAnchor(page, alternatives = []) {
   const candidates = [];
-  for (const item of textItems(page)) {
-    const text = normalizeLayoutText(item.text);
-    if (!alternatives.some(match => anchorAlternativeMatches(text, match))) continue;
-    candidates.push({ x: Number(item.x), y: Number(item.y), text: item.text });
+  for (const item of page?.items ?? []) {
+    const text = normalizeLayoutText(item?.text);
+    if (!text) continue;
+    for (const alternative of alternatives) {
+      const match = matchOffset(text, alternative);
+      if (!match) continue;
+      const anchor = estimatedItemAnchor(item, match);
+      if (anchor && Number.isFinite(anchor.y)) candidates.push(anchor);
+    }
   }
+
+  // pdf.js may split a visual header such as "Fecha de proceso" into adjacent items.
+  // Search only short contiguous windows on the same line, and anchor to the first item.
+  for (const line of groupPageItemsIntoLines(page)) {
+    const items = line.items ?? [];
+    for (let start = 0; start < items.length; start += 1) {
+      let combined = '';
+      for (let end = start; end < Math.min(items.length, start + 5); end += 1) {
+        combined = [combined, String(items[end]?.text ?? '').trim()].filter(Boolean).join(' ');
+        const normalized = normalizeLayoutText(combined);
+        for (const alternative of alternatives) {
+          if (!matchOffset(normalized, alternative)) continue;
+          candidates.push({ x: Number(items[start]?.x), y: Number(line.y), text: combined });
+        }
+      }
+    }
+  }
+
   candidates.sort((a, b) => b.y - a.y || a.x - b.x);
   return candidates[0] ?? null;
 }
@@ -73,6 +113,8 @@ function stackedGeometry(page, specs = []) {
     if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
     anchors[spec.id] = { id: spec.id, ...anchor };
   }
+  const xs = Object.values(anchors).map(anchor => anchor.x);
+  if (new Set(xs.map(value => value.toFixed(3))).size !== xs.length) return null;
   const boundaries = columnBoundaries(specs.map(spec => ({ id: spec.id, header: spec.id })), anchors);
   if (!boundaries) return null;
   const headerY = Math.min(...Object.values(anchors).map(anchor => anchor.y));
@@ -87,10 +129,6 @@ function candidateStatementYears(pages = []) {
       const year = expandYear(match[1]);
       if (year) years.add(year);
     }
-    for (const match of normalizeLayoutText(text).matchAll(/\b(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)[-\s](\d{4})\b/g)) {
-      const year = Number(match[1]);
-      if (year) years.add(year);
-    }
   }
   return [...years].sort((a, b) => a - b);
 }
@@ -102,7 +140,11 @@ function parseShortMonthDate(token, years = []) {
   const day = Number(match[1]);
   const month = MONTHS[match[2]];
   const candidates = years.map(year => safeIso(year, month, day)).filter(Boolean);
-  return candidates.length === 1 ? candidates[0] : candidates.at(-1) ?? null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Real card statements can contain multiple full dates around one billing cycle.
+  // Prefer the earliest observed year rather than future schedule years.
+  return candidates[0] ?? null;
 }
 
 function parseRipleyDate(token) {
@@ -145,12 +187,12 @@ function creditMovement({ tenantId, accountId, amount, currency, description, oc
 }
 
 const BCP_CREDIT_SPECS = Object.freeze([
-  { id: 'processDate', alternatives: ['proceso', /fecha de proceso/] },
-  { id: 'consumptionDate', alternatives: ['consumo', /fecha de consumo/] },
-  { id: 'description', alternatives: ['descripcion'] },
-  { id: 'operationType', alternatives: ['operacion', /tipo de operacion/] },
-  { id: 'pen', alternatives: ['soles'] },
-  { id: 'usd', alternatives: ['dolares'] }
+  { id: 'processDate', alternatives: [/fecha\s+de\s+proceso/, /^proceso$/] },
+  { id: 'consumptionDate', alternatives: [/fecha\s+de\s+consumo/, /^consumo$/] },
+  { id: 'description', alternatives: [/^descripcion$/] },
+  { id: 'operationType', alternatives: [/tipo\s+de\s+operacion/, /^operacion$/] },
+  { id: 'pen', alternatives: [/\bsoles\b/] },
+  { id: 'usd', alternatives: [/\bdolares\b/] }
 ]);
 
 function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
@@ -207,13 +249,13 @@ function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
 }
 
 const RIPLEY_SPECS = Object.freeze([
-  { id: 'operationDate', alternatives: ['operacion', /fecha de operacion/] },
-  { id: 'processDate', alternatives: ['proceso', /fecha de proceso/] },
-  { id: 'ticket', alternatives: ['ticket', /n.? ticket/] },
-  { id: 'description', alternatives: ['descripcion'] },
-  { id: 'type', alternatives: ['t/a', 'ta'] },
-  { id: 'amount', alternatives: ['monto'] },
-  { id: 'rate', alternatives: ['tea / tna', 'tea/tna', 'tea'] }
+  { id: 'operationDate', alternatives: [/fecha\s+de\s+operacion/, /^operacion$/] },
+  { id: 'processDate', alternatives: [/fecha\s+de\s+proceso/, /^proceso$/] },
+  { id: 'ticket', alternatives: [/ticket/] },
+  { id: 'description', alternatives: [/^descripcion$/] },
+  { id: 'type', alternatives: [/^t\s*\/\s*a$/, /^ta$/] },
+  { id: 'amount', alternatives: [/^monto$/] },
+  { id: 'rate', alternatives: [/tea/] }
 ]);
 
 function parseRipleyCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
