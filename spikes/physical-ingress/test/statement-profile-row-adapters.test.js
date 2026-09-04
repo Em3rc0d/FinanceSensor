@@ -57,6 +57,46 @@ test('BCP savings accepts DDMMM dates split into adjacent pdf.js text items', ()
   ]);
 });
 
+test('BCP savings recovers exactly two leading DDMMM tokens when value date falls into process-date bucket', () => {
+  const fixture = clone(bcpSavingsLayoutV1);
+  for (const page of fixture.pages) {
+    for (const item of page.items) {
+      if (item.x === 105 && item.y < 700 && /^\d{2}[A-Z]{3}$/.test(item.text)) item.x = 70;
+    }
+  }
+
+  const result = parseBcpSavingsLayout({
+    pages: fixture.pages,
+    tenantId: 'tenant-synthetic',
+    accountId: 'account-synthetic'
+  });
+
+  assert.equal(result.review.length, 0);
+  assert.equal(result.rows.length, 3);
+  assert.deepEqual(result.rows.map(row => [row.direction, row.amount]), [
+    ['IN', 125],
+    ['OUT', 20.5],
+    ['OUT', 70]
+  ]);
+});
+
+test('BCP savings recovers two leading dates combined into one pdf.js item', () => {
+  const fixture = clone(bcpSavingsLayoutV1);
+  const page = fixture.pages[0];
+  page.items = page.items.filter(item => !(item.y === 650 && (item.x === 40 || item.x === 105)));
+  page.items.push({ text: '01JUL 01JUL', x: 40, y: 650, width: 100, height: 10, sequence: 90 });
+
+  const result = parseBcpSavingsLayout({
+    pages: fixture.pages,
+    tenantId: 'tenant-synthetic',
+    accountId: 'account-synthetic'
+  });
+
+  assert.equal(result.review.length, 0);
+  assert.equal(result.rows.length, 3);
+  assert.equal(result.rows[0].occurredAt.startsWith('2026-07-01'), true);
+});
+
 test('BCP savings zero-row path identifies date-pair baseline fragmentation separately', () => {
   const fixture = clone(bcpSavingsLayoutV1);
   for (const page of fixture.pages) {
