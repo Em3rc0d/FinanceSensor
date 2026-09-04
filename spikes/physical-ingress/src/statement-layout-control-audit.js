@@ -19,10 +19,27 @@ const BCP_HEADERS = Object.freeze([
 ]);
 
 const CONTROL_VALUE_Y_TOLERANCE = 10;
+const BCP_DATE_TOKEN = '(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)';
 
 function toCents(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+
+function parseSignedFlexibleMoney(value) {
+  const token = String(value ?? '').trim().replace(/[^0-9,.-]/g, '');
+  if (!token) return null;
+  const comma = token.lastIndexOf(',');
+  const dot = token.lastIndexOf('.');
+  let normalized = token;
+  if (comma > dot) normalized = token.replace(/\./g, '').replace(',', '.');
+  else normalized = token.replace(/,/g, '');
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function numericFragmentCount(value) {
+  return (String(value ?? '').match(/-?\d[\d.,]*/g) ?? []).length;
 }
 
 function pageGeometry(page) {
@@ -151,6 +168,96 @@ function closingValueDiagnostic(frame) {
   return { available: true, binding: values[0].binding };
 }
 
+function hasLeadingBcpDatePair(line, boundaries) {
+  const description = boundaries.find(boundary => boundary.id === 'description');
+  if (!description || !Number.isFinite(description.minX)) return false;
+  const leadingText = (line?.items ?? [])
+    .filter(item => Number.isFinite(item?.x) && item.x < description.minX)
+    .map(item => String(item?.text ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+  const compact = normalizeLayoutText(leadingText).replace(/\s+/g, '');
+  const matches = [...compact.matchAll(new RegExp(`\\d{2}${BCP_DATE_TOKEN}`, 'g'))];
+  return matches.length === 2;
+}
+
+function rawMovementColumnAudit(frames, columnId) {
+  let absoluteCents = 0;
+  let signedCents = 0;
+  let rowsSeen = 0;
+  let negativeSeen = false;
+  let allSignedParsable = true;
+  let allSingleNumericFragment = true;
+
+  for (const frame of frames) {
+    if (!frame?.geometry) continue;
+    for (const line of frame.lines) {
+      if (line.y >= frame.geometry.headerY - 1) continue;
+      if (!hasLeadingBcpDatePair(line, frame.geometry.boundaries)) continue;
+      const columns = lineToColumns(line, frame.geometry.boundaries);
+      const raw = columns[columnId];
+      const absolute = parseFlexibleMoney(raw);
+      if (absolute === null || absolute <= 0) continue;
+
+      rowsSeen += 1;
+      absoluteCents += toCents(absolute) ?? 0;
+      if (numericFragmentCount(raw) !== 1) allSingleNumericFragment = false;
+
+      const signed = parseSignedFlexibleMoney(raw);
+      if (signed === null) {
+        allSignedParsable = false;
+        continue;
+      }
+      if (signed < 0) negativeSeen = true;
+      signedCents += toCents(signed) ?? 0;
+    }
+  }
+
+  return {
+    rowsSeen,
+    absoluteCents,
+    signedCents: allSignedParsable ? signedCents : null,
+    negativeSeen,
+    allSignedParsable,
+    allSingleNumericFragment
+  };
+}
+
+function closingAlternateShape(frame) {
+  const closingLine = uniqueControl(frame, 'SALDO');
+  if (!closingLine || !frame?.geometry) return 'MISSING';
+
+  const current = closingValueDiagnostic(frame);
+  if (current.available) return 'COLUMN_BINDABLE';
+
+  const debit = frame.geometry.boundaries.find(boundary => boundary.id === 'debit');
+  if (!debit || !Number.isFinite(debit.minX)) return 'MISSING';
+
+  const labelItems = (closingLine.items ?? []).filter(item => Number.isFinite(item?.x) && item.x < debit.minX);
+  if (labelItems.length === 0) return 'MISSING';
+  const labelRight = Math.max(...labelItems.map(item => Number(item.x) + Math.max(0, Number(item.width) || 0)));
+  const candidates = [];
+
+  for (const line of frame.lines) {
+    const distance = Math.abs(Number(line?.y) - Number(closingLine?.y));
+    if (!Number.isFinite(distance) || distance > CONTROL_VALUE_Y_TOLERANCE) continue;
+    if (line !== closingLine && controlLabel(line, frame.geometry.boundaries)) continue;
+    for (const item of line.items ?? []) {
+      if (!Number.isFinite(item?.x) || item.x <= labelRight) continue;
+      const amount = parseFlexibleMoney(item.text);
+      if (amount === null) continue;
+      candidates.push({ distance });
+    }
+  }
+
+  if (candidates.length === 0) return 'MISSING';
+  candidates.sort((a, b) => a.distance - b.distance);
+  const nearestDistance = candidates[0].distance;
+  const nearest = candidates.filter(candidate => candidate.distance === nearestDistance);
+  if (nearest.length !== 1) return 'AMBIGUOUS';
+  return nearestDistance === 0 ? 'RIGHT_SIDE_SAME_LINE' : 'RIGHT_SIDE_NEARBY';
+}
+
 export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
   const frames = ledgerFrames(pages);
   const first = frames[0] ?? null;
@@ -179,6 +286,8 @@ export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
   const pageDebitPrintedSum = pageAudits.reduce((sum, page) => sum + (page.debit.cents ?? 0), 0);
   const pageCreditPrintedSum = pageAudits.reduce((sum, page) => sum + (page.credit.cents ?? 0), 0);
   const closingValue = last ? closingValueDiagnostic(last) : { available: false, binding: 'MISSING' };
+  const rawDebit = rawMovementColumnAudit(frames, 'debit');
+  const rawCredit = rawMovementColumnAudit(frames, 'credit');
 
   return {
     openingLabelUnique: openingLines.length === 1,
@@ -197,6 +306,16 @@ export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
     pageDebitTotalsExact: pageDebitCoverageComplete ? pageDebitPrintedSum === parsedDebitCents : null,
     pageCreditTotalsExact: pageCreditCoverageComplete ? pageCreditPrintedSum === parsedCreditCents : null,
     closingValueAvailable: closingValue.available,
-    closingValueBinding: closingValue.binding
+    closingValueBinding: closingValue.binding,
+    ledgerPageClass: frames.length === 1 ? 'ONE_PAGE' : frames.length > 1 ? 'MULTI_PAGE' : 'NO_LEDGER',
+    rawDebitAbsMatchesParsed: rawDebit.absoluteCents === parsedDebitCents,
+    rawCreditAbsMatchesParsed: rawCredit.absoluteCents === parsedCreditCents,
+    rawDebitNegativeSeen: rawDebit.negativeSeen,
+    rawCreditNegativeSeen: rawCredit.negativeSeen,
+    rawDebitSingleNumericFragment: rawDebit.rowsSeen > 0 && rawDebit.allSingleNumericFragment,
+    rawCreditSingleNumericFragment: rawCredit.rowsSeen > 0 && rawCredit.allSingleNumericFragment,
+    signedDebitExact: totalDebitAvailable && rawDebit.signedCents !== null ? rawDebit.signedCents === totalDebit.cents : null,
+    signedCreditExact: totalCreditAvailable && rawCredit.signedCents !== null ? rawCredit.signedCents === totalCredit.cents : null,
+    closingAlternateShape: last ? closingAlternateShape(last) : 'MISSING'
   };
 }
