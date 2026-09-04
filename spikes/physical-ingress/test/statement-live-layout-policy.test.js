@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const viewerPath = new URL('../live/owned-oauth-bank-statements-viewer.mjs', import.meta.url);
 const runnerPath = new URL('../live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd', import.meta.url);
@@ -46,4 +48,9 @@ test('statement launcher recovers stale historical RUNNING only before OAuth and
   assert.match(recovery, /status: 'PAUSED'/);
   assert.match(recovery, /FINANCESENSOR_HISTORICAL_STALE_RUNNING_RECOVERED=1/);
   assert.equal(/console\.(?:log|error)\([^\n]*(?:snapshot|mailbox|password|access_token|refresh_token)/i.test(recovery), false);
+});
+
+test('stale historical recovery entrypoint is syntactically valid without executing Windows code in CI', () => {
+  const result = spawnSync(process.execPath, ['--check', fileURLToPath(recoveryPath)], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
 });
