@@ -52,7 +52,10 @@ echo FinanceSensor - Bank Statement Recovery DEV
 echo --------------------------------------------
 echo Scope exacto: gmail.readonly
 echo PDF password: SOLO MEMORIA LOCAL / NO SE GUARDA
-echo PDF descifrado: NO DURABLE
+echo PDF descifrado y geometria: NO DURABLE
+echo Parser fisico habilitado ahora: BCP AHORRO solicitado por Gmail
+echo Perfiles de credito: DETECTABLES pero IMPORTACION FISICA BLOQUEADA
+echo Interbank ahorro por archivo local: TODAVIA OPEN
 echo iOS: NO TOCADO
 echo.
 echo IMPORTANTE: si Gmail History sigue RUNNING, el importador se negara a
@@ -75,10 +78,10 @@ if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
 
 echo.
 echo El navegador se abrira automaticamente.
-echo Solo tendras que conectar Gmail y, para cada grupo de EECC que quieras
-
-echo importar, escribir la Clave del PDF en el formulario LOCAL.
-echo Nunca pegues esa clave en ChatGPT ni en GitHub.
+echo Si FinanceSensor detecta un EECC BCP Ahorro compatible, podras escribir
+echo su clave en el formulario LOCAL para probar el adapter geometrico.
+echo Los EECC de credito se mostraran como detectados pero no se importaran aun.
+echo Nunca pegues una clave de PDF en ChatGPT ni en GitHub.
 echo.
 
 node live\owned-oauth-bank-statements-viewer.mjs
