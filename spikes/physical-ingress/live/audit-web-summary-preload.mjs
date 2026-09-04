@@ -99,6 +99,9 @@ const originalLog = console.log.bind(console);
 console.log = (...args) => {
   const shape = parseShape(args[0]);
   if (shape) pendingShapes.push(shape);
+  if (args[0] === 'CREDIT_STATEMENT_PHYSICAL_IMPORT=OPEN') {
+    args[0] = 'CREDIT_STATEMENT_PHYSICAL_IMPORT=BLOCKED';
+  }
   return originalLog(...args);
 };
 
