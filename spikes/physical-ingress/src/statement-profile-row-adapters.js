@@ -164,6 +164,19 @@ function movement({ tenantId, accountId, amount, direction, occurredAt, descript
   };
 }
 
+function attachTransientValueDate(row, valueAt) {
+  // FECHA VALOR is useful to explain statement-period edge cases, but it is not part
+  // of the persisted evidence contract yet. Keep it non-enumerable so decorateRows()
+  // and JSON serialization cannot accidentally promote it into the vault.
+  Object.defineProperty(row, 'auditValueAt', {
+    value: valueAt,
+    enumerable: false,
+    writable: false,
+    configurable: false
+  });
+  return row;
+}
+
 function pageColumns(page, headers) {
   const anchors = findHeaderAnchors(page, headers);
   if (!anchors) return null;
@@ -243,7 +256,7 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
       }
       if (!hasDebit && !hasCredit) continue;
       const direction = hasCredit ? 'IN' : 'OUT';
-      rows.push(movement({
+      rows.push(attachTransientValueDate(movement({
         tenantId,
         accountId,
         amount: hasCredit ? credit : debit,
@@ -252,7 +265,7 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
         description: columns.description,
         sourcePage: page.pageNumber,
         sourceSequence: rows.length
-      }));
+      }), valueAt));
     }
   }
 
