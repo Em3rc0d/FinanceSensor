@@ -1,0 +1,44 @@
+name: FinanceSensor Statement Sweep Debug
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - '.github/workflows/statement-sweep-debug.yml'
+      - 'spikes/physical-ingress/**'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: spikes/physical-ingress
+        run: npm ci --omit=optional --ignore-scripts --no-audit --no-fund
+      - name: Capture validators and tests
+        shell: bash
+        run: |
+          set +e
+          node tools/validate-statement-etl-reconciliation.mjs > statement-etl-validator.txt 2>&1
+          echo "VALIDATOR_EXIT=$?" >> statement-etl-validator.txt
+          cd spikes/physical-ingress
+          node --test test/statement-sweep-profile-adapters.test.js test/statement-sweep-engine.test.js test/pdfjs-local-statement-parser.test.js test/statement-layout-money-sign.test.js test/pdfjs-statement-parser.test.js test/statement-profile-row-adapters.test.js test/statement-page-classifier.test.js > ../../statement-sweep-tests.txt 2>&1
+          echo "SWEEP_TEST_EXIT=$?" >> ../../statement-sweep-tests.txt
+          npm test > ../../physical-ingress-tests.txt 2>&1
+          echo "NPM_TEST_EXIT=$?" >> ../../physical-ingress-tests.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: statement-sweep-debug
+          path: |
+            statement-etl-validator.txt
+            statement-sweep-tests.txt
+            physical-ingress-tests.txt
+          if-no-files-found: error
