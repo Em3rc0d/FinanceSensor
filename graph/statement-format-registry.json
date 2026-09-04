@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "status": "S4_SAVINGS_STATIC_READY_REAL_PARSE_OPEN",
-  "asOf": "2026-09-03",
+  "status": "S4_BCP_SAVINGS_OWNED_CORPUS_PHYSICAL_PASS_GENERALIZATION_OPEN",
+  "asOf": "2026-09-04",
   "rules": {
     "unit": "INSTITUTION_PLUS_PRODUCT_PLUS_STATEMENT_FAMILY",
     "oneUniversalParser": false,
@@ -18,7 +18,7 @@
     "adapterVersionRequired": true
   },
   "observedCorpus": {
-    "scope": "PRIVATE_USER_OWNED_STRUCTURAL_REVIEW_ONLY",
+    "scope": "PRIVATE_USER_OWNED_STRUCTURAL_REVIEW_PLUS_BCP_SAVINGS_PHYSICAL_PARSE",
     "privateOwnedDocuments": 4,
     "institutions": 3,
     "profilesObserved": 4,
@@ -29,7 +29,8 @@
     "nativeTextPresentInObservedCopies": 4,
     "activeContentObservedInSomeCopies": true,
     "embeddedEducationalReferenceObserved": true,
-    "physicalRowParseClaimed": false
+    "physicalRowParseClaimed": true,
+    "physicalParseProfiles": ["PE-BCP-SAVINGS-REQUESTED"]
   },
   "staticWork": {
     "profileSpec": "graph/statement-profile-specs-v1.json",
@@ -84,9 +85,19 @@
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
       "formatFixture": "SANITIZED_GEOMETRIC_FIXTURE_V1",
       "profileSpec": "graph/statement-profile-specs-v1.json",
-      "adapterStatus": "STATIC_READY",
+      "adapterStatus": "STATIC_READY_PLUS_OWNED_CORPUS_PHYSICAL_PASS",
       "staticAdapter": "PASS_SYNTHETIC_CI",
       "realParse": "OPEN",
+      "physicalEvidence": {
+        "ownedCorpusParse": "PASS",
+        "receipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
+        "statementsProcessed": 9,
+        "pagesProcessed": 16,
+        "derivedEvidenceEmitted": 368,
+        "statementsUnprocessed": 0,
+        "independentReconciliation": "OPEN",
+        "generalizedProfileSupport": "OPEN"
+      },
       "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
       "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
       "pageScope": {
@@ -100,7 +111,9 @@
         "OPENING_BALANCE_NOT_TRANSACTION",
         "TOTALS_NOT_TRANSACTION",
         "DAY_MONTH_ABBREVIATION_DATE_GRAMMAR",
-        "FLATTENED_TEXT_LOSES_DEBIT_CREDIT_IDENTITY"
+        "FLATTENED_TEXT_LOSES_DEBIT_CREDIT_IDENTITY",
+        "OWNED_CORPUS_NOT_GENERALIZED_PROVIDER_SUPPORT",
+        "DERIVED_EVIDENCE_NOT_YET_INDEPENDENTLY_RECONCILED"
       ]
     },
     {
@@ -183,6 +196,7 @@
   ],
   "forbiddenPromotions": [
     "ONE_REAL_PDF_PARSED=>PROFILE_SUPPORTED",
+    "OWNED_CORPUS_PHYSICAL_PARSE=>GENERALIZED_PROFILE_SUPPORT",
     "PRIVATE_CORPUS_OBSERVED=>FORMAT_PROVEN",
     "FORMAT_OBSERVED=>REAL_PARSE_PASS",
     "FIXTURE_READY=>REAL_PARSE_PASS",
