@@ -29,7 +29,7 @@ function fakePdfjs({ rejectPassword = false } = {}) {
   };
 }
 
-test('extracts text through password-aware local PDF loader and wipes its working byte copy', async () => {
+test('extracts text through password-aware local PDF loader, preserves page boundary, and wipes its working byte copy', async () => {
   const original = Buffer.from('synthetic-pdf');
   const text = await extractPasswordProtectedPdfText({
     pdfBytes: original,
@@ -38,6 +38,7 @@ test('extracts text through password-aware local PDF loader and wipes its workin
   });
   assert.match(text, /ABONO/);
   assert.match(text, /100\.00/);
+  assert.equal(text.split('\f').length, 2);
   // Caller-owned bytes remain the caller's responsibility; the parser wipes its internal copy.
   assert.equal(original.toString(), 'synthetic-pdf');
 });

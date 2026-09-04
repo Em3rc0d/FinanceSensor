@@ -34,7 +34,9 @@ export async function extractPasswordProtectedPdfText({ pdfBytes, password, pdfj
       pages.push(text);
       page.cleanup?.();
     }
-    return pages.filter(Boolean).join('\n');
+    // Form-feed is an in-memory structural delimiter only. It preserves page identity so
+    // downstream page-role classification can exclude summaries and educational examples.
+    return pages.join('\f');
   } catch (error) {
     const safe = new Error(
       Number(error?.code) === 1 || /password/i.test(String(error?.name ?? ''))

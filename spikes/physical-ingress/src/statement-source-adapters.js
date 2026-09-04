@@ -25,6 +25,7 @@ const pdfAttachments = (message) => attachmentsOf(message).filter(isPdfLike);
 export const StatementSourceClass = Object.freeze({
   CREDIT_STATEMENT_AUTO: 'CREDIT_STATEMENT_AUTO',
   DEBIT_STATEMENT_MANUAL_REQUEST: 'DEBIT_STATEMENT_MANUAL_REQUEST',
+  LOCAL_FILE_SELECTED: 'LOCAL_FILE_SELECTED',
   NOT_STATEMENT: 'NOT_STATEMENT'
 });
 
@@ -32,6 +33,7 @@ export const StatementProviderProfile = Object.freeze({
   BCP_CREDIT: 'BCP_CREDIT',
   RIPLEY_CREDIT: 'RIPLEY_CREDIT',
   BCP_SAVINGS_REQUESTED: 'BCP_SAVINGS_REQUESTED',
+  INTERBANK_SAVINGS_REQUESTED: 'INTERBANK_SAVINGS_REQUESTED',
   UNKNOWN: 'UNKNOWN'
 });
 

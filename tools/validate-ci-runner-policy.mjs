@@ -12,6 +12,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'mobile-shell.yml',
   'mobile-gmail-connection.yml',
   'gmail-historical.yml',
+  'statement-etl-contract.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
@@ -145,6 +146,33 @@ if (workflowFiles.includes('gmail-historical.yml')) {
   }
 }
 
+// The statement ETL workflow is a public synthetic contract surface only.
+// Registration must not authorize real statements, Gmail, credentials, financial plaintext, or mobile physical claims.
+if (workflowFiles.includes('statement-etl-contract.yml')) {
+  const text = read('statement-etl-contract.yml');
+  const requiredMarkers = [
+    'node tools/validate-statement-etl-reconciliation.mjs',
+    'REAL_STATEMENT_DATA_IN_CI=0',
+    'REAL_GMAIL_IN_CI=0',
+    'IOS_TOUCHED=0',
+    'BUILD_READY=false',
+    'contents: read',
+    'runs-on: ubuntu-latest',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('statement-etl-contract.yml', `statement ETL synthetic boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
+    fail('statement-etl-contract.yml', 'statement ETL CI may not receive Gmail/OAuth credentials');
+  }
+  if (/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i.test(text)) {
+    fail('statement-etl-contract.yml', 'statement ETL CI may validate contracts but may not execute trusted-edge/provider flows');
+  }
+  if (/REAL_STATEMENT_DATA_IN_CI=1|REAL_GMAIL_IN_CI=1|IOS_TOUCHED=1|BUILD_READY=true/i.test(text)) {
+    fail('statement-etl-contract.yml', 'statement ETL CI contains a forbidden promotion marker');
+  }
+}
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!workflowFiles.includes(file)) {
     fail(file, 'registered retired workflow is missing');
@@ -190,4 +218,7 @@ console.log('MOBILE_GMAIL_CONNECTION_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('GMAIL_HISTORICAL_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('GMAIL_HISTORICAL_REAL_GMAIL_EXECUTED_BY_CI=0');
+console.log('STATEMENT_ETL_REAL_STATEMENT_DATA_IN_CI=0');
+console.log('STATEMENT_ETL_REAL_GMAIL_IN_CI=0');
+console.log('STATEMENT_ETL_IOS_TOUCHED=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');

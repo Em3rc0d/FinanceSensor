@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "status": "DESIGN_ACCEPTED_REAL_FORMAT_EVIDENCE_OPEN",
+  "schemaVersion": 2,
+  "status": "DESIGN_ACCEPTED_REAL_FORMAT_CORPUS_OBSERVED_PARSE_OPEN",
   "asOf": "2026-09-03",
   "product": {
     "surface": "FLUTTER_MOBILE_APP",
@@ -20,8 +20,26 @@
       "nativePdfTextFirst": true,
       "ocrFallback": true,
       "ocrIsPrimary": false,
+      "pageBoundaryPreserved": true,
+      "pageRoleClassificationBeforeRows": true,
+      "activePdfContentExecution": false,
+      "formFieldFinancialAuthority": false,
+      "embeddedEducationalReferenceParse": false,
+      "documentIdentityConsistencyCheck": true,
       "rawDurable": false,
       "passwordDurable": false
+    },
+    "pageScope": {
+      "roles": [
+        "TRANSACTION_LEDGER",
+        "SUMMARY",
+        "INFORMATIONAL",
+        "EDUCATIONAL_REFERENCE",
+        "UNKNOWN"
+      ],
+      "rowEligibleRoles": ["TRANSACTION_LEDGER"],
+      "unknownRoleFailsClosed": true,
+      "sectionScopingAfterPageRole": true
     },
     "transform": {
       "strategy": "VERSIONED_BANK_PRODUCT_ADAPTER",
@@ -82,6 +100,11 @@
     "BANK_FORMAT_A != BANK_FORMAT_B",
     "BANK_ADAPTER != CORE_FINANCIAL_MODEL",
     "RAW_LAYOUT != CANONICAL_SEMANTICS",
+    "DOCUMENT_CLASSIFIED != ROWS_TRUSTED",
+    "PAGE_ROLE_UNKNOWN != PARSE_ANYWAY",
+    "EDUCATIONAL_REFERENCE_PAGE != TRANSACTION_LEDGER",
+    "PDF_ACTIVE_CONTENT != FINANCIAL_AUTHORITY",
+    "NATIVE_TEXT_PRESENT != REAL_ROW_PARSE_PASS",
     "OCR_OUTPUT != FINANCIAL_EVENT",
     "STATEMENT_ROW != CANONICAL_EVENT",
     "GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE",
@@ -93,14 +116,18 @@
     "architectureDocumented": "PASS",
     "dataModelDocumented": "PASS",
     "monthlyCloseUxDocumented": "PASS",
-    "realFormatCorpus": "OPEN",
+    "realFormatCorpus": "PRIVATE_4_DOCUMENT_3_INSTITUTION_OBSERVED",
+    "realFormatStructuralReview": "PASS_PRIVATE_ONLY",
+    "nativeTextPresenceInSharedCopies": "OBSERVED_4_OF_4",
     "nativeTextRealParse": "OPEN",
+    "profileRowAdapters": "OPEN",
     "ocrPhysical": "OPEN",
     "multiBankReconciliationPhysical": "OPEN",
     "androidRealStatement": "OPEN",
     "iosRealStatement": "DEFERRED_REQUIRED"
   },
   "references": [
+    "mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md",
     "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
     "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
     "mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md",

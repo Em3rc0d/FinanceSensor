@@ -42,8 +42,14 @@ BANK_LEDGER != REALTIME_SENSOR
 └───────────────────────────────┬──────────────────────────────┘
                                 ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ EXTRACTION LAYER                                             │
-│ source classifier → PDF text → OCR fallback                 │
+│ PASSIVE PDF SAFETY + EXTRACTION                              │
+│ no active-content execution → native text → OCR fallback    │
+│ preserve page boundaries                                     │
+└───────────────────────────────┬──────────────────────────────┘
+                                ↓
+┌──────────────────────────────────────────────────────────────┐
+│ STRUCTURAL SCOPE                                             │
+│ document profile → page role → region/section → row         │
 └───────────────────────────────┬──────────────────────────────┘
                                 ↓
 ┌──────────────────────────────────────────────────────────────┐
@@ -78,15 +84,7 @@ BANK_LEDGER != REALTIME_SENSOR
 
 ### Transaction email
 
-Email transaction notifications are an observation source. They may provide:
-
-- amount;
-- currency;
-- merchant/counterparty;
-- transaction timestamp;
-- card/account hint;
-- bank reference;
-- movement kind.
+Email transaction notifications are an observation source. They may provide amount, currency, merchant/counterparty, transaction timestamp, card/account hint, bank reference and movement kind.
 
 A raw Gmail message is never the canonical financial event.
 
@@ -133,7 +131,25 @@ SourceArtifact
 + extractor/adapter version
 ```
 
-## 3. Extraction strategy
+## 3. Passive PDF safety boundary
+
+A bank PDF is treated as **data, never code or authority**.
+
+Real owned format discovery showed that bank PDFs may report active PDF features and form structures. Therefore the statement runtime must not execute document-provided behavior.
+
+```text
+PDF_JAVASCRIPT_EXECUTION = FORBIDDEN
+PDF_LAUNCH_ACTIONS       = FORBIDDEN
+EMBEDDED_FILE_EXECUTION  = FORBIDDEN
+FORM_FIELD_VALUE         != FINANCIAL_AUTHORITY
+PDF_ACTIVE_CONTENT       != FINANCIAL_AUTHORITY
+```
+
+The parser may extract text/render pages through the chosen passive PDF engine. It must not allow PDF JavaScript, actions, launch instructions, embedded executable content, or form logic to gain application/device authority.
+
+A form field may be observed as untrusted document data only if a future adapter explicitly requires it; it does not create financial truth by itself.
+
+## 4. Extraction strategy
 
 ### Native text first
 
@@ -146,6 +162,8 @@ Reasons:
 - less recognition noise;
 - better numeric fidelity;
 - better preservation of references and dates.
+
+Page boundaries must remain available to the structural classifier. Flattening all pages into one undifferentiated text stream is forbidden for transaction extraction.
 
 ### OCR fallback
 
@@ -163,11 +181,15 @@ replacement_character_rate
 page_text_coverage
 ```
 
-No single heuristic is a completeness oracle.
+No single heuristic is a completeness oracle. OCR output remains untrusted source text.
 
-OCR output remains untrusted source text.
+The four owned statements reviewed in the 2026-09-03 structural corpus exposed native text, but that observation does not generalize to all copies or future bank formats.
 
-## 4. Document classification
+```text
+NATIVE_TEXT_PRESENT != REAL_ROW_PARSE_PASS
+```
+
+## 5. Document classification
 
 Before selecting a row parser, FinanceSensor classifies the statement family.
 
@@ -195,22 +217,77 @@ NOT_A_STATEMENT
 
 `PROFILE_PROBABLE` and `PROFILE_UNKNOWN` do not silently execute a destructive or lossy parser path.
 
-## 5. Bank/product adapters
+```text
+DOCUMENT_CLASSIFIED != ROWS_TRUSTED
+```
+
+## 6. Page-role and region scoping
+
+Real format discovery proved that document classification is not enough. A valid statement PDF can contain educational samples, summary tables and informational pages with dates and monetary-looking values that are **not the user's ledger**.
+
+The mandatory structural pipeline is:
+
+```text
+PDF
+  ↓
+DOCUMENT PROFILE
+  ↓
+PAGE ROLE
+  ↓
+REGION / SECTION
+  ↓
+ROW
+  ↓
+NORMALIZED EVIDENCE
+```
+
+Page roles:
+
+```text
+TRANSACTION_LEDGER
+SUMMARY
+INFORMATIONAL
+EDUCATIONAL_REFERENCE
+UNKNOWN
+```
+
+Default row eligibility:
+
+```text
+TRANSACTION_LEDGER → eligible for profile row reconstruction
+SUMMARY            → not transaction rows by default
+INFORMATIONAL      → excluded
+EDUCATIONAL_REFERENCE → excluded
+UNKNOWN            → fail closed / review
+```
+
+Frozen laws:
+
+```text
+PAGE_ROLE_UNKNOWN != PARSE_ANYWAY
+EDUCATIONAL_REFERENCE_PAGE != TRANSACTION_LEDGER
+```
+
+A page may still contain more than one region. For example, a credit-card page may combine a real movement table with formulas, reward-points data, installment information or summary boxes. The profile therefore owns a second **region/section scope** before row reconstruction.
+
+## 7. Bank/product adapters
 
 Adapter scope is **bank + product family + document family**, not bank name alone.
 
-Examples:
+Observed/expected examples:
 
 ```text
-BCP / SAVINGS / MONTHLY_ACCOUNT_STATEMENT
+BCP / SAVINGS / REQUESTED_ACCOUNT_STATEMENT
 BCP / CREDIT_CARD / MONTHLY_CARD_STATEMENT
 RIPLEY / CREDIT_CARD / MONTHLY_CARD_STATEMENT
-INTERBANK / SAVINGS / FUTURE_PROFILE
+INTERBANK / SAVINGS / REQUESTED_ACCOUNT_STATEMENT
 ```
 
 Each profile owns:
 
-- row boundary detection;
+- document signature markers;
+- page-role rules;
+- row/region boundary detection;
 - header/footer filtering;
 - continuation-line joining;
 - date parsing;
@@ -218,13 +295,27 @@ Each profile owns:
 - debit/credit semantics;
 - reference extraction;
 - merchant/counterparty extraction;
-- section semantics;
 - opening/closing balance extraction where supported;
 - fixture corpus and negative fixtures.
 
 The core resolver owns none of those layout rules.
 
-## 6. Normalized statement movement contract
+## 8. Sanitized real-format observations
+
+The private 2026-09-03 structural corpus contained four owned PDFs across three institutions. No raw document, PII, account/card identifier, real amount, merchant or reference enters the repository.
+
+| Profile | Structural observation | Main parser risk | Status |
+|---|---|---|---|
+| BCP savings | multi-page ledger; process/value dates; separate debit/credit columns | page break, opening/closing balances and totals can look row-like | `FORMAT_OBSERVED` |
+| Interbank savings | ledger page plus informational and educational/reference content | embedded sample statement contains transaction-looking rows; running balance is a separate column | `FORMAT_OBSERVED` |
+| BCP Visa | movement table plus debt summary and educational/reference page | sample statement and debt-summary values must not become rows; payment sign semantics differ from income | `FORMAT_OBSERVED` |
+| Ripley credit | movement table shares page with formulas/summary/reward information | rate/installment/points/formula numbers must not become movement amount | `FORMAT_OBSERVED` |
+
+Interbank credit remains `UNPROVEN`.
+
+`FORMAT_OBSERVED` records only structural evidence. It is not `FIXTURE_READY`, `STATIC_READY`, physical proof or supported-product status.
+
+## 9. Normalized statement movement contract
 
 ```text
 StatementMovementEvidence
@@ -234,6 +325,7 @@ StatementMovementEvidence
   adapter_version
   source_row_key
   source_page?
+  source_region?
   source_sequence?
 
   account_hint?
@@ -262,8 +354,6 @@ StatementMovementEvidence
 
 `balance_effect` and `cashflow_direction` are not aliases.
 
-For example:
-
 ```text
 CARD PURCHASE
 card liability increases
@@ -276,34 +366,19 @@ personal event CARD_PAYMENT
 not personal income
 ```
 
-## 7. Financial evidence provenance
+## 10. Financial evidence provenance
 
-Every normalized statement movement remains linked to:
-
-```text
-statement source artifact
-statement period
-adapter version
-extraction run
-text strategy
-```
+Every normalized statement movement remains linked to statement source artifact, statement period, adapter version, extraction run, text strategy, page and region when available.
 
 Every email-derived movement remains linked to its source message artifact and extractor version.
 
 The canonical event therefore explains *why FinanceSensor believes the event exists*.
 
-## 8. Reconciliation pipeline
+## 11. Reconciliation pipeline
 
 ### Phase A — exact/strong matches
 
-Strong evidence can include:
-
-- exact external reference;
-- same known account/instrument;
-- same currency and amount;
-- compatible timestamp/window;
-- compatible movement kind;
-- compatible merchant/counterparty.
+Strong evidence can include exact external reference, same known account/instrument, same currency and amount, compatible timestamp/window, compatible movement kind and compatible merchant/counterparty.
 
 ### Phase B — probabilistic matches
 
@@ -343,24 +418,13 @@ When Gmail and statement evidence refer to the same economic event:
 
 This is a core invariant.
 
-## 9. Statement-only events
+## 12. Statement-only events
 
-Statement evidence can create events never observed by Gmail.
-
-Examples:
-
-- salary/credit;
-- incoming transfer;
-- deposit;
-- bank fee;
-- interest;
-- unnotified purchase;
-- unnotified debit;
-- adjustment/refund.
+Statement evidence can create events never observed by Gmail, including salary/credit, incoming transfer, deposit, bank fee, interest, unnotified purchase/debit and adjustment/refund.
 
 Statement-only does not mean low trust by definition. A bank ledger row can be stronger evidence than an email notification for period reconciliation.
 
-## 10. Period coverage
+## 13. Period coverage
 
 Coverage is per financial account/instrument and period.
 
@@ -390,7 +454,7 @@ RECONCILED
 REVIEW_REQUIRED
 ```
 
-## 11. Monthly close
+## 14. Monthly close
 
 A `MonthlyClose` is a tenant-level orchestration object over account/instrument period coverage.
 
@@ -403,8 +467,6 @@ REVIEW_REQUIRED
 RECONCILED
 REOPENED
 ```
-
-### Expected-source inventory
 
 Before closing, FinanceSensor must know which financial accounts/instruments are expected in the user's selected scope.
 
@@ -420,22 +482,13 @@ UNKNOWN
 
 `USER_EXCLUDED` is visible reduced coverage, not hidden completeness.
 
-## 12. Reopening a month
+## 15. Reopening a month
 
-A reconciled period is not immutable fiction.
-
-Reasons to reopen:
-
-- late-posted transaction;
-- newly imported missing statement;
-- account mapping correction;
-- parser upgrade and explicit reprocessing;
-- user resolves previously ambiguous movement;
-- duplicated/incorrect canonical event correction.
+Reasons to reopen include late-posted transaction, newly imported missing statement, account mapping correction, parser upgrade and explicit reprocessing, user resolution of an ambiguous movement, or canonical correction.
 
 Canonical evidence history remains auditable.
 
-## 13. OCR architecture boundary
+## 16. OCR architecture boundary
 
 The ETL pipeline exposes a conceptual interface:
 
@@ -446,14 +499,14 @@ StatementTextProvider
   extractOcrText(pageImages) // fallback
 ```
 
-The product must be able to switch OCR implementation without changing bank adapters or the canonical data model.
+The product must be able to switch OCR implementation without changing bank adapters or the canonical data model. OCR implementation selection requires its own evidence and is not frozen here.
 
-OCR implementation selection requires its own evidence and is not frozen here.
-
-## 14. Adapter development lifecycle
+## 17. Adapter development lifecycle
 
 ```text
 DISCOVER FORMAT
+    ↓
+FORMAT_OBSERVED
     ↓
 SANITIZED STRUCTURAL FIXTURE
     ↓
@@ -472,13 +525,11 @@ OWNED-DEVICE PHYSICAL PROOF
 SUPPORTED PROFILE
 ```
 
-A profile is not supported simply because one PDF happened to parse.
+A profile is not supported simply because one PDF was visually reviewed or happened to parse.
 
-## 15. Format evolution
+## 18. Format evolution
 
-Banks may change statement layouts without notice.
-
-Therefore every adapter must expose:
+Every adapter must expose:
 
 ```text
 profile_id
@@ -497,12 +548,14 @@ known signature → parse
 unknown/drifted signature → STOP/REVIEW, never reinterpret blindly
 ```
 
-## 16. Failure model
+## 19. Failure model
 
 Safe failure codes should distinguish categories without exposing raw content:
 
 ```text
 STATEMENT_PROFILE_UNKNOWN
+STATEMENT_PAGE_ROLE_UNKNOWN
+STATEMENT_REGION_UNKNOWN
 STATEMENT_PASSWORD_REQUIRED
 STATEMENT_PASSWORD_REJECTED
 STATEMENT_TEXT_UNUSABLE
@@ -514,7 +567,7 @@ STATEMENT_ACCOUNT_MAPPING_REQUIRED
 RECONCILIATION_CONFLICT
 ```
 
-## 17. Observability
+## 20. Observability
 
 Allowed diagnostics are aggregate/content-free:
 
@@ -522,6 +575,11 @@ Allowed diagnostics are aggregate/content-free:
 pages_total
 pages_native_text
 pages_ocr
+pages_ledger
+pages_summary
+pages_informational
+pages_educational_reference
+pages_unknown
 rows_detected
 rows_normalized
 rows_rejected
@@ -534,16 +592,9 @@ adapter_id/version
 processing_duration_bucket
 ```
 
-Forbidden diagnostic content:
+Forbidden diagnostic content includes PDF password, identity value, account/card number, raw statement text, raw email body, and real merchant/amount/reference data in public logs.
 
-- PDF password;
-- DNI/identity value;
-- account/card number;
-- raw statement text;
-- raw email body;
-- merchant/amount transaction details in public logs.
-
-## 18. Product truth language
+## 21. Product truth language
 
 During month:
 
@@ -565,14 +616,16 @@ BALANCE_EVIDENCE_PRESENT
 
 Never infer exact available balance from observed Gmail outflows alone.
 
-## 19. Evidence gates
+## 22. Evidence gates
 
 ```text
 ETL_ARCHITECTURE_DOCUMENTED        YES
 ADAPTER_REGISTRY                   YES
-REAL_FORMAT_FIXTURES               OPEN
+PRIVATE_REAL_FORMAT_STRUCTURE      OBSERVED: 4 DOCS / 3 INSTITUTIONS
+SANITIZED_STRUCTURAL_FIXTURES      OPEN
+PAGE_ROLE_STATIC_GUARD             IMPLEMENTED_SYNTHETIC
 OCR_IMPLEMENTATION                 OPEN
-REAL_NATIVE_TEXT_PARSE             OPEN
+REAL_NATIVE_ROW_PARSE              OPEN
 REAL_OCR_PARSE                     OPEN
 REAL_MONTHLY_RECONCILIATION        OPEN
 ANDROID_PHYSICAL                   OPEN
