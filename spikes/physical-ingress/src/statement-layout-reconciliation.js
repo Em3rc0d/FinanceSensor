@@ -103,10 +103,6 @@ function balanceAnchors(pages = []) {
     const geometry = pageGeometry(page);
     if (!geometry) continue;
 
-    // Control rows are audited separately from movement rows. Find the exact label on
-    // its strict pdf.js line, then bind only the nearest single monetary line within a
-    // small vertical band. This tolerates label/value baseline drift without widening
-    // transaction row grouping or absorbing TOTAL MOVIMIENTO / neighboring movements.
     const lines = groupPageItemsIntoLines(page);
     for (const labelLine of lines) {
       if (labelLine.y >= geometry.headerY - 1) continue;
@@ -126,6 +122,27 @@ function balanceAnchors(pages = []) {
     openingCents: opening.length === 1 ? opening[0] : null,
     closingCents: closing.length === 1 ? closing[0] : null
   };
+}
+
+function dateRangeDiagnostic(rows = [], period = null) {
+  if (!period) return 'PERIOD_UNAVAILABLE';
+  let before = 0;
+  let after = 0;
+  let invalid = 0;
+
+  for (const row of rows) {
+    const time = Date.parse(String(row?.occurredAt ?? ''));
+    if (!Number.isFinite(time)) invalid += 1;
+    else if (time < period.start) before += 1;
+    else if (time > period.end) after += 1;
+  }
+
+  const classes = Number(before > 0) + Number(after > 0) + Number(invalid > 0);
+  if (classes === 0) return 'NONE';
+  if (classes > 1) return 'MIXED';
+  if (before > 0) return 'BEFORE_PERIOD';
+  if (after > 0) return 'AFTER_PERIOD';
+  return 'INVALID_DATE';
 }
 
 function rowIntegrity(rows = [], period = null) {
@@ -191,6 +208,10 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     balanceEquationExact: null
   };
 
+  const diagnostics = {
+    dateRange: dateRangeDiagnostic(rows, period)
+  };
+
   const rowIntegrityPass = checks.periodUnique
     && checks.datesWithinPeriod
     && checks.directionalSemantics
@@ -205,7 +226,8 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
       movementRows: rows.length,
       inflowRows: integrity.inflowRows,
       outflowRows: integrity.outflowRows,
-      checks
+      checks,
+      diagnostics
     };
   }
 
@@ -217,7 +239,8 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
       movementRows: rows.length,
       inflowRows: integrity.inflowRows,
       outflowRows: integrity.outflowRows,
-      checks
+      checks,
+      diagnostics
     };
   }
 
@@ -236,7 +259,8 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     movementRows: rows.length,
     inflowRows: integrity.inflowRows,
     outflowRows: integrity.outflowRows,
-    checks
+    checks,
+    diagnostics
   };
 }
 
@@ -251,6 +275,7 @@ export function reconcileStatementProfileLayout({ providerProfile, pages = [], r
     movementRows: Array.isArray(rows) ? rows.length : 0,
     inflowRows: 0,
     outflowRows: 0,
-    checks: {}
+    checks: {},
+    diagnostics: { dateRange: 'PERIOD_UNAVAILABLE' }
   };
 }
