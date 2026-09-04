@@ -59,6 +59,9 @@ test('statement launcher recovers stale historical RUNNING only before OAuth and
   assert.match(recovery, /FINANCESENSOR_HISTORICAL_WRITER=UNKNOWN_FAIL_CLOSED/);
   assert.match(recovery, /status: 'PAUSED'/);
   assert.match(recovery, /FINANCESENSOR_HISTORICAL_STALE_RUNNING_RECOVERED=1/);
+  assert.equal(recovery.includes('|;'), false);
+  assert.match(recovery, /Get-CimInstance Win32_Process[^\n]*\| Where-Object[^\n]*\| Select-Object/);
+  assert.match(recovery, /timeout: 5000/);
   assert.equal(/console\.(?:log|error)\([^\n]*(?:snapshot|mailbox|password|access_token|refresh_token)/i.test(recovery), false);
 });
 

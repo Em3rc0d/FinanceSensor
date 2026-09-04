@@ -20,18 +20,18 @@ const snapshotPath = path.join(localRoot, 'history-state.aesgcm.json');
 function detectHistoricalViewerProcess() {
   if (process.platform !== 'win32') return null;
   const script = [
+    "$ErrorActionPreference='Stop'",
     `$selfPid=${process.pid}`,
-    "$p = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" |",
-    "  Where-Object { $_.ProcessId -ne $selfPid -and $_.CommandLine -like '*owned-oauth-gmail-history-viewer*' } |",
-    '  Select-Object -First 1',
-    "if ($null -ne $p) { [Console]::Write('ACTIVE') } else { [Console]::Write('INACTIVE') }"
+    "$p = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" -ErrorAction Stop | Where-Object { $_.ProcessId -ne $selfPid -and $_.CommandLine -like '*owned-oauth-gmail-history-viewer*' } | Select-Object -First 1",
+    "if ($null -ne $p) { [Console]::Out.Write('ACTIVE') } else { [Console]::Out.Write('INACTIVE') }"
   ].join('; ');
 
   try {
     const marker = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
       encoding: 'utf8',
       windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 5000
     }).trim();
     if (marker === 'ACTIVE') return true;
     if (marker === 'INACTIVE') return false;
