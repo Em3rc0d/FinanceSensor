@@ -82,6 +82,41 @@ test('BCP savings balance audit binds control labels to nearby values without wi
   assert.equal(result.checks.balanceEquationExact, true);
 });
 
+test('BCP savings balance audit recognizes exact control labels even when pdf.js x origin falls left of DESCRIPCION bucket', () => {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  pages[0].items.find(item => item.text === 'SALDO ANTERIOR').x = 130;
+  pages[1].items.find(item => item.text === 'SALDO').x = 130;
+
+  const rows = parsed({ pages });
+  const result = reconcileBcpSavingsStatement({ pages, rows });
+
+  assert.equal(result.status, 'PASS');
+  assert.equal(result.checks.openingBalanceUnique, true);
+  assert.equal(result.checks.closingBalanceUnique, true);
+  assert.equal(result.checks.balanceEquationExact, true);
+});
+
+test('BCP savings value date remains transient and non-enumerable', () => {
+  const rows = parsed();
+  assert.equal(typeof rows[0].auditValueAt, 'string');
+  assert.equal(Object.keys(rows[0]).includes('auditValueAt'), false);
+  assert.equal(JSON.stringify(rows[0]).includes('auditValueAt'), false);
+});
+
+test('BCP savings audit distinguishes process-date-before-period when value date remains inside period', () => {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  const rows = parsed({ pages });
+  rows[0].occurredAt = '2026-06-30T12:00:00.000Z';
+
+  const result = reconcileBcpSavingsStatement({ pages, rows });
+  assert.equal(result.status, 'FAIL');
+  assert.equal(result.code, 'STMT_AUDIT_DATE_RANGE');
+  assert.equal(result.checks.datesWithinPeriod, false);
+  assert.equal(result.diagnostics.dateRange, 'PROCESS_BEFORE_VALUE_IN_PERIOD');
+  assert.equal(JSON.stringify(result).includes('2026-06-30'), false);
+  assert.equal(JSON.stringify(result).includes('2026-07-01'), false);
+});
+
 test('BCP savings balance audit fails closed when parsed movement value breaks the ledger equation', () => {
   const pages = clone(bcpSavingsLayoutV1.pages);
   const rows = parsed({ pages });
@@ -126,6 +161,7 @@ test('BCP savings balance audit exposes only a compact date-range diagnostic', (
   assert.equal(result.status, 'FAIL');
   assert.equal(result.code, 'STMT_AUDIT_DATE_RANGE');
   assert.equal(result.checks.datesWithinPeriod, false);
+  assert.equal(result.diagnostics.dateRange, 'PROCESS_AFTER_VALUE_IN_PERIOD');
 });
 
 test('BCP savings balance audit rejects summary rows with a compact leak diagnostic', () => {
