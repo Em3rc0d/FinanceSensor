@@ -57,6 +57,24 @@ test('BCP savings accepts DDMMM dates split into adjacent pdf.js text items', ()
   ]);
 });
 
+test('BCP savings zero-row path identifies date-pair baseline fragmentation separately', () => {
+  const fixture = clone(bcpSavingsLayoutV1);
+  for (const page of fixture.pages) {
+    for (const item of page.items) {
+      if (item.x === 105 && item.y < 700 && /^\d{2}[A-Z]{3}$/.test(item.text)) item.y += 4;
+    }
+  }
+
+  const result = parseBcpSavingsLayout({
+    pages: fixture.pages,
+    tenantId: 'tenant-synthetic',
+    accountId: 'account-synthetic'
+  });
+
+  assert.equal(result.rows.length, 0);
+  assert.deepEqual(result.review, [{ code: 'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION' }]);
+});
+
 test('BCP savings zero-row path identifies vertical pdf.js row fragmentation without exposing content', () => {
   const fixture = clone(bcpSavingsLayoutV1);
   const movementAmounts = new Set(['125.00', '20.50', '70.00']);

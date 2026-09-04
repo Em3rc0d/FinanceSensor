@@ -100,10 +100,18 @@ function pageColumns(page, headers) {
   return { boundaries, headerY };
 }
 
-function zeroRowDiagnostic({ ledgerPages, processDateLines, pairedDateLines, amountColumnLines, pairedDateAmountLines }) {
+function zeroRowDiagnostic({
+  ledgerPages,
+  processDateLines,
+  valueDateLines,
+  pairedDateLines,
+  amountColumnLines,
+  pairedDateAmountLines
+}) {
   if (ledgerPages === 0) return 'STATEMENT_LEDGER_PAGE_NOT_FOUND';
   if (processDateLines === 0) return 'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND';
-  if (pairedDateLines === 0) return 'STATEMENT_ROW_DATE_PAIR_NOT_FOUND';
+  if (valueDateLines === 0) return 'STATEMENT_ROW_VALUE_DATE_NOT_FOUND';
+  if (pairedDateLines === 0) return 'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION';
   if (pairedDateAmountLines === 0 && amountColumnLines > 0) return 'STATEMENT_ROW_VERTICAL_FRAGMENTATION';
   if (pairedDateAmountLines === 0) return 'STATEMENT_ROW_AMOUNT_NOT_FOUND';
   return 'STATEMENT_LAYOUT_NO_MOVEMENTS';
@@ -117,6 +125,7 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
 
   let ledgerPages = 0;
   let processDateLines = 0;
+  let valueDateLines = 0;
   let pairedDateLines = 0;
   let amountColumnLines = 0;
   let pairedDateAmountLines = 0;
@@ -145,6 +154,7 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
       const occurredAt = parseBcpDate(columns.processDate, year);
       const valueAt = parseBcpDate(columns.valueDate, year);
       if (occurredAt) processDateLines += 1;
+      if (valueAt) valueDateLines += 1;
       if (!occurredAt || !valueAt) continue;
       pairedDateLines += 1;
       if (hasDebit || hasCredit) pairedDateAmountLines += 1;
@@ -173,6 +183,7 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
       code: zeroRowDiagnostic({
         ledgerPages,
         processDateLines,
+        valueDateLines,
         pairedDateLines,
         amountColumnLines,
         pairedDateAmountLines
