@@ -48,13 +48,17 @@ async function loadLayout({ pdfBytes, password = '', pdfjs = null, allowEmptyPas
   let document = null;
 
   try {
+    // Existing Gmail statement callers keep an explicit local password option. The
+    // separate local-file lane may omit it for an unprotected PDF without weakening
+    // the password-required entry point.
+    const passwordOption = password.length > 0 ? { password, } : {};
     const documentOptions = {
       data: pdfjsData,
+      ...passwordOption,
       disableWorker: true,
       isEvalSupported: false,
       useSystemFonts: false
     };
-    if (password.length > 0) documentOptions.password = password;
     loadingTask = library.getDocument(documentOptions);
 
     document = await loadingTask.promise;
