@@ -1,6 +1,7 @@
 import http from 'node:http';
 
 const PREFIX = 'FINANCESENSOR_STMT_AUDIT_SHAPE;';
+const DETAIL_PREFIX = 'FINANCESENSOR_STMT_AUDIT_DETAIL;';
 const ALLOWED_RANGES = new Set([
   'NONE',
   'BEFORE_PERIOD',
@@ -48,8 +49,19 @@ const CATEGORY_KEYS = Object.freeze([
   'creditbinding',
   'closingbinding'
 ]);
+const DETAIL_BOOLEAN_KEYS = Object.freeze([
+  'rawdebitabs',
+  'rawcreditabs',
+  'debitnegative',
+  'creditnegative',
+  'debitsingle',
+  'creditsingle',
+  'signeddebitmatch',
+  'signedcreditmatch'
+]);
 
 let pendingShapes = [];
+let pendingDetails = [];
 const responseContentTypes = new WeakMap();
 
 function escapeHtml(value) {
@@ -67,14 +79,20 @@ function safeToken(value, fallback = 'UNKNOWN') {
   return /^[A-Z0-9_:-]{1,80}$/.test(token) ? token : fallback;
 }
 
-function parseShape(line) {
-  if (typeof line !== 'string' || !line.startsWith(PREFIX)) return null;
+function keyValues(line, prefix) {
+  if (typeof line !== 'string' || !line.startsWith(prefix)) return null;
   const values = Object.create(null);
-  for (const part of line.slice(PREFIX.length).split(';')) {
+  for (const part of line.slice(prefix.length).split(';')) {
     const index = part.indexOf('=');
     if (index <= 0) continue;
     values[part.slice(0, index)] = part.slice(index + 1);
   }
+  return values;
+}
+
+function parseShape(line) {
+  const values = keyValues(line, PREFIX);
+  if (!values) return null;
 
   const shape = {
     status: safeToken(values.status),
@@ -86,26 +104,37 @@ function parseShape(line) {
   return shape;
 }
 
-function countTrue(shapes, key) {
-  return shapes.reduce((count, shape) => count + Number(shape[key] === true), 0);
+function parseDetail(line) {
+  const values = keyValues(line, DETAIL_PREFIX);
+  if (!values) return null;
+  const detail = {
+    layout: safeToken(values.layout),
+    closingalternate: safeToken(values.closingalternate)
+  };
+  for (const key of DETAIL_BOOLEAN_KEYS) detail[key] = values[key] === '1';
+  return detail;
 }
 
-function groupedCounts(shapes, key) {
+function countTrue(values, key) {
+  return values.reduce((count, value) => count + Number(value[key] === true), 0);
+}
+
+function groupedCounts(values, key) {
   const counts = new Map();
-  for (const shape of shapes) {
-    const token = safeToken(shape[key]);
+  for (const value of values) {
+    const token = safeToken(value[key]);
     counts.set(token, (counts.get(token) ?? 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-function groupedHtml(shapes, key) {
-  return groupedCounts(shapes, key)
+function groupedHtml(values, key) {
+  return groupedCounts(values, key)
     .map(([token, count]) => `<code>${escapeHtml(token)}</code>: <strong>${count}</strong>`)
     .join(' · ');
 }
 
-function auditSummaryHtml(shapes) {
+function auditSummaryHtml(shapes, details = []) {
   const total = shapes.length;
   if (total === 0) return '';
 
@@ -146,7 +175,23 @@ function auditSummaryHtml(shapes) {
     ['Binding valor SALDO final', 'closingbinding']
   ].map(([label, key]) => `${escapeHtml(label)}: ${groupedHtml(shapes, key)}`).join('<br>');
 
-  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>${diagnosticHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores, categorías y coincidencias booleanas contra controles impresos. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
+  let detailHtml = '';
+  if (details.length > 0) {
+    const detailTotal = details.length;
+    const detailChecks = [
+      ['Reconstrucción CARGOS raw absoluta = parser', 'rawdebitabs'],
+      ['Reconstrucción ABONOS raw absoluta = parser', 'rawcreditabs'],
+      ['EECC con signo negativo en CARGOS', 'debitnegative'],
+      ['EECC con signo negativo en ABONOS', 'creditnegative'],
+      ['Celdas CARGOS con un único fragmento numérico', 'debitsingle'],
+      ['Celdas ABONOS con un único fragmento numérico', 'creditsingle'],
+      ['CARGOS respetando signo = total impreso', 'signeddebitmatch'],
+      ['ABONOS respetando signo = total impreso', 'signedcreditmatch']
+    ].map(([label, key]) => `${escapeHtml(label)}: <strong>${countTrue(details, key)}/${detailTotal}</strong>`).join('<br>');
+    detailHtml = `<p><strong>Diagnóstico de signo/layout</strong><br>Layout ledger: ${groupedHtml(details, 'layout')}<br>${detailChecks}<br>Alternativa estructural SALDO final: ${groupedHtml(details, 'closingalternate')}</p>`;
+  }
+
+  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>${diagnosticHtml}</p>${detailHtml}<p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores, categorías y coincidencias booleanas contra controles impresos. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
 }
 
 function suppliedHeader(headers, wanted) {
@@ -167,6 +212,8 @@ const originalLog = console.log.bind(console);
 console.log = (...args) => {
   const shape = parseShape(args[0]);
   if (shape) pendingShapes.push(shape);
+  const detail = parseDetail(args[0]);
+  if (detail) pendingDetails.push(detail);
   if (args[0] === 'CREDIT_STATEMENT_PHYSICAL_IMPORT=OPEN') {
     args[0] = 'CREDIT_STATEMENT_PHYSICAL_IMPORT=BLOCKED';
   }
@@ -193,8 +240,9 @@ http.ServerResponse.prototype.end = function patchedEnd(chunk, encoding, callbac
       const wasBuffer = Buffer.isBuffer(chunk);
       const text = wasBuffer ? chunk.toString('utf8') : typeof chunk === 'string' ? chunk : null;
       if (text && text.includes('</body>')) {
-        const summary = auditSummaryHtml(pendingShapes);
+        const summary = auditSummaryHtml(pendingShapes, pendingDetails);
         pendingShapes = [];
+        pendingDetails = [];
         const next = text.replace('</body>', `${summary}</body>`);
         if (!this.headersSent) this.removeHeader('content-length');
         chunk = wasBuffer ? Buffer.from(next, 'utf8') : next;
@@ -202,6 +250,7 @@ http.ServerResponse.prototype.end = function patchedEnd(chunk, encoding, callbac
     }
   } catch {
     pendingShapes = [];
+    pendingDetails = [];
   }
   return originalEnd.call(this, chunk, encoding, callback);
 };
