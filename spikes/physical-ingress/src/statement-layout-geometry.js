@@ -39,19 +39,51 @@ export function groupPageItemsIntoLines(page = {}, { yTolerance = 2.5 } = {}) {
   return lines;
 }
 
+function fragmentedHeaderMatch(lines, target) {
+  for (const line of lines) {
+    const items = line.items ?? [];
+    for (let start = 0; start < items.length; start += 1) {
+      let combined = '';
+      for (let end = start; end < Math.min(items.length, start + 6); end += 1) {
+        combined = [combined, String(items[end]?.text ?? '').trim()].filter(Boolean).join(' ');
+        const normalized = normalize(combined);
+        if (normalized.includes(target)) {
+          return {
+            x: items[start].x,
+            y: line.y,
+            text: combined
+          };
+        }
+        if (normalized.length > target.length + 24) break;
+      }
+    }
+  }
+  return null;
+}
+
 export function findHeaderAnchors(page, headers = []) {
   const items = (page?.items ?? []).filter(item => String(item?.text ?? '').trim());
+  const lines = groupPageItemsIntoLines(page);
   const anchors = {};
   for (const header of headers) {
     const target = normalize(header.header);
     const matches = items.filter(item => normalize(item.text).includes(target));
-    if (matches.length === 0) return null;
-    matches.sort((a, b) => b.y - a.y || a.x - b.x);
+    if (matches.length > 0) {
+      matches.sort((a, b) => b.y - a.y || a.x - b.x);
+      anchors[header.id] = {
+        id: header.id,
+        x: matches[0].x,
+        y: matches[0].y,
+        text: matches[0].text
+      };
+      continue;
+    }
+
+    const fragmented = fragmentedHeaderMatch(lines, target);
+    if (!fragmented) return null;
     anchors[header.id] = {
       id: header.id,
-      x: matches[0].x,
-      y: matches[0].y,
-      text: matches[0].text
+      ...fragmented
     };
   }
   return anchors;
