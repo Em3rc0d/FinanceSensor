@@ -5,22 +5,32 @@ on:
     branches:
       - jett/mk0-foundation
     paths:
-      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
+      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-STATEMENT-SWEEP.cmd'
       - 'spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-sweep-profile-adapters.js'
       - 'spikes/physical-ingress/src/statement-sweep-engine.js'
+      - 'spikes/physical-ingress/test/pdfjs-local-statement-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-money-sign.test.js'
+      - 'spikes/physical-ingress/test/statement-sweep-engine.test.js'
       - 'spikes/physical-ingress/test/statement-sweep-profile-adapters.test.js'
       - '.github/workflows/statement-sweep-contract.yml'
   push:
     branches:
       - jett/mk0-foundation
     paths:
-      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd'
+      - 'spikes/physical-ingress/live/RUN-FINANCESENSOR-STATEMENT-SWEEP.cmd'
       - 'spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-sweep-profile-adapters.js'
       - 'spikes/physical-ingress/src/statement-sweep-engine.js'
+      - 'spikes/physical-ingress/test/pdfjs-local-statement-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-money-sign.test.js'
+      - 'spikes/physical-ingress/test/statement-sweep-engine.test.js'
       - 'spikes/physical-ingress/test/statement-sweep-profile-adapters.test.js'
       - '.github/workflows/statement-sweep-contract.yml'
 
@@ -48,12 +58,14 @@ jobs:
         run: |
           node --check spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
+          node --check spikes/physical-ingress/src/statement-layout-geometry.js
+          node --check spikes/physical-ingress/src/statement-page-classifier.js
           node --check spikes/physical-ingress/src/statement-sweep-profile-adapters.js
           node --check spikes/physical-ingress/src/statement-sweep-engine.js
 
       - name: Sweep synthetic regression
         working-directory: spikes/physical-ingress
-        run: node --test test/statement-sweep-profile-adapters.test.js test/pdfjs-statement-parser.test.js test/statement-profile-row-adapters.test.js test/statement-page-classifier.test.js
+        run: node --test test/statement-sweep-profile-adapters.test.js test/statement-sweep-engine.test.js test/pdfjs-local-statement-parser.test.js test/statement-layout-money-sign.test.js test/pdfjs-statement-parser.test.js test/statement-profile-row-adapters.test.js test/statement-page-classifier.test.js
 
       - name: Full physical-ingress regression
         working-directory: spikes/physical-ingress
@@ -62,7 +74,7 @@ jobs:
       - name: Privacy and no-secret boundary
         run: |
           ! grep -R -E -n --exclude-dir=.git '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' \
-            spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd \
+            spikes/physical-ingress/live/RUN-FINANCESENSOR-STATEMENT-SWEEP.cmd \
             spikes/physical-ingress/live/owned-oauth-bank-statements-sweep.mjs \
             spikes/physical-ingress/src/statement-sweep-profile-adapters.js \
             spikes/physical-ingress/src/statement-sweep-engine.js \
