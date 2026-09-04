@@ -5,7 +5,7 @@ const normalize = (value = '') => String(value ?? '')
   .trim()
   .toUpperCase();
 
-const MONEY_COLUMN_IDS = new Set(['debit', 'credit', 'income', 'expense', 'runningBalance']);
+const MONEY_COLUMN_IDS = new Set(['debit', 'credit', 'income', 'expense', 'runningBalance', 'pen', 'usd', 'amount']);
 const MONEY_FRAGMENT_TOUCH_TOLERANCE = 4;
 
 export function pagePlainText(page = {}) {
