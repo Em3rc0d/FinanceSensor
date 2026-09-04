@@ -5,12 +5,16 @@ import {
   extractPasswordProtectedPdfText
 } from '../src/pdfjs-statement-parser.js';
 
-function fakePdfjs({ rejectPassword = false } = {}) {
+function fakePdfjs({ rejectPassword = false, detachInput = false } = {}) {
   return {
     getDocument({ data, password, isEvalSupported }) {
       assert.ok(data instanceof Uint8Array);
       assert.equal(password, 'synthetic-local-key');
       assert.equal(isEvalSupported, false);
+      if (detachInput) {
+        structuredClone(data.buffer, { transfer: [data.buffer] });
+        assert.equal(data.byteLength, 0);
+      }
       const task = {
         async destroy() {},
         promise: rejectPassword
@@ -43,7 +47,7 @@ function fakePdfjs({ rejectPassword = false } = {}) {
   };
 }
 
-test('extracts text through password-aware local PDF loader, preserves page boundary, and wipes its working byte copy', async () => {
+test('extracts text through password-aware local PDF loader and preserves page boundary', async () => {
   const original = Buffer.from('synthetic-pdf');
   const text = await extractPasswordProtectedPdfText({
     pdfBytes: original,
@@ -53,7 +57,20 @@ test('extracts text through password-aware local PDF loader, preserves page boun
   assert.match(text, /ABONO/);
   assert.match(text, /100\.00/);
   assert.equal(text.split('\f').length, 2);
-  // Caller-owned bytes remain the caller's responsibility; the parser wipes its internal copy.
+  // Caller-owned bytes remain the caller's responsibility; the parser works on copies.
+  assert.equal(original.toString(), 'synthetic-pdf');
+});
+
+test('survives pdf.js transferring and detaching its disposable input buffer', async () => {
+  const original = Buffer.from('synthetic-pdf');
+  const layout = await extractPasswordProtectedPdfLayout({
+    pdfBytes: original,
+    password: 'synthetic-local-key',
+    pdfjs: fakePdfjs({ detachInput: true })
+  });
+
+  assert.equal(layout.pages.length, 2);
+  assert.equal(layout.pages[0].items[0].text, '01/09/2026 ABONO');
   assert.equal(original.toString(), 'synthetic-pdf');
 });
 
