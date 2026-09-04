@@ -1,7 +1,7 @@
 {
   "schemaVersion": 4,
-  "status": "S5_BCP_SAVINGS_TRUSTED_EDGE_PHYSICAL_PASS_RECONCILIATION_OPEN",
-  "asOf": "2026-09-04",
+  "status": "S5_BCP_SAVINGS_TRUSTED_EDGE_HARNESS_AWAITING_CI_PHYSICAL_OPEN",
+  "asOf": "2026-09-03",
   "product": {
     "surface": "FLUTTER_MOBILE_APP",
     "primaryPhysicalTarget": "ANDROID",
@@ -76,17 +76,7 @@
     "rawPdfDurable": false,
     "layoutPlaintextDurable": false,
     "passwordDurable": false,
-    "physicalExecution": "PASS_OWNED_CORPUS",
-    "physicalReceipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
-    "physicalRun": {
-      "profileId": "PE-BCP-SAVINGS-REQUESTED",
-      "statementsDetected": 9,
-      "statementsProcessed": 9,
-      "pagesProcessed": 16,
-      "derivedEvidenceEmitted": 368,
-      "statementsUnprocessed": 0,
-      "independentReconciliation": "OPEN"
-    }
+    "physicalExecution": "OPEN"
   },
   "normalizedDirections": {
     "balanceEffect": ["INCREASE", "DECREASE", "NONE", "UNKNOWN"],
@@ -143,8 +133,6 @@
     "STATIC_ADAPTER_PASS != REAL_PARSE_PASS",
     "STATIC_READY != ANDROID_PHYSICAL_PROVEN",
     "TRUSTED_EDGE_HARNESS_READY != PHYSICAL_PASS",
-    "OWNED_CORPUS_PHYSICAL_PARSE != GENERALIZED_PROFILE_SUPPORT",
-    "DERIVED_EVIDENCE_EMITTED != INDEPENDENT_RECONCILIATION",
     "DESKTOP_HARNESS_PASS != MOBILE_PHYSICAL_PASS",
     "CREDIT_PROFILE_DETECTED != CREDIT_PROFILE_IMPORT_ENABLED",
     "OCR_OUTPUT != FINANCIAL_EVENT",
@@ -164,11 +152,10 @@
     "profileSpecV1": "COMMITTED",
     "syntheticGeometricFixtures": "BCP_SAVINGS_PLUS_INTERBANK_SAVINGS",
     "profileRowAdapters": "SAVINGS_2_STATIC_READY_SYNTHETIC",
-    "syntheticAdapterCi": "PASS",
-    "bcpSavingsTrustedEdgeHarness": "PASS_PHYSICAL_OWNED_CORPUS",
-    "nativeTextRealParse": "PASS_BCP_SAVINGS_OWNED_CORPUS",
-    "bcpSavingsRealParse": "PASS_OWNED_CORPUS_RECONCILIATION_OPEN",
-    "bcpSavingsPhysicalReceipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
+    "syntheticAdapterCi": "PASS_RUN_33828461944_JOB_100886097801",
+    "bcpSavingsTrustedEdgeHarness": "IMPLEMENTED_AWAITING_CI",
+    "nativeTextRealParse": "OPEN",
+    "bcpSavingsRealParse": "OPEN",
     "creditStatementRealParse": "OPEN_BLOCKED",
     "interbankSavingsLocalFileImport": "OPEN",
     "ocrPhysical": "OPEN",
@@ -178,8 +165,6 @@
   },
   "references": [
     "graph/statement-profile-specs-v1.json",
-    "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
-    "mk0/10-evidence/EV-STATEMENT-BCP-SAVINGS-PHYSICAL-PASS-2026-09-04.md",
     "mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md",
     "mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md",
     "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
