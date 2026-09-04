@@ -79,6 +79,10 @@ jobs:
           node --check tools/validate-financial-source-coverage.mjs
           node --check tools/validate-q003-evidence.mjs
 
+      - name: Audit preload import boundary
+        working-directory: spikes/physical-ingress
+        run: node --import ./live/audit-web-summary-preload.mjs -e "console.log('FINANCESENSOR_AUDIT_PRELOAD_IMPORT=PASS')"
+
       - name: PDF.js runtime boundary
         working-directory: spikes/physical-ingress
         run: node -e "import('pdfjs-dist/legacy/build/pdf.mjs').then(m=>{if(typeof m.getDocument!=='function')process.exit(2);console.log('PDFJS_GET_DOCUMENT=PASS')})"
