@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  decideHistoricalWriterGate,
+  HistoricalWriterGateAction
+} from '../src/historical-writer-gate.js';
 
 const viewerPath = new URL('../live/owned-oauth-bank-statements-viewer.mjs', import.meta.url);
 const runnerPath = new URL('../live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd', import.meta.url);
@@ -42,6 +46,14 @@ test('real harness remains local, password non-durable and iOS untouched', () =>
 test('statement launcher recovers stale historical RUNNING only before OAuth and fails closed on a live owner', () => {
   assert.match(runner, /recover-stale-historical-writer\.mjs/);
   assert.ok(runner.indexOf('recover-stale-historical-writer.mjs') < runner.indexOf('OpenFileDialog'));
+  assert.equal(
+    decideHistoricalWriterGate({ bootstrapStatus: 'RUNNING', historyViewerProcessActive: false }).action,
+    HistoricalWriterGateAction.RECOVER_STALE_RUNNING
+  );
+  assert.equal(
+    decideHistoricalWriterGate({ bootstrapStatus: 'RUNNING', historyViewerProcessActive: true }).action,
+    HistoricalWriterGateAction.BLOCK_ACTIVE
+  );
   assert.match(recovery, /Get-CimInstance Win32_Process/);
   assert.match(recovery, /FINANCESENSOR_HISTORICAL_WRITER=ACTIVE/);
   assert.match(recovery, /FINANCESENSOR_HISTORICAL_WRITER=UNKNOWN_FAIL_CLOSED/);
