@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "DESIGN_FROZEN_BCP_SAVINGS_PHYSICAL_PASS_OTHER_STATEMENT_LANES_OPEN",
-  "asOf": "2026-09-04",
+  "status": "DESIGN_FROZEN_STATEMENT_PIPELINE_STATIC_OPEN",
+  "asOf": "2026-09-03",
   "laws": {
     "noGmailIncomeEvidenceIsNotZeroIncome": true,
     "outflowCoverageIsNotInflowCoverage": true,
@@ -12,8 +12,6 @@
     "cardStatementDoesNotProveSavingsInflows": true,
     "windowsStatementRunnerIsEvidenceHarnessOnly": true,
     "desktopHarnessPassIsNotMobileProductPass": true,
-    "ownedCorpusPhysicalParseIsNotGeneralizedProviderSupport": true,
-    "derivedEvidenceEmissionIsNotIndependentReconciliation": true,
     "productStatementRuntimeIsMobile": true
   },
   "sources": {
@@ -33,7 +31,7 @@
     "DEBIT_STATEMENT_GMAIL_MANUAL_REQUEST": {
       "role": "PERIODIC_INFLOW_AND_OUTFLOW_RECONCILIATION",
       "availability": "OBSERVED_IN_OWNED_MAILBOX_AFTER_USER_REQUEST_FOR_SOME_PROVIDERS",
-      "physicalParsing": "BCP_SAVINGS_OWNED_CORPUS_PASS_OTHER_PROVIDERS_OPEN",
+      "physicalParsing": "OPEN",
       "userRequestRequiredByProvider": true,
       "manualTransactionEntry": false
     }
@@ -41,18 +39,8 @@
   "providerCoverage": {
     "BCP_CREDIT_STATEMENT_AUTO": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
     "RIPLEY_CREDIT_STATEMENT_AUTO": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
-    "BCP_SAVINGS_STATEMENT_ON_REQUEST": "OWNED_CORPUS_PHYSICAL_PARSE_PASS_RECONCILIATION_OPEN",
+    "BCP_SAVINGS_STATEMENT_ON_REQUEST": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
     "INTERBANK_STATEMENT_COVERAGE": "UNPROVEN"
-  },
-  "bcpSavingsPhysicalEvidence": {
-    "profileId": "PE-BCP-SAVINGS-REQUESTED",
-    "receipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
-    "statementsProcessed": 9,
-    "pagesProcessed": 16,
-    "derivedEvidenceEmitted": 368,
-    "statementsUnprocessed": 0,
-    "generalizedProviderSupport": false,
-    "independentReconciliation": "OPEN"
   },
   "statementPasswordBoundary": {
     "inputLabel": "Clave del PDF",
@@ -95,8 +83,6 @@
     "mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md",
     "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
     "graph/gmail-historical-onboarding.json",
-    "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
-    "mk0/10-evidence/EV-STATEMENT-BCP-SAVINGS-PHYSICAL-PASS-2026-09-04.md",
     "mk0/05-data-model/CORE-DATA-MODEL.md",
     "spikes/mobile-shell/README.md"
   ],
