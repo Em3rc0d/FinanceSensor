@@ -8,11 +8,14 @@ on:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/03-design/PRODUCT-DESIGN.md'
       - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
       - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/05-data-model/CORE-DATA-MODEL.md'
       - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
       - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'mk0/11-decisions/ADR-INDEX.md'
       - 'tools/validate-statement-etl-reconciliation.mjs'
       - '.github/workflows/statement-etl-contract.yml'
   push:
@@ -22,11 +25,14 @@ on:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/03-design/PRODUCT-DESIGN.md'
       - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
       - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/05-data-model/CORE-DATA-MODEL.md'
       - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
       - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
       - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'mk0/11-decisions/ADR-INDEX.md'
       - 'tools/validate-statement-etl-reconciliation.mjs'
       - '.github/workflows/statement-etl-contract.yml'
 
@@ -50,11 +56,14 @@ jobs:
             graph/statement-etl-reconciliation.json \
             graph/statement-format-registry.json \
             mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
+            mk0/03-design/PRODUCT-DESIGN.md \
             mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md \
             mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md \
+            mk0/05-data-model/CORE-DATA-MODEL.md \
             mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md \
             mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md \
-            mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md
+            mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md \
+            mk0/11-decisions/ADR-INDEX.md
           echo 'REAL_STATEMENT_DATA_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'IOS_TOUCHED=0'
