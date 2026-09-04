@@ -59,8 +59,9 @@ Supersedes / superseded by
 | ADR-032 | Windows local Gmail history viewer | ACCEPTED FOR DEV PHYSICAL HARNESS / REAL COVERAGE OPEN | owned Windows historical completion |
 | ADR-033 | Financial source coverage asymmetry and statement lane | ACCEPTED FOR MK0 DESIGN / STATEMENT PHYSICAL PARSE OPEN | encrypted statement local parse + reconciliation |
 | ADR-034 | Mobile statement PDF runtime | ACCEPTED FOR MOBILE STATIC SPIKE / PHYSICAL DEVICE VALIDATION REQUIRED | Android encrypted-PDF runtime + owned-device statement proof; iOS remains open |
+| ADR-035 | Statement ETL and monthly reconciliation | ACCEPTED FOR MK0 DESIGN / REAL FORMAT EVIDENCE OPEN | sanitized multi-bank format corpus + Android monthly-close proof |
 
-**Next available ADR:** `ADR-035`.
+**Next available ADR:** `ADR-036`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 

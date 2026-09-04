@@ -283,3 +283,26 @@ Scroll is appropriate for:
 Scroll is not used to hide primary actions or to stack decorative cards.
 
 See [`../06-wireframes/VIEWPORT-CONTRACT.md`](../06-wireframes/VIEWPORT-CONTRACT.md) and [`../06-wireframes/SIGNATURE-WIREFRAMES.md`](../06-wireframes/SIGNATURE-WIREFRAMES.md).
+
+
+## Monthly financial close
+
+FinanceSensor uses two financial truth states rather than pretending Gmail is a complete bank ledger.
+
+```text
+DURING MONTH   → observed activity, especially outflows
+MONTH END      → statement import and reconciliation
+CLOSED MONTH   → reconciled inflows/outflows for declared account scope
+```
+
+The signature product interaction is **Cerrar mi mes**. The app prompts the user after a period ends to request/download the relevant statements from their banking apps and share/open them with FinanceSensor. Weekly banking-web copy/paste is not a product requirement.
+
+Truth language:
+
+```text
+OBSERVED != RECONCILED
+RECONCILED != BANK_AVAILABLE_BALANCE
+MONTH_RECONCILED != PRODUCTION_READY
+```
+
+See [`MONTHLY-CLOSE-EXPERIENCE.md`](MONTHLY-CLOSE-EXPERIENCE.md), [`../04-architecture/STATEMENT-ETL-RECONCILIATION.md`](../04-architecture/STATEMENT-ETL-RECONCILIATION.md), and ADR-035.
