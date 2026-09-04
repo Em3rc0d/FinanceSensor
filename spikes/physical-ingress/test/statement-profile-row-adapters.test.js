@@ -57,6 +57,25 @@ test('BCP savings accepts DDMMM dates split into adjacent pdf.js text items', ()
   ]);
 });
 
+test('BCP savings zero-row path identifies vertical pdf.js row fragmentation without exposing content', () => {
+  const fixture = clone(bcpSavingsLayoutV1);
+  const movementAmounts = new Set(['125.00', '20.50', '70.00']);
+  for (const page of fixture.pages) {
+    for (const item of page.items) {
+      if (movementAmounts.has(item.text)) item.y -= 4;
+    }
+  }
+
+  const result = parseBcpSavingsLayout({
+    pages: fixture.pages,
+    tenantId: 'tenant-synthetic',
+    accountId: 'account-synthetic'
+  });
+
+  assert.equal(result.rows.length, 0);
+  assert.deepEqual(result.review, [{ code: 'STATEMENT_ROW_VERTICAL_FRAGMENTATION' }]);
+});
+
 test('Interbank savings adapter ignores running balance, summary totals and educational sample page', () => {
   const result = parseInterbankSavingsLayout({
     pages: clone(interbankSavingsLayoutV1.pages),
