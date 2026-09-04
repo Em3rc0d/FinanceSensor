@@ -251,6 +251,16 @@ function finalizeAudit(result) {
       `totalcredit=${bit(diagnostics.totalCreditAvailable)}`,
       `debitmatch=${bit(diagnostics.totalDebitExact)}`,
       `creditmatch=${bit(diagnostics.totalCreditExact)}`,
+      `pagedebitcoverage=${bit(diagnostics.pageDebitCoverageComplete)}`,
+      `pagecreditcoverage=${bit(diagnostics.pageCreditCoverageComplete)}`,
+      `pagedebitmatch=${bit(diagnostics.pageDebitTotalsExact)}`,
+      `pagecreditmatch=${bit(diagnostics.pageCreditTotalsExact)}`,
+      `closingvalue=${bit(diagnostics.closingValueAvailable)}`,
+      `debitrelation=${String(diagnostics.totalDebitRelation ?? 'UNKNOWN')}`,
+      `creditrelation=${String(diagnostics.totalCreditRelation ?? 'UNKNOWN')}`,
+      `debitbinding=${String(diagnostics.totalDebitBinding ?? 'UNKNOWN')}`,
+      `creditbinding=${String(diagnostics.totalCreditBinding ?? 'UNKNOWN')}`,
+      `closingbinding=${String(diagnostics.closingValueBinding ?? 'UNKNOWN')}`,
       `range=${String(diagnostics.dateRange ?? 'UNKNOWN')}`
     ].join(';'));
   }

@@ -34,7 +34,19 @@ const CHECK_KEYS = Object.freeze([
   'totaldebit',
   'totalcredit',
   'debitmatch',
-  'creditmatch'
+  'creditmatch',
+  'pagedebitcoverage',
+  'pagecreditcoverage',
+  'pagedebitmatch',
+  'pagecreditmatch',
+  'closingvalue'
+]);
+const CATEGORY_KEYS = Object.freeze([
+  'debitrelation',
+  'creditrelation',
+  'debitbinding',
+  'creditbinding',
+  'closingbinding'
 ]);
 
 let pendingShapes = [];
@@ -70,6 +82,7 @@ function parseShape(line) {
     range: ALLOWED_RANGES.has(values.range) ? values.range : 'UNKNOWN'
   };
   for (const key of CHECK_KEYS) shape[key] = values[key] === '1';
+  for (const key of CATEGORY_KEYS) shape[key] = safeToken(values[key]);
   return shape;
 }
 
@@ -84,6 +97,12 @@ function groupedCounts(shapes, key) {
     counts.set(token, (counts.get(token) ?? 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function groupedHtml(shapes, key) {
+  return groupedCounts(shapes, key)
+    .map(([token, count]) => `<code>${escapeHtml(token)}</code>: <strong>${count}</strong>`)
+    .join(' · ');
 }
 
 function auditSummaryHtml(shapes) {
@@ -103,21 +122,31 @@ function auditSummaryHtml(shapes) {
     ['TOTAL MOVIMIENTO en última página', 'totallabel'],
     ['Total impreso de cargos disponible', 'totaldebit'],
     ['Total impreso de abonos disponible', 'totalcredit'],
-    ['Cargos parseados = total impreso', 'debitmatch'],
-    ['Abonos parseados = total impreso', 'creditmatch']
+    ['Cargos parseados = total impreso final', 'debitmatch'],
+    ['Abonos parseados = total impreso final', 'creditmatch'],
+    ['Cobertura de subtotal CARGOS por página', 'pagedebitcoverage'],
+    ['Cobertura de subtotal ABONOS por página', 'pagecreditcoverage'],
+    ['Suma subtotales CARGOS por página = parseado', 'pagedebitmatch'],
+    ['Suma subtotales ABONOS por página = parseado', 'pagecreditmatch'],
+    ['Valor SALDO final enlazable', 'closingvalue']
   ];
   const checkHtml = checks
     .map(([label, key]) => `${escapeHtml(label)}: <strong>${countTrue(shapes, key)}/${total}</strong>`)
     .join('<br>');
 
-  const rangeHtml = groupedCounts(shapes, 'range')
-    .map(([token, count]) => `<code>${escapeHtml(token)}</code>: <strong>${count}</strong>`)
-    .join(' · ');
+  const rangeHtml = groupedHtml(shapes, 'range');
   const codeHtml = groupedCounts(shapes, 'code')
     .map(([token, count]) => `<code>${escapeHtml(token)}</code>: <strong>${count}</strong>`)
     .join('<br>');
+  const diagnosticHtml = [
+    ['Relación CARGOS parseado/impreso final', 'debitrelation'],
+    ['Binding CARGOS impreso final', 'debitbinding'],
+    ['Relación ABONOS parseado/impreso final', 'creditrelation'],
+    ['Binding ABONOS impreso final', 'creditbinding'],
+    ['Binding valor SALDO final', 'closingbinding']
+  ].map(([label, key]) => `${escapeHtml(label)}: ${groupedHtml(shapes, key)}`).join('<br>');
 
-  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores, categorías y coincidencias booleanas contra controles impresos. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
+  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>${diagnosticHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores, categorías y coincidencias booleanas contra controles impresos. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
 }
 
 function suppliedHeader(headers, wanted) {
