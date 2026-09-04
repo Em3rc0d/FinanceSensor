@@ -47,6 +47,19 @@ if errorlevel 1 (
   exit /b 1
 )
 
+node live\recover-stale-historical-writer.mjs
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor detecto que Gmail History aun puede ser propietario del vault.
+  echo Si la ventana de Gmail Transaction History sigue abierta, cierrala y vuelve a intentar.
+  echo Si no puede verificar que el escritor historico termino, se detiene de forma segura.
+  echo No se seleccionaron credenciales y no se accedio a Gmail en este intento.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
 echo.
 echo FinanceSensor - Bank Statement Recovery DEV
 echo --------------------------------------------
@@ -60,6 +73,7 @@ echo iOS: NO TOCADO
 echo.
 echo IMPORTANTE: si Gmail History sigue RUNNING, el importador se negara a
 echo escribir el vault hasta que ese proceso termine o se detenga.
+echo Un RUNNING antiguo sin proceso vivo se recupera localmente como PAUSED antes de OAuth.
 echo.
 echo Selecciona el JSON OAuth Desktop DEV de FinanceSensor.
 echo.
