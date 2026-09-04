@@ -3,6 +3,7 @@
   "scope": "STATEMENT_PROFILE",
   "profileId": "PE-BCP-SAVINGS-REQUESTED",
   "status": "PASS_OWNED_CORPUS_PHYSICAL_PARSE",
+  "governingPromotionState": "OPEN_BY_CONTRACT",
   "observedAtDay": "2026-09-04",
   "sourceBaselineCommit": "69e45e02069e6ec8f2248ecd8a4a6a908f6f1a2b",
   "evidenceMode": "OWNED_WINDOWS_LOCAL_EDGE_SANITIZED_AGGREGATE",
