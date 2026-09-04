@@ -6,7 +6,15 @@ const ALLOWED_RANGES = new Set([
   'BEFORE_PERIOD',
   'AFTER_PERIOD',
   'PROCESS_BEFORE_VALUE_IN_PERIOD',
+  'PROCESS_BEFORE_VALUE_BEFORE_PERIOD',
+  'PROCESS_BEFORE_VALUE_AFTER_PERIOD',
+  'PROCESS_BEFORE_VALUE_INVALID',
+  'PROCESS_BEFORE_VALUE_MIXED',
   'PROCESS_AFTER_VALUE_IN_PERIOD',
+  'PROCESS_AFTER_VALUE_BEFORE_PERIOD',
+  'PROCESS_AFTER_VALUE_AFTER_PERIOD',
+  'PROCESS_AFTER_VALUE_INVALID',
+  'PROCESS_AFTER_VALUE_MIXED',
   'INVALID_DATE',
   'MIXED',
   'PERIOD_UNAVAILABLE',
@@ -19,7 +27,14 @@ const CHECK_KEYS = Object.freeze([
   'amount',
   'summary',
   'opening',
-  'closing'
+  'closing',
+  'openinglabel',
+  'closinglabel',
+  'totallabel',
+  'totaldebit',
+  'totalcredit',
+  'debitmatch',
+  'creditmatch'
 ]);
 
 let pendingShapes = [];
@@ -82,7 +97,14 @@ function auditSummaryHtml(shapes) {
     ['Importes positivos', 'amount'],
     ['Filas resumen excluidas', 'summary'],
     ['SALDO ANTERIOR único', 'opening'],
-    ['SALDO final único', 'closing']
+    ['SALDO final único', 'closing'],
+    ['Etiqueta SALDO ANTERIOR única', 'openinglabel'],
+    ['Etiqueta SALDO final única', 'closinglabel'],
+    ['TOTAL MOVIMIENTO único', 'totallabel'],
+    ['Total impreso de cargos disponible', 'totaldebit'],
+    ['Total impreso de abonos disponible', 'totalcredit'],
+    ['Cargos parseados = total impreso', 'debitmatch'],
+    ['Abonos parseados = total impreso', 'creditmatch']
   ];
   const checkHtml = checks
     .map(([label, key]) => `${escapeHtml(label)}: <strong>${countTrue(shapes, key)}/${total}</strong>`)
@@ -95,7 +117,7 @@ function auditSummaryHtml(shapes) {
     .map(([token, count]) => `<code>${escapeHtml(token)}</code>: <strong>${count}</strong>`)
     .join('<br>');
 
-  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores y categorías. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
+  return `<div class="wrap"><div class="panel"><h3>Diagnóstico estructural seguro</h3><p>${checkHtml}</p><p>Rango de fechas: ${rangeHtml}</p><p>Códigos por EECC:<br>${codeHtml}</p><p class="muted">Solo se muestran contadores, categorías y coincidencias booleanas contra controles impresos. No incluye fechas, importes, descripciones, IDs, texto PDF ni coordenadas.</p></div></div>`;
 }
 
 function suppliedHeader(headers, wanted) {
@@ -150,7 +172,6 @@ http.ServerResponse.prototype.end = function patchedEnd(chunk, encoding, callbac
       }
     }
   } catch {
-    // Observability must never make the trusted local edge less available.
     pendingShapes = [];
   }
   return originalEnd.call(this, chunk, encoding, callback);
