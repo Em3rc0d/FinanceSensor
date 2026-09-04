@@ -114,7 +114,7 @@ assert(!/writeFile[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*passwo
 
 assert(launcher.includes('npm ci --omit=optional --ignore-scripts --no-audit --no-fund'), 'launcher must use locked minimal dependency install');
 assert(launcher.includes('windows-dpapi-preflight.mjs'), 'launcher must validate DPAPI before OAuth');
-assert(launcher.includes('Nunca pegues esa clave en ChatGPT ni en GitHub'), 'launcher must keep statement password out of chat/repo');
+assert(launcher.includes('FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN'), 'launcher must keep statement password out of chat/repo');
 assert(launcher.indexOf('windows-dpapi-preflight.mjs') < launcher.indexOf('OpenFileDialog'), 'DPAPI preflight must precede OAuth credential selection');
 
 assert(pkg.dependencies?.['pdfjs-dist'] === '6.3.289', 'PDF.js must be exact-pinned');
