@@ -46,7 +46,11 @@ function bcpStatementYear(pages = []) {
 }
 
 function parseBcpDate(token, year) {
-  const match = normalizeLayoutText(token).match(/^(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$/);
+  // pdf.js can split a visually contiguous DDMMM token into adjacent text items.
+  // lineToColumns joins those fragments with spaces, so normalize representation-only
+  // whitespace before applying the observed BCP DDMMM grammar.
+  const compact = normalizeLayoutText(token).replace(/\s+/g, '');
+  const match = compact.match(/^(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$/);
   if (!match || !year) return null;
   return safeIso(year, MONTHS[match[2]], Number(match[1]));
 }
