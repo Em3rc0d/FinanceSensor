@@ -21,7 +21,9 @@ on:
       - 'mk0/11-decisions/ADR-INDEX.md'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
       - 'spikes/physical-ingress/src/statement-import-session.js'
+      - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
@@ -30,6 +32,8 @@ on:
       - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
@@ -57,7 +61,9 @@ on:
       - 'mk0/11-decisions/ADR-INDEX.md'
       - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
       - 'spikes/physical-ingress/src/statement-import-session.js'
+      - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
@@ -66,6 +72,8 @@ on:
       - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
       - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
@@ -92,7 +100,9 @@ jobs:
         run: |
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
           node --check spikes/physical-ingress/src/statement-import-session.js
+          node --check spikes/physical-ingress/src/statement-layout-control-audit.js
           node --check spikes/physical-ingress/src/statement-layout-geometry.js
+          node --check spikes/physical-ingress/src/statement-layout-reconciliation.js
           node --check spikes/physical-ingress/src/statement-page-classifier.js
           node --check spikes/physical-ingress/src/statement-profile-row-adapters.js
           node --check spikes/physical-ingress/src/statement-row-parser.js
@@ -100,6 +110,8 @@ jobs:
           node --test \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-import-session.test.js \
+            spikes/physical-ingress/test/statement-layout-control-audit.test.js \
+            spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
@@ -124,7 +136,9 @@ jobs:
             mk0/11-decisions/ADR-INDEX.md \
             spikes/physical-ingress/src/pdfjs-statement-parser.js \
             spikes/physical-ingress/src/statement-import-session.js \
+            spikes/physical-ingress/src/statement-layout-control-audit.js \
             spikes/physical-ingress/src/statement-layout-geometry.js \
+            spikes/physical-ingress/src/statement-layout-reconciliation.js \
             spikes/physical-ingress/src/statement-page-classifier.js \
             spikes/physical-ingress/src/statement-profile-row-adapters.js \
             spikes/physical-ingress/src/statement-row-parser.js \
@@ -133,6 +147,8 @@ jobs:
             spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js \
             spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
             spikes/physical-ingress/test/statement-import-session.test.js \
+            spikes/physical-ingress/test/statement-layout-control-audit.test.js \
+            spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
