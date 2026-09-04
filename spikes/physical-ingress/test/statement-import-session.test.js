@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { importStatementSession, statementSessionPublicSummary } from '../src/statement-import-session.js';
+import {
+  importStatementLayoutSession,
+  importStatementSession,
+  statementSessionPublicSummary
+} from '../src/statement-import-session.js';
 import { StatementSourceClass, StatementProviderProfile } from '../src/statement-source-adapters.js';
 
 const classification = {
@@ -42,15 +46,95 @@ test('statement password and plaintext never enter returned derived evidence', a
   assert.equal(raw.every(byte => byte === 0), true);
 });
 
+test('layout session returns only derived evidence and aggregate page count', async () => {
+  const password = 'LOCAL-ONLY-SYNTHETIC-PASSWORD';
+  const raw = Buffer.from('encrypted synthetic layout');
+  const result = await importStatementLayoutSession({
+    encryptedPdfBytes: raw,
+    password,
+    sourceMessageId: 'synthetic-layout-message',
+    attachmentIdentity: 'synthetic-layout-attachment',
+    statementClassification: classification,
+    decryptAndExtractLayout: async ({ password: received }) => {
+      assert.equal(received, password);
+      return {
+        pages: [{
+          pageNumber: 1,
+          items: [{ text: 'PRIVATE TRANSIENT SYNTHETIC TEXT', x: 10, y: 20, width: 30, height: 10 }]
+        }]
+      };
+    },
+    parseStatementLayout: async ({ pages }) => {
+      assert.equal(pages.length, 1);
+      return {
+        rows: [{
+          tenantId: 'tenant-synthetic',
+          amount: 75,
+          currency: 'PEN',
+          direction: 'IN',
+          occurredAt: '2026-09-02T12:00:00Z',
+          rawMerchant: 'Synthetic income',
+          confidence: 0.92
+        }],
+        review: []
+      };
+    }
+  });
+
+  assert.equal(result.evidence.length, 1);
+  assert.equal(result.pageCount, 1);
+  assert.equal(result.reviewCount, 0);
+  assert.equal(JSON.stringify(result).includes(password), false);
+  assert.equal(JSON.stringify(result).includes('PRIVATE TRANSIENT SYNTHETIC TEXT'), false);
+  assert.equal(raw.every(byte => byte === 0), true);
+});
+
+test('layout review fails closed before evidence can be returned', async () => {
+  const raw = Buffer.from('encrypted synthetic layout');
+  await assert.rejects(
+    importStatementLayoutSession({
+      encryptedPdfBytes: raw,
+      password: 'synthetic-password',
+      sourceMessageId: 'message',
+      attachmentIdentity: 'attachment',
+      statementClassification: classification,
+      decryptAndExtractLayout: async () => ({ pages: [{ pageNumber: 1, items: [] }] }),
+      parseStatementLayout: async () => ({
+        rows: [{ tenantId: 'tenant', amount: 10, currency: 'PEN', direction: 'OUT', occurredAt: '2026-09-01T12:00:00Z' }],
+        review: [{ code: 'STATEMENT_ROW_BOTH_DEBIT_CREDIT' }]
+      })
+    }),
+    error => error.code === 'STATEMENT_LAYOUT_REVIEW_REQUIRED'
+  );
+  assert.equal(raw.every(byte => byte === 0), true);
+});
+
+test('layout with no movement rows fails closed instead of reporting a false parse', async () => {
+  await assert.rejects(
+    importStatementLayoutSession({
+      encryptedPdfBytes: Buffer.from('encrypted synthetic layout'),
+      password: 'synthetic-password',
+      sourceMessageId: 'message',
+      attachmentIdentity: 'attachment',
+      statementClassification: classification,
+      decryptAndExtractLayout: async () => ({ pages: [{ pageNumber: 1, items: [{ text: 'header only' }] }] }),
+      parseStatementLayout: async () => ({ rows: [], review: [] })
+    }),
+    error => error.code === 'STATEMENT_LAYOUT_NO_MOVEMENTS'
+  );
+});
+
 test('public statement summary cannot carry password, raw pdf or plaintext', () => {
-  const summary = statementSessionPublicSummary({ classification, evidence: [{ amount: 1 }] });
+  const summary = statementSessionPublicSummary({ classification, evidence: [{ amount: 1 }], pageCount: 2 });
   assert.deepEqual(summary, {
     sourceClass: StatementSourceClass.DEBIT_STATEMENT_MANUAL_REQUEST,
     providerProfile: StatementProviderProfile.BCP_SAVINGS_REQUESTED,
     evidenceCount: 1,
+    pageCount: 2,
     passwordPersisted: false,
     rawPdfPersisted: false,
-    plaintextPersisted: false
+    plaintextPersisted: false,
+    layoutPlaintextPersisted: false
   });
 });
 
