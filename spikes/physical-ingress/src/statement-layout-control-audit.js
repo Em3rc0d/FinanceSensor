@@ -258,6 +258,25 @@ function closingAlternateShape(frame) {
   return nearestDistance === 0 ? 'RIGHT_SIDE_SAME_LINE' : 'RIGHT_SIDE_NEARBY';
 }
 
+function emitSafeControlDetail(result) {
+  if (process.env.FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS !== '1') return result;
+  const bit = value => value === true ? 1 : 0;
+  console.log([
+    'FINANCESENSOR_STMT_AUDIT_DETAIL',
+    `layout=${String(result.ledgerPageClass ?? 'UNKNOWN')}`,
+    `rawdebitabs=${bit(result.rawDebitAbsMatchesParsed)}`,
+    `rawcreditabs=${bit(result.rawCreditAbsMatchesParsed)}`,
+    `debitnegative=${bit(result.rawDebitNegativeSeen)}`,
+    `creditnegative=${bit(result.rawCreditNegativeSeen)}`,
+    `debitsingle=${bit(result.rawDebitSingleNumericFragment)}`,
+    `creditsingle=${bit(result.rawCreditSingleNumericFragment)}`,
+    `signeddebitmatch=${bit(result.signedDebitExact)}`,
+    `signedcreditmatch=${bit(result.signedCreditExact)}`,
+    `closingalternate=${String(result.closingAlternateShape ?? 'UNKNOWN')}`
+  ].join(';'));
+  return result;
+}
+
 export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
   const frames = ledgerFrames(pages);
   const first = frames[0] ?? null;
@@ -289,7 +308,7 @@ export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
   const rawDebit = rawMovementColumnAudit(frames, 'debit');
   const rawCredit = rawMovementColumnAudit(frames, 'credit');
 
-  return {
+  return emitSafeControlDetail({
     openingLabelUnique: openingLines.length === 1,
     closingLabelUnique: closingLines.length === 1,
     totalMovementLabelUnique: totalLines.length === 1,
@@ -317,5 +336,5 @@ export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
     signedDebitExact: totalDebitAvailable && rawDebit.signedCents !== null ? rawDebit.signedCents === totalDebit.cents : null,
     signedCreditExact: totalCreditAvailable && rawCredit.signedCents !== null ? rawCredit.signedCents === totalCredit.cents : null,
     closingAlternateShape: last ? closingAlternateShape(last) : 'MISSING'
-  };
+  });
 }
