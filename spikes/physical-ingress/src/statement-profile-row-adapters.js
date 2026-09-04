@@ -31,6 +31,8 @@ const MONTHS = Object.freeze({
   JUL: 7, AGO: 8, SEP: 9, SET: 9, OCT: 10, NOV: 11, DIC: 12
 });
 
+const BCP_DATE_TOKEN_PATTERN = '(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)';
+
 function safeIso(year, month, day) {
   const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   if (Number.isNaN(date.getTime()) || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
@@ -50,9 +52,31 @@ function parseBcpDate(token, year) {
   // lineToColumns joins those fragments with spaces, so normalize representation-only
   // whitespace before applying the observed BCP DDMMM grammar.
   const compact = normalizeLayoutText(token).replace(/\s+/g, '');
-  const match = compact.match(/^(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$/);
+  const match = compact.match(new RegExp(`^(\\d{2})${BCP_DATE_TOKEN_PATTERN}$`));
   if (!match || !year) return null;
   return safeIso(year, MONTHS[match[2]], Number(match[1]));
+}
+
+function leadingBcpDatePair(line, boundaries, year) {
+  const description = boundaries.find(boundary => boundary.id === 'description');
+  if (!description || !Number.isFinite(description.minX)) return null;
+
+  // Physical BCP savings evidence shows the first two table columns are exclusively
+  // FECHA PROC. and FECHA VALOR. pdf.js may place both visual dates inside one text
+  // item or assign the second item's x to the neighboring geometric bucket. Recover
+  // only an exact two-token DDMMM pair from the area strictly before DESCRIPCION.
+  const leadingText = (line?.items ?? [])
+    .filter(item => Number.isFinite(item?.x) && item.x < description.minX)
+    .map(item => String(item?.text ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+  const compact = normalizeLayoutText(leadingText).replace(/\s+/g, '');
+  const matches = [...compact.matchAll(new RegExp(`(\\d{2})${BCP_DATE_TOKEN_PATTERN}`, 'g'))];
+  if (matches.length !== 2) return null;
+
+  const dates = matches.map(match => parseBcpDate(`${match[1]}${match[2]}`, year));
+  if (dates.some(value => !value)) return null;
+  return { occurredAt: dates[0], valueAt: dates[1] };
 }
 
 function parseInterbankDate(token) {
@@ -151,8 +175,13 @@ export function parseBcpSavingsLayout({ pages = [], tenantId, accountId = null }
       const hasCredit = credit !== null && credit > 0;
       if (hasDebit || hasCredit) amountColumnLines += 1;
 
-      const occurredAt = parseBcpDate(columns.processDate, year);
-      const valueAt = parseBcpDate(columns.valueDate, year);
+      let occurredAt = parseBcpDate(columns.processDate, year);
+      let valueAt = parseBcpDate(columns.valueDate, year);
+      if (!occurredAt || !valueAt) {
+        const pair = leadingBcpDatePair(line, geometry.boundaries, year);
+        occurredAt = occurredAt ?? pair?.occurredAt ?? null;
+        valueAt = valueAt ?? pair?.valueAt ?? null;
+      }
       if (occurredAt) processDateLines += 1;
       if (valueAt) valueDateLines += 1;
       if (!occurredAt || !valueAt) continue;
