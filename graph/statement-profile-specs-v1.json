@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "S2_PROFILE_SPEC_V1_STATIC_ONLY",
-  "asOf": "2026-09-03",
+  "status": "S2_PROFILE_SPEC_V1_PLUS_BCP_OWNED_CORPUS_PHYSICAL_EVIDENCE",
+  "asOf": "2026-09-04",
   "privacy": {
     "derivedFromPrivateOwnedStructuralReview": true,
     "rawPrivateDocumentsCommitted": false,
@@ -22,7 +22,7 @@
     {
       "profileId": "PE-BCP-SAVINGS-REQUESTED",
       "profileVersion": "1.0.0-static",
-      "status": "FIXTURE_READY",
+      "status": "FIXTURE_READY_PLUS_OWNED_CORPUS_PHYSICAL_PASS",
       "realParse": "OPEN",
       "institution": "BCP",
       "productType": "SAVINGS",
@@ -64,7 +64,18 @@
       },
       "excludedRows": ["SALDO ANTERIOR","TOTAL MOVIMIENTO","SALDO"],
       "multiPageLedgerContinuation": true,
-      "syntheticFixture": "spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js"
+      "syntheticFixture": "spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js",
+      "physicalEvidence": {
+        "ownedCorpusParse": "PASS",
+        "receipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-2026-09-04.json",
+        "statementsProcessed": 9,
+        "pagesProcessed": 16,
+        "derivedEvidenceEmitted": 368,
+        "statementsUnprocessed": 0,
+        "independentReconciliation": "OPEN",
+        "generalizedProfileSupport": "OPEN",
+        "mobilePhysicalProof": "OPEN"
+      }
     },
     {
       "profileId": "PE-INTERBANK-SAVINGS-REQUESTED",
@@ -158,6 +169,8 @@
     "RUNNING_BALANCE != MOVEMENT_AMOUNT",
     "SUMMARY_AMOUNT != MOVEMENT_AMOUNT",
     "FIXTURE_READY != REAL_PARSE_PASS",
+    "OWNED_CORPUS_PHYSICAL_PARSE != GENERALIZED_PROFILE_SUPPORT",
+    "DERIVED_EVIDENCE_EMITTED != INDEPENDENT_RECONCILIATION",
     "STATIC_ADAPTER_PASS != ANDROID_PHYSICAL_PASS"
   ],
   "buildReady": false,
