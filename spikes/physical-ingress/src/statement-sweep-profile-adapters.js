@@ -49,11 +49,17 @@ function textItems(page = []) {
   return (page?.items ?? []).filter(item => String(item?.text ?? '').trim());
 }
 
+function anchorAlternativeMatches(text, alternative) {
+  if (typeof alternative === 'string') return text === normalizeLayoutText(alternative);
+  const flags = alternative.flags.includes('i') ? alternative.flags : `${alternative.flags}i`;
+  return new RegExp(alternative.source, flags).test(text);
+}
+
 function highestAnchor(page, alternatives = []) {
   const candidates = [];
   for (const item of textItems(page)) {
     const text = normalizeLayoutText(item.text);
-    if (!alternatives.some(match => typeof match === 'string' ? text === match : match.test(text))) continue;
+    if (!alternatives.some(match => anchorAlternativeMatches(text, match))) continue;
     candidates.push({ x: Number(item.x), y: Number(item.y), text: item.text });
   }
   candidates.sort((a, b) => b.y - a.y || a.x - b.x);
