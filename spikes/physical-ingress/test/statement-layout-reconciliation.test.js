@@ -40,12 +40,37 @@ test('BCP savings balance audit proves the synthetic ledger equation without exp
   assert.equal(JSON.stringify(result).includes('84.5'), false);
 });
 
-test('BCP savings balance audit tolerates small summary-label/value baseline offsets without widening movement parsing', () => {
+test('BCP savings parser resolves DDMMM years from a statement period that crosses New Year', () => {
+  const pages = clone(bcpSavingsLayoutV1.pages);
+  for (const page of pages) {
+    const period = page.items.find(item => String(item.text).startsWith('DEL '));
+    period.text = 'DEL 15/12/25 AL 15/01/26';
+  }
+
+  for (const item of pages[0].items) {
+    if (item.y === 650 && (item.x === 40 || item.x === 105)) item.text = '31DIC';
+    if (item.y === 625 && (item.x === 40 || item.x === 105)) item.text = '02ENE';
+  }
+  for (const item of pages[1].items) {
+    if (item.y === 650 && (item.x === 40 || item.x === 105)) item.text = '03ENE';
+  }
+
+  const rows = parsed({ pages });
+  assert.equal(rows[0].occurredAt.startsWith('2025-12-31'), true);
+  assert.equal(rows[1].occurredAt.startsWith('2026-01-02'), true);
+  assert.equal(rows[2].occurredAt.startsWith('2026-01-03'), true);
+
+  const result = reconcileBcpSavingsStatement({ pages, rows });
+  assert.equal(result.code, 'STMT_AUDIT_PASS');
+  assert.equal(result.checks.datesWithinPeriod, true);
+});
+
+test('BCP savings balance audit binds control labels to nearby values without widening movement parsing', () => {
   const pages = clone(bcpSavingsLayoutV1.pages);
   const openingAmount = pages[0].items.find(item => item.text === '50.00' && item.y === 675);
   const closingAmount = pages[1].items.find(item => item.text === '84.50' && item.y === 575);
-  openingAmount.y -= 4;
-  closingAmount.y += 4;
+  openingAmount.y -= 8;
+  closingAmount.y += 8;
 
   const rows = parsed({ pages });
   const result = reconcileBcpSavingsStatement({ pages, rows });
