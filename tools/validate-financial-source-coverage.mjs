@@ -105,7 +105,9 @@ assert(viewer.includes("error.code = 'HISTORICAL_SCAN_ACTIVE'"), 'concurrent wri
 assert(viewer.includes('Clave del PDF · solo esta sesión'), 'local password input must describe session-only custody');
 assert(viewer.includes('autocomplete="off"'), 'local password form must disable autocomplete');
 assert(viewer.includes('fetchGmailStatementAttachment'), 'statement bytes must be fetched through local Gmail boundary');
-assert(viewer.includes('extractPasswordProtectedPdfText'), 'statement viewer must use local password-aware PDF parser');
+assert(viewer.includes('extractPasswordProtectedPdfLayout'), 'statement viewer must use local password-aware geometric PDF parser');
+assert(viewer.includes('importStatementLayoutSession'), 'statement viewer must use the layout session boundary');
+assert(viewer.includes('parseStatementProfileLayout'), 'statement viewer must dispatch to the profile-specific layout adapter');
 assert(viewer.includes('password = \'\''), 'statement password reference must be dropped after local import');
 assertNoPasswordValueLogging(viewer, 'viewer');
 assert(!/writeFile[^\n]{0,200}(?:\$\{\s*password\s*\}|,\s*password\b|\+\s*password\b)/i.test(viewer), 'viewer must never write statement password value');
