@@ -143,7 +143,7 @@ http.ServerResponse.prototype.end = function patchedEnd(chunk, encoding, callbac
         const summary = auditSummaryHtml(pendingShapes);
         pendingShapes = [];
         const next = text.replace('</body>', `${summary}</body>`);
-        this.removeHeader('content-length');
+        if (!this.headersSent) this.removeHeader('content-length');
         chunk = wasBuffer ? Buffer.from(next, 'utf8') : next;
       }
     }
