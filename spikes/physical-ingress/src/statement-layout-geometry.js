@@ -5,7 +5,7 @@ const normalize = (value = '') => String(value ?? '')
   .trim()
   .toUpperCase();
 
-const MONEY_COLUMN_IDS = new Set(['debit', 'credit', 'income', 'expense', 'runningBalance']);
+const MONEY_COLUMN_IDS = new Set(['debit', 'credit', 'income', 'expense', 'runningBalance', 'pen', 'usd', 'amount']);
 const MONEY_FRAGMENT_TOUCH_TOLERANCE = 4;
 
 export function pagePlainText(page = {}) {
@@ -175,11 +175,13 @@ export function lineToColumns(line, boundaries = []) {
 export function parseFlexibleMoney(value) {
   const token = String(value ?? '').trim().replace(/[^0-9,.-]/g, '');
   if (!token) return null;
-  const comma = token.lastIndexOf(',');
-  const dot = token.lastIndexOf('.');
-  let normalized = token;
-  if (comma > dot) normalized = token.replace(/\./g, '').replace(',', '.');
-  else normalized = token.replace(/,/g, '');
+  const signless = token.replace(/^-/, '').replace(/-$/, '');
+  if (!signless) return null;
+  const comma = signless.lastIndexOf(',');
+  const dot = signless.lastIndexOf('.');
+  let normalized = signless;
+  if (comma > dot) normalized = signless.replace(/\./g, '').replace(',', '.');
+  else normalized = signless.replace(/,/g, '');
   const amount = Number(normalized);
   return Number.isFinite(amount) ? Math.abs(amount) : null;
 }

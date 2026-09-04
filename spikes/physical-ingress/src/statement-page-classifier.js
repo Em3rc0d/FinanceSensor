@@ -39,6 +39,17 @@ function isEducational(text) {
   ].some(marker => text.includes(marker));
 }
 
+const MONTH_TOKEN = '(?:ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)';
+
+function hasBcpCreditMovementPair(text) {
+  return new RegExp(`\\b\\d{1,2}${MONTH_TOKEN}\\s+\\d{1,2}${MONTH_TOKEN}\\b`, 'i').test(text.replace(/\s+/g, ' '));
+}
+
+function hasRipleyCreditMovementDates(text) {
+  const matches = text.match(new RegExp(`\\b\\d{1,2}/${MONTH_TOKEN}/\\d{4}\\b`, 'gi')) ?? [];
+  return matches.length >= 2;
+}
+
 export function classifyStatementPage({ text, providerProfile } = {}) {
   const value = normalize(text);
   if (!value) return StatementPageRole.UNKNOWN;
@@ -51,18 +62,19 @@ export function classifyStatementPage({ text, providerProfile } = {}) {
   }
 
   if (providerProfile === StatementProviderProfile.BCP_CREDIT) {
+    const ledgerHeader = value.includes('estado de cuenta tarjeta visa')
+      && hasAll(value, ['proceso', 'consumo', 'descripcion', 'operacion', 'soles', 'dolares']);
+    if (ledgerHeader && hasBcpCreditMovementPair(value)) return StatementPageRole.TRANSACTION_LEDGER;
     if (value.includes('monto total facturado') || value.includes('como esta compuesta su deuda')) {
       return StatementPageRole.SUMMARY;
-    }
-    if (hasAll(value, ['estado de cuenta tarjeta visa', 'fecha de proceso', 'fecha de consumo', 'tipo de operacion', 'soles', 'dolares'])) {
-      return StatementPageRole.TRANSACTION_LEDGER;
     }
   }
 
   if (providerProfile === StatementProviderProfile.RIPLEY_CREDIT) {
-    if (hasAll(value, ['eecc tarjeta de credito ripley', 'tus movimientos del mes', 'fecha de operacion', 'fecha de proceso', 'descripcion', 'monto'])) {
-      return StatementPageRole.TRANSACTION_LEDGER;
-    }
+    const ledgerHeader = value.includes('eecc tarjeta de credito ripley')
+      && value.includes('tus movimientos del mes')
+      && hasAll(value, ['operacion', 'proceso', 'descripcion', 'monto']);
+    if (ledgerHeader && hasRipleyCreditMovementDates(value)) return StatementPageRole.TRANSACTION_LEDGER;
     if (value.includes('partes claves de tu estado de cuenta') || value.includes('operaciones por canal')) {
       return StatementPageRole.INFORMATIONAL;
     }

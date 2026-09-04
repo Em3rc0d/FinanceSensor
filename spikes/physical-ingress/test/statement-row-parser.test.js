@@ -67,10 +67,10 @@ test('savings transfer out stays transfer rather than generic expense', () => {
   assert.equal(row.semanticType, 'EXTERNAL_TRANSFER');
 });
 
-test('multi-page parser ignores summary and educational-reference pages before row parsing', () => {
+test('multi-page parser ignores repeated-header summary and educational-reference pages before row parsing', () => {
   const text = [
-    'Estado de Cuenta Tarjeta VISA Fecha de proceso Fecha de consumo Descripción Tipo de Operación Soles Dólares\n04/09/2026 CONSUMO COMERCIO S/ 10.00',
-    'MONTO TOTAL FACTURADO ¿COMO ESTA COMPUESTA SU DEUDA?\n05/09/2026 CONSUMO FALSO S/ 20.00',
+    'Estado de Cuenta Tarjeta VISA Fecha de proceso Fecha de consumo Descripción Tipo de Operación Soles Dólares 04Sep 04Sep\n04/09/2026 CONSUMO COMERCIO S/ 10.00',
+    'Estado de Cuenta Tarjeta VISA Fecha de proceso Fecha de consumo Descripción Tipo de Operación Soles Dólares MONTO TOTAL FACTURADO ¿COMO ESTA COMPUESTA SU DEUDA?\n05/09/2026 CONSUMO FALSO S/ 20.00',
     'Conoce el estado de cuenta de tu Tarjeta de Crédito (Montos referenciales)\n06/09/2026 CONSUMO EJEMPLO S/ 30.00'
   ].join('\f');
   const rows = parseStatementRows({
