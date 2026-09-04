@@ -79,6 +79,10 @@ function rootRedirectUri() {
   return `http://${HOST}:${address.port}`;
 }
 
+function oauthRedirectUri() {
+  return `${rootRedirectUri()}/oauth/callback`;
+}
+
 function requireSession(url) {
   return url.searchParams.get('s') === sessionSecret;
 }
@@ -150,7 +154,7 @@ async function exchangeAuthorizationCode(code) {
   const request = buildTokenExchangeRequest({
     clientId: EXPECTED_CLIENT_ID,
     clientSecret: desktopClientSecret,
-    redirectUri: rootRedirectUri(),
+    redirectUri: oauthRedirectUri(),
     code,
     codeVerifier: pkce.codeVerifier
   });
@@ -360,7 +364,7 @@ server = http.createServer(async (req, res) => {
       if (!requireSession(url)) { sendHtml(res, 403, 'Forbidden', '<p>Sesión local inválida.</p>'); return; }
       const request = createAuthorizationRequest({
         clientId: EXPECTED_CLIENT_ID,
-        redirectUri: `${rootRedirectUri()}/oauth/callback`,
+        redirectUri: oauthRedirectUri(),
         state: oauthState,
         codeVerifier: pkce.codeVerifier,
         scopes: [GMAIL_READONLY_SCOPE]
