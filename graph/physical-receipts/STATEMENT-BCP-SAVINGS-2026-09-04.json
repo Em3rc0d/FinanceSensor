@@ -9,7 +9,16 @@
   "evidenceMode": "OWNED_WINDOWS_LOCAL_EDGE_SANITIZED_AGGREGATE",
   "receipt": {
     "path": "mk0/10-evidence/EV-STATEMENT-BCP-SAVINGS-PHYSICAL-PASS-2026-09-04.md",
-    "blobSha": "bd0dddc67bebfb7756802e688eb301004ad498ac"
+    "blobShaAtOriginalReceipt": "bd0dddc67bebfb7756802e688eb301004ad498ac"
+  },
+  "revalidation": {
+    "triggered": true,
+    "reason": "SYSTEMATIC_DEBIT_COLUMN_CONTAMINATION_FOUND_BY_BALANCE_AUDIT",
+    "repairCommit": "d22103b0654f8354d2c69abfe1df58a7d852d5ec",
+    "successorReceipt": "graph/physical-receipts/STATEMENT-BCP-SAVINGS-BALANCE-AUDIT-2026-09-04.json",
+    "historicalMovementCount": 368,
+    "currentAuditedMovementCount": 359,
+    "historicalCountMayBeUsedAsCurrentReconciledCount": false
   },
   "requiredClaims": [
     "GMAIL_READONLY_STATEMENT_DISCOVERY",
@@ -41,7 +50,7 @@
   },
   "residualRiskCodes": [
     "OWNED_CORPUS_NOT_GENERALIZED_PROFILE_SUPPORT",
-    "DERIVED_EVIDENCE_COUNT_NOT_INDEPENDENT_RECONCILIATION",
+    "ORIGINAL_DERIVED_EVIDENCE_COUNT_SUPERSEDED_FOR_RECONCILIATION",
     "DESKTOP_HARNESS_PASS_NOT_MOBILE_PHYSICAL_PASS",
     "FUTURE_PROVIDER_FORMAT_DRIFT_OPEN"
   ],
