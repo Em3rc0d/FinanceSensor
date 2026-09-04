@@ -68,41 +68,56 @@ function nearestColumnCents(lines, labelLine, boundaries, columnId) {
   return nearest.length === 1 ? nearest[0].cents : null;
 }
 
-function controls(pages = []) {
-  const found = [];
-
+function ledgerFrames(pages = []) {
+  const frames = [];
   for (const page of pages) {
     const role = classifyStatementPage({
       text: pagePlainText(page),
       providerProfile: StatementProviderProfile.BCP_SAVINGS_REQUESTED
     });
     if (role !== StatementPageRole.TRANSACTION_LEDGER) continue;
-
     const geometry = pageGeometry(page);
-    if (!geometry) continue;
-    const lines = groupPageItemsIntoLines(page);
-
-    for (const line of lines) {
-      if (line.y >= geometry.headerY - 1) continue;
-      const label = controlLabel(line, geometry.boundaries);
-      if (!label) continue;
-      found.push({
-        label,
-        debitCents: nearestColumnCents(lines, line, geometry.boundaries, 'debit'),
-        creditCents: nearestColumnCents(lines, line, geometry.boundaries, 'credit')
-      });
-    }
+    frames.push({
+      page,
+      geometry,
+      lines: geometry ? groupPageItemsIntoLines(page) : []
+    });
   }
+  return frames;
+}
 
-  return found;
+function matchingLines(frame, wanted) {
+  if (!frame?.geometry) return [];
+  return frame.lines.filter(line => {
+    if (line.y >= frame.geometry.headerY - 1) return false;
+    return controlLabel(line, frame.geometry.boundaries) === wanted;
+  });
+}
+
+function uniqueControl(frame, wanted) {
+  const lines = matchingLines(frame, wanted);
+  return lines.length === 1 ? lines[0] : null;
 }
 
 export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
-  const found = controls(pages);
-  const opening = found.filter(item => item.label === 'SALDO ANTERIOR');
-  const closing = found.filter(item => item.label === 'SALDO');
-  const totals = found.filter(item => item.label === 'TOTAL MOVIMIENTO');
-  const total = totals.length === 1 ? totals[0] : null;
+  const frames = ledgerFrames(pages);
+  const first = frames[0] ?? null;
+  const last = frames.at(-1) ?? null;
+
+  // Physical BCP multipage statements repeat blank control-row templates on earlier
+  // ledger pages. Statement semantics are therefore positional: SALDO ANTERIOR belongs
+  // to the first ledger page, while TOTAL MOVIMIENTO and final SALDO belong to the last.
+  const openingLines = matchingLines(first, 'SALDO ANTERIOR');
+  const closingLines = matchingLines(last, 'SALDO');
+  const totalLines = matchingLines(last, 'TOTAL MOVIMIENTO');
+  const totalLine = uniqueControl(last, 'TOTAL MOVIMIENTO');
+
+  const totalDebitCents = totalLine
+    ? nearestColumnCents(last.lines, totalLine, last.geometry.boundaries, 'debit')
+    : null;
+  const totalCreditCents = totalLine
+    ? nearestColumnCents(last.lines, totalLine, last.geometry.boundaries, 'credit')
+    : null;
 
   const parsedDebitCents = rows
     .filter(row => row?.direction === 'OUT')
@@ -111,16 +126,16 @@ export function auditBcpStatementControls({ pages = [], rows = [] } = {}) {
     .filter(row => row?.direction === 'IN')
     .reduce((sum, row) => sum + (toCents(row?.amount) ?? 0), 0);
 
-  const totalDebitAvailable = total?.debitCents !== null && total?.debitCents !== undefined;
-  const totalCreditAvailable = total?.creditCents !== null && total?.creditCents !== undefined;
+  const totalDebitAvailable = totalDebitCents !== null;
+  const totalCreditAvailable = totalCreditCents !== null;
 
   return {
-    openingLabelUnique: opening.length === 1,
-    closingLabelUnique: closing.length === 1,
-    totalMovementLabelUnique: totals.length === 1,
+    openingLabelUnique: openingLines.length === 1,
+    closingLabelUnique: closingLines.length === 1,
+    totalMovementLabelUnique: totalLines.length === 1,
     totalDebitAvailable,
     totalCreditAvailable,
-    totalDebitExact: totalDebitAvailable ? total.debitCents === parsedDebitCents : null,
-    totalCreditExact: totalCreditAvailable ? total.creditCents === parsedCreditCents : null
+    totalDebitExact: totalDebitAvailable ? totalDebitCents === parsedDebitCents : null,
+    totalCreditExact: totalCreditAvailable ? totalCreditCents === parsedCreditCents : null
   };
 }
