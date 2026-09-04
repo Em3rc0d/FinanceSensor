@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findHeaderAnchors } from '../src/statement-layout-geometry.js';
+import {
+  columnBoundaries,
+  findHeaderAnchors,
+  lineToColumns,
+  parseFlexibleMoney
+} from '../src/statement-layout-geometry.js';
 
-const item = (text, x, y, sequence) => ({ text, x, y, width: 20, height: 10, sequence });
+const item = (text, x, y, sequence, width = 20) => ({ text, x, y, width, height: 10, sequence });
 
 const BCP_HEADERS = [
   { id: 'processDate', header: 'FECHA PROC.' },
@@ -49,4 +54,50 @@ test('still fails closed when a required header is genuinely missing', () => {
   };
 
   assert.equal(findHeaderAnchors(page, BCP_HEADERS), null);
+});
+
+test('money columns ignore a detached numeric description fragment to the left of the real amount', () => {
+  const anchors = {
+    processDate: { x: 40 },
+    valueDate: { x: 105 },
+    description: { x: 180 },
+    debit: { x: 380 },
+    credit: { x: 485 }
+  };
+  const boundaries = columnBoundaries(BCP_HEADERS, anchors);
+  const line = {
+    items: [
+      item('01JUL', 40, 650, 0, 35),
+      item('01JUL', 105, 650, 1, 35),
+      item('PAGO DEMO', 180, 650, 2, 80),
+      item('011396', 300, 650, 3, 42),
+      item('70.00', 395, 650, 4, 35)
+    ]
+  };
+
+  const columns = lineToColumns(line, boundaries);
+  assert.equal(parseFlexibleMoney(columns.debit), 70);
+});
+
+test('money columns preserve touching pdf.js fragments that form one amount', () => {
+  const anchors = {
+    processDate: { x: 40 },
+    valueDate: { x: 105 },
+    description: { x: 180 },
+    debit: { x: 380 },
+    credit: { x: 485 }
+  };
+  const boundaries = columnBoundaries(BCP_HEADERS, anchors);
+  const line = {
+    items: [
+      item('01JUL', 40, 650, 0, 35),
+      item('01JUL', 105, 650, 1, 35),
+      item('COMPRA DEMO', 180, 650, 2, 90),
+      item('1', 395, 650, 3, 5),
+      item('0.00', 402, 650, 4, 28)
+    ]
+  };
+
+  const columns = lineToColumns(line, boundaries);
+  assert.equal(parseFlexibleMoney(columns.debit), 10);
 });
