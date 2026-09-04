@@ -21,7 +21,7 @@ server.listen(0, '127.0.0.1', async () => {
 });
 `;
 
-test('safe web summary exposes only aggregate control and total-match booleans', () => {
+test('safe web summary exposes only aggregate boundary-control and total-match booleans', () => {
   const result = spawnSync(process.execPath, [
     '--import', preloadPath,
     '--input-type=module',
@@ -30,8 +30,8 @@ test('safe web summary exposes only aggregate control and total-match booleans',
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const html = result.stdout.split('HTML_START\n')[1]?.split('\nHTML_END')[0] ?? '';
-  assert.match(html, /Etiqueta SALDO final única:\s*<strong>2\/2<\/strong>/);
-  assert.match(html, /TOTAL MOVIMIENTO único:\s*<strong>2\/2<\/strong>/);
+  assert.match(html, /Etiqueta SALDO final en última página:\s*<strong>2\/2<\/strong>/);
+  assert.match(html, /TOTAL MOVIMIENTO en última página:\s*<strong>2\/2<\/strong>/);
   assert.match(html, /Cargos parseados = total impreso:\s*<strong>2\/2<\/strong>/);
   assert.match(html, /Abonos parseados = total impreso:\s*<strong>1\/2<\/strong>/);
   assert.match(html, /PROCESS_BEFORE_VALUE_BEFORE_PERIOD/);
