@@ -1,14 +1,43 @@
 {
-  "schemaVersion": 1,
-  "status": "FORMAT_DISCOVERY_OPEN",
+  "schemaVersion": 2,
+  "status": "FORMAT_CORPUS_OBSERVED_PARSE_OPEN",
   "asOf": "2026-09-03",
   "rules": {
     "unit": "INSTITUTION_PLUS_PRODUCT_PLUS_STATEMENT_FAMILY",
     "oneUniversalParser": false,
     "unknownSignatureFailsClosed": true,
+    "pageRoleClassificationRequired": true,
+    "embeddedEducationalSamplesFailClosed": true,
+    "activePdfContentExecutionForbidden": true,
+    "formFieldsAreFinancialAuthority": false,
+    "documentIdentityConsistencyBeforeRows": true,
     "realPrivateContentInRepository": false,
     "adapterVersionRequired": true
   },
+  "observedCorpus": {
+    "scope": "PRIVATE_USER_OWNED_STRUCTURAL_REVIEW_ONLY",
+    "privateOwnedDocuments": 4,
+    "institutions": 3,
+    "profilesObserved": 4,
+    "rawArtifactsCommitted": 0,
+    "rawStatementTextCommitted": 0,
+    "piiCommitted": 0,
+    "realFinancialValuesCommitted": 0,
+    "nativeTextPresentInObservedCopies": 4,
+    "activeContentObservedInSomeCopies": true,
+    "embeddedEducationalReferenceObserved": true,
+    "physicalRowParseClaimed": false
+  },
+  "pageRoles": [
+    "TRANSACTION_LEDGER",
+    "SUMMARY",
+    "INFORMATIONAL",
+    "EDUCATIONAL_REFERENCE",
+    "UNKNOWN"
+  ],
+  "rowEligiblePageRoles": [
+    "TRANSACTION_LEDGER"
+  ],
   "profiles": [
     {
       "profileId": "PE-BCP-CREDIT-MONTHLY",
@@ -17,10 +46,22 @@
       "statementFamily": "MONTHLY_CARD_STATEMENT",
       "delivery": "AUTO_GMAIL_OBSERVED",
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
-      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
-      "adapterStatus": "DISCOVERY",
+      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
+      "adapterStatus": "FORMAT_OBSERVED",
       "realParse": "OPEN",
-      "ocrNeed": "UNKNOWN"
+      "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
+      "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
+      "pageScope": {
+        "ledger": "OBSERVED",
+        "summaryDebtSection": "OBSERVED_NON_ROW_BY_DEFAULT",
+        "educationalReferencePage": "OBSERVED_EXCLUDE"
+      },
+      "risks": [
+        "PROCESS_DATE_DIFFERS_FROM_CONSUMPTION_DATE",
+        "TRAILING_SIGN_PAYMENT_PRESENTATION",
+        "DEBT_SUMMARY_LOOKS_NUMERIC",
+        "EDUCATIONAL_SAMPLE_CONTAINS_TRANSACTION_LIKE_ROWS"
+      ]
     },
     {
       "profileId": "PE-BCP-SAVINGS-REQUESTED",
@@ -29,10 +70,22 @@
       "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
       "delivery": "USER_REQUEST_THEN_GMAIL_OBSERVED",
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
-      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
-      "adapterStatus": "DISCOVERY",
+      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
+      "adapterStatus": "FORMAT_OBSERVED",
       "realParse": "OPEN",
-      "ocrNeed": "UNKNOWN"
+      "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
+      "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
+      "pageScope": {
+        "multiPageLedgerContinuation": "OBSERVED",
+        "debitColumn": "CARGOS_DEBE",
+        "creditColumn": "ABONOS_HABER"
+      },
+      "risks": [
+        "PAGE_BREAK_IS_NOT_LEDGER_END",
+        "OPENING_BALANCE_NOT_TRANSACTION",
+        "TOTALS_NOT_TRANSACTION",
+        "DAY_MONTH_ABBREVIATION_DATE_GRAMMAR"
+      ]
     },
     {
       "profileId": "PE-RIPLEY-CREDIT-MONTHLY",
@@ -41,10 +94,22 @@
       "statementFamily": "MONTHLY_CARD_STATEMENT",
       "delivery": "AUTO_GMAIL_OBSERVED",
       "availabilityEvidence": "OBSERVED_PRIVATE_CORPUS",
-      "formatFixture": "OPEN_SANITIZED_SAMPLE_REQUIRED",
-      "adapterStatus": "DISCOVERY",
+      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
+      "adapterStatus": "FORMAT_OBSERVED",
       "realParse": "OPEN",
-      "ocrNeed": "UNKNOWN"
+      "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
+      "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
+      "pageScope": {
+        "ledgerAndSummarySamePage": "OBSERVED",
+        "informationalContinuationPage": "OBSERVED_EXCLUDE",
+        "ticketColumn": "OBSERVED"
+      },
+      "risks": [
+        "RATE_COLUMNS_NOT_MOVEMENT_AMOUNT",
+        "INSTALLMENT_COLUMNS_NOT_MOVEMENT_AMOUNT_BY_DEFAULT",
+        "FORMULA_SECTIONS_SHARE_LEDGER_PAGE",
+        "POINTS_SECTION_NOT_LEDGER"
+      ]
     },
     {
       "profileId": "PE-INTERBANK-SAVINGS-REQUESTED",
@@ -52,11 +117,22 @@
       "productType": "SAVINGS",
       "statementFamily": "REQUESTED_ACCOUNT_STATEMENT",
       "delivery": "USER_REQUEST_EXPECTED",
-      "availabilityEvidence": "UNPROVEN",
-      "formatFixture": "ABSENT",
-      "adapterStatus": "UNPROVEN",
+      "availabilityEvidence": "PRIVATE_OWNED_COPY_OBSERVED",
+      "formatFixture": "SANITIZED_STRUCTURE_SPEC_PENDING",
+      "adapterStatus": "FORMAT_OBSERVED",
       "realParse": "OPEN",
-      "ocrNeed": "UNKNOWN"
+      "nativeTextObservation": "OBSERVED_IN_SHARED_COPY_ONLY",
+      "ocrNeed": "NOT_REQUIRED_FOR_SHARED_COPY_NOT_GENERALIZED",
+      "pageScope": {
+        "ledgerPage": "OBSERVED",
+        "informationalPage": "OBSERVED_EXCLUDE",
+        "educationalReferencePage": "OBSERVED_EXCLUDE"
+      },
+      "risks": [
+        "RUNNING_BALANCE_NOT_MOVEMENT_AMOUNT",
+        "INCOME_AND_EXPENSE_COLUMNS_SEPARATE",
+        "EDUCATIONAL_SAMPLE_CONTAINS_TRANSACTION_LIKE_ROWS"
+      ]
     },
     {
       "profileId": "PE-INTERBANK-CREDIT-MONTHLY",
@@ -68,12 +144,16 @@
       "formatFixture": "ABSENT",
       "adapterStatus": "UNPROVEN",
       "realParse": "OPEN",
+      "nativeTextObservation": "UNPROVEN",
       "ocrNeed": "UNKNOWN"
     }
   ],
   "promotionRequirements": [
     "SANITIZED_STRUCTURAL_FIXTURE",
     "DOCUMENT_CLASSIFIER_TESTS",
+    "PAGE_ROLE_CLASSIFIER_TESTS",
+    "EMBEDDED_EXAMPLE_NEGATIVE_FIXTURE",
+    "ACTIVE_CONTENT_NON_EXECUTION_GUARD",
     "NEGATIVE_FIXTURES",
     "ROW_NORMALIZATION_TESTS",
     "AMOUNT_DATE_LOCALE_TESTS",
@@ -83,6 +163,8 @@
   "forbiddenPromotions": [
     "ONE_REAL_PDF_PARSED=>PROFILE_SUPPORTED",
     "PRIVATE_CORPUS_OBSERVED=>FORMAT_PROVEN",
+    "FORMAT_OBSERVED=>REAL_PARSE_PASS",
+    "NATIVE_TEXT_PRESENT=>ADAPTER_SUPPORTED",
     "DESKTOP_PARSE_PASS=>MOBILE_PARSE_PASS",
     "ANDROID_PARSE_PASS=>IOS_PARSE_PASS"
   ]
