@@ -4,6 +4,20 @@ function asUint8Array(bytes) {
   throw new TypeError('PDF_BYTES_REQUIRED');
 }
 
+function wipeIfAttached(bytes) {
+  if (!(bytes instanceof Uint8Array)) return;
+  try {
+    if (bytes.byteLength === 0 || bytes.buffer.byteLength === 0) return;
+    bytes.fill(0);
+  } catch (error) {
+    // pdf.js may transfer its input ArrayBuffer to its worker/runtime, which detaches the
+    // sender-side TypedArray. A detached view no longer exposes bytes for us to wipe.
+    // Any other failure remains exceptional and must not be hidden.
+    if (error instanceof TypeError && /detached ArrayBuffer/i.test(String(error.message))) return;
+    throw error;
+  }
+}
+
 function safeNumber(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
@@ -25,17 +39,22 @@ async function loadLayout({ pdfBytes, password, pdfjs = null }) {
   const library = pdfjs ?? await import('pdfjs-dist/legacy/build/pdf.mjs');
   if (typeof library.getDocument !== 'function') throw new Error('PDFJS_GET_DOCUMENT_UNAVAILABLE');
 
-  const data = asUint8Array(pdfBytes);
-  const loadingTask = library.getDocument({
-    data,
-    password,
-    disableWorker: true,
-    isEvalSupported: false,
-    useSystemFonts: false
-  });
-
+  // Keep one parser-owned wipeable copy and give pdf.js a second disposable copy.
+  // pdf.js is allowed to transfer/detach its copy without invalidating our cleanup path.
+  const ownedData = asUint8Array(pdfBytes);
+  const pdfjsData = new Uint8Array(ownedData);
+  let loadingTask = null;
   let document = null;
+
   try {
+    loadingTask = library.getDocument({
+      data: pdfjsData,
+      password,
+      disableWorker: true,
+      isEvalSupported: false,
+      useSystemFonts: false
+    });
+
     document = await loadingTask.promise;
     const pages = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -65,7 +84,8 @@ async function loadLayout({ pdfBytes, password, pdfjs = null }) {
   } finally {
     try { await document?.destroy?.(); } catch {}
     try { await loadingTask?.destroy?.(); } catch {}
-    data.fill(0);
+    wipeIfAttached(pdfjsData);
+    ownedData.fill(0);
   }
 }
 
