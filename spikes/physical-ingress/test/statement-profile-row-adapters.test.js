@@ -30,6 +30,33 @@ test('BCP savings geometric adapter preserves debit/credit column semantics acro
   assert.equal(result.rows.some(row => row.amount === 84.5), false, 'closing balance must not become movement');
 });
 
+test('BCP savings accepts DDMMM dates split into adjacent pdf.js text items', () => {
+  const fixture = clone(bcpSavingsLayoutV1);
+  const page = fixture.pages[0];
+  page.items = page.items.filter(item => !(item.y === 650 && (item.x === 40 || item.x === 105)));
+  page.items.push(
+    { text: '01', x: 40, y: 650, width: 10, height: 10, sequence: 90 },
+    { text: 'JUL', x: 52, y: 650, width: 18, height: 10, sequence: 91 },
+    { text: '01', x: 105, y: 650, width: 10, height: 10, sequence: 92 },
+    { text: 'JUL', x: 117, y: 650, width: 18, height: 10, sequence: 93 }
+  );
+
+  const result = parseBcpSavingsLayout({
+    pages: fixture.pages,
+    tenantId: 'tenant-synthetic',
+    accountId: 'account-synthetic'
+  });
+
+  assert.equal(result.review.length, 0);
+  assert.equal(result.rows.length, 3);
+  assert.equal(result.rows[0].occurredAt.startsWith('2026-07-01'), true);
+  assert.deepEqual(result.rows.map(row => [row.direction, row.amount]), [
+    ['IN', 125],
+    ['OUT', 20.5],
+    ['OUT', 70]
+  ]);
+});
+
 test('Interbank savings adapter ignores running balance, summary totals and educational sample page', () => {
   const result = parseInterbankSavingsLayout({
     pages: clone(interbankSavingsLayoutV1.pages),
