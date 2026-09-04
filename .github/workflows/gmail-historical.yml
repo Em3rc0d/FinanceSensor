@@ -68,6 +68,7 @@ jobs:
         run: |
           node --check spikes/physical-ingress/live/owned-oauth-gmail-history-viewer.mjs
           node --check spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs
+          node --check spikes/physical-ingress/live/audit-web-summary-preload.mjs
           node --check spikes/physical-ingress/src/file-encrypted-vault.js
           node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
           node --check spikes/physical-ingress/src/statement-source-adapters.js
