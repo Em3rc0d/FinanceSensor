@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "scope": "STATEMENT_PROFILE",
+  "profileId": "PE-BCP-SAVINGS-REQUESTED",
+  "status": "PASS_OWNED_CORPUS_PHYSICAL_PARSE",
+  "governingPromotionState": "OPEN_BY_CONTRACT",
+  "observedAtDay": "2026-09-04",
+  "sourceBaselineCommit": "69e45e02069e6ec8f2248ecd8a4a6a908f6f1a2b",
+  "evidenceMode": "OWNED_WINDOWS_LOCAL_EDGE_SANITIZED_AGGREGATE",
+  "receipt": {
+    "path": "mk0/10-evidence/EV-STATEMENT-BCP-SAVINGS-PHYSICAL-PASS-2026-09-04.md",
+    "blobSha": "bd0dddc67bebfb7756802e688eb301004ad498ac"
+  },
+  "requiredClaims": [
+    "GMAIL_READONLY_STATEMENT_DISCOVERY",
+    "BCP_SAVINGS_PROFILE_CLASSIFIED",
+    "SESSION_ONLY_PDF_PASSWORD",
+    "PASSIVE_PDF_LAYOUT_EXTRACTION",
+    "ALL_DETECTED_BCP_SAVINGS_STATEMENTS_PROCESSED",
+    "MULTIPAGE_LEDGER_PARSE",
+    "DERIVED_STATEMENT_EVIDENCE_EMITTED",
+    "RAW_DECRYPTED_STATEMENT_NOT_DURABLE"
+  ],
+  "observedAggregates": {
+    "statementsDetected": 9,
+    "statementsProcessed": 9,
+    "pagesProcessed": 16,
+    "derivedEvidenceEmitted": 368,
+    "statementsUnprocessed": 0
+  },
+  "assertions": {
+    "oauthScopeReadonly": true,
+    "passwordPersisted": false,
+    "decryptedPdfPersisted": false,
+    "decryptedTextPersisted": false,
+    "layoutGeometryPersisted": false,
+    "rawPrivateStatementCommitted": false,
+    "realFinancialValuesCommitted": false,
+    "realAccountIdentifiersCommitted": false,
+    "realGmailIdentifiersCommitted": false
+  },
+  "residualRiskCodes": [
+    "OWNED_CORPUS_NOT_GENERALIZED_PROFILE_SUPPORT",
+    "DERIVED_EVIDENCE_COUNT_NOT_INDEPENDENT_RECONCILIATION",
+    "DESKTOP_HARNESS_PASS_NOT_MOBILE_PHYSICAL_PASS",
+    "FUTURE_PROVIDER_FORMAT_DRIFT_OPEN"
+  ],
+  "doesNotProve": [
+    "ALL_BCP_SAVINGS_FORMAT_VARIANTS",
+    "INDEPENDENT_368_ROW_RECONCILIATION",
+    "BCP_CREDIT_PHYSICAL_PARSE",
+    "RIPLEY_CREDIT_PHYSICAL_PARSE",
+    "INTERBANK_LOCAL_FILE_IMPORT",
+    "ANDROID_PRODUCT_STATEMENT_PARSE",
+    "IOS_PRODUCT_STATEMENT_PARSE",
+    "Q003_CLOSED",
+    "Q004_CLOSED",
+    "BUILD_READY"
+  ]
+}
