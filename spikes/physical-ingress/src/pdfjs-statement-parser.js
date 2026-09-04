@@ -34,8 +34,9 @@ function itemGeometry(item, sequence) {
   };
 }
 
-async function loadLayout({ pdfBytes, password, pdfjs = null }) {
-  if (typeof password !== 'string' || password.length === 0) throw new Error('STATEMENT_PASSWORD_REQUIRED');
+async function loadLayout({ pdfBytes, password = '', pdfjs = null, allowEmptyPassword = false }) {
+  if (typeof password !== 'string') throw new Error('STATEMENT_PASSWORD_REQUIRED');
+  if (!allowEmptyPassword && password.length === 0) throw new Error('STATEMENT_PASSWORD_REQUIRED');
   const library = pdfjs ?? await import('pdfjs-dist/legacy/build/pdf.mjs');
   if (typeof library.getDocument !== 'function') throw new Error('PDFJS_GET_DOCUMENT_UNAVAILABLE');
 
@@ -47,13 +48,14 @@ async function loadLayout({ pdfBytes, password, pdfjs = null }) {
   let document = null;
 
   try {
-    loadingTask = library.getDocument({
+    const documentOptions = {
       data: pdfjsData,
-      password,
       disableWorker: true,
       isEvalSupported: false,
       useSystemFonts: false
-    });
+    };
+    if (password.length > 0) documentOptions.password = password;
+    loadingTask = library.getDocument(documentOptions);
 
     document = await loadingTask.promise;
     const pages = [];
@@ -91,6 +93,10 @@ async function loadLayout({ pdfBytes, password, pdfjs = null }) {
 
 export async function extractPasswordProtectedPdfLayout(options) {
   return loadLayout(options);
+}
+
+export async function extractLocalPdfLayout(options) {
+  return loadLayout({ ...options, allowEmptyPassword: true });
 }
 
 export async function extractPasswordProtectedPdfText(options) {
