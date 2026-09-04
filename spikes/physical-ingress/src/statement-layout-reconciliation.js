@@ -19,6 +19,7 @@ const BCP_HEADERS = Object.freeze([
 ]);
 
 const SUMMARY_LABELS = new Set(['SALDO ANTERIOR', 'TOTAL MOVIMIENTO', 'SALDO']);
+const SUMMARY_ROW_Y_TOLERANCE = 6;
 
 function toCents(value) {
   const amount = Number(value);
@@ -86,7 +87,10 @@ function balanceAnchors(pages = []) {
     const geometry = pageGeometry(page);
     if (!geometry) continue;
 
-    for (const line of groupPageItemsIntoLines(page)) {
+    // Summary/control rows are not transaction rows. Their labels and numeric values
+    // may have slightly different pdf.js baselines even when they are visually on the
+    // same printed row. Use a bounded audit-only tolerance without widening movement parsing.
+    for (const line of groupPageItemsIntoLines(page, { yTolerance: SUMMARY_ROW_Y_TOLERANCE })) {
       if (line.y >= geometry.headerY - 1) continue;
       const columns = lineToColumns(line, geometry.boundaries);
       const description = normalizeLayoutText(columns.description);
@@ -143,6 +147,15 @@ function rowIntegrity(rows = [], period = null) {
   };
 }
 
+function rowIntegrityFailureCode(checks = {}) {
+  if (!checks.periodUnique) return 'STMT_AUDIT_PERIOD';
+  if (!checks.datesWithinPeriod) return 'STMT_AUDIT_DATE_RANGE';
+  if (!checks.directionalSemantics) return 'STMT_AUDIT_DIRECTION';
+  if (!checks.positiveAmounts) return 'STMT_AUDIT_AMOUNT';
+  if (!checks.summaryRowsExcluded) return 'STMT_AUDIT_SUMMARY_LEAK';
+  return 'STMT_AUDIT_ROW_INTEGRITY';
+}
+
 export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
   const period = observedPeriod(pages);
   const anchors = balanceAnchors(pages);
@@ -169,7 +182,7 @@ export function reconcileBcpSavingsStatement({ pages = [], rows = [] } = {}) {
     return {
       profileId: StatementProviderProfile.BCP_SAVINGS_REQUESTED,
       status: 'FAIL',
-      code: 'STMT_AUDIT_ROW_INTEGRITY',
+      code: rowIntegrityFailureCode(checks),
       movementRows: rows.length,
       inflowRows: integrity.inflowRows,
       outflowRows: integrity.outflowRows,
