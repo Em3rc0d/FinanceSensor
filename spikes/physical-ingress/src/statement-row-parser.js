@@ -1,4 +1,5 @@
 import { StatementProviderProfile } from './statement-source-adapters.js';
+import { selectTransactionLedgerPages } from './statement-page-classifier.js';
 
 const normalize = (value = '') => String(value ?? '')
   .normalize('NFKD')
@@ -96,8 +97,18 @@ function parseSegment(segment) {
   return { occurredAt, amount, currency, description };
 }
 
+function scopedText({ text, pages, classification }) {
+  const raw = String(text ?? '');
+  const multiPage = Array.isArray(pages) ? pages.length > 1 : raw.includes('\f');
+  if (!multiPage) return raw;
+  const selected = selectTransactionLedgerPages({ pages, text: raw, classification });
+  if (selected.ledgers.length === 0) return '';
+  return selected.ledgers.map(page => page.text).join('\n');
+}
+
 export function parseStatementRows({
   text,
+  pages,
   classification,
   tenantId,
   accountId = null,
@@ -105,13 +116,14 @@ export function parseStatementRows({
 } = {}) {
   const profile = classification?.providerProfile;
   const rows = [];
+  const eligibleText = scopedText({ text, pages, classification });
 
-  for (const segment of candidateSegments(text)) {
+  for (const segment of candidateSegments(eligibleText)) {
     const parsed = parseSegment(segment);
     if (!parsed) continue;
 
     let semantic = { direction: null, semanticType: 'UNKNOWN', hint: 'movimiento estado de cuenta' };
-    if (profile === StatementProviderProfile.BCP_SAVINGS_REQUESTED) {
+    if (profile === StatementProviderProfile.BCP_SAVINGS_REQUESTED || profile === StatementProviderProfile.INTERBANK_SAVINGS_REQUESTED) {
       semantic = savingsSemantic(parsed.description);
     } else if (profile === StatementProviderProfile.BCP_CREDIT || profile === StatementProviderProfile.RIPLEY_CREDIT) {
       semantic = cardSemantic(parsed.description);
