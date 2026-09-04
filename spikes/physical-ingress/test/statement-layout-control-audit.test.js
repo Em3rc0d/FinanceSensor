@@ -63,7 +63,17 @@ test('BCP control audit exposes only safe structure for final-page statement tot
     pageDebitTotalsExact: null,
     pageCreditTotalsExact: null,
     closingValueAvailable: true,
-    closingValueBinding: 'SAME_LINE'
+    closingValueBinding: 'SAME_LINE',
+    ledgerPageClass: 'MULTI_PAGE',
+    rawDebitAbsMatchesParsed: true,
+    rawCreditAbsMatchesParsed: true,
+    rawDebitNegativeSeen: false,
+    rawCreditNegativeSeen: false,
+    rawDebitSingleNumericFragment: true,
+    rawCreditSingleNumericFragment: true,
+    signedDebitExact: true,
+    signedCreditExact: true,
+    closingAlternateShape: 'COLUMN_BINDABLE'
   });
   assert.equal(JSON.stringify(audit).includes('125'), false);
   assert.equal(JSON.stringify(audit).includes('90.50'), false);
@@ -95,6 +105,21 @@ test('BCP control audit distinguishes parsed-greater debit mismatch without expo
   assert.equal(JSON.stringify(result).includes('0.01'), false);
 });
 
+test('BCP control audit tests signed-debit hypothesis without changing parser amount semantics', () => {
+  const pages = statementTotalPages();
+  pages[0].items.find(value => value.text === '20.50' && value.y === 625).text = '-20.50';
+  pages[1].items.find(value => value.text === '90.50' && value.y === 600).text = '49.50';
+  const rows = parseRows(pages);
+  const audit = auditBcpStatementControls({ pages, rows });
+
+  assert.equal(audit.rawDebitAbsMatchesParsed, true);
+  assert.equal(audit.rawDebitNegativeSeen, true);
+  assert.equal(audit.rawDebitSingleNumericFragment, true);
+  assert.equal(audit.totalDebitRelation, 'PARSED_GREATER');
+  assert.equal(audit.signedDebitExact, true);
+  assert.equal(rows.find(row => row.direction === 'OUT').amount > 0, true);
+});
+
 test('BCP control audit can distinguish per-page subtotal semantics from final-page statement totals', () => {
   const pages = pageSubtotalPages();
   const rows = parseRows(pages);
@@ -118,4 +143,21 @@ test('BCP control audit distinguishes a missing final-page closing label from va
   assert.equal(audit.closingLabelUnique, false);
   assert.equal(audit.closingValueAvailable, false);
   assert.equal(audit.closingValueBinding, 'MISSING');
+  assert.equal(audit.closingAlternateShape, 'MISSING');
+});
+
+test('BCP control audit detects one-page closing value shifted right of label but outside debit/credit buckets', () => {
+  const pages = [clone(bcpSavingsLayoutV1.pages[0])];
+  pages[0].items.push(
+    item('SALDO', 180, 550, 40, 10, 120),
+    item('1.00', 250, 544, 30, 10, 121)
+  );
+  const rows = parseRows(pages);
+  const audit = auditBcpStatementControls({ pages, rows });
+
+  assert.equal(audit.ledgerPageClass, 'ONE_PAGE');
+  assert.equal(audit.closingLabelUnique, true);
+  assert.equal(audit.closingValueAvailable, false);
+  assert.equal(audit.closingValueBinding, 'MISSING');
+  assert.equal(audit.closingAlternateShape, 'RIGHT_SIDE_NEARBY');
 });
