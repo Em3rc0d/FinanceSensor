@@ -1,12 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractPasswordProtectedPdfText } from '../src/pdfjs-statement-parser.js';
+import {
+  extractPasswordProtectedPdfLayout,
+  extractPasswordProtectedPdfText
+} from '../src/pdfjs-statement-parser.js';
 
 function fakePdfjs({ rejectPassword = false } = {}) {
   return {
-    getDocument({ data, password }) {
+    getDocument({ data, password, isEvalSupported }) {
       assert.ok(data instanceof Uint8Array);
       assert.equal(password, 'synthetic-local-key');
+      assert.equal(isEvalSupported, false);
       const task = {
         async destroy() {},
         promise: rejectPassword
@@ -15,8 +19,18 @@ function fakePdfjs({ rejectPassword = false } = {}) {
               numPages: 2,
               async getPage(pageNumber) {
                 return {
+                  getViewport() {
+                    return { width: 600, height: 800 };
+                  },
                   async getTextContent() {
-                    return { items: [{ str: pageNumber === 1 ? '01/09/2026 ABONO' : 'S/ 100.00' }] };
+                    return {
+                      items: [{
+                        str: pageNumber === 1 ? '01/09/2026 ABONO' : 'S/ 100.00',
+                        transform: [1, 0, 0, 1, pageNumber === 1 ? 40 : 410, 700],
+                        width: 80,
+                        height: 10
+                      }]
+                    };
                   },
                   cleanup() {}
                 };
@@ -41,6 +55,26 @@ test('extracts text through password-aware local PDF loader, preserves page boun
   assert.equal(text.split('\f').length, 2);
   // Caller-owned bytes remain the caller's responsibility; the parser wipes its internal copy.
   assert.equal(original.toString(), 'synthetic-pdf');
+});
+
+test('exposes transient item geometry for header-anchored bank adapters', async () => {
+  const layout = await extractPasswordProtectedPdfLayout({
+    pdfBytes: Buffer.from('synthetic-pdf'),
+    password: 'synthetic-local-key',
+    pdfjs: fakePdfjs()
+  });
+  assert.equal(layout.pages.length, 2);
+  assert.equal(layout.pages[0].width, 600);
+  assert.equal(layout.pages[0].height, 800);
+  assert.deepEqual(layout.pages[0].items[0], {
+    sequence: 0,
+    text: '01/09/2026 ABONO',
+    x: 40,
+    y: 700,
+    width: 80,
+    height: 10
+  });
+  assert.equal(layout.pages[1].items[0].x, 410);
 });
 
 test('maps PDF password failure to sanitized local code without echoing password', async () => {
