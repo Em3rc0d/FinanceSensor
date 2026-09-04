@@ -82,6 +82,7 @@ echo Si FinanceSensor detecta un EECC BCP Ahorro compatible, podras escribir
 echo su clave en el formulario LOCAL para probar el adapter geometrico.
 echo Los EECC de credito se mostraran como detectados pero no se importaran aun.
 echo Nunca pegues una clave de PDF en ChatGPT ni en GitHub.
+rem FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN
 echo.
 
 node live\owned-oauth-bank-statements-viewer.mjs
