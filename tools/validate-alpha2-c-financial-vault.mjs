@@ -20,13 +20,31 @@ const source = readText('spikes/physical-ingress/src/financial-vault.js');
 const status = readText('STATUS.md');
 
 assert(graph.slice === 'ALPHA_2_C', 'SLICE_ID');
-assert(graph.status === 'STATIC_IMPLEMENTATION_CANDIDATE_CI_PENDING', 'CANDIDATE_STATUS');
+assert(graph.status === 'STATIC_IMPLEMENTED_CI_PASS', 'STATIC_STATUS');
 assert(graph.baseCommit === '88747144e47bd8bbc17640565d18895126cdf821', 'BASE_COMMIT');
-assert(graph.claims?.staticImplementationPass === false, 'STATIC_PASS_MUST_REMAIN_FALSE');
+assert(graph.claims?.staticImplementationPass === true, 'STATIC_PASS_REQUIRED');
 assert(graph.claims?.physicalVaultPass === false, 'PHYSICAL_VAULT_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.p3PhysicalPass === false, 'P3_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.alpha2ProductPass === false, 'ALPHA2_PRODUCT_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
+
+const receipt = graph.implementationReceipt;
+assert(receipt?.pullRequest === 68, 'RECEIPT_PR');
+assert(receipt?.candidateHeadSha === '92ea6899e0db57b689f79847f0ff7689e5b8c9ce', 'RECEIPT_HEAD_SHA');
+assert(receipt?.mergeCommitSha === '86c07eb1ebe2e2ae711d2b2f75ecf6a73f5fe16e', 'RECEIPT_MERGE_SHA');
+const workflows = new Map((receipt?.workflows ?? []).map(run => [run.name, run]));
+for (const [name, runId, runNumber] of [
+  ['Alpha.2 Financial Vault', 33989352375, 1],
+  ['Alpha.2 Statement Fetch and Parse', 33989352397, 5],
+  ['FinanceSensor Gmail Historical', 33989352471, 129],
+  ['FinanceSensor Statement ETL Contract', 33989352354, 85]
+]) {
+  const run = workflows.get(name);
+  assert(run?.runId === runId, `RECEIPT_RUN_ID:${name}`);
+  assert(run?.runNumber === runNumber, `RECEIPT_RUN_NUMBER:${name}`);
+  assert(run?.conclusion === 'success', `RECEIPT_RUN_CONCLUSION:${name}`);
+}
+assert(workflows.size === 4, 'RECEIPT_WORKFLOW_COUNT');
 
 assert(alpha2A.status === 'STATIC_IMPLEMENTED_CI_PASS', 'ALPHA2_A_DEPENDENCY');
 assert(alpha2A.buildReady === false, 'ALPHA2_A_BUILD_READY_DRIFT');
@@ -130,7 +148,10 @@ for (const forbidden of [
 
 assert(/BUILD_READY\s+NO/.test(status), 'GLOBAL_BUILD_READY_STATUS');
 
-console.log('ALPHA2_C_STATIC_CANDIDATE=PASS');
+console.log('ALPHA2_C_STATIC_IMPLEMENTATION=PASS');
+console.log('ALPHA2_C_EXACT_SHA_RECEIPT=PASS');
+console.log(`ALPHA2_C_IMPLEMENTATION_HEAD=${receipt.candidateHeadSha}`);
+console.log(`ALPHA2_C_MERGE_COMMIT=${receipt.mergeCommitSha}`);
 console.log('SQLCIPHER_FAMILY=SQLCIPHER_4_X');
 console.log('SQLCIPHER_VERSION=4.18.0');
 console.log('DEK_BITS=256');
