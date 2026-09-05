@@ -1,3 +1,9 @@
+param(
+  [Parameter(Mandatory = $true)][string]$InputApk,
+  [Parameter(Mandatory = $true)][string]$ApkSignerJar,
+  [string]$OutputApk = 'FinanceSensor-R2-STABLE.apk'
+)
+
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
@@ -26,12 +32,6 @@ function Choose-Keystore {
   } catch { }
   return (Read-Host 'Ruta completa del keystore privado FINANCESENSOR_R2_LAB').Trim('"')
 }
-
-param(
-  [Parameter(Mandatory = $true)][string]$InputApk,
-  [Parameter(Mandatory = $true)][string]$ApkSignerJar,
-  [string]$OutputApk = 'FinanceSensor-R2-STABLE.apk'
-)
 
 $java = Get-Command java -ErrorAction SilentlyContinue
 $keytool = Get-Command keytool -ErrorAction SilentlyContinue
