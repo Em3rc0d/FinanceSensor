@@ -41,7 +41,7 @@ jobs:
         run: node tools/validate-alpha2-design-freeze.mjs
       - name: Validate certified Alpha.2-A upstream
         run: node tools/validate-alpha2-a-statement-discovery.mjs
-      - name: Validate Alpha.2-B fail-closed graph
+      - name: Validate Alpha.2-B exact-SHA receipt and fail-closed graph
         run: node tools/validate-alpha2-b-statement-fetch-parse.mjs
       - name: Syntax-check Alpha.2-B execution surface
         run: |
@@ -56,8 +56,10 @@ jobs:
             spikes/physical-ingress/test/gmail-statement-attachment.test.js
       - name: Assert static-only promotion boundary
         run: |
-          ! grep -E '"staticImplementationPass"[[:space:]]*:[[:space:]]*true|"physicalProductPass"[[:space:]]*:[[:space:]]*true|"buildReady"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
+          grep -Eq '"staticImplementationPass"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
+          ! grep -E '"physicalProductPass"[[:space:]]*:[[:space:]]*true|"buildReady"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
           ! grep -E "console\.log\(|writeFile\(|writeFileSync\(|localStorage|sessionStorage" spikes/physical-ingress/src/statement-fetch-parse.js
+          echo 'STATIC_IMPLEMENTATION_PASS=1'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
           echo 'PASSWORD_DURABLE_STORAGE=0'
