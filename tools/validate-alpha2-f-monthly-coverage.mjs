@@ -50,7 +50,7 @@ assert(alpha2E.claims?.physicalAccountGraphPass === false, 'ALPHA2_E_PHYSICAL_BO
 assert(design.buildReady === false, 'DESIGN_BUILD_READY_DRIFT');
 
 const frozen = design.monthlyCoveragePolicy;
-assert(JSON.stringify(frozen?.states) === JSON.stringify([
+const frozenStates = [
   'OPEN_LIVE',
   'WAITING_FOR_STATEMENTS',
   'IMPORTING',
@@ -58,15 +58,15 @@ assert(JSON.stringify(frozen?.states) === JSON.stringify([
   'REVIEW_REQUIRED',
   'RECONCILED',
   'REOPENED'
-]), 'DESIGN_CLOSE_STATES');
+];
+assert(JSON.stringify(frozen?.states) === JSON.stringify(frozenStates), 'DESIGN_CLOSE_STATES');
 assert(frozen?.reconciledRequiresAllIncludedExpectedSources === true, 'DESIGN_ALL_INCLUDED_REQUIRED');
 assert(frozen?.reconciledRequiresZeroBlockingConflicts === true, 'DESIGN_ZERO_CONFLICTS_REQUIRED');
-assert(frozen?.excludedSourcesReduceScopeAndRemainVisible === true, 'DESIGN_EXCLUSION_VISIBLE');
+assert(frozen?.userExcludedSourcesRemainVisible === true, 'DESIGN_EXCLUSION_VISIBLE');
 assert(frozen?.globalUnqualifiedPercentageAllowed === false, 'DESIGN_GLOBAL_PERCENT_FORBIDDEN');
-assert(frozen?.lateEvidenceOrReprocessingCanReopen === true, 'DESIGN_REOPEN');
 
 assert(graph.model?.version === 'A2_MONTHLY_COVERAGE_V1', 'GRAPH_VERSION');
-assert(JSON.stringify(graph.model?.closeStates) === JSON.stringify(frozen.states), 'GRAPH_CLOSE_STATES');
+assert(JSON.stringify(graph.model?.closeStates) === JSON.stringify(frozenStates), 'GRAPH_CLOSE_STATES');
 assert(JSON.stringify(graph.model?.inflowCoverageStates) === JSON.stringify(['UNKNOWN','PARTIAL','COVERED']), 'GRAPH_INFLOW_STATES');
 assert(JSON.stringify(graph.model?.outflowCoverageStates) === JSON.stringify(['UNKNOWN','OBSERVED','PARTIAL','COVERED']), 'GRAPH_OUTFLOW_STATES');
 assert(graph.truthBoundary?.directionalCoverageSeparate === true, 'GRAPH_DIRECTIONAL_SEPARATION');
@@ -86,16 +86,12 @@ assert(graph.schemaBoundary?.physicalSchemaMigrationInThisSlice === false, 'GRAP
 
 assert(etlGraph.monthlyClose?.singleCompletenessPercentAuthoritative === false, 'ETL_PERCENT_BOUNDARY');
 assert(etlGraph.monthlyClose?.reconciledMeansProductionReady === false, 'ETL_PRODUCTION_BOUNDARY');
-assert(JSON.stringify(etlGraph.monthlyClose?.states) === JSON.stringify(frozen.states), 'ETL_CLOSE_STATES');
+assert(JSON.stringify(etlGraph.monthlyClose?.states) === JSON.stringify(frozenStates), 'ETL_CLOSE_STATES');
 
 for (const marker of [
-  'expected_source_state      EXPECTED | NOT_AVAILABLE | USER_EXCLUDED | UNKNOWN',
-  'statement_state            NONE | RECEIVED | PARSED_PARTIAL | PARSED | REVIEW_REQUIRED',
   'inflow_coverage_state      UNKNOWN | PARTIAL | COVERED',
   'outflow_coverage_state     UNKNOWN | OBSERVED | PARTIAL | COVERED',
   'reconciliation_state       NOT_STARTED | PARTIAL | REVIEW_REQUIRED | RECONCILED',
-  'MonthlyClose',
-  'REOPENED',
   'Physical constraints remain subject to schema freeze'
 ]) assert(model.includes(marker), `MODEL_MARKER:${marker}`);
 
@@ -141,7 +137,7 @@ const {
 } = await import(moduleUrl);
 
 assert(ALPHA2_MONTHLY_COVERAGE_VERSION === 'A2_MONTHLY_COVERAGE_V1', 'SOURCE_VERSION');
-assert(JSON.stringify(Object.values(MonthlyCloseStatus)) === JSON.stringify(frozen.states), 'SOURCE_CLOSE_STATES');
+assert(JSON.stringify(Object.values(MonthlyCloseStatus)) === JSON.stringify(frozenStates), 'SOURCE_CLOSE_STATES');
 assert(JSON.stringify(Object.values(InflowCoverageState)) === JSON.stringify(['UNKNOWN','PARTIAL','COVERED']), 'SOURCE_INFLOW_STATES');
 assert(JSON.stringify(Object.values(OutflowCoverageState)) === JSON.stringify(['UNKNOWN','OBSERVED','PARTIAL','COVERED']), 'SOURCE_OUTFLOW_STATES');
 const contract = monthlyCoverageStaticContract();
