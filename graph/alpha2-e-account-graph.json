@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_E",
+  "name": "Account Graph",
+  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "asOf": "2026-09-05",
+  "baseCommit": "bae4faa6fdae434ece17b85fd38d44b45a4f3ffc",
+  "implementationReceipt": null,
+  "dependency": {
+    "slice": "ALPHA_2_C",
+    "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+  },
+  "model": {
+    "version": "A2_ACCOUNT_GRAPH_V1",
+    "nodeKinds": [
+      "ACCOUNT",
+      "PAYMENT_INSTRUMENT"
+    ],
+    "mappingStates": [
+      "UNMAPPED",
+      "PROBABLE",
+      "USER_CONFIRMED",
+      "SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE"
+    ],
+    "bankPlusCurrencySufficient": false,
+    "stableEvidencePeriodsForAutomaticConfirmation": 2
+  },
+  "identityBoundary": {
+    "institutionCodeRequired": true,
+    "currencyRequired": true,
+    "nodeKindRequired": true,
+    "maskedHintAllowed": true,
+    "maskedHintPersistedAsDigest": true,
+    "unmaskedIdentifierDurable": false,
+    "profileStableIdentifierPersistedAsDigest": true,
+    "profileContractAuthorityRequiredForExactStableIdentifier": true
+  },
+  "automaticMapping": {
+    "exactProfileStableIdentifier": "SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE",
+    "maskedHintOneIndependentPeriod": "PROBABLE",
+    "maskedHintTwoIndependentPeriods": "SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE",
+    "institutionCurrencyKindOnly": "PROBABLE_AT_MOST",
+    "ambiguousHint": "UNMAPPED",
+    "crossNodeKind": "UNMAPPED",
+    "ownershipRequiresConfirmedState": true
+  },
+  "statementPeriodOwnership": {
+    "probableOwnsPeriod": false,
+    "unmappedOwnsPeriod": false,
+    "userConfirmedOwnsPeriod": true,
+    "systemConfirmedOwnsPeriod": true,
+    "commitRechecksTenant": true
+  },
+  "correctionAudit": {
+    "mergeTransactional": true,
+    "splitTransactional": true,
+    "mergeReassignsOwnedStatementPeriods": true,
+    "splitMovesSelectedStatementPeriodsOnly": true,
+    "operationIdentityDeterministic": true,
+    "replayIdempotent": true
+  },
+  "staticNegativeGate": [
+    "UNMASKED_IDENTIFIER_DURABLE_0",
+    "STABLE_IDENTIFIER_WITHOUT_PROFILE_AUTHORITY_FAILS_CLOSED",
+    "EXACT_PROFILE_STABLE_IDENTIFIER_AUTO_CONFIRM_PASS",
+    "MASKED_HINT_ONE_PERIOD_AUTO_CONFIRM_0",
+    "MASKED_HINT_TWO_INDEPENDENT_PERIODS_AUTO_CONFIRM_PASS",
+    "SAME_PERIOD_REPLAY_DOES_NOT_COUNT_AS_SECOND_PERIOD",
+    "BANK_PLUS_CURRENCY_AUTO_OWNERSHIP_0",
+    "AMBIGUOUS_MASKED_HINT_OWNERSHIP_0",
+    "ACCOUNT_TO_PAYMENT_INSTRUMENT_AUTO_MAP_0",
+    "PROBABLE_MAPPING_OWNERSHIP_0",
+    "USER_CONFIRMATION_OWNERSHIP_PASS",
+    "CROSS_TENANT_OWNER_COMMIT_FAILS_CLOSED",
+    "MAPPING_REPLAY_DUPLICATE_OWNERSHIP_0",
+    "MERGE_REASSIGNMENT_AUDITED",
+    "SPLIT_SELECTED_PERIOD_REASSIGNMENT_AUDITED",
+    "MERGE_FAILURE_ROLLS_BACK"
+  ],
+  "schemaBoundary": {
+    "physicalSchemaMigrationInThisSlice": false,
+    "reason": "DM-002 keeps account/instrument uniqueness and ownership constraints subject to schema freeze and physical schema gates."
+  },
+  "physicalPromotion": {
+    "realMaskedIdentifierStabilityAcrossPeriods": "OPEN",
+    "realExactStableIdentifierProfileContract": "OPEN",
+    "realStatementPeriodOwnershipPersistence": "OPEN",
+    "realMergeSplitCorrectionPersistence": "OPEN",
+    "physicalSchemaConstraints": "OPEN",
+    "androidPhysicalAccountGraph": "OPEN"
+  },
+  "claims": {
+    "staticImplementationPass": false,
+    "physicalAccountGraphPass": false,
+    "alpha2ProductPass": false,
+    "buildReady": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_ACCOUNT_GRAPH_PASS=>PHYSICAL_ACCOUNT_GRAPH_PASS",
+    "SYNTHETIC_TWO_PERIOD_PASS=>REAL_IDENTIFIER_STABILITY_PASS",
+    "STATIC_MERGE_SPLIT_PASS=>PHYSICAL_SCHEMA_PASS",
+    "ALPHA_2_E_PASS=>MONTH_RECONCILED",
+    "ALPHA_2_E_PASS=>GLOBAL_BUILD_READY"
+  ]
+}
