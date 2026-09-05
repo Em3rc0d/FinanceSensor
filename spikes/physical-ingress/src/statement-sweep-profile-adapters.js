@@ -87,10 +87,6 @@ function anchorCandidates(page, alternatives = []) {
     }
   }
 
-  // pdf.js may split a visual header such as "Fecha de proceso" into adjacent items.
-  // A fragmented match is authoritative only when the matched header begins at the
-  // first item in the candidate window. This prevents an earlier neighboring header
-  // from stealing the x-origin of a later column.
   for (const line of groupPageItemsIntoLines(page)) {
     const items = line.items ?? [];
     for (let start = 0; start < items.length; start += 1) {
@@ -131,20 +127,19 @@ function median(values = []) {
 
 function stackedGeometry(page, specs = []) {
   const anchors = {};
-  const deferredCurrency = new Set(['pen', 'usd']);
+  const bandBoundIds = new Set(['pen', 'usd', 'total']);
 
-  for (const spec of specs.filter(value => !deferredCurrency.has(value.id))) {
+  for (const spec of specs.filter(value => !bandBoundIds.has(value.id))) {
     const anchor = highestAnchor(page, spec.alternatives);
     if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
     anchors[spec.id] = { id: spec.id, ...anchor };
   }
 
-  // Real BCP Visa pages contain unrelated "En soles" / "En dólares" labels above and
-  // below the transaction table. Bind PEN/USD to the same visual header band as the
-  // unambiguous process/consumption/description/operation headers rather than taking
-  // the highest matching word on the page.
+  // Currency/total labels are repeated elsewhere in real statements. Bind those
+  // ambiguous words to the visual transaction-header band established by the
+  // unambiguous structural columns instead of taking the highest page match.
   const referenceY = median(Object.values(anchors).map(anchor => anchor.y));
-  for (const spec of specs.filter(value => deferredCurrency.has(value.id))) {
+  for (const spec of specs.filter(value => bandBoundIds.has(value.id))) {
     const anchor = nearestBandAnchor(page, spec.alternatives, referenceY);
     if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
     anchors[spec.id] = { id: spec.id, ...anchor };
@@ -182,10 +177,6 @@ function parseShortMonthDate(token, years = []) {
 }
 
 function leadingBcpCreditFields(line, years = []) {
-  // Real BCP Visa rows are structurally led by process-date + consumption-date.
-  // Header labels are visually centered inside wide columns, so midpoint boundaries
-  // can absorb a left-aligned description item into the consumption-date bucket.
-  // Recover only the strict observed row grammar and keep amount/currency geometric.
   const text = normalizeLayoutText(line?.text ?? '');
   const datePair = text.match(new RegExp(`^(\\d{1,2})\\s*${SHORT_MONTH}\\s+(\\d{1,2})\\s*${SHORT_MONTH}(?:\\s+|$)`));
   if (!datePair) return null;
@@ -201,12 +192,7 @@ function leadingBcpCreditFields(line, years = []) {
   const description = remainder.slice(0, operation.index).trim();
   if (!description) return null;
 
-  return {
-    processAt,
-    consumptionAt,
-    description,
-    operationType: operation[1]
-  };
+  return { processAt, consumptionAt, description, operationType: operation[1] };
 }
 
 function parseRipleyDate(token) {
@@ -214,6 +200,31 @@ function parseRipleyDate(token) {
   const match = value.match(/^(\d{1,2})\/(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\/(\d{4})$/);
   if (!match) return null;
   return safeIso(Number(match[3]), MONTHS[match[2]], Number(match[1]));
+}
+
+function leadingRipleyDatePair(line) {
+  const text = normalizeLayoutText(line?.text ?? '');
+  const dateToken = `\\d{1,2}/${SHORT_MONTH}/\\d{4}`;
+  const match = text.match(new RegExp(`^(${dateToken})\\s+(${dateToken})(?:\\s+|$)`));
+  if (!match) return null;
+  const operationAt = parseRipleyDate(match[1]);
+  const processAt = parseRipleyDate(match[2]);
+  return operationAt && processAt ? { operationAt, processAt } : null;
+}
+
+function ripleyDescriptionFromItems(line, geometry) {
+  const processX = Number(geometry?.anchors?.processDate?.x);
+  const typeX = Number(geometry?.anchors?.type?.x);
+  if (!Number.isFinite(processX) || !Number.isFinite(typeX) || typeX <= processX) return '';
+
+  return (line?.items ?? [])
+    .filter(item => Number.isFinite(Number(item?.x)) && Number(item.x) > processX && Number(item.x) < typeX)
+    .map(item => String(item?.text ?? '').trim())
+    .filter(Boolean)
+    .filter(text => !parseRipleyDate(text))
+    .filter(text => !/^\d+$/.test(text.replace(/\s+/g, '')))
+    .join(' ')
+    .trim();
 }
 
 function creditSemantic(description, isPayment) {
@@ -324,7 +335,8 @@ const RIPLEY_SPECS = Object.freeze([
   { id: 'description', alternatives: [/^descripcion$/] },
   { id: 'type', alternatives: [/^t\s*\/\s*a$/, /^ta$/] },
   { id: 'amount', alternatives: [/^monto$/] },
-  { id: 'rate', alternatives: [/^tea/] }
+  { id: 'rate', alternatives: [/^tea/] },
+  { id: 'total', alternatives: [/^total$/] }
 ]);
 
 function parseRipleyCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
@@ -343,12 +355,26 @@ function parseRipleyCreditLayout({ pages = [], tenantId, accountId = null } = {}
     for (const line of groupPageItemsIntoLines(page)) {
       if (line.y >= geometry.headerY - 1) continue;
       const columns = lineToColumns(line, geometry.boundaries);
-      const operationAt = parseRipleyDate(columns.operationDate);
-      const processAt = parseRipleyDate(columns.processDate);
+      let operationAt = parseRipleyDate(columns.operationDate);
+      let processAt = parseRipleyDate(columns.processDate);
+      if (!operationAt || !processAt) {
+        const pair = leadingRipleyDatePair(line);
+        operationAt = operationAt ?? pair?.operationAt ?? null;
+        processAt = processAt ?? pair?.processAt ?? null;
+      }
       if (!operationAt || !processAt) continue;
-      const signed = parseSignedMoney(columns.amount);
+
+      const statementTotal = parseSignedMoney(columns.total);
+      const originalAmount = parseSignedMoney(columns.amount);
+      const signed = statementTotal !== null && statementTotal !== 0 ? statementTotal : originalAmount;
       if (signed === null || signed === 0) continue;
-      const description = columns.description;
+
+      const reconstructedDescription = ripleyDescriptionFromItems(line, geometry);
+      const description = reconstructedDescription || columns.description;
+      if (!description) {
+        review.push({ code: 'STATEMENT_ROW_DESCRIPTION_NOT_FOUND', pageNumber: page.pageNumber });
+        continue;
+      }
       const isPayment = signed < 0 || /\bPAGO\b/.test(normalizeLayoutText(description));
       rows.push(creditMovement({
         tenantId,
