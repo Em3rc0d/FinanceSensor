@@ -54,10 +54,11 @@ assert(graph.deletionBoundary?.restoreResurrectionBarrier === 'SEPARATE_ADR_030_
 assert(graph.deletionBoundary?.cryptoShredAloneClaimsGlobalDeletion === false, 'GRAPH_DELETION_OVERCLAIM');
 
 for (const marker of [
-  'SQLCipher 4.x',
+  'SQLCipher 4.x family',
   'random 256-bit DEK',
-  'PLAINTEXT SQLITE FALLBACK',
-  'platform-native facilities'
+  'platform-native protected key facility',
+  'SQLCIPHER_FAILURE => FAIL_CLOSED',
+  'DEK DURABLE PLAINTEXT           FORBIDDEN'
 ]) {
   assert(adr006.toLowerCase().includes(marker.toLowerCase()), `ADR006_MARKER:${marker}`);
 }
