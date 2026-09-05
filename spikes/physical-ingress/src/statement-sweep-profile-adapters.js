@@ -74,7 +74,7 @@ function estimatedItemAnchor(item, match) {
   return { x: x + width * ratio, y: Number(item?.y), text: item?.text };
 }
 
-function highestAnchor(page, alternatives = []) {
+function anchorCandidates(page, alternatives = []) {
   const candidates = [];
   for (const item of page?.items ?? []) {
     const text = normalizeLayoutText(item?.text);
@@ -106,18 +106,50 @@ function highestAnchor(page, alternatives = []) {
       }
     }
   }
+  return candidates.filter(candidate => Number.isFinite(candidate.x) && Number.isFinite(candidate.y));
+}
 
+function highestAnchor(page, alternatives = []) {
+  const candidates = anchorCandidates(page, alternatives);
   candidates.sort((a, b) => b.y - a.y || a.x - b.x);
   return candidates[0] ?? null;
 }
 
+function nearestBandAnchor(page, alternatives = [], referenceY) {
+  if (!Number.isFinite(referenceY)) return highestAnchor(page, alternatives);
+  const candidates = anchorCandidates(page, alternatives);
+  candidates.sort((a, b) => Math.abs(a.y - referenceY) - Math.abs(b.y - referenceY) || a.x - b.x);
+  return candidates[0] ?? null;
+}
+
+function median(values = []) {
+  const ordered = values.filter(Number.isFinite).slice().sort((a, b) => a - b);
+  if (ordered.length === 0) return null;
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 1 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
+}
+
 function stackedGeometry(page, specs = []) {
   const anchors = {};
-  for (const spec of specs) {
+  const deferredCurrency = new Set(['pen', 'usd']);
+
+  for (const spec of specs.filter(value => !deferredCurrency.has(value.id))) {
     const anchor = highestAnchor(page, spec.alternatives);
     if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
     anchors[spec.id] = { id: spec.id, ...anchor };
   }
+
+  // Real BCP Visa pages contain unrelated "En soles" / "En dólares" labels above and
+  // below the transaction table. Bind PEN/USD to the same visual header band as the
+  // unambiguous process/consumption/description/operation headers rather than taking
+  // the highest matching word on the page.
+  const referenceY = median(Object.values(anchors).map(anchor => anchor.y));
+  for (const spec of specs.filter(value => deferredCurrency.has(value.id))) {
+    const anchor = nearestBandAnchor(page, spec.alternatives, referenceY);
+    if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
+    anchors[spec.id] = { id: spec.id, ...anchor };
+  }
+
   const xs = Object.values(anchors).map(anchor => anchor.x);
   if (new Set(xs.map(value => value.toFixed(3))).size !== xs.length) return null;
   const boundaries = columnBoundaries(specs.map(spec => ({ id: spec.id, header: spec.id })), anchors);
