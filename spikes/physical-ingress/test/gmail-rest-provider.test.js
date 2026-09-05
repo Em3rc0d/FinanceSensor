@@ -194,6 +194,48 @@ test('GMAIL-MIME-001 FULL message returns attachment descriptors without downloa
   assert.equal(provider.calls.filter(call => call.path.includes('/attachments/')).length, 0);
 });
 
+test('GMAIL-MIME-002 FULL descriptor projection excludes body data and does not download attachment bytes', async () => {
+  const provider = new GmailRestProvider({
+    accessToken: 'safe-test-token',
+    ...noWait,
+    fetchImpl: async () => jsonResponse(200, {
+      id: 'statement-message',
+      historyId: '91',
+      payload: {
+        headers: [
+          { name: 'From', value: 'Bank <statement@bank.example>' },
+          { name: 'Subject', value: 'Statement' }
+        ],
+        parts: [{
+          filename: 'statement.pdf',
+          mimeType: 'application/pdf',
+          headers: [],
+          body: { attachmentId: 'attachment-91', size: 321000 }
+        }]
+      }
+    })
+  });
+
+  const message = await provider.getMessage({
+    id: 'statement-message',
+    format: 'FULL',
+    descriptorOnly: true
+  });
+  assert.equal(message.id, 'statement-message');
+  assert.deepEqual(message.attachments, [{
+    filename: 'statement.pdf',
+    mimeType: 'application/pdf',
+    attachmentId: 'attachment-91',
+    size: 321000,
+    inline: false,
+    contentId: null
+  }]);
+  assert.equal(provider.calls[0].query.format, 'FULL');
+  assert.match(provider.calls[0].query.fields, /body\(attachmentId,size\)/);
+  assert.doesNotMatch(provider.calls[0].query.fields, /data/);
+  assert.equal(provider.calls.some(call => call.path.includes('/attachments/')), false);
+});
+
 test('GMAIL-BOOTSTRAP-001 bounded bootstrap can list only recent INBOX IDs without Gmail search q', async () => {
   let seenUrl;
   const provider = new GmailRestProvider({
