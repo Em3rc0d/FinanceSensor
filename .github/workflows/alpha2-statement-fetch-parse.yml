@@ -19,6 +19,7 @@ on:
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'tools/validate-alpha2-b-statement-fetch-parse.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-statement-fetch-parse.yml'
   workflow_dispatch:
 
@@ -34,6 +35,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate public CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
       - name: Validate frozen Alpha.2 authority
         run: node tools/validate-alpha2-design-freeze.mjs
       - name: Validate certified Alpha.2-A upstream
