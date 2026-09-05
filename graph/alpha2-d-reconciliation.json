@@ -2,10 +2,28 @@
   "schemaVersion": 1,
   "slice": "ALPHA_2_D",
   "name": "Reconciliation",
-  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "5ba43ddd44fcf7c77ce39b42f954316d7e7c8f0e",
-  "implementationReceipt": null,
+  "implementationReceipt": {
+    "pullRequest": 71,
+    "candidateHeadSha": "693848dea007501e9819b58af2cf3e3012a7874d",
+    "mergeCommitSha": "a86b323aa114a2cb2c8a31ea7d31493a0532c044",
+    "workflows": [
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33997679434,
+        "runNumber": 89,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33997679437,
+        "runNumber": 133,
+        "conclusion": "success"
+      }
+    ]
+  },
   "dependencies": [
     {
       "slice": "ALPHA_2_B",
@@ -112,7 +130,7 @@
     "androidPhysicalReconciliation": "OPEN"
   },
   "claims": {
-    "staticImplementationPass": false,
+    "staticImplementationPass": true,
     "physicalReconciliationPass": false,
     "alpha2ProductPass": false,
     "buildReady": false
