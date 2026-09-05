@@ -57,7 +57,18 @@ const KNOWN_SEMANTIC_FAMILIES = Object.freeze({
 });
 
 const plainObject = value => value && typeof value === 'object' && !Array.isArray(value);
-const stableString = value => JSON.stringify(value, Object.keys(value).sort());
+function stableString(value) {
+  if (value === null || typeof value !== 'object') {
+    const encoded = JSON.stringify(value);
+    return encoded === undefined ? 'null' : encoded;
+  }
+  if (Array.isArray(value)) return `[${value.map(stableString).join(',')}]`;
+  const entries = Object.keys(value)
+    .filter(key => value[key] !== undefined)
+    .sort()
+    .map(key => `${JSON.stringify(key)}:${stableString(value[key])}`);
+  return `{${entries.join(',')}}`;
+}
 const hash = value => crypto.createHash('sha256').update(String(value)).digest('hex');
 const cents = value => Number.isFinite(Number(value)) ? Math.round(Number(value) * 100) : null;
 
@@ -255,7 +266,12 @@ function candidateEvaluation(left, right, existingCanonicalByEvidence) {
 
 function decisionIdFor({ leftEvidenceId, outcome, evaluations }) {
   const canonical = evaluations
-    .map(item => ({ evidenceId: item.evidenceId, score: item.score, vetoes: item.snapshot.vetoes }))
+    .map(item => ({
+      evidenceId: item.evidenceId,
+      score: item.score,
+      vetoes: item.snapshot.vetoes,
+      snapshotId: item.snapshot.snapshotId
+    }))
     .sort((a, b) => a.evidenceId.localeCompare(b.evidenceId));
   return `rec_${hash(stableString({
     version: ALPHA2_RECONCILIATION_VERSION,
