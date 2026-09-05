@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "slice": "ALPHA_2_A_STATEMENT_DISCOVERY",
-  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "22df3d83725685e1795af7db38d1836fd81b855c",
   "designAuthority": "graph/alpha2-design-freeze.json",
@@ -90,8 +90,18 @@
       "INVALID_REGISTRY_FAILS_CLOSED"
     ]
   },
+  "ciEvidence": {
+    "verifiedHeadSha": "8271267403c8ad9712f446a3e12b1c3aac64795f",
+    "mergedCommitSha": "6e6d818be03189be0fcc2457013bfa4b1154d41f",
+    "workflowRuns": {
+      "alpha2StatementDiscovery": 33981318555,
+      "alpha2DesignFreeze": 33981318562,
+      "statementEtlContract": 33981318566,
+      "gmailHistorical": 33981318560
+    },
+    "allConclusions": "SUCCESS"
+  },
   "openGates": [
-    "CI_EXACT_SHA",
     "ANDROID_PRODUCT_INTEGRATION",
     "OWNED_GMAIL_PHYSICAL_DISCOVERY",
     "INTERBANK_GMAIL_DISCOVERY_IDENTITY",
