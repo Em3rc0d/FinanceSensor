@@ -210,6 +210,24 @@ test('candidate order cannot change the reconciliation decision identity', () =>
   assert.equal(forward.decisionId, reverse.decisionId);
 });
 
+test('decision identity changes when a nested feature snapshot changes', () => {
+  const full = reconcileEvidenceCandidates({
+    leftEvidence: gmailEvidence(),
+    candidates: [statementEvidence()]
+  });
+  const withoutReference = reconcileEvidenceCandidates({
+    leftEvidence: gmailEvidence(),
+    candidates: [statementEvidence({ references: { statementPeriodId: 'period-2026-09' } })]
+  });
+  assert.equal(full.outcome, ReconciliationOutcome.CONFIRMED);
+  assert.equal(withoutReference.outcome, ReconciliationOutcome.CONFIRMED);
+  assert.equal(full.selectedEvidenceId, withoutReference.selectedEvidenceId);
+  assert.equal(full.topScore, 100);
+  assert.equal(withoutReference.topScore, 85);
+  assert.notEqual(full.evaluations[0].snapshot.snapshotId, withoutReference.evaluations[0].snapshot.snapshotId);
+  assert.notEqual(full.decisionId, withoutReference.decisionId);
+});
+
 test('cross-currency evidence is rejected', () => {
   const decision = reconcileEvidenceCandidates({
     leftEvidence: gmailEvidence({ currency: 'PEN' }),
@@ -274,7 +292,7 @@ test('feature snapshot contains derived facts only, not raw merchant/reference v
   assert.equal(serialized.includes('Synthetic Market'), false);
   assert.equal(serialized.includes('REF-SYNTHETIC-001'), false);
   assert.equal(serialized.includes('rawMerchant'), false);
-  assert.equal(serialized.includes('externalReference'), false);
+  assert.equal(serialized.includes('"references"'), false);
 });
 
 test('confirmed canonical merge commits one canonical event atomically', async () => {
@@ -360,7 +378,7 @@ test('PROPOSED and REVIEW paths persist audit without creating canonical events'
   const proposed = reconcileEvidenceCandidates({ leftEvidence: left, candidates: [proposedRight] });
   const database = createReconciliationDatabase();
   const repository = new StatementReconciliationRepository({ database });
-  await repository.commitDecision({ proposed, decision: proposed, evidenceById: { [left.evidenceId]: left, [proposedRight.evidenceId]: proposedRight } });
+  await repository.commitDecision({ decision: proposed, evidenceById: { [left.evidenceId]: left, [proposedRight.evidenceId]: proposedRight } });
   assert.equal(database.state.canonicalEvents.size, 0);
   assert.equal(database.state.links.size, 1);
   assert.equal(database.state.replays.size, 1);
