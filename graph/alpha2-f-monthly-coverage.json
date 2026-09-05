@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_F",
+  "name": "Monthly Coverage",
+  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "asOf": "2026-09-05",
+  "baseCommit": "9e2a1327a35935d19f073e743d33c82fa4c74df7",
+  "implementationReceipt": null,
+  "dependencies": [
+    {
+      "slice": "ALPHA_2_D",
+      "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+    },
+    {
+      "slice": "ALPHA_2_E",
+      "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+    }
+  ],
+  "model": {
+    "version": "A2_MONTHLY_COVERAGE_V1",
+    "closeStates": [
+      "OPEN_LIVE",
+      "WAITING_FOR_STATEMENTS",
+      "IMPORTING",
+      "RECONCILING",
+      "REVIEW_REQUIRED",
+      "RECONCILED",
+      "REOPENED"
+    ],
+    "expectedSourceStates": [
+      "EXPECTED",
+      "NOT_AVAILABLE",
+      "USER_EXCLUDED",
+      "UNKNOWN"
+    ],
+    "scopeStates": [
+      "INCLUDED",
+      "USER_EXCLUDED",
+      "NOT_AVAILABLE"
+    ],
+    "statementStates": [
+      "NONE",
+      "RECEIVED",
+      "PARSED_PARTIAL",
+      "PARSED",
+      "REVIEW_REQUIRED"
+    ],
+    "inflowCoverageStates": [
+      "UNKNOWN",
+      "PARTIAL",
+      "COVERED"
+    ],
+    "outflowCoverageStates": [
+      "UNKNOWN",
+      "OBSERVED",
+      "PARTIAL",
+      "COVERED"
+    ],
+    "accountReconciliationStates": [
+      "NOT_STARTED",
+      "PARTIAL",
+      "REVIEW_REQUIRED",
+      "RECONCILED"
+    ]
+  },
+  "truthBoundary": {
+    "unit": "ACCOUNT_OR_PAYMENT_INSTRUMENT_PERIOD",
+    "directionalCoverageSeparate": true,
+    "requiredDirectionsExplicit": true,
+    "gmailOutflowObservationCanBeObserved": true,
+    "gmailInflowObservationCanBeObserved": false,
+    "noGmailInflowMeansZeroInflow": false,
+    "observedOutflowMeansReconciledOutflow": false,
+    "globalUnqualifiedPercentageAllowed": false,
+    "reconciledMeansProductionReady": false
+  },
+  "closePolicy": {
+    "allIncludedExpectedSourcesRequired": true,
+    "zeroBlockingConflictsRequired": true,
+    "zeroUnresolvedItemsRequired": true,
+    "requiredDirectionsMustBeCovered": true,
+    "statementPeriodMustBeCovered": true,
+    "reconciliationMustBeComplete": true,
+    "excludedSourcesReduceScope": true,
+    "excludedSourcesRemainVisible": true,
+    "noIncludedSourcesCanReconcile": false
+  },
+  "reopenPolicy": {
+    "lateEvidence": "REOPENED",
+    "parserReprocessing": "REOPENED",
+    "accountMappingCorrection": "REOPENED",
+    "sourceScopeChanged": "REOPENED"
+  },
+  "persistence": {
+    "coverageAndCloseCommitTransactional": true,
+    "evaluationIdentityDeterministic": true,
+    "sourceOrderIndependent": true,
+    "replayIdempotent": true
+  },
+  "staticNegativeGate": [
+    "INFLOW_OBSERVED_STATE_INVALID",
+    "OUTFLOW_OBSERVED_STATE_ALLOWED_BUT_NOT_RECONCILED",
+    "MISSING_EXPECTED_STATEMENT_WAITS",
+    "BLOCKING_CONFLICT_RECONCILED_0",
+    "UNRESOLVED_ITEM_RECONCILED_0",
+    "ALL_INCLUDED_COVERED_ZERO_CONFLICTS_RECONCILED_PASS",
+    "USER_EXCLUSION_REDUCES_SCOPE_AND_REMAINS_VISIBLE",
+    "ALL_EXCLUDED_RECONCILED_0",
+    "DIRECTIONAL_COVERAGE_INDEPENDENT",
+    "UNKNOWN_SOURCE_DISPOSITION_REVIEW_REQUIRED",
+    "LATE_EVIDENCE_REOPENS",
+    "PARSER_REPROCESSING_REOPENS",
+    "ACCOUNT_MAPPING_CORRECTION_REOPENS",
+    "SOURCE_SCOPE_CHANGE_REOPENS",
+    "GLOBAL_COMPLETENESS_PERCENT_ABSENT",
+    "COVERAGE_CLOSE_COMMIT_ATOMIC",
+    "REPLAY_DUPLICATE_CLOSE_COUNT_0"
+  ],
+  "schemaBoundary": {
+    "physicalSchemaMigrationInThisSlice": false,
+    "reason": "AccountPeriodCoverage, MonthlyClose and uniqueness constraints remain subject to physical schema gates."
+  },
+  "physicalPromotion": {
+    "realMultiAccountMonthlyClose": "OPEN",
+    "realUserExclusionScope": "OPEN",
+    "realLateStatementReopen": "OPEN",
+    "realParserReprocessingReopen": "OPEN",
+    "realRestartPersistence": "OPEN",
+    "physicalSchemaConstraints": "OPEN",
+    "androidPhysicalMonthlyCoverage": "OPEN"
+  },
+  "claims": {
+    "staticImplementationPass": false,
+    "physicalMonthlyCoveragePass": false,
+    "alpha2ProductPass": false,
+    "buildReady": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_MONTHLY_COVERAGE_PASS=>PHYSICAL_MONTHLY_CLOSE_PASS",
+    "SYNTHETIC_REOPEN_PASS=>REAL_REOPEN_PERSISTENCE_PASS",
+    "STATIC_COVERAGE_PASS=>PHYSICAL_SCHEMA_PASS",
+    "MONTH_RECONCILED=>PRODUCTION_READY",
+    "ALPHA_2_F_PASS=>GLOBAL_BUILD_READY"
+  ]
+}
