@@ -18,6 +18,8 @@ const MONTHS = Object.freeze({
   JUL: 7, AGO: 8, SEP: 9, SET: 9, OCT: 10, NOV: 11, DIC: 12
 });
 
+const SHORT_MONTH = '(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)';
+
 function safeIso(year, month, day) {
   const value = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   if (Number.isNaN(value.getTime())) return null;
@@ -138,13 +140,41 @@ function candidateStatementYears(pages = []) {
 
 function parseShortMonthDate(token, years = []) {
   const value = compact(token);
-  const match = value.match(/^(\d{1,2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$/);
+  const match = value.match(new RegExp(`^(\\d{1,2})${SHORT_MONTH}$`));
   if (!match || years.length === 0) return null;
   const day = Number(match[1]);
   const month = MONTHS[match[2]];
   const candidates = years.map(year => safeIso(year, month, day)).filter(Boolean);
   if (candidates.length === 1) return candidates[0];
   return candidates[0] ?? null;
+}
+
+function leadingBcpCreditFields(line, years = []) {
+  // Real BCP Visa rows are structurally led by process-date + consumption-date.
+  // Header labels are visually centered inside wide columns, so midpoint boundaries
+  // can absorb a left-aligned description item into the consumption-date bucket.
+  // Recover only the strict observed row grammar and keep amount/currency geometric.
+  const text = normalizeLayoutText(line?.text ?? '');
+  const datePair = text.match(new RegExp(`^(\\d{1,2})\\s*${SHORT_MONTH}\\s+(\\d{1,2})\\s*${SHORT_MONTH}(?:\\s+|$)`));
+  if (!datePair) return null;
+
+  const processAt = parseShortMonthDate(`${datePair[1]}${datePair[2]}`, years);
+  const consumptionAt = parseShortMonthDate(`${datePair[3]}${datePair[4]}`, years);
+  if (!processAt || !consumptionAt) return null;
+
+  const remainder = text.slice(datePair[0].length).trim();
+  const operationMatches = [...remainder.matchAll(/\b(PAGO|CONSUMO)\b/g)];
+  if (operationMatches.length === 0) return null;
+  const operation = operationMatches.at(-1);
+  const description = remainder.slice(0, operation.index).trim();
+  if (!description) return null;
+
+  return {
+    processAt,
+    consumptionAt,
+    description,
+    operationType: operation[1]
+  };
 }
 
 function parseRipleyDate(token) {
@@ -212,8 +242,14 @@ function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
     for (const line of groupPageItemsIntoLines(page)) {
       if (line.y >= geometry.headerY - 1) continue;
       const columns = lineToColumns(line, geometry.boundaries);
-      const processAt = parseShortMonthDate(columns.processDate, years);
-      const consumptionAt = parseShortMonthDate(columns.consumptionDate, years);
+      let processAt = parseShortMonthDate(columns.processDate, years);
+      let consumptionAt = parseShortMonthDate(columns.consumptionDate, years);
+      let fallback = null;
+      if (!processAt || !consumptionAt) {
+        fallback = leadingBcpCreditFields(line, years);
+        processAt = processAt ?? fallback?.processAt ?? null;
+        consumptionAt = consumptionAt ?? fallback?.consumptionAt ?? null;
+      }
       if (!processAt || !consumptionAt) continue;
 
       const pen = parseSignedMoney(columns.pen);
@@ -227,14 +263,15 @@ function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
       if (!penPresent && !usdPresent) continue;
 
       const signed = penPresent ? pen : usd;
-      const operation = normalizeLayoutText(columns.operationType);
-      const isPayment = signed < 0 || /\bPAGO\b/.test(operation) || /\bPAGO\b/.test(normalizeLayoutText(columns.description));
+      const description = fallback?.description || columns.description;
+      const operation = normalizeLayoutText(fallback?.operationType || columns.operationType);
+      const isPayment = signed < 0 || /\bPAGO\b/.test(operation) || /\bPAGO\b/.test(normalizeLayoutText(description));
       rows.push(creditMovement({
         tenantId,
         accountId,
         amount: signed,
         currency: penPresent ? 'PEN' : 'USD',
-        description: columns.description,
+        description,
         occurredAt: processAt,
         valueAt: consumptionAt,
         sourcePage: page.pageNumber,
