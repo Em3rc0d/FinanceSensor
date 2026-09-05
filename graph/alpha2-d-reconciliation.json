@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_D",
+  "name": "Reconciliation",
+  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "asOf": "2026-09-05",
+  "baseCommit": "5ba43ddd44fcf7c77ce39b42f954316d7e7c8f0e",
+  "implementationReceipt": null,
+  "dependencies": [
+    {
+      "slice": "ALPHA_2_B",
+      "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+    },
+    {
+      "slice": "ALPHA_2_C",
+      "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+    }
+  ],
+  "resolver": {
+    "version": "A2_RECONCILIATION_V1",
+    "featuresVersion": "A2_RECONCILIATION_FEATURES_V1",
+    "outcomes": [
+      "CONFIRMED",
+      "PROPOSED",
+      "REVIEW",
+      "REJECTED",
+      "CONFLICT"
+    ],
+    "weights": {
+      "amount": 30,
+      "timeDistance": 15,
+      "institution": 10,
+      "accountOrInstrument": 15,
+      "merchantOrCounterparty": 10,
+      "externalReference": 15,
+      "movementCompatibility": 5
+    },
+    "automaticConfirmation": {
+      "minimumScore": 85,
+      "minimumMarginOverSecondCandidate": 15,
+      "requiresUniqueCandidate": true,
+      "requiresIndependentChannels": true,
+      "requiresAmountAndCurrency": true,
+      "amountOnlyAllowed": false,
+      "stableAnchors": [
+        "EXACT_EXTERNAL_REFERENCE",
+        "CONFIRMED_ACCOUNT_OR_INSTRUMENT_PLUS_STRONG_MERCHANT"
+      ]
+    },
+    "timeDistanceImplementation": "EXACT_TIMESTAMP_ONLY_NO_UNFROZEN_WINDOW_ASSUMPTION"
+  },
+  "candidateScope": {
+    "tenantMismatch": "REJECTED",
+    "currencyMismatch": "REJECTED",
+    "economicSemanticsIncompatible": "REJECTED",
+    "sourceChannelNotIndependent": "REJECTED",
+    "knownAccountOrInstrumentMismatch": "REJECTED",
+    "explicitStatementPeriodMismatch": "REJECTED",
+    "alreadyLinkedDifferentCanonicalEvents": "CONFLICT"
+  },
+  "featureSnapshot": {
+    "immutable": true,
+    "derivedFactsOnly": true,
+    "rawSourceText": false,
+    "rawMerchantValue": false,
+    "rawExternalReferenceValue": false,
+    "rawAccountIdentifier": false,
+    "rawGmailIdentifier": false
+  },
+  "canonicalMerge": {
+    "sameTransaction": true,
+    "transactionRechecksExistingCanonicalLinks": true,
+    "deterministicCanonicalIdWhenNew": true,
+    "confirmedOnlyCreatesOrMergesCanonical": true,
+    "proposedCreatesCanonical": false,
+    "reviewCreatesCanonical": false,
+    "rejectedCreatesCanonical": false,
+    "conflictCreatesCanonical": false
+  },
+  "replay": {
+    "decisionIdDeterministic": true,
+    "candidateOrderIndependent": true,
+    "sameDecisionCreatesDuplicateCanonical": false,
+    "immutableReplayAudit": true
+  },
+  "staticNegativeGate": [
+    "GMAIL_STATEMENT_SAME_EVENT_CANONICAL_COUNT_1",
+    "AMOUNT_ONLY_AUTOMATIC_CONFIRMATION_0",
+    "AMBIGUOUS_EQUAL_SCORE_AUTOMATIC_CONFIRMATION_0",
+    "CROSS_CURRENCY_AUTOMATIC_MATCH_0",
+    "INCOMPATIBLE_MOVEMENT_AUTOMATIC_MATCH_0",
+    "SAME_CHANNEL_AUTOMATIC_MATCH_0",
+    "KNOWN_ACCOUNT_MISMATCH_FAILS_CLOSED",
+    "CARD_PAYMENT_AS_INCOME_FAILS_CLOSED",
+    "OWN_ACCOUNT_TRANSFER_AS_EXPENSE_FAILS_CLOSED",
+    "ALREADY_LINKED_CANONICAL_CONFLICT_FAILS_CLOSED",
+    "RAW_VALUES_ABSENT_FROM_FEATURE_SNAPSHOT",
+    "CANONICAL_MERGE_ATOMIC",
+    "TRANSACTION_RECHECK_BLOCKS_TOCTOU_CONFLICT",
+    "REPLAY_DUPLICATE_CANONICAL_COUNT_0",
+    "PROPOSED_AND_REVIEW_DO_NOT_CREATE_CANONICAL"
+  ],
+  "schemaBoundary": {
+    "physicalSchemaMigrationInThisSlice": false,
+    "reason": "DM-002 keeps physical uniqueness constraints and migrations subject to schema freeze and physical schema gates."
+  },
+  "physicalPromotion": {
+    "realGmailStatementDedup": "OPEN",
+    "realStatementOnlyInflowReconciliation": "OPEN",
+    "realCanonicalRestartPersistence": "OPEN",
+    "physicalSchemaConstraints": "OPEN",
+    "androidPhysicalReconciliation": "OPEN"
+  },
+  "claims": {
+    "staticImplementationPass": false,
+    "physicalReconciliationPass": false,
+    "alpha2ProductPass": false,
+    "buildReady": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_RECONCILIATION_PASS=>PHYSICAL_RECONCILIATION_PASS",
+    "SYNTHETIC_DEDUP_PASS=>REAL_GMAIL_STATEMENT_DEDUP_PASS",
+    "STATIC_CANONICAL_TRANSACTION=>PHYSICAL_SCHEMA_MIGRATION_PASS",
+    "ALPHA_2_D_PASS=>MONTH_RECONCILED",
+    "ALPHA_2_D_PASS=>GLOBAL_BUILD_READY"
+  ]
+}
