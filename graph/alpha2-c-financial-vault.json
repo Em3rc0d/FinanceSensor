@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_C",
+  "name": "Financial Vault",
+  "status": "STATIC_IMPLEMENTATION_CANDIDATE_CI_PENDING",
+  "asOf": "2026-09-05",
+  "baseCommit": "88747144e47bd8bbc17640565d18895126cdf821",
+  "dependency": {
+    "slice": "ALPHA_2_A",
+    "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS",
+    "reason": "Alpha.2 design freeze gates C on A; B remains independently certified upstream context."
+  },
+  "sqlcipher": {
+    "family": "SQLCIPHER_4_X",
+    "exactVersion": "4.18.0",
+    "versionPinKind": "IMPLEMENTATION_PIN",
+    "plaintextFallback": false,
+    "encryptedOpenOnly": true,
+    "runtimeVersionMismatch": "FAIL_CLOSED"
+  },
+  "databaseKeyBoundary": {
+    "dekBits": 256,
+    "randomDekRequired": true,
+    "platformWrapped": true,
+    "durableDekInDartOrApplicationLayer": false,
+    "rawDekInRepositoryHandle": false,
+    "unwrapShape": "NATIVE_CALLBACK_SCOPED_EPHEMERAL_BYTES",
+    "unwrapFailure": "FAIL_CLOSED",
+    "cryptoShredDeletesAuthorityFirst": true
+  },
+  "schema": {
+    "version": 1,
+    "tables": [
+      "derived_evidence",
+      "statement_sources",
+      "vault_meta"
+    ],
+    "transactionalMigration": true,
+    "downgradeAllowed": false,
+    "durableRawContentColumns": 0,
+    "typedEvidenceAllowlist": true,
+    "opaqueSourceReceiptId": true,
+    "rawGmailIdentifiersDurable": false
+  },
+  "commitBoundary": {
+    "derivedBatchAndTerminalSourceState": "SAME_TRANSACTION",
+    "partialDerivedBatchCommitAllowed": false,
+    "derivedEvidenceWithNonImportedTerminalStateAllowed": false,
+    "terminalStates": [
+      "IMPORTED",
+      "QUARANTINED",
+      "FAILED",
+      "DISCARDED"
+    ]
+  },
+  "durabilityBoundary": {
+    "rawPdf": false,
+    "decryptedText": false,
+    "ocrPages": false,
+    "layoutGeometry": false,
+    "rawRows": false,
+    "password": false,
+    "gmailBody": false,
+    "rawGmailMessageId": false,
+    "rawAttachmentId": false
+  },
+  "deletionBoundary": {
+    "cryptoShred": true,
+    "deleteDatabaseKeyAuthorityBeforeFileCleanup": true,
+    "databaseFileCleanupRequired": true,
+    "restoreResurrectionBarrier": "SEPARATE_ADR_030_P3_BOUNDARY",
+    "cryptoShredAloneClaimsGlobalDeletion": false
+  },
+  "staticNegativeGate": [
+    "WRONG_SQLCIPHER_FAMILY_FAILS_BEFORE_UNWRAP",
+    "WRONG_SQLCIPHER_VERSION_FAILS_BEFORE_UNWRAP",
+    "PLAINTEXT_FALLBACK_CAPABILITY_FORBIDDEN",
+    "NON_ENCRYPTED_OPEN_CAPABILITY_FORBIDDEN",
+    "RAW_DEK_IN_HANDLE_FORBIDDEN",
+    "WRONG_DEK_SIZE_FAILS_CLOSED",
+    "MISSING_UNWRAP_AUTHORITY_FAILS_CLOSED",
+    "MIGRATION_FAILURE_ROLLS_BACK",
+    "SCHEMA_DOWNGRADE_FORBIDDEN",
+    "RAW_OR_SECRET_DURABLE_FIELDS_FORBIDDEN",
+    "OPAQUE_SOURCE_RECEIPT_REQUIRED",
+    "DERIVED_BATCH_AND_SOURCE_TERMINAL_STATE_ATOMIC",
+    "INSERT_FAILURE_ROLLS_BACK_BATCH",
+    "TERMINAL_STATE_FAILURE_ROLLS_BACK_BATCH",
+    "CRYPTO_SHRED_REMOVES_KEY_AUTHORITY",
+    "EPHEMERAL_UNWRAPPED_DEK_ZEROED_BY_NATIVE_TEST_DOUBLE"
+  ],
+  "physicalPromotion": {
+    "sqlcipherRuntimeOnAndroid": "OPEN",
+    "platformKeystoreWrappedDek": "OPEN",
+    "databaseMainFileInspection": "OPEN",
+    "walInspection": "OPEN",
+    "shmOrJournalInspection": "OPEN",
+    "tempInspection": "OPEN",
+    "migrationBackupInspection": "OPEN",
+    "osBackupInspection": "OPEN",
+    "logsAndCrashOutputInspection": "OPEN",
+    "restartRebootRecovery": "OPEN",
+    "invalidUnwrapPhysicalFailure": "OPEN",
+    "cryptoShredPhysicalProof": "OPEN",
+    "restoreResurrectionBarrierP3": "OPEN"
+  },
+  "claims": {
+    "staticImplementationPass": false,
+    "physicalVaultPass": false,
+    "p3PhysicalPass": false,
+    "alpha2ProductPass": false,
+    "buildReady": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_VAULT_PASS=>PHYSICAL_SQLCIPHER_PASS",
+    "STATIC_KEYSTORE_DOUBLE=>PLATFORM_KEYSTORE_PASS",
+    "CRYPTO_SHRED_STATIC_PASS=>GLOBAL_DELETION_PASS",
+    "SQLCIPHER_OPEN_STATIC_PASS=>P3_PASS",
+    "ALPHA_2_C_PASS=>GLOBAL_BUILD_READY"
+  ]
+}

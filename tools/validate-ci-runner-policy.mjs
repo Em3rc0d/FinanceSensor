@@ -17,6 +17,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'alpha2-design-freeze.yml',
   'alpha2-statement-discovery.yml',
   'alpha2-statement-fetch-parse.yml',
+  'alpha2-financial-vault.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set(['gmail-live-spike.yml']);
@@ -226,6 +227,31 @@ const contracts = {
         'Alpha.2 fetch/parse CI may exercise synthetic adapters but may not execute trusted-edge/provider flows'],
     ],
   },
+  'alpha2-financial-vault.yml': {
+    markers: [
+      'node tools/validate-alpha2-c-financial-vault.mjs',
+      'SQLCIPHER_VERSION=4.18.0',
+      'REAL_FINANCIAL_PLAINTEXT_IN_CI=0',
+      'REAL_PLATFORM_KEYSTORE_IN_CI=0',
+      'PLAINTEXT_SQLITE_FALLBACK=0',
+      'DURABLE_APP_DEK=0',
+      'RAW_FINANCIAL_PLAINTEXT_COLUMNS=0',
+      'PHYSICAL_SQLCIPHER_INSPECTION=0',
+      'P3_PHYSICAL_PASS=0',
+      'BUILD_READY=NO',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'Alpha.2 financial vault CI boundary',
+    forbidden: [
+      [/\$\{\{\s*secrets\./,
+        'Alpha.2 financial vault CI may not receive secrets'],
+      [/REAL_FINANCIAL_PLAINTEXT_IN_CI=1|REAL_PLATFORM_KEYSTORE_IN_CI=1|PLAINTEXT_SQLITE_FALLBACK=1|DURABLE_APP_DEK=1|RAW_FINANCIAL_PLAINTEXT_COLUMNS=1|PHYSICAL_SQLCIPHER_INSPECTION=1|P3_PHYSICAL_PASS=1|BUILD_READY=YES/i,
+        'Alpha.2 financial vault CI contains a forbidden promotion marker'],
+      [/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i,
+        'Alpha.2 financial vault CI may use synthetic key/database doubles only and may not execute trusted-edge/provider flows'],
+    ],
+  },
 };
 
 for (const [file, contract] of Object.entries(contracts)) {
@@ -283,4 +309,7 @@ console.log('ALPHA2_DISCOVERY_ATTACHMENT_BYTES_FETCHED_IN_CI=0');
 console.log('ALPHA2_FETCH_PARSE_REAL_GMAIL_IN_CI=0');
 console.log('ALPHA2_FETCH_PARSE_REAL_FINANCIAL_PLAINTEXT_IN_CI=0');
 console.log('ALPHA2_FETCH_PARSE_PASSWORD_DURABLE_STORAGE=0');
+console.log('ALPHA2_FINANCIAL_VAULT_REAL_PLAINTEXT_IN_CI=0');
+console.log('ALPHA2_FINANCIAL_VAULT_REAL_PLATFORM_KEYSTORE_IN_CI=0');
+console.log('ALPHA2_FINANCIAL_VAULT_PLAINTEXT_SQLITE_FALLBACK=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
