@@ -16,12 +16,10 @@ const ACTIVE_WORKFLOWS = new Set([
   'statement-etl-contract.yml',
   'alpha2-design-freeze.yml',
   'alpha2-statement-discovery.yml',
+  'alpha2-statement-fetch-parse.yml',
 ]);
 
-const RETIRED_WORKFLOWS = new Set([
-  'gmail-live-spike.yml',
-]);
-
+const RETIRED_WORKFLOWS = new Set(['gmail-live-spike.yml']);
 const REQUIRED_RUNNER = 'runs-on: ubuntu-latest';
 const failures = [];
 
@@ -36,13 +34,13 @@ function read(file) {
 function runsOnLines(text) {
   return text
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('runs-on:'));
+    .map(line => line.trim())
+    .filter(line => line.startsWith('runs-on:'));
 }
 
 const workflowFiles = fs
   .readdirSync(workflowDir)
-  .filter((file) => file.endsWith('.yml') || file.endsWith('.yaml'))
+  .filter(file => file.endsWith('.yml') || file.endsWith('.yaml'))
   .sort();
 
 for (const file of workflowFiles) {
@@ -59,171 +57,187 @@ for (const file of ACTIVE_WORKFLOWS) {
 
   const text = read(file);
   const runnerLines = runsOnLines(text);
-
   if (runnerLines.length === 0) fail(file, 'active workflow has no runs-on declaration');
   for (const line of runnerLines) {
     if (line !== REQUIRED_RUNNER) fail(file, `public CI routing must be exactly: ${REQUIRED_RUNNER}`);
   }
-
   if (/runs-on:\s*\[[^\]]*self-hosted/i.test(text) || /runs-on:\s*self-hosted/i.test(text)) {
     fail(file, 'public active workflow references a persistent self-hosted runner');
   }
   if (/\$\{\{\s*secrets\./.test(text)) fail(file, 'active workflow references repository/environment secrets');
-  if (/^\s*schedule\s*:/m.test(text) || /^\s*-?\s*cron\s*:/m.test(text)) fail(file, 'CI must not rely on cron scheduling during MK0');
-  if (!/permissions:\s*\n\s*contents:\s*read/m.test(text)) fail(file, 'workflow must keep explicit least-privilege contents: read');
-}
-
-if (workflowFiles.includes('mobile-shell.yml')) {
-  const text = read('mobile-shell.yml');
-  const requiredMarkers = [
-    'flutter build apk --debug',
-    'REAL_GMAIL=0',
-    'REAL_OAUTH=0',
-    'REAL_FINANCIAL_DATA=0',
-    'BUILD_READY=NO',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('mobile-shell.yml', `synthetic build boundary missing marker: ${marker}`);
+  if (/^\s*schedule\s*:/m.test(text) || /^\s*-?\s*cron\s*:/m.test(text)) {
+    fail(file, 'CI must not rely on cron scheduling during MK0');
   }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i.test(text)) {
-    fail('mobile-shell.yml', 'mobile shell workflow may not acquire real Gmail/OAuth authority');
+  if (!/permissions:\s*\n\s*contents:\s*read/m.test(text)) {
+    fail(file, 'workflow must keep explicit least-privilege contents: read');
   }
 }
 
-if (workflowFiles.includes('mobile-gmail-connection.yml')) {
-  const text = read('mobile-gmail-connection.yml');
-  const requiredMarkers = [
-    'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT',
-    'EXACT_SCOPE=gmail.readonly',
-    'APP_REFRESH_TOKEN_CUSTODY=0',
-    'DART_BEARER_CUSTODY=0',
-    'OFFLINE_ACCESS_REQUESTED=0',
-    'REAL_OAUTH_EXECUTED_BY_CI=0',
-    'REAL_GMAIL_EXECUTED_BY_CI=0',
-    'BUILD_READY=NO',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('mobile-gmail-connection.yml', `connection CI boundary missing marker: ${marker}`);
-  }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i.test(text)) {
-    fail('mobile-gmail-connection.yml', 'connection workflow may compile the bridge but may not acquire real Gmail/OAuth authority');
-  }
-}
+const contracts = {
+  'mobile-shell.yml': {
+    markers: [
+      'flutter build apk --debug',
+      'REAL_GMAIL=0',
+      'REAL_OAUTH=0',
+      'REAL_FINANCIAL_DATA=0',
+      'BUILD_READY=NO',
+    ],
+    markerLabel: 'synthetic build boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i,
+        'mobile shell workflow may not acquire real Gmail/OAuth authority'],
+    ],
+  },
+  'mobile-gmail-connection.yml': {
+    markers: [
+      'ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT',
+      'EXACT_SCOPE=gmail.readonly',
+      'APP_REFRESH_TOKEN_CUSTODY=0',
+      'DART_BEARER_CUSTODY=0',
+      'OFFLINE_ACCESS_REQUESTED=0',
+      'REAL_OAUTH_EXECUTED_BY_CI=0',
+      'REAL_GMAIL_EXECUTED_BY_CI=0',
+      'BUILD_READY=NO',
+    ],
+    markerLabel: 'connection CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i,
+        'connection workflow may compile the bridge but may not acquire real Gmail/OAuth authority'],
+    ],
+  },
+  'mobile-human-test-alpha.yml': {
+    markers: [
+      'node tools/validate-human-test-alpha.mjs',
+      '--target lib/main_human_test.dart',
+      'com.financesensor.lab.gmailconnection.r2',
+      'EXACT_SCOPE=gmail.readonly',
+      'SESSION_ONLY_FINANCIAL_STATE=1',
+      'REAL_OAUTH_EXECUTED_BY_CI=0',
+      'REAL_GMAIL_EXECUTED_BY_CI=0',
+      'PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL',
+      'TRUSTED_EDGE_RESIGN_REQUIRED=YES',
+      'HUMAN_TEST_READY=YES',
+      'BUILD_READY=NO',
+      'RELEASE_READY=NO',
+      'IOS_TOUCHED=0',
+    ],
+    markerLabel: 'human-test CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'human-test public CI may not receive Gmail/OAuth credentials'],
+      [/FINANCESENSOR_R2_LAB.*(PASSWORD|PRIVATE|KEYSTORE)|storePassword|keyPassword/i,
+        'human-test public CI may not receive stable private signing material'],
+    ],
+  },
+  'gmail-historical.yml': {
+    markers: [
+      'Synthetic/static only',
+      'REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'historical CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'historical CI may not receive Gmail/OAuth credentials'],
+    ],
+    validate(text, file) {
+      if (/node\s+[^\n]*owned-oauth-gmail-history-viewer\.mjs/.test(text) &&
+          !/node --check\s+spikes\/physical-ingress\/live\/owned-oauth-gmail-history-viewer\.mjs/.test(text)) {
+        fail(file, 'historical CI may syntax-check but never execute the real Gmail viewer');
+      }
+    },
+  },
+  'statement-etl-contract.yml': {
+    markers: [
+      'node tools/validate-statement-etl-reconciliation.mjs',
+      'REAL_STATEMENT_DATA_IN_CI=0',
+      'REAL_GMAIL_IN_CI=0',
+      'IOS_TOUCHED=0',
+      'BUILD_READY=false',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'statement ETL synthetic boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'statement ETL CI may not receive Gmail/OAuth credentials'],
+      [/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i,
+        'statement ETL CI may validate contracts but may not execute trusted-edge/provider flows'],
+      [/REAL_STATEMENT_DATA_IN_CI=1|REAL_GMAIL_IN_CI=1|IOS_TOUCHED=1|BUILD_READY=true/i,
+        'statement ETL CI contains a forbidden promotion marker'],
+    ],
+  },
+  'alpha2-design-freeze.yml': {
+    markers: [
+      'node tools/validate-alpha2-design-freeze.mjs',
+      'REAL_GMAIL_IN_CI=0',
+      'REAL_FINANCIAL_DATA_IN_CI=0',
+      'BUILD_READY=NO',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'Alpha.2 design CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'Alpha.2 design CI may not receive Gmail/OAuth credentials'],
+    ],
+  },
+  'alpha2-statement-discovery.yml': {
+    markers: [
+      'node tools/validate-alpha2-a-statement-discovery.mjs',
+      'ATTACHMENT_BYTES_FETCHED=0',
+      'PASSWORD_REQUESTED=0',
+      'VAULT_MUTATION=0',
+      'REAL_GMAIL_IN_CI=0',
+      'BUILD_READY=NO',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'Alpha.2 discovery CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'Alpha.2 discovery CI may not receive Gmail/OAuth credentials'],
+      [/REAL_GMAIL_IN_CI=1|ATTACHMENT_BYTES_FETCHED=1|PASSWORD_REQUESTED=1|VAULT_MUTATION=1|BUILD_READY=YES/i,
+        'Alpha.2 discovery CI contains a forbidden promotion marker'],
+    ],
+  },
+  'alpha2-statement-fetch-parse.yml': {
+    markers: [
+      'node tools/validate-alpha2-b-statement-fetch-parse.mjs',
+      'REAL_GMAIL_IN_CI=0',
+      'REAL_FINANCIAL_PLAINTEXT_IN_CI=0',
+      'PASSWORD_DURABLE_STORAGE=0',
+      'RAW_PDF_DURABLE_WRITES=0',
+      'FORMAT_OBSERVED_PROFILE_FETCH=0',
+      'INTERBANK_GMAIL_IDENTITY=PENDING',
+      'PHYSICAL_PROFILE_PASS=0',
+      'BUILD_READY=NO',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'Alpha.2 fetch/parse CI boundary',
+    forbidden: [
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'Alpha.2 fetch/parse CI may not receive Gmail/OAuth credentials'],
+      [/REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_PLAINTEXT_IN_CI=1|PASSWORD_DURABLE_STORAGE=1|RAW_PDF_DURABLE_WRITES=1|FORMAT_OBSERVED_PROFILE_FETCH=1|PHYSICAL_PROFILE_PASS=1|BUILD_READY=YES/i,
+        'Alpha.2 fetch/parse CI contains a forbidden promotion marker'],
+      [/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i,
+        'Alpha.2 fetch/parse CI may exercise synthetic adapters but may not execute trusted-edge/provider flows'],
+    ],
+  },
+};
 
-// The human-test workflow may compile code capable of real owned-device Gmail use,
-// but hosted CI remains compile/test only. No credentials, financial data or stable
-// private signing material may enter GitHub.
-if (workflowFiles.includes('mobile-human-test-alpha.yml')) {
-  const text = read('mobile-human-test-alpha.yml');
-  const requiredMarkers = [
-    'node tools/validate-human-test-alpha.mjs',
-    '--target lib/main_human_test.dart',
-    'com.financesensor.lab.gmailconnection.r2',
-    'EXACT_SCOPE=gmail.readonly',
-    'SESSION_ONLY_FINANCIAL_STATE=1',
-    'REAL_OAUTH_EXECUTED_BY_CI=0',
-    'REAL_GMAIL_EXECUTED_BY_CI=0',
-    'PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL',
-    'TRUSTED_EDGE_RESIGN_REQUIRED=YES',
-    'HUMAN_TEST_READY=YES',
-    'BUILD_READY=NO',
-    'RELEASE_READY=NO',
-    'IOS_TOUCHED=0',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('mobile-human-test-alpha.yml', `human-test CI boundary missing marker: ${marker}`);
+for (const [file, contract] of Object.entries(contracts)) {
+  if (!workflowFiles.includes(file)) continue;
+  const text = read(file);
+  for (const marker of contract.markers) {
+    if (!text.includes(marker)) fail(file, `${contract.markerLabel} missing marker: ${marker}`);
   }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
-    fail('mobile-human-test-alpha.yml', 'human-test public CI may not receive Gmail/OAuth credentials');
+  for (const [pattern, message] of contract.forbidden ?? []) {
+    if (pattern.test(text)) fail(file, message);
   }
-  if (/FINANCESENSOR_R2_LAB.*(PASSWORD|PRIVATE|KEYSTORE)|storePassword|keyPassword/i.test(text)) {
-    fail('mobile-human-test-alpha.yml', 'human-test public CI may not receive stable private signing material');
-  }
-}
-
-if (workflowFiles.includes('gmail-historical.yml')) {
-  const text = read('gmail-historical.yml');
-  const requiredMarkers = [
-    'Synthetic/static only',
-    'REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN',
-    'contents: read',
-    'runs-on: ubuntu-latest',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('gmail-historical.yml', `historical CI boundary missing marker: ${marker}`);
-  }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
-    fail('gmail-historical.yml', 'historical CI may not receive Gmail/OAuth credentials');
-  }
-  if (/node\s+[^\n]*owned-oauth-gmail-history-viewer\.mjs/.test(text) && !/node --check\s+spikes\/physical-ingress\/live\/owned-oauth-gmail-history-viewer\.mjs/.test(text)) {
-    fail('gmail-historical.yml', 'historical CI may syntax-check but never execute the real Gmail viewer');
-  }
-}
-
-if (workflowFiles.includes('statement-etl-contract.yml')) {
-  const text = read('statement-etl-contract.yml');
-  const requiredMarkers = [
-    'node tools/validate-statement-etl-reconciliation.mjs',
-    'REAL_STATEMENT_DATA_IN_CI=0',
-    'REAL_GMAIL_IN_CI=0',
-    'IOS_TOUCHED=0',
-    'BUILD_READY=false',
-    'contents: read',
-    'runs-on: ubuntu-latest',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('statement-etl-contract.yml', `statement ETL synthetic boundary missing marker: ${marker}`);
-  }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
-    fail('statement-etl-contract.yml', 'statement ETL CI may not receive Gmail/OAuth credentials');
-  }
-  if (/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i.test(text)) {
-    fail('statement-etl-contract.yml', 'statement ETL CI may validate contracts but may not execute trusted-edge/provider flows');
-  }
-  if (/REAL_STATEMENT_DATA_IN_CI=1|REAL_GMAIL_IN_CI=1|IOS_TOUCHED=1|BUILD_READY=true/i.test(text)) {
-    fail('statement-etl-contract.yml', 'statement ETL CI contains a forbidden promotion marker');
-  }
-}
-
-if (workflowFiles.includes('alpha2-design-freeze.yml')) {
-  const text = read('alpha2-design-freeze.yml');
-  const requiredMarkers = [
-    'node tools/validate-alpha2-design-freeze.mjs',
-    'REAL_GMAIL_IN_CI=0',
-    'REAL_FINANCIAL_DATA_IN_CI=0',
-    'BUILD_READY=NO',
-    'contents: read',
-    'runs-on: ubuntu-latest',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('alpha2-design-freeze.yml', `Alpha.2 design CI boundary missing marker: ${marker}`);
-  }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
-    fail('alpha2-design-freeze.yml', 'Alpha.2 design CI may not receive Gmail/OAuth credentials');
-  }
-}
-
-if (workflowFiles.includes('alpha2-statement-discovery.yml')) {
-  const text = read('alpha2-statement-discovery.yml');
-  const requiredMarkers = [
-    'node tools/validate-alpha2-a-statement-discovery.mjs',
-    'ATTACHMENT_BYTES_FETCHED=0',
-    'PASSWORD_REQUESTED=0',
-    'VAULT_MUTATION=0',
-    'REAL_GMAIL_IN_CI=0',
-    'BUILD_READY=NO',
-    'contents: read',
-    'runs-on: ubuntu-latest',
-  ];
-  for (const marker of requiredMarkers) {
-    if (!text.includes(marker)) fail('alpha2-statement-discovery.yml', `Alpha.2 discovery CI boundary missing marker: ${marker}`);
-  }
-  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
-    fail('alpha2-statement-discovery.yml', 'Alpha.2 discovery CI may not receive Gmail/OAuth credentials');
-  }
-  if (/REAL_GMAIL_IN_CI=1|ATTACHMENT_BYTES_FETCHED=1|PASSWORD_REQUESTED=1|VAULT_MUTATION=1|BUILD_READY=YES/i.test(text)) {
-    fail('alpha2-statement-discovery.yml', 'Alpha.2 discovery CI contains a forbidden promotion marker');
-  }
+  contract.validate?.(text, file);
 }
 
 for (const file of RETIRED_WORKFLOWS) {
@@ -266,4 +280,7 @@ console.log('STATEMENT_ETL_REAL_GMAIL_IN_CI=0');
 console.log('STATEMENT_ETL_IOS_TOUCHED=0');
 console.log('ALPHA2_DESIGN_REAL_GMAIL_IN_CI=0');
 console.log('ALPHA2_DISCOVERY_ATTACHMENT_BYTES_FETCHED_IN_CI=0');
+console.log('ALPHA2_FETCH_PARSE_REAL_GMAIL_IN_CI=0');
+console.log('ALPHA2_FETCH_PARSE_REAL_FINANCIAL_PLAINTEXT_IN_CI=0');
+console.log('ALPHA2_FETCH_PARSE_PASSWORD_DURABLE_STORAGE=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
