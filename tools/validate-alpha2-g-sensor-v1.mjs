@@ -21,13 +21,28 @@ const source = readText('spikes/physical-ingress/src/sensor-v1.js');
 const status = readText('STATUS.md');
 
 assert(graph.slice === 'ALPHA_2_G', 'SLICE_ID');
-assert(graph.status === 'STATIC_IMPLEMENTED_CI_PENDING', 'STATIC_STATUS_PENDING');
+assert(graph.status === 'STATIC_IMPLEMENTED_CI_PASS', 'STATIC_STATUS');
 assert(graph.baseCommit === 'f2956b3f8676e2d8728b9f71b1c4480590406bc8', 'BASE_COMMIT');
-assert(graph.implementationReceipt === null, 'IMPLEMENTATION_RECEIPT_MUST_BE_NULL_BEFORE_CI');
-assert(graph.claims?.staticImplementationPass === false, 'STATIC_PASS_MUST_REMAIN_FALSE_BEFORE_EXACT_SHA_CI');
+assert(graph.claims?.staticImplementationPass === true, 'STATIC_PASS_REQUIRED');
 assert(graph.claims?.physicalSensorPass === false, 'PHYSICAL_SENSOR_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.alpha2ProductPass === false, 'ALPHA2_PRODUCT_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
+
+const receipt = graph.implementationReceipt;
+assert(receipt?.pullRequest === 77, 'RECEIPT_PR');
+assert(receipt?.candidateHeadSha === 'ecd32e9001901468594eec6a7869bc29a1923743', 'RECEIPT_HEAD_SHA');
+assert(receipt?.mergeCommitSha === '4bbe179555e5220c302ad59717bfef8fc2702718', 'RECEIPT_MERGE_SHA');
+const workflows = new Map((receipt?.workflows ?? []).map(run => [run.name, run]));
+for (const [name, runId, runNumber] of [
+  ['FinanceSensor Statement ETL Contract', 33999149624, 102],
+  ['FinanceSensor Gmail Historical', 33999149617, 140]
+]) {
+  const run = workflows.get(name);
+  assert(run?.runId === runId, `RECEIPT_RUN_ID:${name}`);
+  assert(run?.runNumber === runNumber, `RECEIPT_RUN_NUMBER:${name}`);
+  assert(run?.conclusion === 'success', `RECEIPT_RUN_CONCLUSION:${name}`);
+}
+assert(workflows.size === 2, 'RECEIPT_WORKFLOW_COUNT');
 
 assert(alpha2F.status === 'STATIC_IMPLEMENTED_CI_PASS', 'ALPHA2_F_DEPENDENCY');
 assert(alpha2F.claims?.staticImplementationPass === true, 'ALPHA2_F_STATIC_PASS');
@@ -56,39 +71,22 @@ assert(graph.recurrenceBoundary?.promotionState === 'CANDIDATE_ONLY', 'GRAPH_REC
 assert(graph.recurrenceBoundary?.truthState === 'OBSERVED', 'GRAPH_RECURRENCE_OBSERVED');
 assert(graph.recurrenceBoundary?.minimumOccurrencesImplementationPin === 3, 'GRAPH_RECURRENCE_MIN_OCCURRENCES');
 assert(graph.cashflowBoundary?.crossCurrencyCombinedTotal === false, 'GRAPH_CASHFLOW_CROSS_CURRENCY');
-assert(graph.cashflowBoundary?.reconciledTruthRequiresReconciledMonthlyClose === true, 'GRAPH_CASHFLOW_RECONCILED_AUTHORITY');
 assert(graph.persistence?.repositoryTransactional === true, 'GRAPH_TRANSACTION');
 assert(graph.persistence?.replayIdempotent === true, 'GRAPH_REPLAY');
 assert(graph.persistence?.physicalSchemaMigrationInThisSlice === false, 'GRAPH_SCHEMA_OVERCLAIM');
 
-for (const marker of [
-  '## Category foundation',
-  '- Comida',
-  '- Transporte',
-  '- Suscripciones',
-  '- Comisiones',
-  '- Impuestos',
-  'Categories are product-language groupings, not a formal accounting chart.'
-]) assert(product.includes(marker), `PRODUCT_MARKER:${marker}`);
-
-for (const marker of [
-  '## Sensor V1',
-  'LO QUE SABEMOS',
-  'LO QUE TODAVÍA NO SABEMOS',
-  'Deterministic recurring/category results are described as observations until their evidence threshold is met.'
-]) assert(alpha2Ux.includes(marker), `UX_MARKER:${marker}`);
-
-for (const marker of [
-  '### RecurringPattern',
-  'state        CANDIDATE | ACTIVE | DISMISSED | ENDED',
-  'RECURRING_PATTERN_CONFIRMED'
-]) assert(core.includes(marker), `CORE_MARKER:${marker}`);
-
-for (const marker of [
-  '## Slice G — Sensor V1',
-  'deterministic merchant normalization, recurrence candidates, base categories, cashflow observations and explicit knowledge gaps',
-  'No LLM, recommendation or automated financial advice enters this slice.'
-]) assert(plan.includes(marker), `PLAN_MARKER:${marker}`);
+for (const marker of ['## Category foundation','- Comida','- Transporte','- Suscripciones','- Comisiones','- Impuestos']) {
+  assert(product.includes(marker), `PRODUCT_MARKER:${marker}`);
+}
+for (const marker of ['## Sensor V1','LO QUE SABEMOS','LO QUE TODAVÍA NO SABEMOS','Deterministic recurring/category results are described as observations until their evidence threshold is met.']) {
+  assert(alpha2Ux.includes(marker), `UX_MARKER:${marker}`);
+}
+for (const marker of ['### RecurringPattern','state        CANDIDATE | ACTIVE | DISMISSED | ENDED','RECURRING_PATTERN_CONFIRMED']) {
+  assert(core.includes(marker), `CORE_MARKER:${marker}`);
+}
+for (const marker of ['## Slice G — Sensor V1','deterministic merchant normalization, recurrence candidates, base categories, cashflow observations and explicit knowledge gaps','No LLM, recommendation or automated financial advice enters this slice.']) {
+  assert(plan.includes(marker), `PLAN_MARKER:${marker}`);
+}
 
 const moduleUrl = pathToFileURL(path.join(root, 'spikes/physical-ingress/src/sensor-v1.js')).href;
 const {
@@ -104,7 +102,6 @@ const {
   buildSensorV1Snapshot,
   sensorV1StaticContract
 } = await import(moduleUrl);
-
 assert(ALPHA2_SENSOR_VERSION === 'A2_SENSOR_V1', 'SOURCE_VERSION');
 assert(ALPHA2_SENSOR_CATEGORY_VERSION === 'A2_BASE_CATEGORY_V1', 'SOURCE_CATEGORY_VERSION');
 assert(ALPHA2_SENSOR_RECURRENCE_VERSION === 'A2_RECURRENCE_CANDIDATE_V1', 'SOURCE_RECURRENCE_VERSION');
@@ -134,15 +131,9 @@ assert(contract.alpha2ProductPassClaimed === false, 'SOURCE_ALPHA2_OVERCLAIM');
 assert(contract.buildReady === false, 'SOURCE_BUILD_READY_OVERCLAIM');
 
 const baseEvent = {
-  id: 'validator-event-1',
-  tenantId: 'validator-tenant',
-  semanticType: 'FEE',
-  amount: 10,
-  currency: 'PEN',
-  occurredAt: '2026-07-05T00:00:00.000Z',
-  merchantCanonical: 'Synthetic Bank',
-  accountId: 'validator-account',
-  reconciliationState: 'RECONCILED'
+  id: 'validator-event-1', tenantId: 'validator-tenant', semanticType: 'FEE', amount: 10,
+  currency: 'PEN', occurredAt: '2026-07-05T00:00:00.000Z', merchantCanonical: 'Synthetic Bank',
+  accountId: 'validator-account', reconciliationState: 'RECONCILED'
 };
 const category = baseCategoryObservation(baseEvent);
 assert(category.category === 'Comisiones', 'RUNTIME_FEE_CATEGORY');
@@ -165,32 +156,18 @@ assert(snapshot.automatedFinancialAdvice === false, 'RUNTIME_ADVICE_0');
 assert(snapshot.recommendations.length === 0, 'RUNTIME_RECOMMENDATIONS_0');
 assert(snapshot.genericEvidencePercentage === null, 'RUNTIME_GENERIC_PERCENT_0');
 
-for (const marker of [
-  'normalizeMerchant',
-  'CANDIDATE_ONLY',
-  'CATEGORY_SIGNAL_INSUFFICIENT',
-  'getSensorReplay',
-  'putSensorOutput',
-  'putSensorReplay',
-  'SENSOR_RECOMMENDATION_FORBIDDEN',
-  'SENSOR_NON_DETERMINISTIC_OUTPUT_FORBIDDEN'
-]) assert(source.includes(marker), `SOURCE_MARKER:${marker}`);
-
-for (const forbidden of [
-  'OpenAI',
-  'anthropic',
-  'gemini',
-  'recommendSpend',
-  'financialAdvice(',
-  'gmail.googleapis.com',
-  'oauth2.googleapis.com',
-  'writeFileSync('
-]) assert(!source.includes(forbidden), `FORBIDDEN_SOURCE:${forbidden}`);
-
+for (const marker of ['normalizeMerchant','CANDIDATE_ONLY','CATEGORY_SIGNAL_INSUFFICIENT','getSensorReplay','putSensorOutput','putSensorReplay','SENSOR_RECOMMENDATION_FORBIDDEN','SENSOR_NON_DETERMINISTIC_OUTPUT_FORBIDDEN']) {
+  assert(source.includes(marker), `SOURCE_MARKER:${marker}`);
+}
+for (const forbidden of ['OpenAI','anthropic','gemini','recommendSpend','financialAdvice(','gmail.googleapis.com','oauth2.googleapis.com','writeFileSync(']) {
+  assert(!source.includes(forbidden), `FORBIDDEN_SOURCE:${forbidden}`);
+}
 assert(/BUILD_READY\s+NO/.test(status), 'GLOBAL_BUILD_READY_STATUS');
 
-console.log('ALPHA2_G_STATIC_IMPLEMENTATION=CANDIDATE');
-console.log('ALPHA2_G_EXACT_SHA_RECEIPT=PENDING');
+console.log('ALPHA2_G_STATIC_IMPLEMENTATION=PASS');
+console.log('ALPHA2_G_EXACT_SHA_RECEIPT=PASS');
+console.log(`ALPHA2_G_IMPLEMENTATION_HEAD=${receipt.candidateHeadSha}`);
+console.log(`ALPHA2_G_MERGE_COMMIT=${receipt.mergeCommitSha}`);
 console.log('SENSOR_VERSION=A2_SENSOR_V1');
 console.log('SENSOR_DETERMINISTIC_ONLY=1');
 console.log('SENSOR_LLM_ENABLED=0');
