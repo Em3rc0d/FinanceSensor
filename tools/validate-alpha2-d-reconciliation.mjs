@@ -20,13 +20,28 @@ const source = readText('spikes/physical-ingress/src/statement-reconciliation.js
 const status = readText('STATUS.md');
 
 assert(graph.slice === 'ALPHA_2_D', 'SLICE_ID');
-assert(graph.status === 'STATIC_IMPLEMENTED_CI_PENDING', 'STATIC_STATUS_PENDING');
+assert(graph.status === 'STATIC_IMPLEMENTED_CI_PASS', 'STATIC_STATUS');
 assert(graph.baseCommit === '5ba43ddd44fcf7c77ce39b42f954316d7e7c8f0e', 'BASE_COMMIT');
-assert(graph.implementationReceipt === null, 'IMPLEMENTATION_RECEIPT_MUST_BE_NULL_BEFORE_CI');
-assert(graph.claims?.staticImplementationPass === false, 'STATIC_PASS_MUST_REMAIN_FALSE_BEFORE_EXACT_SHA_CI');
+assert(graph.claims?.staticImplementationPass === true, 'STATIC_PASS_REQUIRED');
 assert(graph.claims?.physicalReconciliationPass === false, 'PHYSICAL_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.alpha2ProductPass === false, 'ALPHA2_PRODUCT_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
+
+const receipt = graph.implementationReceipt;
+assert(receipt?.pullRequest === 71, 'RECEIPT_PR');
+assert(receipt?.candidateHeadSha === '693848dea007501e9819b58af2cf3e3012a7874d', 'RECEIPT_HEAD_SHA');
+assert(receipt?.mergeCommitSha === 'a86b323aa114a2cb2c8a31ea7d31493a0532c044', 'RECEIPT_MERGE_SHA');
+const workflows = new Map((receipt?.workflows ?? []).map(run => [run.name, run]));
+for (const [name, runId, runNumber] of [
+  ['FinanceSensor Statement ETL Contract', 33997679434, 89],
+  ['FinanceSensor Gmail Historical', 33997679437, 133]
+]) {
+  const run = workflows.get(name);
+  assert(run?.runId === runId, `RECEIPT_RUN_ID:${name}`);
+  assert(run?.runNumber === runNumber, `RECEIPT_RUN_NUMBER:${name}`);
+  assert(run?.conclusion === 'success', `RECEIPT_RUN_CONCLUSION:${name}`);
+}
+assert(workflows.size === 2, 'RECEIPT_WORKFLOW_COUNT');
 
 assert(alpha2B.status === 'STATIC_IMPLEMENTED_CI_PASS', 'ALPHA2_B_DEPENDENCY');
 assert(alpha2B.claims?.staticImplementationPass === true, 'ALPHA2_B_STATIC_PASS');
@@ -146,8 +161,10 @@ for (const forbidden of [
 
 assert(/BUILD_READY\s+NO/.test(status), 'GLOBAL_BUILD_READY_STATUS');
 
-console.log('ALPHA2_D_STATIC_IMPLEMENTATION=CANDIDATE');
-console.log('ALPHA2_D_EXACT_SHA_RECEIPT=PENDING');
+console.log('ALPHA2_D_STATIC_IMPLEMENTATION=PASS');
+console.log('ALPHA2_D_EXACT_SHA_RECEIPT=PASS');
+console.log(`ALPHA2_D_IMPLEMENTATION_HEAD=${receipt.candidateHeadSha}`);
+console.log(`ALPHA2_D_MERGE_COMMIT=${receipt.mergeCommitSha}`);
 console.log('RECONCILIATION_VERSION=A2_RECONCILIATION_V1');
 console.log('AUTO_CONFIRM_MIN_SCORE=85');
 console.log('AUTO_CONFIRM_MIN_MARGIN=15');
