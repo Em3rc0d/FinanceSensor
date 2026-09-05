@@ -8,6 +8,7 @@ on:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
       - 'graph/statement-profile-specs-v1.json'
+      - 'graph/alpha2-d-reconciliation.json'
       - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
       - 'mk0/03-design/PRODUCT-DESIGN.md'
@@ -24,6 +25,7 @@ on:
       - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
       - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-reconciliation.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
@@ -34,10 +36,12 @@ on:
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
       - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
       - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-reconciliation.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
       - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
+      - 'tools/validate-alpha2-d-reconciliation.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - 'tools/validate-statement-etl-reconciliation.mjs'
       - '.github/workflows/statement-etl-contract.yml'
@@ -48,6 +52,7 @@ on:
       - 'graph/statement-etl-reconciliation.json'
       - 'graph/statement-format-registry.json'
       - 'graph/statement-profile-specs-v1.json'
+      - 'graph/alpha2-d-reconciliation.json'
       - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
       - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
       - 'mk0/03-design/PRODUCT-DESIGN.md'
@@ -64,6 +69,7 @@ on:
       - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
       - 'spikes/physical-ingress/src/statement-layout-geometry.js'
       - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-reconciliation.js'
       - 'spikes/physical-ingress/src/statement-page-classifier.js'
       - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
       - 'spikes/physical-ingress/src/statement-row-parser.js'
@@ -74,10 +80,12 @@ on:
       - 'spikes/physical-ingress/test/statement-import-session.test.js'
       - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
       - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-reconciliation.test.js'
       - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
       - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
       - 'spikes/physical-ingress/test/statement-row-parser.test.js'
       - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
+      - 'tools/validate-alpha2-d-reconciliation.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - 'tools/validate-statement-etl-reconciliation.mjs'
       - '.github/workflows/statement-etl-contract.yml'
@@ -93,8 +101,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate public CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+
       - name: Validate statement ETL architecture
         run: node tools/validate-statement-etl-reconciliation.mjs
+
+      - name: Validate Alpha.2-D reconciliation boundary
+        run: node tools/validate-alpha2-d-reconciliation.mjs
 
       - name: Statement structural regression
         run: |
@@ -103,6 +117,7 @@ jobs:
           node --check spikes/physical-ingress/src/statement-layout-control-audit.js
           node --check spikes/physical-ingress/src/statement-layout-geometry.js
           node --check spikes/physical-ingress/src/statement-layout-reconciliation.js
+          node --check spikes/physical-ingress/src/statement-reconciliation.js
           node --check spikes/physical-ingress/src/statement-page-classifier.js
           node --check spikes/physical-ingress/src/statement-profile-row-adapters.js
           node --check spikes/physical-ingress/src/statement-row-parser.js
@@ -112,6 +127,7 @@ jobs:
             spikes/physical-ingress/test/statement-import-session.test.js \
             spikes/physical-ingress/test/statement-layout-control-audit.test.js \
             spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-reconciliation.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
@@ -123,6 +139,7 @@ jobs:
             graph/statement-etl-reconciliation.json \
             graph/statement-format-registry.json \
             graph/statement-profile-specs-v1.json \
+            graph/alpha2-d-reconciliation.json \
             mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md \
             mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
             mk0/03-design/PRODUCT-DESIGN.md \
@@ -139,6 +156,7 @@ jobs:
             spikes/physical-ingress/src/statement-layout-control-audit.js \
             spikes/physical-ingress/src/statement-layout-geometry.js \
             spikes/physical-ingress/src/statement-layout-reconciliation.js \
+            spikes/physical-ingress/src/statement-reconciliation.js \
             spikes/physical-ingress/src/statement-page-classifier.js \
             spikes/physical-ingress/src/statement-profile-row-adapters.js \
             spikes/physical-ingress/src/statement-row-parser.js \
@@ -149,10 +167,15 @@ jobs:
             spikes/physical-ingress/test/statement-import-session.test.js \
             spikes/physical-ingress/test/statement-layout-control-audit.test.js \
             spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-reconciliation.test.js \
             spikes/physical-ingress/test/statement-page-classifier.test.js \
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
             spikes/physical-ingress/test/statement-source-adapters.test.js
+          echo 'ALPHA2_D_STATIC_IMPLEMENTATION_PASS=0'
+          echo 'ALPHA2_D_REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
+          echo 'ALPHA2_D_PHYSICAL_SCHEMA_MIGRATION_PASS=0'
+          echo 'ALPHA2_D_PHYSICAL_RECONCILIATION_PASS=0'
           echo 'REAL_STATEMENT_DATA_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'IOS_TOUCHED=0'
