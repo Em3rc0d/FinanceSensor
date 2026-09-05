@@ -2,6 +2,30 @@ name: FinanceSensor Android Human Test Alpha
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/mobile-shell/lib/main_human_test.dart'
+      - 'spikes/mobile-shell/native/android/HumanTestMainActivity.kt'
+      - 'spikes/mobile-shell/native/android/FinancialMailScanner.kt'
+      - 'spikes/mobile-shell/test/human_test_candidate_test.dart'
+      - 'spikes/mobile-shell/pubspec.yaml'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/alpha2-b-statement-fetch-parse.json'
+      - 'graph/alpha2-c-financial-vault.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'graph/build-readiness.json'
+      - 'graph/closure-ledger.json'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-static-build-handoff.mjs'
+      - 'tools/validate-human-test-alpha.mjs'
+      - 'mk0/12-release/ALPHA2-STATIC-BUILD-HANDOFF.md'
+      - 'mk0/12-release/HUMAN-TEST-CANDIDATE.md'
+      - '.github/workflows/mobile-human-test-alpha.yml'
   push:
     branches:
       - jett/mk0-foundation
@@ -11,7 +35,19 @@ on:
       - 'spikes/mobile-shell/native/android/FinancialMailScanner.kt'
       - 'spikes/mobile-shell/test/human_test_candidate_test.dart'
       - 'spikes/mobile-shell/pubspec.yaml'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/alpha2-b-statement-fetch-parse.json'
+      - 'graph/alpha2-c-financial-vault.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'graph/build-readiness.json'
+      - 'graph/closure-ledger.json'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-static-build-handoff.mjs'
       - 'tools/validate-human-test-alpha.mjs'
+      - 'mk0/12-release/ALPHA2-STATIC-BUILD-HANDOFF.md'
       - 'mk0/12-release/HUMAN-TEST-CANDIDATE.md'
       - '.github/workflows/mobile-human-test-alpha.yml'
 
@@ -41,15 +77,21 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Pre-physical build-readiness boundary
+        run: node tools/validate-build-readiness.mjs
+
+      - name: Alpha.2 A-G static build handoff
+        run: node tools/validate-alpha2-static-build-handoff.mjs
+
+      - name: Human-test privacy boundary
+        run: node tools/validate-human-test-alpha.mjs
+
       - name: Setup Flutter 3.44.7
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.7'
           channel: stable
           cache: true
-
-      - name: Human-test privacy boundary
-        run: node tools/validate-human-test-alpha.mjs
 
       - name: Materialize Android scaffold
         working-directory: spikes/mobile-shell
@@ -181,6 +223,8 @@ jobs:
           cat > human-test-alpha-evidence.txt <<EOF
           FINANCESENSOR_HUMAN_TEST_CANDIDATE=0.1.0-alpha.1+1001
           SOURCE_COMMIT=${GITHUB_SHA}
+          STATIC_A_G_CERTIFIED=YES
+          ALPHA2_MOBILE_INTEGRATION=OPEN
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           APK_SHA256=${APK_SHA256}
           APK_BYTES=${APK_BYTES}
@@ -198,6 +242,7 @@ jobs:
           PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL
           TRUSTED_EDGE_RESIGN_REQUIRED=YES
           HUMAN_TEST_READY=YES
+          ALPHA2_PHYSICAL_PRODUCT_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
           IOS_TOUCHED=0
