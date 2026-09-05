@@ -46,7 +46,7 @@ function bcpCreditFixture() {
 function ripleyFixture() {
   return [{
     pageNumber: 1,
-    width: 700,
+    width: 760,
     height: 800,
     items: [
       item('EECC Tarjeta de Crédito Ripley', 350, 760, 0, 190),
@@ -62,24 +62,26 @@ function ripleyFixture() {
       item('Monto', 445, 700, 10, 45),
       item('TEA /', 520, 700, 11, 35),
       item('TNA', 558, 700, 12, 25),
-      item('03/AGO/2026', 40, 650, 13, 70),
-      item('03/AGO/2026', 135, 650, 14, 70),
-      item('288299', 225, 650, 15, 45),
-      item('PAGO DIGITAL OTRO BANCO', 300, 650, 16, 110),
-      item('-243.46', 445, 650, 17, 45),
-      item('15/AGO/2026', 40, 625, 18, 70),
-      item('16/AGO/2026', 135, 625, 19, 70),
-      item('008665', 225, 625, 20, 45),
-      item('COMERCIO DEMO', 300, 625, 21, 90),
-      item('T', 405, 625, 22, 10),
-      item('20.90', 445, 625, 23, 40),
-      item('109.83%', 520, 625, 24, 45),
-      item('22/AGO/2026', 40, 600, 25, 70),
-      item('22/AGO/2026', 135, 600, 26, 70),
-      item('SEGURO DE DESGRAVAMEN', 300, 600, 27, 110),
-      item('2.94', 445, 600, 28, 35),
-      item('SALDO INICIAL', 300, 575, 29, 80),
-      item('243.45', 445, 575, 30, 40)
+      item('Total', 650, 700, 13, 40),
+      item('03/AGO/2026', 40, 650, 14, 70),
+      item('03/AGO/2026', 135, 650, 15, 70),
+      item('288299', 225, 650, 16, 45),
+      item('PAGO DIGITAL OTRO BANCO', 300, 650, 17, 110),
+      item('-243.46', 650, 650, 18, 45),
+      item('15/AGO/2026', 40, 625, 19, 70),
+      item('16/AGO/2026', 135, 625, 20, 70),
+      item('008665', 225, 625, 21, 45),
+      item('COMERCIO DEMO', 300, 625, 22, 90),
+      item('T', 405, 625, 23, 10),
+      item('20.90', 445, 625, 24, 40),
+      item('109.83%', 520, 625, 25, 45),
+      item('20.90', 650, 625, 26, 40),
+      item('22/AGO/2026', 40, 600, 27, 70),
+      item('22/AGO/2026', 135, 600, 28, 70),
+      item('SEGURO DE DESGRAVAMEN', 300, 600, 29, 110),
+      item('2.94', 650, 600, 30, 35),
+      item('SALDO INICIAL', 300, 575, 31, 80),
+      item('243.45', 650, 575, 32, 40)
     ]
   }];
 }
