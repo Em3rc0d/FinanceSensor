@@ -30,13 +30,16 @@ if (!failures.length) {
     'No es un saldo bancario ni una foto financiera completa.',
   ]) if (!dart.includes(marker)) fail(`Dart human-test marker missing: ${marker}`);
 
+  // Guard executable/code identifiers, not explanatory UI copy such as
+  // "Refresh token: 0". Identifiers/keys like refreshToken or refresh_token
+  // still fail closed, while plain human-readable prose does not.
   for (const pattern of [
     /gmail\.googleapis\.com/i,
     /accounts\.google\.com/i,
     /oauth2\.googleapis\.com/i,
-    /access[_ -]?token/i,
-    /refresh[_ -]?token/i,
-    /client[_ -]?secret/i,
+    /access_?token/i,
+    /refresh_?token/i,
+    /client_?secret/i,
     /dart:io/,
   ]) if (pattern.test(dart)) fail(`Dart crossed native network/credential boundary: ${pattern}`);
 
