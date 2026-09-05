@@ -2,9 +2,40 @@
   "schemaVersion": 1,
   "slice": "ALPHA_2_C",
   "name": "Financial Vault",
-  "status": "STATIC_IMPLEMENTATION_CANDIDATE_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "88747144e47bd8bbc17640565d18895126cdf821",
+  "implementationReceipt": {
+    "pullRequest": 68,
+    "candidateHeadSha": "92ea6899e0db57b689f79847f0ff7689e5b8c9ce",
+    "mergeCommitSha": "86c07eb1ebe2e2ae711d2b2f75ecf6a73f5fe16e",
+    "workflows": [
+      {
+        "name": "Alpha.2 Financial Vault",
+        "runId": 33989352375,
+        "runNumber": 1,
+        "conclusion": "success"
+      },
+      {
+        "name": "Alpha.2 Statement Fetch and Parse",
+        "runId": 33989352397,
+        "runNumber": 5,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33989352471,
+        "runNumber": 129,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33989352354,
+        "runNumber": 85,
+        "conclusion": "success"
+      }
+    ]
+  },
   "dependency": {
     "slice": "ALPHA_2_A",
     "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS",
@@ -105,7 +136,7 @@
     "restoreResurrectionBarrierP3": "OPEN"
   },
   "claims": {
-    "staticImplementationPass": false,
+    "staticImplementationPass": true,
     "physicalVaultPass": false,
     "p3PhysicalPass": false,
     "alpha2ProductPass": false,
