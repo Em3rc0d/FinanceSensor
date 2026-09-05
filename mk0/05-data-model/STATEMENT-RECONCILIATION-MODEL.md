@@ -1,6 +1,6 @@
 # DM-002 — Statement and monthly reconciliation model
 
-**Status:** DRAFT / architecture accepted by ADR-035 / real-format evidence open  
+**Status:** ALPHA.2 DESIGN FROZEN / implementation and physical evidence open
 **Scope:** local encrypted domain model; raw financial plaintext remains transient.
 
 ## 1. Goals
@@ -88,6 +88,48 @@ section_hint?
 ```
 
 This representation exists only inside an adapter pipeline.
+
+### StatementDiscoveryProfile
+
+Versioned configuration, not user financial data:
+
+```text
+id
+version
+institution_code
+known_sender_rules
+subject_marker_rules
+filename_marker_rules
+product_hints
+bounded_query_templates
+candidate_score_version
+status                     ACTIVE | DISABLED | SUPERSEDED
+```
+
+It contains no token, password, real message content or user identifier.
+
+### StatementCandidate
+
+The runtime candidate is computed from metadata/MIME descriptors before attachment download:
+
+```text
+parent_source_key
+attachment_native_id
+discovery_profile_id
+discovery_profile_version
+institution_confidence
+product_hint
+sender_confidence
+subject_confidence
+filename_confidence
+mime_confidence
+attachment_size_bucket
+message_age_bucket
+decision                   REJECTED | WEAK | PROBABLE | STRONG | CONFLICT
+reason_codes[]
+```
+
+Only a unique `STRONG` decision is eligible for automatic fetch. Durable storage, if required for idempotency, excludes raw sender, subject and filename values.
 
 ## 4. Durable source lineage
 
@@ -307,7 +349,7 @@ tenant_id
 left_evidence_id
 right_evidence_id
 relation_type              SAME_ECONOMIC_EVENT | POSSIBLE_MATCH | CONFLICT | SETTLEMENT_RELATION | NO_MATCH
-match_state                PROPOSED | CONFIRMED | REJECTED | REVIEW
+match_state                PROPOSED | CONFIRMED | REJECTED | REVIEW | CONFLICT
 match_score?
 resolver_version
 match_features_version
@@ -334,6 +376,8 @@ ambiguity_count
 ```
 
 Do not store raw source text in the snapshot.
+
+Alpha.2 automatic confirmation additionally requires a unique candidate, independent evidence channels, compatible amount/currency/economic semantics, a stable reference or account/instrument+merchant anchor and a configured score margin over the second candidate. Amount equality alone is insufficient. The immutable scoring contract is versioned in `graph/alpha2-design-freeze.json`.
 
 ## 12. CanonicalFinancialEvent extension
 

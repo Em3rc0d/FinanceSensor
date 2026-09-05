@@ -194,7 +194,7 @@ if (!failures.length) {
     if (docs.bcpFixture.includes(forbiddenRealMarker) || docs.interbankFixture.includes(forbiddenRealMarker)) fail(`private marker leaked into synthetic fixture: ${forbiddenRealMarker}`);
   }
 
-  if (!docs.adrIndex.includes('| ADR-035 | Statement ETL and monthly reconciliation |') || !docs.adrIndex.includes('**Next available ADR:** `ADR-036`.')) fail('ADR index drifted');
+  if (!docs.adrIndex.includes('| ADR-035 | Statement ETL and monthly reconciliation |') || !docs.adrIndex.includes('**Next available ADR:** `ADR-037`.')) fail('ADR index drifted');
   for (const marker of ['StatementMovementEvidence','ReconciliationLink','AccountPeriodCoverage','MonthlyClose']) if (!docs.model.includes(marker)) fail(`data model missing ${marker}`);
   if (!docs.coreModel.includes('GMAIL + STATEMENT SAME EVENT => ONE CANONICAL EVENT')) fail('core dedup invariant missing');
   if (!docs.architecture.includes('Page-role and region scoping')) fail('architecture lost page/region layer');

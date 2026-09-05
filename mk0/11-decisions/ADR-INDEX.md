@@ -60,8 +60,9 @@ Supersedes / superseded by
 | ADR-033 | Financial source coverage asymmetry and statement lane | ACCEPTED FOR MK0 DESIGN / STATEMENT PHYSICAL PARSE OPEN | encrypted statement local parse + reconciliation |
 | ADR-034 | Mobile statement PDF runtime | ACCEPTED FOR MOBILE STATIC SPIKE / PHYSICAL DEVICE VALIDATION REQUIRED | Android encrypted-PDF runtime + owned-device statement proof; iOS remains open |
 | ADR-035 | Statement ETL and monthly reconciliation | ACCEPTED FOR MK0 DESIGN / REAL FORMAT EVIDENCE OPEN | sanitized multi-bank format corpus + Android monthly-close proof |
+| ADR-036 | Alpha.2 financial memory and Gmail statement discovery | ACCEPTED FOR BOUNDED DESIGN FREEZE / IMPLEMENTATION AND PHYSICAL PROOF OPEN | Alpha.2-A implementation, encrypted-vault proof and multi-profile physical campaign |
 
-**Next available ADR:** `ADR-036`.
+**Next available ADR:** `ADR-037`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
@@ -390,6 +391,33 @@ Evidence/decision:
 - `../../graph/mobile-statement-ingress.json`
 - `../../spikes/mobile-shell/lib/statement_ingress/`
 - `../../tools/validate-mobile-statement-ingress.mjs`
+
+## ADR-036 evidence boundary
+
+ADR-036 freezes Alpha.2 as an automatic, local and evidence-linked financial memory:
+
+```text
+PRIMARY STATEMENT PATH          TARGETED GMAIL DISCOVERY
+FALLBACK PATHS                  SHARE/OPEN + LOCAL FILE
+AUTOMATIC DOWNLOAD              UNIQUE STRONG CANDIDATES ONLY
+RAW PDF/TEXT DURABILITY         FORBIDDEN
+PASSWORD DURABILITY             FORBIDDEN
+GENERIC PARSER FALLBACK         FORBIDDEN
+LOCAL VAULT                     SQLCIPHER / PLATFORM-WRAPPED DEK
+AMOUNT-ONLY MATCH               FORBIDDEN
+GLOBAL UNQUALIFIED COVERAGE %   FORBIDDEN
+SENSOR V1                       DETERMINISTIC / NO ADVICE
+ALPHA.2 PHYSICAL PASS           OPEN
+BUILD_READY                     UNCHANGED / false
+```
+
+Evidence/decision:
+
+- `ADR-036-ALPHA2-FINANCIAL-MEMORY.md`
+- `../03-design/ALPHA2-FINANCIAL-MEMORY-UX.md`
+- `../07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md`
+- `../../graph/alpha2-design-freeze.json`
+- `../../tools/validate-alpha2-design-freeze.mjs`
 
 ## Decision discipline
 

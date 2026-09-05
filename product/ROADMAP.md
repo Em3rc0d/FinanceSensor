@@ -60,6 +60,17 @@ Explicitly out of MK0:
 - desktop BI as a primary product;
 - production web parity.
 
+## Alpha milestones inside the sensing foundation
+
+```text
+ALPHA.1  SENSE               bounded recent Gmail signals; session-only surface
+ALPHA.2  REMEMBER + VERIFY   targeted Gmail statements; encrypted derived memory; reconciliation
+ALPHA.3  UNDERSTAND          richer deterministic patterns over reconciled history
+ALPHA.4  ANTICIPATE          evidence-bounded trends and anomaly candidates
+```
+
+Alpha.2 is design-frozen by ADR-036 and `graph/alpha2-design-freeze.json`. It does not move statement ingestion or reconciliation into MK2: those capabilities are now planned inside the financial-sensing foundation and remain implementation/physical-proof open. MK2 retains broader providers, document families and OCR/ML expansion.
+
 ## MK1 — Personal Financial Understanding
 
 Potential scope after MK0 evidence passes:
@@ -83,9 +94,9 @@ Potential scope:
 
 - Outlook / Microsoft provider adapter;
 - generic IMAP where policy and UX permit;
-- PDF/receipt ingestion;
-- statement import;
-- on-device OCR;
+- broader PDF/receipt families beyond Alpha.2 statement profiles;
+- additional statement providers and delivery paths;
+- on-device OCR expansion after native-text profiles stabilize;
 - local ML fallback;
 - improved source correlation;
 - regional connector exploration.

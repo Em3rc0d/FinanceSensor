@@ -79,9 +79,9 @@ Tus cuentas
 │ Ripley Crédito    EECC recibido           │
 └────────────────────────────────────────────┘
       ↓
-Solicitar / descargar desde app bancaria
+Buscar automáticamente EECC conocidos en Gmail
       ↓
-Compartir / abrir con FinanceSensor
+Si falta alguno: compartir desde el banco o elegir archivo local
       ↓
 Clave del PDF · solo esta operación
       ↓
@@ -94,7 +94,7 @@ Revisar diferencias si existen
 Septiembre cerrado
 ```
 
-FinanceSensor does not require the user to copy/paste weekly transaction tables from bank websites.
+FinanceSensor does not require the user to copy/paste weekly transaction tables from bank websites or manually import statements as the primary flow.
 
 ## Account inventory
 
@@ -131,10 +131,12 @@ Excluido por ti
 Supported product paths:
 
 ```text
-1. statement discovered as Gmail attachment
+1. statement discovered as Gmail attachment (PRIMARY)
 2. user downloads statement from bank app and shares/opens with FinanceSensor
 3. user selects an already downloaded local statement
 ```
+
+The automatic path uses targeted known-bank queries, metadata/MIME inspection and a strong candidate gate. Weak, probable, conflicting or unknown candidates are not downloaded automatically.
 
 The user should never have to understand MIME types, OCR or parser profiles.
 
@@ -152,7 +154,7 @@ La usaremos solo durante esta operación.
 
 Do not say “DNI” even if a bank commonly uses it.
 
-Do not provide a “remember password” option in MK0.
+Do not provide a durable “remember password” option. Alpha.2 may offer explicit same-institution reuse only for the current statement session.
 
 ## Extraction UX
 
