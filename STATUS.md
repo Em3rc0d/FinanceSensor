@@ -4,7 +4,7 @@ Last reconciled baseline: **2026-09-05**.
 
 ## Alpha.2 financial memory
 
-The thirteen Alpha.2 design nodes are closed at the design level on `graph/alpha2-design-freeze.json`. Alpha.2-A discovery and Alpha.2-B fetch/parse have now crossed their bounded static implementation gates with exact-SHA CI evidence. This does not promote any physical Gmail, Android, parser-profile or global build-readiness claim.
+The thirteen Alpha.2 design nodes are closed at the design level on `graph/alpha2-design-freeze.json`. Alpha.2-A discovery, Alpha.2-B fetch/parse and Alpha.2-C financial vault have now crossed their bounded static implementation gates with exact-SHA CI evidence. This does not promote any physical Gmail, Android, parser-profile, SQLCipher/Keystore or global build-readiness claim.
 
 ```text
 ALPHA.2 DESIGN FREEZE                 13 / 13 CLOSED_DESIGN
@@ -12,15 +12,16 @@ PRIMARY STATEMENT PATH                TARGETED GMAIL DISCOVERY
 MANUAL SHARE / LOCAL FILE             FALLBACK
 ALPHA.2-A STATEMENT DISCOVERY         STATIC IMPLEMENTED / CI PASS
 ALPHA.2-B FETCH + PARSE               STATIC IMPLEMENTED / CI PASS
-ALPHA.2-C..G                          DEPENDENCY-GATED
+ALPHA.2-C FINANCIAL VAULT             STATIC IMPLEMENTED / CI PASS
+ALPHA.2-D..G                          DEPENDENCY-GATED
 ALPHA.2 IMPLEMENTATION PASS           NO
 ALPHA.2 PHYSICAL PRODUCT PASS         NO
 GLOBAL BUILD_READY                    NO
 ```
 
-Known physical/open edges remain explicit: two BCP savings one-page final-balance bindings, one BCP savings period/date-order variant, BCP savings Alpha.2 runtime receipt binding, Interbank Gmail identity and mobile proof, BCP/Ripley credit runtime receipt binding, owned-Gmail physical fetch/parse and the stable Android signer handoff in draft PR #62.
+Known physical/open edges remain explicit: two BCP savings one-page final-balance bindings, one BCP savings period/date-order variant, BCP savings Alpha.2 runtime receipt binding, Interbank Gmail identity and mobile proof, BCP/Ripley credit runtime receipt binding, owned-Gmail physical fetch/parse, real Android SQLCipher/Keystore proof, database/sidecar/backup inspection, crypto-shred/P3 restore evidence and the stable Android signer handoff in draft PR #62.
 
-Alpha.2-A remains deliberately metadata-only. Alpha.2-B now adds the static strong-gated attachment-fetch and ephemeral parse boundary: only the BCP requested-savings profile is parser-enabled from Gmail at this stage; BCP Credit and Ripley Credit remain quarantined as `FORMAT_OBSERVED`, and no Interbank Gmail binding is invented while its identity remains open. Password and raw PDF/plaintext/layout remain non-durable. Physical Gmail execution and Android product integration remain open.
+Alpha.2-A remains deliberately metadata-only. Alpha.2-B adds the static strong-gated attachment-fetch and ephemeral parse boundary: only the BCP requested-savings profile is parser-enabled from Gmail at this stage; BCP Credit and Ripley Credit remain quarantined as `FORMAT_OBSERVED`, and no Interbank Gmail binding is invented while its identity remains open. Password and raw PDF/plaintext/layout remain non-durable. Alpha.2-C adds the static SQLCipher-backed repository/key-boundary contract pinned to SQLCipher `4.18.0`, a platform-wrapped 256-bit DEK contract, transactional schema v1, atomic derived-batch + terminal-source-state commit, raw/secret durable-field rejection and crypto-shred authority ordering. Physical Gmail execution, Android product integration, real SQLCipher/Keystore execution and P3 storage/deletion/restore evidence remain open.
 
 ## Project state
 
