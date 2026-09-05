@@ -2,10 +2,28 @@
   "schemaVersion": 1,
   "slice": "ALPHA_2_F",
   "name": "Monthly Coverage",
-  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "9e2a1327a35935d19f073e743d33c82fa4c74df7",
-  "implementationReceipt": null,
+  "implementationReceipt": {
+    "pullRequest": 75,
+    "candidateHeadSha": "6b6a59f5080597dccd0521c96b12050c209a6244",
+    "mergeCommitSha": "07fc9e56e0a3b92015a6b2b3eb6e8980de7059a8",
+    "workflows": [
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33998869985,
+        "runNumber": 98,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33998869969,
+        "runNumber": 138,
+        "conclusion": "success"
+      }
+    ]
+  },
   "dependencies": [
     {
       "slice": "ALPHA_2_D",
@@ -130,7 +148,7 @@
     "androidPhysicalMonthlyCoverage": "OPEN"
   },
   "claims": {
-    "staticImplementationPass": false,
+    "staticImplementationPass": true,
     "physicalMonthlyCoveragePass": false,
     "alpha2ProductPass": false,
     "buildReady": false
