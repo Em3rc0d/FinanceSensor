@@ -53,7 +53,7 @@ jobs:
             spikes/physical-ingress/test/gmail-statement-attachment.test.js
       - name: Assert static-only promotion boundary
         run: |
-          ! grep -E "STATIC_IMPLEMENTATION_PASS|PHYSICAL_PRODUCT_PASS|BUILD_READY[=: ]+YES" graph/alpha2-b-statement-fetch-parse.json
+          ! grep -E '"staticImplementationPass"[[:space:]]*:[[:space:]]*true|"physicalProductPass"[[:space:]]*:[[:space:]]*true|"buildReady"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
           ! grep -E "console\.log\(|writeFile\(|writeFileSync\(|localStorage|sessionStorage" spikes/physical-ingress/src/statement-fetch-parse.js
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
