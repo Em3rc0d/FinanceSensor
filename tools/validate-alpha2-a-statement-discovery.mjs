@@ -15,7 +15,7 @@ const packageJson = JSON.parse(packageText);
 
 assert.equal(graph.schemaVersion, 1);
 assert.equal(graph.slice, 'ALPHA_2_A_STATEMENT_DISCOVERY');
-assert.equal(graph.status, 'STATIC_IMPLEMENTED_CI_PENDING');
+assert.equal(graph.status, 'STATIC_IMPLEMENTED_CI_PASS');
 assert.equal(graph.designAuthority, 'graph/alpha2-design-freeze.json');
 assert.equal(graph.implementation.productPromotion, false);
 assert.equal(graph.implementation.physicalExecution, false);
@@ -52,6 +52,11 @@ assert.equal(graph.inventory.rawMetadataDurable, false);
 assert.equal(graph.tests.syntheticOnly, true);
 assert.equal(graph.tests.realGmail, false);
 assert.equal(graph.tests.realFinancialData, false);
+assert.match(graph.ciEvidence.verifiedHeadSha, /^[0-9a-f]{40}$/);
+assert.match(graph.ciEvidence.mergedCommitSha, /^[0-9a-f]{40}$/);
+assert.equal(Object.keys(graph.ciEvidence.workflowRuns).length, 4);
+assert.equal(graph.ciEvidence.allConclusions, 'SUCCESS');
+assert.equal(graph.openGates.includes('CI_EXACT_SHA'), false);
 assert.equal(graph.buildReady, false);
 
 for (const marker of [
