@@ -11,6 +11,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'public-readiness.yml',
   'mobile-shell.yml',
   'mobile-gmail-connection.yml',
+  'mobile-human-test-alpha.yml',
   'gmail-historical.yml',
   'statement-etl-contract.yml',
 ]);
@@ -57,35 +58,19 @@ for (const file of ACTIVE_WORKFLOWS) {
   const text = read(file);
   const runnerLines = runsOnLines(text);
 
-  if (runnerLines.length === 0) {
-    fail(file, 'active workflow has no runs-on declaration');
-  }
-
+  if (runnerLines.length === 0) fail(file, 'active workflow has no runs-on declaration');
   for (const line of runnerLines) {
-    if (line !== REQUIRED_RUNNER) {
-      fail(file, `public CI routing must be exactly: ${REQUIRED_RUNNER}`);
-    }
+    if (line !== REQUIRED_RUNNER) fail(file, `public CI routing must be exactly: ${REQUIRED_RUNNER}`);
   }
 
   if (/runs-on:\s*\[[^\]]*self-hosted/i.test(text) || /runs-on:\s*self-hosted/i.test(text)) {
     fail(file, 'public active workflow references a persistent self-hosted runner');
   }
-
-  if (/\$\{\{\s*secrets\./.test(text)) {
-    fail(file, 'active workflow references repository/environment secrets');
-  }
-
-  if (/^\s*schedule\s*:/m.test(text) || /^\s*-?\s*cron\s*:/m.test(text)) {
-    fail(file, 'CI must not rely on cron scheduling during MK0');
-  }
-
-  if (!/permissions:\s*\n\s*contents:\s*read/m.test(text)) {
-    fail(file, 'workflow must keep explicit least-privilege contents: read');
-  }
+  if (/\$\{\{\s*secrets\./.test(text)) fail(file, 'active workflow references repository/environment secrets');
+  if (/^\s*schedule\s*:/m.test(text) || /^\s*-?\s*cron\s*:/m.test(text)) fail(file, 'CI must not rely on cron scheduling during MK0');
+  if (!/permissions:\s*\n\s*contents:\s*read/m.test(text)) fail(file, 'workflow must keep explicit least-privilege contents: read');
 }
 
-// The mobile shell workflow is allowed only as a synthetic build surface.
-// Registration here must never become permission to execute real provider authority.
 if (workflowFiles.includes('mobile-shell.yml')) {
   const text = read('mobile-shell.yml');
   const requiredMarkers = [
@@ -103,8 +88,6 @@ if (workflowFiles.includes('mobile-shell.yml')) {
   }
 }
 
-// The Android Gmail connection workflow may compile a real native provider bridge,
-// but hosted CI remains forbidden from executing user OAuth or receiving Gmail data.
 if (workflowFiles.includes('mobile-gmail-connection.yml')) {
   const text = read('mobile-gmail-connection.yml');
   const requiredMarkers = [
@@ -125,8 +108,37 @@ if (workflowFiles.includes('mobile-gmail-connection.yml')) {
   }
 }
 
-// The historical Gmail workflow validates only synthetic/static contracts.
-// The executable real OAuth viewer remains a LOCAL/TRUSTED-EDGE entrypoint and must never run in hosted CI.
+// The human-test workflow may compile code capable of real owned-device Gmail use,
+// but hosted CI remains compile/test only. No credentials, financial data or stable
+// private signing material may enter GitHub.
+if (workflowFiles.includes('mobile-human-test-alpha.yml')) {
+  const text = read('mobile-human-test-alpha.yml');
+  const requiredMarkers = [
+    'node tools/validate-human-test-alpha.mjs',
+    '--target lib/main_human_test.dart',
+    'com.financesensor.lab.gmailconnection.r2',
+    'EXACT_SCOPE=gmail.readonly',
+    'SESSION_ONLY_FINANCIAL_STATE=1',
+    'REAL_OAUTH_EXECUTED_BY_CI=0',
+    'REAL_GMAIL_EXECUTED_BY_CI=0',
+    'PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL',
+    'TRUSTED_EDGE_RESIGN_REQUIRED=YES',
+    'HUMAN_TEST_READY=YES',
+    'BUILD_READY=NO',
+    'RELEASE_READY=NO',
+    'IOS_TOUCHED=0',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('mobile-human-test-alpha.yml', `human-test CI boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
+    fail('mobile-human-test-alpha.yml', 'human-test public CI may not receive Gmail/OAuth credentials');
+  }
+  if (/FINANCESENSOR_R2_LAB.*(PASSWORD|PRIVATE|KEYSTORE)|storePassword|keyPassword/i.test(text)) {
+    fail('mobile-human-test-alpha.yml', 'human-test public CI may not receive stable private signing material');
+  }
+}
+
 if (workflowFiles.includes('gmail-historical.yml')) {
   const text = read('gmail-historical.yml');
   const requiredMarkers = [
@@ -146,8 +158,6 @@ if (workflowFiles.includes('gmail-historical.yml')) {
   }
 }
 
-// The statement ETL workflow is a public synthetic contract surface only.
-// Registration must not authorize real statements, Gmail, credentials, financial plaintext, or mobile physical claims.
 if (workflowFiles.includes('statement-etl-contract.yml')) {
   const text = read('statement-etl-contract.yml');
   const requiredMarkers = [
@@ -178,24 +188,11 @@ for (const file of RETIRED_WORKFLOWS) {
     fail(file, 'registered retired workflow is missing');
     continue;
   }
-
   const text = read(file);
-
-  if (!/if:\s*\$\{\{\s*false\s*\}\}/.test(text)) {
-    fail(file, 'retired workflow must remain hard-disabled with if: ${{ false }}');
-  }
-
-  if (!text.includes('runs-on: ubuntu-latest')) {
-    fail(file, 'retired historical workflow shape changed unexpectedly');
-  }
-
-  if (!/^\s*workflow_dispatch\s*:/m.test(text)) {
-    fail(file, 'retired workflow must not regain an automatic trigger');
-  }
-
-  if (/\$\{\{\s*secrets\./.test(text)) {
-    fail(file, 'retired workflow must not reference secrets');
-  }
+  if (!/if:\s*\$\{\{\s*false\s*\}\}/.test(text)) fail(file, 'retired workflow must remain hard-disabled with if: ${{ false }}');
+  if (!text.includes('runs-on: ubuntu-latest')) fail(file, 'retired historical workflow shape changed unexpectedly');
+  if (!/^\s*workflow_dispatch\s*:/m.test(text)) fail(file, 'retired workflow must not regain an automatic trigger');
+  if (/\$\{\{\s*secrets\./.test(text)) fail(file, 'retired workflow must not reference secrets');
 }
 
 if (failures.length > 0) {
@@ -216,6 +213,9 @@ console.log('MOBILE_SHELL_REAL_OAUTH=0');
 console.log('MOBILE_SHELL_REAL_FINANCIAL_DATA=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('MOBILE_GMAIL_CONNECTION_REAL_GMAIL_EXECUTED_BY_CI=0');
+console.log('MOBILE_HUMAN_TEST_REAL_OAUTH_EXECUTED_BY_CI=0');
+console.log('MOBILE_HUMAN_TEST_REAL_GMAIL_EXECUTED_BY_CI=0');
+console.log('MOBILE_HUMAN_TEST_PRIVATE_SIGNER_IN_CI=0');
 console.log('GMAIL_HISTORICAL_REAL_OAUTH_EXECUTED_BY_CI=0');
 console.log('GMAIL_HISTORICAL_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('STATEMENT_ETL_REAL_STATEMENT_DATA_IN_CI=0');
