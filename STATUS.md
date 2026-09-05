@@ -1,6 +1,23 @@
 # FinanceSensor — Current Status
 
-Last reconciled baseline: **2026-09-03**.
+Last reconciled baseline: **2026-09-05**.
+
+## Alpha.2 financial memory
+
+The thirteen Alpha.2 design nodes are closed at the design level on `graph/alpha2-design-freeze.json`. This authorizes only the bounded Alpha.2-A statement-discovery implementation slice after its exact-SHA validator passes.
+
+```text
+ALPHA.2 DESIGN FREEZE                 13 / 13 CLOSED_DESIGN
+PRIMARY STATEMENT PATH                TARGETED GMAIL DISCOVERY
+MANUAL SHARE / LOCAL FILE             FALLBACK
+ALPHA.2-A STATEMENT DISCOVERY         READY AFTER FREEZE CI
+ALPHA.2-B..G                          DEPENDENCY-GATED
+ALPHA.2 IMPLEMENTATION PASS           NO
+ALPHA.2 PHYSICAL PRODUCT PASS         NO
+GLOBAL BUILD_READY                    NO
+```
+
+Known physical/open edges remain explicit: two BCP savings one-page final-balance bindings, one BCP savings period/date-order variant, Alpha.2 runtime receipt binding, Interbank savings mobile proof and the stable Android signer handoff in draft PR #62.
 
 ## Project state
 
