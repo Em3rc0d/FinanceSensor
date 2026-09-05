@@ -12,6 +12,25 @@ The candidate answers one product question with real owned data:
 
 > Can a user connect Gmail read-only, let FinanceSensor inspect a bounded recent sample locally, see conservative derived financial movements in the mobile product surface, and disconnect again without giving Flutter or public CI credential custody?
 
+## Alpha.2 static context
+
+The Alpha.2 financial-memory slices A through G have completed their bounded static implementation gates with exact-SHA CI receipts. That closure is repository engineering context only; this Human Test APK remains the narrower session-only mobile candidate described below and does not silently integrate or physically certify the Alpha.2 statement/vault/reconciliation/account-graph/monthly-coverage/Sensor runtime.
+
+```text
+STATIC_A_G_CERTIFIED=YES
+ALPHA2_STATIC_SLICES=7/7
+ALPHA2_MOBILE_INTEGRATION=OPEN
+ALPHA2_PHYSICAL_PRODUCT_PASS=NO
+```
+
+Governing boundary:
+
+```text
+STATIC_A_G_CERTIFIED != ALPHA2_MOBILE_INTEGRATED
+ALPHA2_MOBILE_INTEGRATED != ALPHA2_PHYSICAL_PRODUCT_PASS
+HUMAN_TEST_APK_BUILD != GLOBAL_BUILD_READY
+```
+
 ## Included
 
 - Android Google Authorization with exact `gmail.readonly` scope.
@@ -27,6 +46,7 @@ The candidate answers one product question with real owned data:
 
 ## Explicitly not included
 
+- Alpha.2 A-G mobile runtime integration.
 - Historical completeness.
 - Gmail background/incremental sync.
 - Statement PDF ingestion inside the Android app.
