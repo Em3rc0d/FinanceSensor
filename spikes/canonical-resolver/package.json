@@ -1,0 +1,13 @@
+{
+  "name": "@financesensor/canonical-resolver-spike",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "verify": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

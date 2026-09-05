@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "status": "ACCEPTED_FOR_PHYSICAL_VALIDATION",
+  "defaultRule": "DENY_UNLISTED_CLOUD_VISIBLE_DATA_CLASS",
+  "sourceMatrices": [
+    "PRIVACY-DATA-MATRIX.json",
+    "PRIVACY-RECOVERY-MATRIX.json",
+    "PRIVACY-DELETION-MATRIX.json"
+  ],
+  "cloudVisibleClassIds": [
+    "DEVICE-PUBLIC-KEY",
+    "TENANT-KEY-WRAP",
+    "CLOUD-CONTROL-METADATA",
+    "CLOUD-E2EE-ENVELOPE",
+    "KEY-EPOCH-METADATA",
+    "WITNESS-CHECKPOINT-METADATA",
+    "DIAG-TELEMETRY",
+    "RECOVERY-PUBLIC-KEY",
+    "RECOVERY-EPOCH-WRAP",
+    "REVOCATION-CUTOVER-BARRIER",
+    "TRUSTED-CHECKPOINT-METADATA",
+    "DELETION-TOMBSTONE"
+  ],
+  "cloudForbiddenClassIds": [
+    "AUTH-OAUTH-TOKEN",
+    "DEVICE-PRIVATE-KEY",
+    "TENANT-ROOT-KEY",
+    "MAIL-MESSAGE-ID",
+    "MAIL-HISTORY-CURSOR",
+    "MAIL-SUBJECT",
+    "MAIL-BODY",
+    "MAIL-ATTACHMENT",
+    "FIN-EVIDENCE",
+    "FIN-CANONICAL-EVENT",
+    "FIN-INSIGHT",
+    "SYNC-CHECKPOINT",
+    "RECOVERY-PRIVATE-KEY"
+  ],
+  "surfaces": [
+    {
+      "id": "CONTROL_PLANE",
+      "allowedClassIds": [
+        "DEVICE-PUBLIC-KEY",
+        "TENANT-KEY-WRAP",
+        "CLOUD-CONTROL-METADATA",
+        "KEY-EPOCH-METADATA",
+        "RECOVERY-PUBLIC-KEY",
+        "RECOVERY-EPOCH-WRAP",
+        "REVOCATION-CUTOVER-BARRIER",
+        "TRUSTED-CHECKPOINT-METADATA",
+        "DELETION-TOMBSTONE"
+      ],
+      "forbiddenSemantics": [
+        "GMAIL_CONTENT",
+        "GMAIL_CREDENTIAL",
+        "FINANCIAL_PLAINTEXT",
+        "TENANT_ROOT_KEY_PLAINTEXT",
+        "RECOVERY_PRIVATE_KEY",
+        "DEVICE_PRIVATE_KEY"
+      ]
+    },
+    {
+      "id": "E2EE_RELAY",
+      "allowedClassIds": [
+        "TENANT-KEY-WRAP",
+        "CLOUD-E2EE-ENVELOPE",
+        "RECOVERY-EPOCH-WRAP"
+      ],
+      "forbiddenSemantics": [
+        "DECRYPTION_AUTHORITY",
+        "FINANCIAL_PLAINTEXT",
+        "GMAIL_CONTENT",
+        "RAW_KEY_MATERIAL"
+      ]
+    },
+    {
+      "id": "INDEPENDENT_WITNESS",
+      "allowedClassIds": [
+        "WITNESS-CHECKPOINT-METADATA"
+      ],
+      "forbiddenSemantics": [
+        "REAL_TENANT_ID",
+        "CROSS_WITNESS_IDENTIFIER",
+        "FINANCIAL_PLAINTEXT",
+        "FINANCIAL_CIPHERTEXT",
+        "GMAIL_CONTENT"
+      ]
+    },
+    {
+      "id": "TELEMETRY",
+      "allowedClassIds": [
+        "DIAG-TELEMETRY"
+      ],
+      "forbiddenSemantics": [
+        "GMAIL_CONTENT",
+        "GMAIL_CREDENTIAL",
+        "MERCHANT_PLAINTEXT",
+        "AMOUNT_EVENT_PAIR",
+        "ACCOUNT_IDENTIFIER",
+        "CARD_IDENTIFIER",
+        "CANONICAL_FINANCIAL_PAYLOAD",
+        "TENANT_ROOT_KEY_PLAINTEXT",
+        "RECOVERY_PRIVATE_KEY"
+      ]
+    }
+  ],
+  "physicalMeasurement": {
+    "phase": "P3",
+    "requiredClaim": "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+    "requiredObservations": [
+      "CLASSIFY_EACH_OBSERVED_CLOUD_PAYLOAD",
+      "ACCOUNT_REQUEST_BYTES_BY_SURFACE",
+      "ACCOUNT_RESPONSE_BYTES_BY_SURFACE",
+      "REJECT_UNCLASSIFIED_VISIBLE_FIELD",
+      "VERIFY_WITNESS_PSEUDONYMIZATION",
+      "VERIFY_TELEMETRY_ALLOWLIST"
+    ],
+    "unclassifiedObservedField": "FAIL"
+  }
+}

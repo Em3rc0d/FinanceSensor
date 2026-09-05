@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 4,
+  "status": "S5_BCP_SAVINGS_TRUSTED_EDGE_HARNESS_AWAITING_CI_PHYSICAL_OPEN",
+  "asOf": "2026-09-03",
+  "product": {
+    "surface": "FLUTTER_MOBILE_APP",
+    "primaryPhysicalTarget": "ANDROID",
+    "requiredProductionTargets": ["ANDROID", "IOS"],
+    "desktopHarnessAuthority": false
+  },
+  "sourceModel": {
+    "liveTransactional": "GMAIL_TRANSACTION_EVIDENCE",
+    "periodLedger": "BANK_STATEMENT",
+    "law": "REALTIME_SENSOR != BANK_LEDGER",
+    "inflowLaw": "NO_GMAIL_INFLOW != ZERO_INFLOW",
+    "outflowLaw": "OBSERVED_OUTFLOW != RECONCILED_OUTFLOW"
+  },
+  "etl": {
+    "extract": {
+      "nativePdfTextFirst": true,
+      "ocrFallback": true,
+      "ocrIsPrimary": false,
+      "pageBoundaryPreserved": true,
+      "textItemGeometryPreserved": true,
+      "flattenedTextColumnAuthority": false,
+      "pageRoleClassificationBeforeRows": true,
+      "activePdfContentExecution": false,
+      "formFieldFinancialAuthority": false,
+      "embeddedEducationalReferenceParse": false,
+      "documentIdentityConsistencyCheck": true,
+      "rawDurable": false,
+      "passwordDurable": false
+    },
+    "pageScope": {
+      "roles": [
+        "TRANSACTION_LEDGER",
+        "SUMMARY",
+        "INFORMATIONAL",
+        "EDUCATIONAL_REFERENCE",
+        "UNKNOWN"
+      ],
+      "rowEligibleRoles": ["TRANSACTION_LEDGER"],
+      "unknownRoleFailsClosed": true,
+      "sectionScopingAfterPageRole": true
+    },
+    "transform": {
+      "strategy": "VERSIONED_BANK_PRODUCT_ADAPTER",
+      "bankSpecificLayoutInCore": false,
+      "headerAnchoredGeometryAdapters": true,
+      "absoluteDeviceCoordinateParsers": false,
+      "normalizedContract": "STATEMENT_MOVEMENT_EVIDENCE",
+      "separateBalanceEffectFromCashflowDirection": true
+    },
+    "load": {
+      "durableEncryptedLineage": true,
+      "durableDerivedEvidence": true,
+      "durableRawPdf": false,
+      "durableRawEmailBody": false,
+      "durableOcrText": false,
+      "idempotentReplayRequired": true
+    }
+  },
+  "trustedEdgeHarness": {
+    "runtime": "WINDOWS_NODE_MK0_EVIDENCE_HARNESS_ONLY",
+    "launcher": "spikes/physical-ingress/live/RUN-FINANCESENSOR-BANK-STATEMENTS.cmd",
+    "viewer": "spikes/physical-ingress/live/owned-oauth-bank-statements-viewer.mjs",
+    "oauthScope": "gmail.readonly",
+    "vault": "WINDOWS_DPAPI_CURRENT_USER_AES_GCM",
+    "historicalWriterConcurrencyGuard": true,
+    "enabledProfiles": ["PE-BCP-SAVINGS-REQUESTED"],
+    "enabledPath": "GMAIL_ATTACHMENT_TO_PASSIVE_PDF_LAYOUT_TO_BCP_SAVINGS_ADAPTER",
+    "creditImportPolicy": "BLOCKED_UNTIL_PROFILE_ADAPTER_READY",
+    "interbankSavingsLocalFilePath": "OPEN_NOT_IMPLEMENTED",
+    "layoutReviewPolicy": "FAIL_CLOSED_BEFORE_VAULT_MUTATION",
+    "zeroMovementPolicy": "FAIL_CLOSED_BEFORE_VAULT_MUTATION",
+    "rawPdfDurable": false,
+    "layoutPlaintextDurable": false,
+    "passwordDurable": false,
+    "physicalExecution": "OPEN"
+  },
+  "normalizedDirections": {
+    "balanceEffect": ["INCREASE", "DECREASE", "NONE", "UNKNOWN"],
+    "cashflowDirection": ["INFLOW", "OUTFLOW", "NEUTRAL", "UNKNOWN"]
+  },
+  "reconciliation": {
+    "outcomes": [
+      "CONFIRMED_MATCH",
+      "PROBABLE_MATCH",
+      "STATEMENT_ONLY",
+      "EMAIL_ONLY_PENDING",
+      "CONFLICT",
+      "REVIEW_REQUIRED",
+      "NON_TRANSACTION"
+    ],
+    "weakAmountDateOnlyAutoMerge": false,
+    "gmailAndStatementSameEventCreatesDuplicate": false,
+    "statementOnlyMayCreateIncome": true,
+    "cardPaymentMayBecomeIncome": false
+  },
+  "monthlyClose": {
+    "states": [
+      "OPEN_LIVE",
+      "WAITING_FOR_STATEMENTS",
+      "IMPORTING",
+      "RECONCILING",
+      "REVIEW_REQUIRED",
+      "RECONCILED",
+      "REOPENED"
+    ],
+    "coverageDimensions": [
+      "OUTFLOW_OBSERVATION",
+      "INFLOW_LEDGER",
+      "STATEMENT_PERIOD",
+      "ACCOUNT_SCOPE",
+      "RECONCILIATION",
+      "REVIEW_RESOLUTION"
+    ],
+    "singleCompletenessPercentAuthoritative": false,
+    "reconciledMeansProductionReady": false
+  },
+  "truthLaws": [
+    "BANK_FORMAT_A != BANK_FORMAT_B",
+    "BANK_ADAPTER != CORE_FINANCIAL_MODEL",
+    "RAW_LAYOUT != CANONICAL_SEMANTICS",
+    "DOCUMENT_CLASSIFIED != ROWS_TRUSTED",
+    "PAGE_ROLE_UNKNOWN != PARSE_ANYWAY",
+    "EDUCATIONAL_REFERENCE_PAGE != TRANSACTION_LEDGER",
+    "PDF_ACTIVE_CONTENT != FINANCIAL_AUTHORITY",
+    "NATIVE_TEXT_PRESENT != REAL_ROW_PARSE_PASS",
+    "FLATTENED_TEXT != COLUMN_SEMANTICS",
+    "HEADER_POSITION != ABSOLUTE_DEVICE_COORDINATE",
+    "FIXTURE_READY != REAL_PARSE_PASS",
+    "STATIC_ADAPTER_PASS != REAL_PARSE_PASS",
+    "STATIC_READY != ANDROID_PHYSICAL_PROVEN",
+    "TRUSTED_EDGE_HARNESS_READY != PHYSICAL_PASS",
+    "DESKTOP_HARNESS_PASS != MOBILE_PHYSICAL_PASS",
+    "CREDIT_PROFILE_DETECTED != CREDIT_PROFILE_IMPORT_ENABLED",
+    "OCR_OUTPUT != FINANCIAL_EVENT",
+    "STATEMENT_ROW != CANONICAL_EVENT",
+    "GMAIL_EVIDENCE != BANK_LEDGER_EVIDENCE",
+    "APK_COMPILED != REAL_EECC_PROVEN",
+    "REAL_EECC_PROVEN != PRODUCTION_READY",
+    "MONTH_RECONCILED != PRODUCTION_READY"
+  ],
+  "evidence": {
+    "architectureDocumented": "PASS",
+    "dataModelDocumented": "PASS",
+    "monthlyCloseUxDocumented": "PASS",
+    "realFormatCorpus": "PRIVATE_4_DOCUMENT_3_INSTITUTION_OBSERVED",
+    "realFormatStructuralReview": "PASS_PRIVATE_ONLY",
+    "nativeTextPresenceInSharedCopies": "OBSERVED_4_OF_4",
+    "profileSpecV1": "COMMITTED",
+    "syntheticGeometricFixtures": "BCP_SAVINGS_PLUS_INTERBANK_SAVINGS",
+    "profileRowAdapters": "SAVINGS_2_STATIC_READY_SYNTHETIC",
+    "syntheticAdapterCi": "PASS_RUN_33828461944_JOB_100886097801",
+    "bcpSavingsTrustedEdgeHarness": "IMPLEMENTED_AWAITING_CI",
+    "nativeTextRealParse": "OPEN",
+    "bcpSavingsRealParse": "OPEN",
+    "creditStatementRealParse": "OPEN_BLOCKED",
+    "interbankSavingsLocalFileImport": "OPEN",
+    "ocrPhysical": "OPEN",
+    "multiBankReconciliationPhysical": "OPEN",
+    "androidRealStatement": "OPEN",
+    "iosRealStatement": "DEFERRED_REQUIRED"
+  },
+  "references": [
+    "graph/statement-profile-specs-v1.json",
+    "mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md",
+    "mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md",
+    "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
+    "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
+    "mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md",
+    "mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md",
+    "mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md",
+    "mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md"
+  ],
+  "buildReady": false,
+  "iosTouched": false
+}

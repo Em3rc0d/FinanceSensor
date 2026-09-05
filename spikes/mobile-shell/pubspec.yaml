@@ -1,0 +1,19 @@
+name: financesensor_mobile_shell
+description: FinanceSensor Android engineering shell with bounded human-test and synthetic validation surfaces.
+publish_to: none
+version: 0.1.0-alpha.1+1001
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pdfrx: 2.4.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

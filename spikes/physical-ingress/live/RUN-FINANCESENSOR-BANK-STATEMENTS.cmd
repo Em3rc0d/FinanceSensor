@@ -1,0 +1,117 @@
+@echo off
+setlocal EnableExtensions
+
+pushd "%~dp0.." >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor no pudo abrir su runtime local desde esta ruta.
+  echo No se accedio a Gmail ni a estados de cuenta.
+  echo.
+  pause
+  exit /b 1
+)
+
+title FinanceSensor - Bank Statement Recovery DEV
+
+where node >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor necesita Node.js para Windows disponible en PATH.
+  echo No se accedio a Gmail ni a estados de cuenta.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
+echo FinanceSensor - preparando parser PDF local exact-pinned...
+call npm ci --omit=optional --ignore-scripts --no-audit --no-fund >nul
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor no pudo preparar el parser PDF local verificado por package-lock.
+  echo Se detuvo antes de OAuth y antes de descargar estados de cuenta.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
+node live\windows-dpapi-preflight.mjs
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor no pudo validar Windows DPAPI para tu usuario.
+  echo Se detuvo antes de seleccionar credenciales y antes de acceder a Gmail.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
+node live\recover-stale-historical-writer.mjs
+if errorlevel 1 (
+  echo.
+  echo FinanceSensor detecto que Gmail History aun puede ser propietario del vault.
+  echo Si la ventana de Gmail Transaction History sigue abierta, cierrala y vuelve a intentar.
+  echo Si no puede verificar que el escritor historico termino, se detiene de forma segura.
+  echo No se seleccionaron credenciales y no se accedio a Gmail en este intento.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
+echo.
+echo FinanceSensor - Bank Statement Recovery DEV
+echo --------------------------------------------
+echo Scope exacto: gmail.readonly
+echo PDF password: SOLO MEMORIA LOCAL / NO SE GUARDA
+echo PDF descifrado y geometria: NO DURABLE
+echo Parser fisico habilitado ahora: BCP AHORRO solicitado por Gmail
+echo Perfiles de credito: DETECTABLES pero IMPORTACION FISICA BLOQUEADA
+echo Interbank ahorro por archivo local: TODAVIA OPEN
+echo iOS: NO TOCADO
+echo.
+echo IMPORTANTE: si Gmail History sigue RUNNING, el importador se negara a
+echo escribir el vault hasta que ese proceso termine o se detenga.
+echo Un RUNNING antiguo sin proceso vivo se recupera localmente como PAUSED antes de OAuth.
+echo.
+echo Selecciona el JSON OAuth Desktop DEV de FinanceSensor.
+echo.
+
+set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
+for /f "usebackq delims=" %%I in (`powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = 'Google OAuth credentials JSON (*.json)|*.json'; $d.Title = 'Selecciona FinanceSensor DEV Google OAuth Desktop credentials'; $d.Multiselect = $false; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($d.FileName) }"`) do set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH=%%I"
+
+if not defined FINANCESENSOR_GOOGLE_CREDENTIALS_PATH (
+  echo.
+  echo No seleccionaste credencial. FinanceSensor se detuvo antes de OAuth.
+  echo.
+  popd
+  pause
+  exit /b 1
+)
+
+echo.
+echo El navegador se abrira automaticamente.
+echo Si FinanceSensor detecta un EECC BCP Ahorro compatible, podras escribir
+echo su clave en el formulario LOCAL para probar el adapter geometrico.
+echo Los EECC de credito se mostraran como detectados pero no se importaran aun.
+echo Nunca pegues una clave de PDF en ChatGPT ni en GitHub.
+rem FINANCESENSOR_STATEMENT_PASSWORD_CHAT_OR_REPO=FORBIDDEN
+echo.
+
+set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS=1"
+node --import ./live/audit-web-summary-preload.mjs ./live/owned-oauth-bank-statements-viewer.mjs
+set "FS_EXIT=%ERRORLEVEL%"
+set "FINANCESENSOR_LOCAL_AUDIT_DIAGNOSTICS="
+set "FINANCESENSOR_GOOGLE_CREDENTIALS_PATH="
+
+echo.
+if "%FS_EXIT%"=="0" (
+  echo FinanceSensor Bank Statement Recovery finalizo.
+) else (
+  echo FinanceSensor se detuvo de forma segura.
+)
+echo.
+popd
+pause
+exit /b %FS_EXIT%

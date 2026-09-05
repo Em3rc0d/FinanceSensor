@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "releaseGate": "G-MK0",
+  "groups": [
+    {
+      "id": "TR-FIN-CORE",
+      "source": "product",
+      "invariants": ["FIN-001", "FIN-002", "FIN-003", "FIN-006"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-001", "DM-001"],
+      "tests": ["spikes/canonical-resolver/test/corpus.test.js", "spikes/canonical-resolver/test/economic-effect.test.js"],
+      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "mapsTo": ["INV-EVD-003", "INV-EVD-004", "INV-EVD-005", "INV-FIN-009"]
+    },
+    {
+      "id": "TR-FIN-TRANSFER",
+      "source": "product",
+      "invariants": ["FIN-004", "FIN-009"],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-001", "C-001", "DM-001", "T-001"],
+      "tests": ["spikes/canonical-resolver/test/economic-effect.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "mapsTo": ["INV-FIN-001", "INV-FIN-010"]
+    },
+    {
+      "id": "TR-FIN-CARD",
+      "source": "product",
+      "invariants": ["FIN-005"],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-001", "DM-001", "T-001"],
+      "tests": ["spikes/canonical-resolver/test/economic-effect.test.js", "spikes/canonical-resolver/test/resolver.test.js"],
+      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "mapsTo": ["INV-FIN-002"]
+    },
+    {
+      "id": "TR-FIN-OFFSETS",
+      "source": "product",
+      "invariants": ["FIN-010"],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-001", "C-002", "DM-001", "T-001"],
+      "tests": ["spikes/canonical-resolver/test/economic-effect.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"],
+      "mapsTo": ["INV-FIN-003", "INV-FIN-004", "INV-FIN-011"]
+    },
+    {
+      "id": "TR-FIN-IDEMPOTENCY",
+      "source": "product",
+      "invariants": ["FIN-007"],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-002", "S-001", "T-001"],
+      "tests": [
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/resolver.test.js"
+      ],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "mapsTo": ["INV-FIN-005", "INV-FIN-007"]
+    },
+    {
+      "id": "TR-FIN-RELEASE-LAW",
+      "source": "product",
+      "invariants": ["FIN-008"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["G-MK0"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-PRIV-LOCAL",
+      "source": "product",
+      "invariants": ["PRIV-001", "PRIV-002"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-004", "Q-005", "SEC-001", "T-002"],
+      "tests": ["tools/validate-privacy-matrix.mjs", "spikes/e2ee-sync/test/protocol.test.js"],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+      ],
+      "mapsTo": ["INV-SEC-002", "INV-SEC-003"]
+    },
+    {
+      "id": "TR-PRIV-LEAST-PRIVILEGE",
+      "source": "product",
+      "invariants": ["PRIV-003"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-003", "Q-004", "SEC-001"],
+      "tests": [],
+      "evidence": ["research/GMAIL-2026-SOURCES.md"],
+      "mapsTo": ["INV-SEC-001"]
+    },
+    {
+      "id": "TR-PRIV-VERIFIABLE",
+      "source": "product",
+      "invariants": ["PRIV-004"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["Q-004", "WF-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-PRIV-REVOCATION",
+      "source": "product",
+      "invariants": ["PRIV-005"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-005", "SEC-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/protocol.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"],
+      "mapsTo": ["INV-SYNC-003"]
+    },
+    {
+      "id": "TR-TEN-OWNERSHIP",
+      "source": "product",
+      "invariants": ["TEN-001", "TEN-002", "TEN-003"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["A-001", "DM-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": ["INV-TEN-001", "INV-TEN-002", "INV-TEN-003", "INV-TEN-004", "INV-TEN-005"]
+    },
+    {
+      "id": "TR-TEN-SOURCE-ID",
+      "source": "product",
+      "invariants": ["TEN-004"],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-002", "S-001", "T-001"],
+      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js", "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js"],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "mapsTo": ["INV-FIN-007"]
+    },
+    {
+      "id": "TR-TEN-CONVERGENCE",
+      "source": "product",
+      "invariants": ["TEN-005"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-005", "DM-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/protocol.test.js", "spikes/e2ee-sync/test/lease-failure.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"],
+      "mapsTo": ["INV-SYNC-002", "INV-SYNC-004", "INV-SYNC-005"]
+    },
+    {
+      "id": "TR-HUMAN",
+      "source": "product",
+      "invariants": ["HUM-001", "HUM-002", "HUM-003", "HUM-004", "HUM-005"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["WF-001", "DM-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": ["INV-COR-003"]
+    },
+    {
+      "id": "TR-UX",
+      "source": "product",
+      "invariants": ["UX-001", "UX-002", "UX-003", "UX-004", "UX-005", "UX-006"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["WF-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DEVICE-CAPABILITY",
+      "source": "product",
+      "invariants": ["DEV-001", "DEV-002"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["A-001", "WF-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DEVICE-FRESHNESS",
+      "source": "product",
+      "invariants": ["DEV-003"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-005", "A-001", "S-002", "T-002"],
+      "tests": ["spikes/e2ee-sync/test/scheduler.test.js"],
+      "evidence": ["mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"],
+      "mapsTo": ["INV-SYNC-006", "INV-SYNC-007"]
+    },
+    {
+      "id": "TR-DM-TEN",
+      "source": "data-model",
+      "invariants": ["INV-TEN-001", "INV-TEN-002", "INV-TEN-003", "INV-TEN-004", "INV-TEN-005"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["DM-001", "A-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-EVD",
+      "source": "data-model",
+      "invariants": ["INV-EVD-001", "INV-EVD-002", "INV-EVD-003", "INV-EVD-004", "INV-EVD-005"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-001", "Q-002", "DM-001"],
+      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js"],
+      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-FIN-PROVEN-SPIKE",
+      "source": "data-model",
+      "invariants": [
+        "INV-FIN-001",
+        "INV-FIN-002",
+        "INV-FIN-003",
+        "INV-FIN-004",
+        "INV-FIN-005",
+        "INV-FIN-006",
+        "INV-FIN-007",
+        "INV-FIN-010",
+        "INV-FIN-011"
+      ],
+      "status": "PROVEN",
+      "ownerNodes": ["Q-001", "Q-002", "S-001", "T-001"],
+      "tests": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js"
+      ],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-FIN-REMAINING",
+      "source": "data-model",
+      "invariants": ["INV-FIN-008", "INV-FIN-009"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-001", "DM-001"],
+      "tests": ["spikes/canonical-resolver/test/fingerprinting.test.js"],
+      "evidence": ["mk0/10-evidence/EV-MK0-ECG-2026-09-01.md"],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-COR",
+      "source": "data-model",
+      "invariants": ["INV-COR-001", "INV-COR-002", "INV-COR-003"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["DM-001", "Q-005"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-REC",
+      "source": "data-model",
+      "invariants": ["INV-REC-001", "INV-REC-002", "INV-REC-003"],
+      "status": "SPECIFIED",
+      "ownerNodes": ["DM-001"],
+      "tests": [],
+      "evidence": [],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-SYNC",
+      "source": "data-model",
+      "invariants": ["INV-SYNC-001", "INV-SYNC-002", "INV-SYNC-003", "INV-SYNC-004", "INV-SYNC-005", "INV-SYNC-006", "INV-SYNC-007"],
+      "status": "PROVEN_AT_SPIKE",
+      "ownerNodes": ["Q-005", "DM-001", "SEC-001", "S-002", "T-002"],
+      "tests": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js"
+      ],
+      "evidence": ["mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"],
+      "mapsTo": []
+    },
+    {
+      "id": "TR-DM-SEC",
+      "source": "data-model",
+      "invariants": ["INV-SEC-001", "INV-SEC-002", "INV-SEC-003", "INV-SEC-004"],
+      "status": "PARTIAL",
+      "ownerNodes": ["Q-004", "Q-005", "SEC-001", "T-002"],
+      "tests": ["tools/validate-privacy-matrix.mjs", "spikes/e2ee-sync/test/protocol.test.js"],
+      "evidence": [
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md"
+      ],
+      "mapsTo": []
+    }
+  ],
+  "interrupts": [
+    {
+      "contradiction": "C-001",
+      "invariants": ["FIN-001", "FIN-004", "FIN-009", "HUM-005", "INV-FIN-001", "INV-FIN-010"]
+    },
+    {
+      "contradiction": "C-002",
+      "invariants": ["FIN-001", "FIN-003", "FIN-010", "INV-FIN-003", "INV-FIN-004", "INV-FIN-011"]
+    }
+  ]
+}

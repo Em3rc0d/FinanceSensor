@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "nodeId": "Q-005",
+  "nodeStateRequired": "ACTIVE",
+  "buildReadyRequired": false,
+  "asOf": "2026-09-03",
+  "proofBoundary": {
+    "boundedDistributedSuite": "116_OF_116_PROVEN_AT_SPIKE",
+    "productionCryptoProfile": "FROZEN_PHYSICAL_P4_OPEN",
+    "witnessTopology": "FROZEN_PHYSICAL_P5_OPEN",
+    "allDevicesLostRecovery": "SPIKE_ACCEPTED_PHYSICAL_P6_OPEN",
+    "transportStorageDeletionBackup": "PHYSICAL_P3_OPEN",
+    "physicalHarnessIntegrity": "PHYSICAL_P0_PASS_BOUND_RECEIPT",
+    "closureReceipt": "P8_BLOCKED_BY_PRIOR_PHASES",
+    "p3StaticPreparation": "CLOSURE_LAB_AND_RESURRECTION_BARRIER_READY_PROVIDER_OPEN"
+  },
+  "boundedInvariantRange": {
+    "state": "PROVEN_AT_SPIKE",
+    "ids": [
+      "INV-SYNC-008",
+      "INV-SYNC-009",
+      "INV-SYNC-010",
+      "INV-SYNC-011",
+      "INV-SYNC-012",
+      "INV-SYNC-013",
+      "INV-SYNC-014",
+      "INV-SYNC-015",
+      "INV-SYNC-016",
+      "INV-SYNC-017",
+      "INV-SYNC-018",
+      "INV-SYNC-019"
+    ],
+    "productionPromotion": "FORBIDDEN_WITHOUT_PHYSICAL_CLOSURE"
+  },
+  "artifacts": [
+    {
+      "path": "mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md",
+      "role": "authoritative quarry contract"
+    },
+    {
+      "path": "mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md",
+      "role": "device/tenant/key/replay authority architecture"
+    },
+    {
+      "path": "mk0/04-architecture/PARASYMPATHETIC-SYNC.md",
+      "role": "background execution and resource-state architecture"
+    },
+    {
+      "path": "mk0/04-architecture/REVOCATION-CUTOVER.md",
+      "role": "historical admissibility and cutover architecture"
+    },
+    {
+      "path": "mk0/04-architecture/TRUSTED-CHECKPOINT.md",
+      "role": "anti-rollback checkpoint architecture"
+    },
+    {
+      "path": "mk0/04-architecture/WITNESS-FRESHNESS.md",
+      "role": "opaque witness evidence architecture"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md",
+      "role": "all-devices-lost recovery decision"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-015-TRUSTED-CHECKPOINT-ANTI-ROLLBACK.md",
+      "role": "trusted anchor decision"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-016-OPAQUE-WITNESS-FRESHNESS.md",
+      "role": "opaque witness decision"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-021-MOBILE-PRODUCTION-CRYPTO-PROFILE.md",
+      "role": "physical mobile crypto profile"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-022-PRODUCTION-WITNESS-QUORUM.md",
+      "role": "production witness topology and quorum"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-023-DISCONNECT-DELETION-BACKUP-SEMANTICS.md",
+      "role": "deletion and backup authority semantics"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-024-RECOVERY-KIT-ANCHOR-REFRESH.md",
+      "role": "post-recovery new-kit safe-to-resume semantics"
+    },
+    {
+      "path": "graph/physical-closure-campaign.json",
+      "role": "P0/P3/P4/P5/P6/P8 physical closure authority"
+    },
+    {
+      "path": "graph/physical-receipts/P0-2026-09-03.json",
+      "role": "immutable P0 composite physical evidence binding"
+    },
+    {
+      "path": "spikes/e2ee-sync",
+      "role": "bounded executable sync/recovery/witness feasibility suite"
+    },
+    {
+      "path": "tools/validate-p0-receipt.mjs",
+      "role": "P0 immutable composite receipt validator"
+    },
+    {
+      "path": "tools/validate-q005-evidence.mjs",
+      "role": "Q-005 evidence boundary fail-closed validator"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-029-MK0-CLOSURE-LAB-EVIDENCE-INFRASTRUCTURE.md",
+      "role": "pre-BUILD_READY synthetic cloud evidence boundary"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-030-DELETION-RESURRECTION-BARRIER.md",
+      "role": "restore-domain-independent deletion barrier decision"
+    },
+    {
+      "path": "graph/p3-closure-lab.json",
+      "role": "P3 closure-lab machine contract"
+    },
+    {
+      "path": "spikes/e2ee-sync/src/deletion-resurrection.js",
+      "role": "P3 deletion/restore executable model"
+    },
+    {
+      "path": "spikes/e2ee-sync/test/deletion-resurrection.test.js",
+      "role": "P3 deletion/restore adversarial negative matrix"
+    },
+    {
+      "path": "tools/validate-p3-closure-lab.mjs",
+      "role": "P3 static fail-closed validator"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+      "proof": "BOUNDED_PERIPHERAL_PARASYMPATHETIC_SPIKE_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md",
+      "proof": "BOUNDED_RECOVERY_SPIKE_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-REVOCATION-CUTOVER-2026-09-01.md",
+      "proof": "BOUNDED_REVOCATION_CUTOVER_SPIKE_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-KNEE-STRESS-2026-09-01.md",
+      "proof": "BOUNDED_ADVERSARIAL_KNEE_STRESS_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-ANTI-ROLLBACK-2026-09-01.md",
+      "proof": "BOUNDED_ANTI_ROLLBACK_SPIKE_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-WITNESS-FRESHNESS-2026-09-01.md",
+      "proof": "BOUNDED_WITNESS_FRESHNESS_SPIKE_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q005-EVIDENCE-BOUNDARY-2026-09-03.md",
+      "proof": "Q005_PROVEN_AT_SPIKE_VS_PHYSICAL_BOUNDARY_MACHINE_FROZEN",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+      "proof": "P0_COMPOSITE_PHYSICAL_HARNESS_SANITIZATION_PASS",
+      "closesQ005": false
+    },
+    {
+      "path": "mk0/10-evidence/EV-P3-CLOSURE-LAB-STATIC-READY-2026-09-03.md",
+      "proof": "P3_CLOSURE_LAB_AND_RESURRECTION_BARRIER_STATIC_READY_PROVIDER_OPEN",
+      "closesQ005": false
+    }
+  ],
+  "openPhysicalPhases": [
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ],
+  "openPhysicalGates": [
+    "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+    "RAW_GMAIL_CONTENT_NOT_DURABLE",
+    "CLOUD_ENVELOPES_DELETED",
+    "CONTROL_METADATA_DELETED",
+    "WITNESS_NAMESPACE_RETIRED_OR_DELETED",
+    "DELETION_RESURRECTION_BARRIER_ACTIVE",
+    "PRE_DELETE_BACKUP_CANNOT_RESURRECT_AUTHORITY",
+    "BACKUP_RETENTION_WITHIN_35_DAY_CEILING",
+    "ANDROID_WRAP_IOS_UNWRAP",
+    "IOS_WRAP_ANDROID_UNWRAP",
+    "ANDROID_SIGN_IOS_VERIFY",
+    "IOS_SIGN_ANDROID_VERIFY",
+    "NEGATIVE_MATRIX_FAILS_CLOSED",
+    "PROTECTED_KEY_USE_PROVEN",
+    "NO_SILENT_EXPORTABLE_KEY_FALLBACK",
+    "THREE_WITNESSES_TWO_OF_THREE_QUORUM",
+    "TWO_FAILURE_DOMAINS_MINIMUM",
+    "ONE_RELAY_INDEPENDENT_WITNESS_MINIMUM",
+    "CONTRADICTION_CANNOT_BE_VOTED_AWAY",
+    "CRASH_RESTART_FAILS_CLOSED",
+    "PARTITION_REJOIN_CONVERGES_WITHOUT_FALSE_LATEST",
+    "ALL_DEVICES_LOST_RECOVERY_SUCCEEDS",
+    "LOST_DEVICE_INVENTORY_COMPLETE",
+    "REVOCATION_BARRIERS_BOUND_TO_RECOVERED_HISTORY",
+    "TENANT_ROOT_KEY_ROTATED",
+    "RECOVERY_KEY_ROTATED",
+    "N_PLUS_1_RECOVERY_COVERAGE_CREATED",
+    "NEW_RECOVERY_KIT_EXPORTED_AND_CUSTODY_CONFIRMED",
+    "OLD_DEVICE_AND_OLD_KIT_CANNOT_AUTHORIZE_FUTURE_EPOCH"
+  ],
+  "closureGate": {
+    "phase": "P8",
+    "stateRequiredBeforeQ005Closure": "PASS",
+    "requiredQ005Claim": "Q005_RECEIPT_BINDS_CRYPTO_WITNESS_RECOVERY_EVIDENCE",
+    "currentState": "BLOCKED_BY_PRIOR_PHASES"
+  },
+  "forbiddenPromotions": [
+    "116_OF_116_PASS=>Q005_CLOSED",
+    "PROVEN_AT_SPIKE=>PROVEN",
+    "ADR021_PROFILE_FROZEN=>MOBILE_CRYPTO_PHYSICAL_PASS",
+    "ADR022_TOPOLOGY_FROZEN=>WITNESS_PHYSICAL_PASS",
+    "ADR014_RECOVERY_SPIKE_PASS=>ALL_DEVICES_LOST_PHYSICAL_PASS",
+    "ADR024_SAFE_TO_RESUME_DESIGN=>RECOVERY_CUTOVER_PHYSICAL_PASS",
+    "SIGNED_CHECKPOINT=>GLOBAL_LATEST_FRESHNESS",
+    "TWO_OF_THREE_WITNESSES=>GLOBAL_CONSENSUS",
+    "CI_PASS=>PHYSICAL_KEY_PROTECTION_PASS",
+    "P0_PASS=>Q005_CLOSED",
+    "CI_PASS=>Q005_CLOSED",
+    "P3_STATIC_READY=>P3_PHYSICAL_PASS",
+    "SAME_DB_TOMBSTONE=>RESURRECTION_BARRIER_PASS",
+    "REGISTRY_UNAVAILABLE=>TENANT_ACTIVE"
+  ]
+}
