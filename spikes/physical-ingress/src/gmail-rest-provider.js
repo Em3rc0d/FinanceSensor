@@ -10,6 +10,11 @@ const SAFE_GMAIL_REASONS = new Map([
   ['domainPolicy', 'DOMAIN_POLICY']
 ]);
 const RETRYABLE_403_REASONS = new Set(['RATE_LIMIT_EXCEEDED', 'USER_RATE_LIMIT_EXCEEDED']);
+const DESCRIPTOR_PART_FIELDS = 'partId,mimeType,filename,headers,body(attachmentId,size)';
+const descriptorPartFields = depth => depth <= 1
+  ? DESCRIPTOR_PART_FIELDS
+  : `${DESCRIPTOR_PART_FIELDS},parts(${descriptorPartFields(depth - 1)})`;
+const GMAIL_DESCRIPTOR_FIELDS = `id,historyId,payload(headers,${descriptorPartFields(8)})`;
 
 function decodeBase64Url(data = '') {
   const normalized = String(data).replace(/-/g, '+').replace(/_/g, '/');
@@ -267,13 +272,22 @@ export class GmailRestProvider {
     return found.slice(0, maxResults);
   }
 
-  async getMessage({ id, format, metadataHeaders = [] }) {
+  async getMessage({ id, format, metadataHeaders = [], descriptorOnly = false }) {
+    if (descriptorOnly && format !== 'FULL') throw new Error('GMAIL_DESCRIPTOR_PROJECTION_REQUIRES_FULL');
     const message = await this._request(`/messages/${encodeURIComponent(id)}`, {
       format,
-      metadataHeaders: format === 'METADATA' ? metadataHeaders : undefined
+      metadataHeaders: format === 'METADATA' ? metadataHeaders : undefined,
+      fields: descriptorOnly ? GMAIL_DESCRIPTOR_FIELDS : undefined
     });
     const headers = headersToObject(message.payload?.headers ?? []);
-    if (format === 'METADATA') return { id: message.id, historyId: message.historyId, headers };
+    if (format === 'METADATA' || descriptorOnly) {
+      return {
+        id: message.id,
+        historyId: message.historyId,
+        headers,
+        attachments: descriptorOnly ? collectAttachmentDescriptors(message.payload) : []
+      };
+    }
     return {
       id: message.id,
       historyId: message.historyId,

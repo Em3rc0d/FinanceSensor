@@ -10,7 +10,7 @@ The thirteen Alpha.2 design nodes are closed at the design level on `graph/alpha
 ALPHA.2 DESIGN FREEZE                 13 / 13 CLOSED_DESIGN
 PRIMARY STATEMENT PATH                TARGETED GMAIL DISCOVERY
 MANUAL SHARE / LOCAL FILE             FALLBACK
-ALPHA.2-A STATEMENT DISCOVERY         READY AFTER FREEZE CI
+ALPHA.2-A STATEMENT DISCOVERY         STATIC IMPLEMENTED / CI PENDING
 ALPHA.2-B..G                          DEPENDENCY-GATED
 ALPHA.2 IMPLEMENTATION PASS           NO
 ALPHA.2 PHYSICAL PRODUCT PASS         NO
@@ -18,6 +18,8 @@ GLOBAL BUILD_READY                    NO
 ```
 
 Known physical/open edges remain explicit: two BCP savings one-page final-balance bindings, one BCP savings period/date-order variant, Alpha.2 runtime receipt binding, Interbank savings mobile proof and the stable Android signer handoff in draft PR #62.
+
+Alpha.2-A is deliberately metadata-only. Its implementation does not fetch attachment bytes, invoke the PDF runtime, request a password or mutate the financial vault. Physical Gmail discovery and Android product integration remain open.
 
 ## Project state
 
