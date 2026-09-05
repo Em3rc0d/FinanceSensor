@@ -15,13 +15,14 @@ const slicePaths = [
   ['F', 'graph/alpha2-f-monthly-coverage.json'],
   ['G', 'graph/alpha2-g-sensor-v1.json']
 ];
+const handoffPath = 'mk0/12-release/ALPHA2-STATIC-BUILD-HANDOFF.md';
 const requiredPaths = [
   ...slicePaths.map(([, path]) => path),
   'graph/alpha2-design-freeze.json',
   'graph/build-readiness.json',
   'graph/closure-ledger.json',
   'mk0/12-release/HUMAN-TEST-CANDIDATE.md',
-  'STATUS.md'
+  handoffPath
 ];
 for (const path of requiredPaths) if (!fs.existsSync(path)) fail(`missing ${path}`);
 
@@ -30,7 +31,7 @@ if (!failures.length) {
   const readiness = readJson('graph/build-readiness.json');
   const ledger = readJson('graph/closure-ledger.json');
   const release = readText('mk0/12-release/HUMAN-TEST-CANDIDATE.md');
-  const status = readText('STATUS.md');
+  const handoff = readText(handoffPath);
 
   assert(design.status === 'DESIGN_FROZEN', 'Alpha.2 design must remain frozen');
   assert(design.buildReady === false, 'Alpha.2 design must not claim BUILD_READY');
@@ -84,9 +85,11 @@ if (!failures.length) {
     'ALPHA.2-F MONTHLY COVERAGE            STATIC IMPLEMENTED / CI PASS',
     'ALPHA.2-G SENSOR V1                   STATIC IMPLEMENTED / CI PASS',
     'ALPHA.2 STATIC SLICES                 7 / 7 EXACT-SHA CI PASS',
+    'CONTROLLED_ANDROID_HUMAN_TEST_BUILD   AUTHORIZED',
     'ALPHA.2 MOBILE PRODUCT INTEGRATION    OPEN',
-    'GLOBAL BUILD_READY                    NO'
-  ]) assert(status.includes(marker), `STATUS missing ${marker}`);
+    'GLOBAL BUILD_READY                    NO',
+    'APK_BUILD_PASS != BUILD_READY'
+  ]) assert(handoff.includes(marker), `handoff receipt missing ${marker}`);
 }
 
 if (failures.length) {
