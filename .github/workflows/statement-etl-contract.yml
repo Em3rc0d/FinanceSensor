@@ -172,7 +172,7 @@ jobs:
             spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
             spikes/physical-ingress/test/statement-row-parser.test.js \
             spikes/physical-ingress/test/statement-source-adapters.test.js
-          echo 'ALPHA2_D_STATIC_IMPLEMENTATION_PASS=0'
+          echo 'ALPHA2_D_STATIC_IMPLEMENTATION_PASS=1'
           echo 'ALPHA2_D_REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
           echo 'ALPHA2_D_PHYSICAL_SCHEMA_MIGRATION_PASS=0'
           echo 'ALPHA2_D_PHYSICAL_RECONCILIATION_PASS=0'
