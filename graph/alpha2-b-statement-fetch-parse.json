@@ -2,9 +2,34 @@
   "schemaVersion": 1,
   "slice": "ALPHA_2_B",
   "name": "Statement Fetch and Parse",
-  "status": "STATIC_IMPLEMENTATION_CANDIDATE_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "1d553e623b91c7ba07391891c505e0f02f362a5c",
+  "implementationReceipt": {
+    "pullRequest": 66,
+    "candidateHeadSha": "d7095c0d2d71059b3fbc780cbac6b3a1bc4e0c4a",
+    "mergeCommitSha": "9fd054b9c8cba2ddce6642dd6286e11340452897",
+    "workflows": [
+      {
+        "name": "Alpha.2 Statement Fetch and Parse",
+        "runId": 33988795835,
+        "runNumber": 3,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33988795832,
+        "runNumber": 127,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33988795866,
+        "runNumber": 83,
+        "conclusion": "success"
+      }
+    ]
+  },
   "upstream": {
     "slice": "ALPHA_2_A",
     "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS",
@@ -101,12 +126,12 @@
     "ripleyCreditRuntimeReceiptBinding": "OPEN"
   },
   "claims": {
-    "staticImplementationPass": false,
+    "staticImplementationPass": true,
     "physicalProductPass": false,
     "buildReady": false
   },
   "forbiddenPromotions": [
-    "STATIC_IMPLEMENTATION_CANDIDATE=>STATIC_IMPLEMENTATION_PASS",
+    "STATIC_IMPLEMENTATION_PASS=>PHYSICAL_PROFILE_PASS",
     "STATIC_PARSE_PASS=>PHYSICAL_PROFILE_PASS",
     "FORMAT_OBSERVED=>PARSER_ENABLED",
     "OWNED_CORPUS_OBSERVED=>RUNTIME_PROFILE_PASS",
