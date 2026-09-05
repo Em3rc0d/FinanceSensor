@@ -14,6 +14,8 @@ const ACTIVE_WORKFLOWS = new Set([
   'mobile-human-test-alpha.yml',
   'gmail-historical.yml',
   'statement-etl-contract.yml',
+  'alpha2-design-freeze.yml',
+  'alpha2-statement-discovery.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set([
@@ -183,6 +185,47 @@ if (workflowFiles.includes('statement-etl-contract.yml')) {
   }
 }
 
+if (workflowFiles.includes('alpha2-design-freeze.yml')) {
+  const text = read('alpha2-design-freeze.yml');
+  const requiredMarkers = [
+    'node tools/validate-alpha2-design-freeze.mjs',
+    'REAL_GMAIL_IN_CI=0',
+    'REAL_FINANCIAL_DATA_IN_CI=0',
+    'BUILD_READY=NO',
+    'contents: read',
+    'runs-on: ubuntu-latest',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('alpha2-design-freeze.yml', `Alpha.2 design CI boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
+    fail('alpha2-design-freeze.yml', 'Alpha.2 design CI may not receive Gmail/OAuth credentials');
+  }
+}
+
+if (workflowFiles.includes('alpha2-statement-discovery.yml')) {
+  const text = read('alpha2-statement-discovery.yml');
+  const requiredMarkers = [
+    'node tools/validate-alpha2-a-statement-discovery.mjs',
+    'ATTACHMENT_BYTES_FETCHED=0',
+    'PASSWORD_REQUESTED=0',
+    'VAULT_MUTATION=0',
+    'REAL_GMAIL_IN_CI=0',
+    'BUILD_READY=NO',
+    'contents: read',
+    'runs-on: ubuntu-latest',
+  ];
+  for (const marker of requiredMarkers) {
+    if (!text.includes(marker)) fail('alpha2-statement-discovery.yml', `Alpha.2 discovery CI boundary missing marker: ${marker}`);
+  }
+  if (/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/.test(text)) {
+    fail('alpha2-statement-discovery.yml', 'Alpha.2 discovery CI may not receive Gmail/OAuth credentials');
+  }
+  if (/REAL_GMAIL_IN_CI=1|ATTACHMENT_BYTES_FETCHED=1|PASSWORD_REQUESTED=1|VAULT_MUTATION=1|BUILD_READY=YES/i.test(text)) {
+    fail('alpha2-statement-discovery.yml', 'Alpha.2 discovery CI contains a forbidden promotion marker');
+  }
+}
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!workflowFiles.includes(file)) {
     fail(file, 'registered retired workflow is missing');
@@ -221,4 +264,6 @@ console.log('GMAIL_HISTORICAL_REAL_GMAIL_EXECUTED_BY_CI=0');
 console.log('STATEMENT_ETL_REAL_STATEMENT_DATA_IN_CI=0');
 console.log('STATEMENT_ETL_REAL_GMAIL_IN_CI=0');
 console.log('STATEMENT_ETL_IOS_TOUCHED=0');
+console.log('ALPHA2_DESIGN_REAL_GMAIL_IN_CI=0');
+console.log('ALPHA2_DISCOVERY_ATTACHMENT_BYTES_FETCHED_IN_CI=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');

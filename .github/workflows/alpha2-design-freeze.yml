@@ -24,4 +24,8 @@ jobs:
         with:
           node-version: '22'
       - run: node tools/validate-alpha2-design-freeze.mjs
-
+      - name: Assert static design boundary
+        run: |
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'REAL_FINANCIAL_DATA_IN_CI=0'
+          echo 'BUILD_READY=NO'
