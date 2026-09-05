@@ -40,6 +40,19 @@ export const DirectionCoverageState = Object.freeze({
   COVERED: 'COVERED'
 });
 
+export const InflowCoverageState = Object.freeze({
+  UNKNOWN: 'UNKNOWN',
+  PARTIAL: 'PARTIAL',
+  COVERED: 'COVERED'
+});
+
+export const OutflowCoverageState = Object.freeze({
+  UNKNOWN: 'UNKNOWN',
+  OBSERVED: 'OBSERVED',
+  PARTIAL: 'PARTIAL',
+  COVERED: 'COVERED'
+});
+
 export const PeriodCoverageState = Object.freeze({
   UNKNOWN: 'UNKNOWN',
   PARTIAL: 'PARTIAL',
@@ -123,8 +136,8 @@ function requireCoverage(value) {
     expectedSourceState: enumValue(value.expectedSourceState, ExpectedSourceState, 'MONTHLY_COVERAGE_EXPECTED_SOURCE_STATE_INVALID'),
     scopeState: enumValue(value.scopeState, CoverageScopeState, 'MONTHLY_COVERAGE_SCOPE_STATE_INVALID'),
     statementState: enumValue(value.statementState, StatementCoverageState, 'MONTHLY_COVERAGE_STATEMENT_STATE_INVALID'),
-    inflowCoverageState: enumValue(value.inflowCoverageState, DirectionCoverageState, 'MONTHLY_COVERAGE_INFLOW_STATE_INVALID'),
-    outflowCoverageState: enumValue(value.outflowCoverageState, DirectionCoverageState, 'MONTHLY_COVERAGE_OUTFLOW_STATE_INVALID'),
+    inflowCoverageState: enumValue(value.inflowCoverageState, InflowCoverageState, 'MONTHLY_COVERAGE_INFLOW_STATE_INVALID'),
+    outflowCoverageState: enumValue(value.outflowCoverageState, OutflowCoverageState, 'MONTHLY_COVERAGE_OUTFLOW_STATE_INVALID'),
     periodCoverageState: enumValue(value.periodCoverageState, PeriodCoverageState, 'MONTHLY_COVERAGE_PERIOD_STATE_INVALID'),
     reconciliationState: enumValue(value.reconciliationState, AccountReconciliationState, 'MONTHLY_COVERAGE_RECONCILIATION_STATE_INVALID'),
     requiredDirections: normalizeRequiredDirections(value.requiredDirections),
@@ -145,8 +158,8 @@ function scopeCoherent(coverage) {
 }
 
 function directionCovered(coverage, direction) {
-  if (direction === 'INFLOW') return coverage.inflowCoverageState === DirectionCoverageState.COVERED;
-  if (direction === 'OUTFLOW') return coverage.outflowCoverageState === DirectionCoverageState.COVERED;
+  if (direction === 'INFLOW') return coverage.inflowCoverageState === InflowCoverageState.COVERED;
+  if (direction === 'OUTFLOW') return coverage.outflowCoverageState === OutflowCoverageState.COVERED;
   return false;
 }
 
@@ -351,7 +364,7 @@ export class MonthlyCoverageRepository {
         await putCoverage({
           closeId: evaluation.closeId,
           tenantId: evaluation.tenantId,
-          source: source
+          source
         });
       }
       await putClose({
@@ -387,6 +400,10 @@ export function monthlyCoverageStaticContract() {
     closeStates: Object.values(MonthlyCloseStatus),
     expectedSourceStates: Object.values(ExpectedSourceState),
     scopeStates: Object.values(CoverageScopeState),
+    inflowCoverageStates: Object.values(InflowCoverageState),
+    outflowCoverageStates: Object.values(OutflowCoverageState),
+    inflowObservedAllowed: false,
+    outflowObservedAllowed: true,
     directionalCoverageSeparate: true,
     requiredDirectionsExplicit: true,
     globalUnqualifiedPercentageAllowed: false,
