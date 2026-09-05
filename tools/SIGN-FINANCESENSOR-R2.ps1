@@ -37,6 +37,36 @@ function Resolve-Java {
   return $null
 }
 
+function Resolve-Keytool([string]$JavaExe) {
+  $command = Get-Command keytool -ErrorAction SilentlyContinue
+  if ($command) { return $command.Source }
+
+  $candidates = @()
+  $javaDir = Split-Path -Parent $JavaExe
+  if ($javaDir) { $candidates += (Join-Path $javaDir 'keytool.exe') }
+  if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin\keytool.exe') }
+
+  try {
+    $settings = & $JavaExe '-XshowSettings:properties' '-version' 2>&1
+    foreach ($line in $settings) {
+      $text = [string]$line
+      if ($text -match '^\s*java\.home\s*=\s*(.+?)\s*$') {
+        $candidates += (Join-Path $Matches[1].Trim() 'bin\keytool.exe')
+      }
+    }
+  } catch { }
+
+  if ($env:ProgramFiles) {
+    $candidates += (Join-Path $env:ProgramFiles 'Android\Android Studio\jbr\bin\keytool.exe')
+    $candidates += (Join-Path $env:ProgramFiles 'Android\Android Studio\jre\bin\keytool.exe')
+  }
+
+  foreach ($candidate in ($candidates | Select-Object -Unique)) {
+    if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
+  }
+  return $null
+}
+
 function Choose-Keystore {
   try {
     Add-Type -AssemblyName System.Windows.Forms
@@ -49,92 +79,10 @@ function Choose-Keystore {
   return (Read-Host 'Full path to private FINANCESENSOR_R2_LAB keystore').Trim('"')
 }
 
-function Find-R2Alias([string]$JavaExe, [string]$KeystorePath, [string]$ExpectedFingerprint) {
-  $probeDir = Join-Path ([IO.Path]::GetTempPath()) ('financesensor-r2-probe-' + [Guid]::NewGuid().ToString('N'))
-  $probeSource = Join-Path $probeDir 'FinanceSensorKeystoreProbe.java'
-  New-Item -ItemType Directory -Path $probeDir -Force | Out-Null
-
-  $source = @'
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.MessageDigest;
-import java.security.cert.Certificate;
-import java.util.Enumeration;
-
-public class FinanceSensorKeystoreProbe {
-  private static String hex(byte[] bytes) {
-    StringBuilder out = new StringBuilder();
-    for (byte b : bytes) out.append(String.format("%02X", b));
-    return out.toString();
-  }
-
-  private static KeyStore load(Path path, char[] password) throws Exception {
-    Exception last = null;
-    for (String type : new String[] {"PKCS12", "JKS"}) {
-      try (InputStream in = Files.newInputStream(path)) {
-        KeyStore store = KeyStore.getInstance(type);
-        store.load(in, password);
-        return store;
-      } catch (Exception error) {
-        last = error;
-      }
-    }
-    throw last == null ? new IllegalStateException("KEYSTORE_OPEN_FAILED") : last;
-  }
-
-  public static void main(String[] args) throws Exception {
-    if (args.length != 2) System.exit(64);
-    String secret = System.getenv("FINANCESENSOR_R2_STORE_PASS");
-    if (secret == null) System.exit(65);
-    KeyStore store;
-    try {
-      store = load(Path.of(args[0]), secret.toCharArray());
-    } catch (Exception error) {
-      System.err.println("KEYSTORE_OPEN_FAILED");
-      System.exit(66);
-      return;
-    }
-    String expected = args[1].replace(":", "").toUpperCase();
-    Enumeration<String> aliases = store.aliases();
-    while (aliases.hasMoreElements()) {
-      String alias = aliases.nextElement();
-      Certificate certificate = store.getCertificate(alias);
-      if (certificate == null) continue;
-      String sha1 = hex(MessageDigest.getInstance("SHA-1").digest(certificate.getEncoded()));
-      if (sha1.equals(expected)) {
-        System.out.println(alias);
-        return;
-      }
-    }
-    System.err.println("R2_ALIAS_NOT_FOUND");
-    System.exit(67);
-  }
-}
-'@
-
-  try {
-    Set-Content -LiteralPath $probeSource -Value $source -Encoding ascii
-    $output = & $JavaExe $probeSource $KeystorePath $ExpectedFingerprint 2>&1
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
-      $safe = (($output | ForEach-Object { [string]$_ }) -join ' ').Trim()
-      if ($safe -match 'KEYSTORE_OPEN_FAILED') { throw 'Could not open the selected keystore with that password.' }
-      if ($safe -match 'R2_ALIAS_NOT_FOUND') { throw "The selected keystore does not contain the expected stable R2 identity ($ExpectedFingerprint)." }
-      throw "Keystore identity probe failed safely (exit $exitCode)."
-    }
-    $alias = ($output | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Last 1)
-    if ([string]::IsNullOrWhiteSpace($alias)) { throw 'R2 alias probe returned no alias.' }
-    return $alias.Trim()
-  }
-  finally {
-    Remove-Item -LiteralPath $probeDir -Recurse -Force -ErrorAction SilentlyContinue
-  }
-}
-
 $java = Resolve-Java
-if (-not $java) { throw 'Java 17+ was not found. Install Android Studio/JDK or expose java.exe locally.' }
+if (-not $java) { throw 'Java was not found. Install Android Studio/JDK or expose java.exe locally.' }
+$keytool = Resolve-Keytool -JavaExe $java
+if (-not $keytool) { throw 'keytool.exe could not be resolved from the installed Java runtime.' }
 if (-not (Test-Path -LiteralPath $InputApk)) { throw "Input APK not found: $InputApk" }
 if (-not (Test-Path -LiteralPath $ApkSignerJar)) { throw "apksigner.jar not found: $ApkSignerJar" }
 
@@ -147,7 +95,21 @@ $env:FINANCESENSOR_R2_STORE_PASS = $StorePass
 $env:FINANCESENSOR_R2_KEY_PASS = $StorePass
 
 try {
-  $Alias = Find-R2Alias -JavaExe $java -KeystorePath $Keystore -ExpectedFingerprint $ExpectedSha1
+  Write-Host "JAVA=$java"
+  Write-Host "KEYTOOL=$keytool"
+  $listing = & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -list -v -keystore $Keystore -storepass:env FINANCESENSOR_R2_STORE_PASS 2>&1
+  if ($LASTEXITCODE -ne 0) { throw 'Could not open the selected keystore with that password.' }
+
+  $Alias = $null
+  $CurrentAlias = $null
+  foreach ($line in $listing) {
+    $text = [string]$line
+    if ($text -match '^Alias name:\s*(.+)$') { $CurrentAlias = $Matches[1].Trim(); continue }
+    if ($CurrentAlias -and $text -match '^\s*SHA1:\s*([0-9A-Fa-f:]+)\s*$') {
+      if ((Normalize-Sha1 $Matches[1]) -eq $ExpectedSha1) { $Alias = $CurrentAlias; break }
+    }
+  }
+  if (-not $Alias) { throw "The selected keystore does not contain the expected stable R2 identity ($ExpectedSha1). No APK was signed." }
 
   if (Test-Path -LiteralPath $OutputApk) { Remove-Item -LiteralPath $OutputApk -Force }
   & $java -jar $ApkSignerJar sign --ks $Keystore --ks-key-alias $Alias --ks-pass env:FINANCESENSOR_R2_STORE_PASS --key-pass env:FINANCESENSOR_R2_KEY_PASS --out $OutputApk $InputApk
