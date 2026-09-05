@@ -21,13 +21,28 @@ const source = readText('spikes/physical-ingress/src/account-graph.js');
 const status = readText('STATUS.md');
 
 assert(graph.slice === 'ALPHA_2_E', 'SLICE_ID');
-assert(graph.status === 'STATIC_IMPLEMENTED_CI_PENDING', 'STATIC_STATUS_PENDING');
+assert(graph.status === 'STATIC_IMPLEMENTED_CI_PASS', 'STATIC_STATUS');
 assert(graph.baseCommit === 'bae4faa6fdae434ece17b85fd38d44b45a4f3ffc', 'BASE_COMMIT');
-assert(graph.implementationReceipt === null, 'IMPLEMENTATION_RECEIPT_MUST_BE_NULL_BEFORE_CI');
-assert(graph.claims?.staticImplementationPass === false, 'STATIC_PASS_MUST_REMAIN_FALSE_BEFORE_EXACT_SHA_CI');
+assert(graph.claims?.staticImplementationPass === true, 'STATIC_PASS_REQUIRED');
 assert(graph.claims?.physicalAccountGraphPass === false, 'PHYSICAL_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.alpha2ProductPass === false, 'ALPHA2_PRODUCT_PASS_MUST_REMAIN_FALSE');
 assert(graph.claims?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
+
+const receipt = graph.implementationReceipt;
+assert(receipt?.pullRequest === 73, 'RECEIPT_PR');
+assert(receipt?.candidateHeadSha === 'e39f3d38889cdc49bae1a24884000e1a01cbb753', 'RECEIPT_HEAD_SHA');
+assert(receipt?.mergeCommitSha === 'ece68768a004306e78a1a9f6cc653169418c2479', 'RECEIPT_MERGE_SHA');
+const workflows = new Map((receipt?.workflows ?? []).map(run => [run.name, run]));
+for (const [name, runId, runNumber] of [
+  ['FinanceSensor Statement ETL Contract', 33997998994, 93],
+  ['FinanceSensor Gmail Historical', 33997999015, 135]
+]) {
+  const run = workflows.get(name);
+  assert(run?.runId === runId, `RECEIPT_RUN_ID:${name}`);
+  assert(run?.runNumber === runNumber, `RECEIPT_RUN_NUMBER:${name}`);
+  assert(run?.conclusion === 'success', `RECEIPT_RUN_CONCLUSION:${name}`);
+}
+assert(workflows.size === 2, 'RECEIPT_WORKFLOW_COUNT');
 
 assert(alpha2C.status === 'STATIC_IMPLEMENTED_CI_PASS', 'ALPHA2_C_DEPENDENCY');
 assert(alpha2C.claims?.staticImplementationPass === true, 'ALPHA2_C_STATIC_PASS');
@@ -152,8 +167,10 @@ for (const forbidden of [
 
 assert(/BUILD_READY\s+NO/.test(status), 'GLOBAL_BUILD_READY_STATUS');
 
-console.log('ALPHA2_E_STATIC_IMPLEMENTATION=CANDIDATE');
-console.log('ALPHA2_E_EXACT_SHA_RECEIPT=PENDING');
+console.log('ALPHA2_E_STATIC_IMPLEMENTATION=PASS');
+console.log('ALPHA2_E_EXACT_SHA_RECEIPT=PASS');
+console.log(`ALPHA2_E_IMPLEMENTATION_HEAD=${receipt.candidateHeadSha}`);
+console.log(`ALPHA2_E_MERGE_COMMIT=${receipt.mergeCommitSha}`);
 console.log('ACCOUNT_GRAPH_VERSION=A2_ACCOUNT_GRAPH_V1');
 console.log('MAPPING_STATES=4');
 console.log('STABLE_EVIDENCE_PERIODS_REQUIRED=2');

@@ -2,10 +2,28 @@
   "schemaVersion": 1,
   "slice": "ALPHA_2_E",
   "name": "Account Graph",
-  "status": "STATIC_IMPLEMENTED_CI_PENDING",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
   "asOf": "2026-09-05",
   "baseCommit": "bae4faa6fdae434ece17b85fd38d44b45a4f3ffc",
-  "implementationReceipt": null,
+  "implementationReceipt": {
+    "pullRequest": 73,
+    "candidateHeadSha": "e39f3d38889cdc49bae1a24884000e1a01cbb753",
+    "mergeCommitSha": "ece68768a004306e78a1a9f6cc653169418c2479",
+    "workflows": [
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33997998994,
+        "runNumber": 93,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33997999015,
+        "runNumber": 135,
+        "conclusion": "success"
+      }
+    ]
+  },
   "dependency": {
     "slice": "ALPHA_2_C",
     "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
@@ -90,7 +108,7 @@
     "androidPhysicalAccountGraph": "OPEN"
   },
   "claims": {
-    "staticImplementationPass": false,
+    "staticImplementationPass": true,
     "physicalAccountGraphPass": false,
     "alpha2ProductPass": false,
     "buildReady": false
