@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 
+await import('./validate-r2-trusted-edge-signing-handoff.mjs');
+
 const paths = {
   dart: 'spikes/mobile-shell/lib/main_human_test.dart',
   activity: 'spikes/mobile-shell/native/android/HumanTestMainActivity.kt',
