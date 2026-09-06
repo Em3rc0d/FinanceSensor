@@ -72,6 +72,10 @@ if (!failures.length) {
     "$ExpectedInputSha256 = 'c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d'",
     "$ExpectedSignerSha1 = '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'",
     "$ExpectedPackage = 'com.financesensor.lab.gmailconnection.r2'",
+    'Choose-File',
+    'Find-BundledApkSignerJar',
+    'Select certified FinanceSensor Human Test APK',
+    'Select bundled public apksigner.jar',
     'Output APK must be different from the certified input APK.',
     'Certified input APK mismatch.',
     'verify --print-certs $InputFull',
@@ -92,10 +96,11 @@ if (!failures.length) {
   assert(!/4b0f65227599eda16e25d14703da1020eaa2f87b69f6cc665997de46b084a94b/.test(ps1), 'old signed APK must not be signer input authority');
 
   for (const marker of [
-    'certified-input-apk',
+    'goto INTERACTIVE',
     'SIGN-FINANCESENSOR-R2.ps1',
     'pinned to the certified Human Test Alpha build',
-    'Verify the generated .sha256 and .receipt.txt files before installation.'
+    'Verify the generated .sha256 and .receipt.txt files before installation.',
+    'pause'
   ]) assert(cmd.includes(marker), `CMD marker missing: ${marker}`);
 
   for (const marker of [
