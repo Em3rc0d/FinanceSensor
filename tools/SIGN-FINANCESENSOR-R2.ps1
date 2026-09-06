@@ -98,10 +98,7 @@ function Find-BundledApkSignerJar([string]$InputPath) {
 }
 
 function Choose-Keystore {
-  return Choose-File \
-    -Title 'Select private FINANCESENSOR_R2_LAB keystore' \
-    -Filter 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*' \
-    -FallbackPrompt 'Full path to private FINANCESENSOR_R2_LAB keystore'
+  return Choose-File -Title 'Select private FINANCESENSOR_R2_LAB keystore' -Filter 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*' -FallbackPrompt 'Full path to private FINANCESENSOR_R2_LAB keystore'
 }
 
 function Remove-OutputArtifacts([string]$OutputPath) {
@@ -116,10 +113,7 @@ $keytool = Resolve-Keytool -JavaExe $java
 if (-not $keytool) { throw 'keytool.exe could not be resolved from the installed Java runtime.' }
 
 if ([string]::IsNullOrWhiteSpace($InputApk)) {
-  $InputApk = Choose-File \
-    -Title 'Select certified FinanceSensor Human Test APK' \
-    -Filter 'Android package (*.apk)|*.apk|All files (*.*)|*.*' \
-    -FallbackPrompt 'Full path to certified Human Test APK'
+  $InputApk = Choose-File -Title 'Select certified FinanceSensor Human Test APK' -Filter 'Android package (*.apk)|*.apk|All files (*.*)|*.*' -FallbackPrompt 'Full path to certified Human Test APK'
 }
 if ([string]::IsNullOrWhiteSpace($InputApk) -or -not (Test-Path -LiteralPath $InputApk)) {
   throw 'Certified input APK was not selected or does not exist.'
@@ -130,10 +124,7 @@ if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) {
   $ApkSignerJar = Find-BundledApkSignerJar -InputPath $InputFull
 }
 if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) {
-  $ApkSignerJar = Choose-File \
-    -Title 'Select bundled public apksigner.jar' \
-    -Filter 'Java archive (*.jar)|*.jar|All files (*.*)|*.*' \
-    -FallbackPrompt 'Full path to bundled public apksigner.jar'
+  $ApkSignerJar = Choose-File -Title 'Select bundled public apksigner.jar' -Filter 'Java archive (*.jar)|*.jar|All files (*.*)|*.*' -FallbackPrompt 'Full path to bundled public apksigner.jar'
 }
 if ([string]::IsNullOrWhiteSpace($ApkSignerJar) -or -not (Test-Path -LiteralPath $ApkSignerJar)) {
   throw 'apksigner.jar was not found or selected.'
