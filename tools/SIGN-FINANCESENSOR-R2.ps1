@@ -1,7 +1,7 @@
 param(
-  [Parameter(Mandatory = $true)][string]$InputApk,
-  [Parameter(Mandatory = $true)][string]$ApkSignerJar,
-  [string]$OutputApk = 'FinanceSensor-R2-STABLE-0.1.0-alpha.1+1001.apk'
+  [string]$InputApk,
+  [string]$ApkSignerJar,
+  [string]$OutputApk
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +13,7 @@ $ExpectedInputSha256 = 'c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e
 $ExpectedSignerSha1 = '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $ExpectedPackage = 'com.financesensor.lab.gmailconnection.r2'
 $ExpectedScope = 'gmail.readonly'
+$DefaultOutputName = 'FinanceSensor-R2-STABLE-0.1.0-alpha.1+1001.apk'
 
 function Convert-SecureStringToPlain([Security.SecureString]$Secure) {
   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
@@ -72,16 +73,35 @@ function Resolve-Keytool([string]$JavaExe) {
   return $null
 }
 
-function Choose-Keystore {
+function Choose-File([string]$Title, [string]$Filter, [string]$FallbackPrompt) {
   try {
     Add-Type -AssemblyName System.Windows.Forms
     $dialog = New-Object System.Windows.Forms.OpenFileDialog
-    $dialog.Title = 'Select private FINANCESENSOR_R2_LAB keystore'
-    $dialog.Filter = 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*'
+    $dialog.Title = $Title
+    $dialog.Filter = $Filter
     $dialog.Multiselect = $false
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { return $dialog.FileName }
   } catch { }
-  return (Read-Host 'Full path to private FINANCESENSOR_R2_LAB keystore').Trim('"')
+  return (Read-Host $FallbackPrompt).Trim('"')
+}
+
+function Find-BundledApkSignerJar([string]$InputPath) {
+  $cursor = Split-Path -Parent $InputPath
+  while ($cursor) {
+    $candidate = Join-Path $cursor 'public-signing-tool\lib\apksigner.jar'
+    if (Test-Path -LiteralPath $candidate) { return $candidate }
+    $parent = Split-Path -Parent $cursor
+    if (-not $parent -or $parent -eq $cursor) { break }
+    $cursor = $parent
+  }
+  return $null
+}
+
+function Choose-Keystore {
+  return Choose-File \
+    -Title 'Select private FINANCESENSOR_R2_LAB keystore' \
+    -Filter 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*' \
+    -FallbackPrompt 'Full path to private FINANCESENSOR_R2_LAB keystore'
 }
 
 function Remove-OutputArtifacts([string]$OutputPath) {
@@ -94,12 +114,35 @@ $java = Resolve-Java
 if (-not $java) { throw 'Java was not found. Install Android Studio/JDK or expose java.exe locally.' }
 $keytool = Resolve-Keytool -JavaExe $java
 if (-not $keytool) { throw 'keytool.exe could not be resolved from the installed Java runtime.' }
-if (-not (Test-Path -LiteralPath $InputApk)) { throw "Input APK not found: $InputApk" }
-if (-not (Test-Path -LiteralPath $ApkSignerJar)) { throw "apksigner.jar not found: $ApkSignerJar" }
 
+if ([string]::IsNullOrWhiteSpace($InputApk)) {
+  $InputApk = Choose-File \
+    -Title 'Select certified FinanceSensor Human Test APK' \
+    -Filter 'Android package (*.apk)|*.apk|All files (*.*)|*.*' \
+    -FallbackPrompt 'Full path to certified Human Test APK'
+}
+if ([string]::IsNullOrWhiteSpace($InputApk) -or -not (Test-Path -LiteralPath $InputApk)) {
+  throw 'Certified input APK was not selected or does not exist.'
+}
 $InputFull = (Resolve-Path -LiteralPath $InputApk).Path
+
+if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) {
+  $ApkSignerJar = Find-BundledApkSignerJar -InputPath $InputFull
+}
+if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) {
+  $ApkSignerJar = Choose-File \
+    -Title 'Select bundled public apksigner.jar' \
+    -Filter 'Java archive (*.jar)|*.jar|All files (*.*)|*.*' \
+    -FallbackPrompt 'Full path to bundled public apksigner.jar'
+}
+if ([string]::IsNullOrWhiteSpace($ApkSignerJar) -or -not (Test-Path -LiteralPath $ApkSignerJar)) {
+  throw 'apksigner.jar was not found or selected.'
+}
 $SignerJarFull = (Resolve-Path -LiteralPath $ApkSignerJar).Path
-if ([IO.Path]::IsPathRooted($OutputApk)) {
+
+if ([string]::IsNullOrWhiteSpace($OutputApk)) {
+  $OutputFull = Join-Path (Split-Path -Parent $InputFull) $DefaultOutputName
+} elseif ([IO.Path]::IsPathRooted($OutputApk)) {
   $OutputFull = [IO.Path]::GetFullPath($OutputApk)
 } else {
   $OutputFull = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputApk))
