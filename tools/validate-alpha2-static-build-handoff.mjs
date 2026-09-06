@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 
+await import('./validate-alpha2-human-test-build-receipt.mjs');
+
 const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
 const readText = path => fs.readFileSync(path, 'utf8');
 const failures = [];
