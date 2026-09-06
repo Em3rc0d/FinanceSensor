@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 await import('./validate-r2-trusted-edge-signing-handoff.mjs');
+await import('./validate-r2-signer-powershell-syntax.mjs');
 
 const paths = {
   dart: 'spikes/mobile-shell/lib/main_human_test.dart',
