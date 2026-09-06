@@ -3,9 +3,23 @@
 **Candidate:** `0.1.0-alpha.1+1001`  
 **Physical package:** `com.financesensor.lab.gmailconnection.r2`  
 **Stable lab identity:** `FINANCESENSOR_R2_LAB`  
-**Status:** STATIC IMPLEMENTED / CI PENDING / PHYSICAL SIGNING REQUIRED
+**Status:** STATIC IMPLEMENTED / EXACT-SHA CI PASS / PHYSICAL SIGNING REQUIRED
 
-The signer implementation is not promoted to static-ready until its exact candidate SHA passes the Android Human Test workflow. Physical signing remains a separate owned-device/trusted-edge gate even after static CI succeeds.
+The signer implementation passed the Android Human Test workflow on its exact candidate SHA. This promotes only the local handoff tooling to static-ready. Physical signing remains a separate owned-device/trusted-edge gate.
+
+## Exact static implementation receipt
+
+```text
+PR                  81
+CANDIDATE_HEAD      aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec
+MERGE_COMMIT        7984e5670b5884d84bc613cb002b188e2cb83aa8
+WORKFLOW            FinanceSensor Android Human Test Alpha
+RUN_ID              34013149864
+RUN_NUMBER          10
+JOB_ID              101432316748
+CONCLUSION          SUCCESS
+POWERSHELL_PARSE    PASS
+```
 
 ## Exact input authority
 
