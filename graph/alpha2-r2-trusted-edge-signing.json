@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "candidate": "0.1.0-alpha.1+1001",
+  "gate": "TRUSTED_EDGE_STABLE_LAB_SIGNING",
+  "status": "STATIC_IMPLEMENTED_CI_PENDING_PHYSICAL_SIGNING_REQUIRED",
+  "asOf": "2026-09-05",
+  "inputBuild": {
+    "receipt": "graph/alpha2-human-test-build.json",
+    "sourceCommit": "9d990fc579429cc0bc8e5c02306d8ebe4622e145",
+    "artifactId": 9979184888,
+    "apkSha256": "c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d",
+    "apkBytes": 172884802,
+    "exactMatchRequiredBeforeSigning": true
+  },
+  "signer": {
+    "identity": "FINANCESENSOR_R2_LAB",
+    "expectedSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "privateKeystoreInGitHub": false,
+    "privateKeystoreInPublicCi": false,
+    "passwordInGitHub": false,
+    "passwordInPublicCi": false,
+    "aliasResolvedByCertificateFingerprint": true
+  },
+  "tooling": {
+    "powershell": "tools/SIGN-FINANCESENSOR-R2.ps1",
+    "windowsLauncher": "tools/SIGN-FINANCESENSOR-R2.cmd",
+    "inputApkSignatureVerifiedBeforeSigning": true,
+    "inputApkHashPinned": true,
+    "outputMustDifferFromInput": true,
+    "partialOutputDeletedOnAnyFailure": true,
+    "signedOutputVerifiedWithApkSigner": true,
+    "signedOutputFingerprintMustMatch": true,
+    "signedApkSha256Receipt": true,
+    "sanitizedReceipt": true,
+    "deterministicPasswordZeroizationClaimed": false,
+    "sessionOnlyPasswordCustody": true
+  },
+  "staticImplementationReceipt": null,
+  "physicalReceipt": {
+    "trustedEdgeSigningPass": false,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
+    "ownedDeviceInstallPass": false,
+    "realOauthPass": false,
+    "realGmailPass": false
+  },
+  "historicalEvidenceBoundary": {
+    "previousPr": 62,
+    "previousSourceCommit": "7c322a163e15a42fbfbda7dc32ee2b94dbf1b006",
+    "previousSignedApkSha256": "4b0f65227599eda16e25d14703da1020eaa2f87b69f6cc665997de46b084a94b",
+    "inheritedAsCurrentPhysicalPass": false,
+    "reason": "A physical receipt for a prior APK cannot certify the newly frozen build artifact."
+  },
+  "claims": {
+    "staticSignerHandoffReady": false,
+    "physicalSigningPass": false,
+    "alpha2PhysicalProductPass": false,
+    "buildReady": false,
+    "releaseReady": false
+  },
+  "laws": [
+    "OLD_SIGNED_APK_RECEIPT!=CURRENT_APK_SIGNING_PASS",
+    "STATIC_SIGNER_HANDOFF_READY!=PHYSICAL_SIGNING_PASS",
+    "PHYSICAL_SIGNING_PASS!=REAL_OAUTH_PASS",
+    "REAL_OAUTH_PASS!=ALPHA2_MOBILE_INTEGRATED",
+    "HUMAN_TEST_READY!=BUILD_READY"
+  ]
+}
