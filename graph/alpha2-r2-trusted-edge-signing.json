@@ -3,7 +3,7 @@
   "project": "FinanceSensor",
   "candidate": "0.1.0-alpha.1+1001",
   "gate": "TRUSTED_EDGE_STABLE_LAB_SIGNING",
-  "status": "STATIC_IMPLEMENTED_CI_PENDING_PHYSICAL_SIGNING_REQUIRED",
+  "status": "STATIC_IMPLEMENTED_CI_PASS_PHYSICAL_SIGNING_REQUIRED",
   "asOf": "2026-09-05",
   "inputBuild": {
     "receipt": "graph/alpha2-human-test-build.json",
@@ -35,9 +35,21 @@
     "signedApkSha256Receipt": true,
     "sanitizedReceipt": true,
     "deterministicPasswordZeroizationClaimed": false,
-    "sessionOnlyPasswordCustody": true
+    "sessionOnlyPasswordCustody": true,
+    "powershellParsedByRealPwshInCi": true
   },
-  "staticImplementationReceipt": null,
+  "staticImplementationReceipt": {
+    "pullRequest": 81,
+    "candidateHeadSha": "aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec",
+    "mergeCommitSha": "7984e5670b5884d84bc613cb002b188e2cb83aa8",
+    "workflow": {
+      "name": "FinanceSensor Android Human Test Alpha",
+      "runId": 34013149864,
+      "runNumber": 10,
+      "jobId": 101432316748,
+      "conclusion": "success"
+    }
+  },
   "physicalReceipt": {
     "trustedEdgeSigningPass": false,
     "signedApkSha256": null,
@@ -54,7 +66,7 @@
     "reason": "A physical receipt for a prior APK cannot certify the newly frozen build artifact."
   },
   "claims": {
-    "staticSignerHandoffReady": false,
+    "staticSignerHandoffReady": true,
     "physicalSigningPass": false,
     "alpha2PhysicalProductPass": false,
     "buildReady": false,

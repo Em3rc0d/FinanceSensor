@@ -28,13 +28,22 @@ if (!failures.length) {
   assert(build.artifact?.trustedEdgeResignRequired === true, 'build must require trusted-edge signing');
 
   assert(graph.gate === 'TRUSTED_EDGE_STABLE_LAB_SIGNING', 'signing gate id');
-  assert(graph.status === 'STATIC_IMPLEMENTED_CI_PENDING_PHYSICAL_SIGNING_REQUIRED', 'signing status must remain CI pending');
-  assert(graph.staticImplementationReceipt === null, 'static implementation receipt must remain null before exact CI');
+  assert(graph.status === 'STATIC_IMPLEMENTED_CI_PASS_PHYSICAL_SIGNING_REQUIRED', 'signing status');
   assert(graph.inputBuild?.sourceCommit === build.source.commit, 'signing source commit binding');
   assert(graph.inputBuild?.artifactId === build.artifact.id, 'signing artifact binding');
   assert(graph.inputBuild?.apkSha256 === build.artifact.apkSha256, 'signing APK hash binding');
   assert(graph.inputBuild?.apkBytes === build.artifact.apkBytes, 'signing APK size binding');
   assert(graph.inputBuild?.exactMatchRequiredBeforeSigning === true, 'exact input match required');
+
+  const receipt = graph.staticImplementationReceipt;
+  assert(receipt?.pullRequest === 81, 'receipt PR');
+  assert(receipt?.candidateHeadSha === 'aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec', 'receipt candidate SHA');
+  assert(receipt?.mergeCommitSha === '7984e5670b5884d84bc613cb002b188e2cb83aa8', 'receipt merge SHA');
+  assert(receipt?.workflow?.name === 'FinanceSensor Android Human Test Alpha', 'receipt workflow');
+  assert(receipt?.workflow?.runId === 34013149864, 'receipt run id');
+  assert(receipt?.workflow?.runNumber === 10, 'receipt run number');
+  assert(receipt?.workflow?.jobId === 101432316748, 'receipt job id');
+  assert(receipt?.workflow?.conclusion === 'success', 'receipt conclusion');
 
   assert(graph.signer?.identity === 'FINANCESENSOR_R2_LAB', 'stable signer identity');
   assert(graph.signer?.expectedSha1 === '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0', 'stable signer fingerprint');
@@ -54,6 +63,7 @@ if (!failures.length) {
   assert(graph.tooling?.signedApkSha256Receipt === true, 'signed APK hash receipt required');
   assert(graph.tooling?.deterministicPasswordZeroizationClaimed === false, 'zeroization overclaim forbidden');
   assert(graph.tooling?.sessionOnlyPasswordCustody === true, 'session-only password custody');
+  assert(graph.tooling?.powershellParsedByRealPwshInCi === true, 'real PowerShell parse receipt required');
 
   assert(graph.physicalReceipt?.trustedEdgeSigningPass === false, 'physical signing must remain open before local execution');
   assert(graph.physicalReceipt?.signedApkSha256 === null, 'signed APK hash must remain null before local execution');
@@ -62,8 +72,9 @@ if (!failures.length) {
   assert(graph.physicalReceipt?.realGmailPass === false, 'real Gmail must remain open');
   assert(graph.historicalEvidenceBoundary?.previousPr === 62, 'historical PR boundary');
   assert(graph.historicalEvidenceBoundary?.inheritedAsCurrentPhysicalPass === false, 'old evidence inheritance forbidden');
-  assert(graph.claims?.staticSignerHandoffReady === false, 'static signer handoff must remain false before exact CI');
+  assert(graph.claims?.staticSignerHandoffReady === true, 'static signer handoff ready');
   assert(graph.claims?.physicalSigningPass === false, 'physical signing pass forbidden before local execution');
+  assert(graph.claims?.alpha2PhysicalProductPass === false, 'Alpha.2 physical product pass forbidden');
   assert(graph.claims?.buildReady === false, 'BUILD_READY must remain false');
   assert(graph.claims?.releaseReady === false, 'RELEASE_READY must remain false');
 
@@ -104,6 +115,13 @@ if (!failures.length) {
   ]) assert(cmd.includes(marker), `CMD marker missing: ${marker}`);
 
   for (const marker of [
+    '**Status:** STATIC IMPLEMENTED / EXACT-SHA CI PASS / PHYSICAL SIGNING REQUIRED',
+    'CANDIDATE_HEAD      aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec',
+    'MERGE_COMMIT        7984e5670b5884d84bc613cb002b188e2cb83aa8',
+    'RUN_ID              34013149864',
+    'RUN_NUMBER          10',
+    'JOB_ID              101432316748',
+    'POWERSHELL_PARSE    PASS',
     'INPUT_APK_SHA256     c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d',
     'EXPECTED_SIGNER_SHA1 63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
     'DETERMINISTIC_PASSWORD_ZEROIZATION_CLAIM=NO',
@@ -125,8 +143,13 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('FINANCESENSOR_R2_TRUSTED_EDGE_SIGNER_HANDOFF=CANDIDATE');
-console.log('STATIC_SIGNER_HANDOFF_READY=0');
+console.log('FINANCESENSOR_R2_TRUSTED_EDGE_SIGNER_HANDOFF=PASS');
+console.log('STATIC_SIGNER_HANDOFF_READY=1');
+console.log('IMPLEMENTATION_PR=81');
+console.log('IMPLEMENTATION_HEAD=aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec');
+console.log('IMPLEMENTATION_MERGE=7984e5670b5884d84bc613cb002b188e2cb83aa8');
+console.log('IMPLEMENTATION_RUN_ID=34013149864');
+console.log('IMPLEMENTATION_RUN_NUMBER=10');
 console.log('INPUT_APK_SHA256=c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d');
 console.log('EXPECTED_SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0');
 console.log('PRIVATE_SIGNER_IN_PUBLIC_CI=0');
