@@ -28,7 +28,8 @@ if (!failures.length) {
   assert(build.artifact?.trustedEdgeResignRequired === true, 'build must require trusted-edge signing');
 
   assert(graph.gate === 'TRUSTED_EDGE_STABLE_LAB_SIGNING', 'signing gate id');
-  assert(graph.status === 'STATIC_READY_PHYSICAL_SIGNING_REQUIRED', 'signing status');
+  assert(graph.status === 'STATIC_IMPLEMENTED_CI_PENDING_PHYSICAL_SIGNING_REQUIRED', 'signing status must remain CI pending');
+  assert(graph.staticImplementationReceipt === null, 'static implementation receipt must remain null before exact CI');
   assert(graph.inputBuild?.sourceCommit === build.source.commit, 'signing source commit binding');
   assert(graph.inputBuild?.artifactId === build.artifact.id, 'signing artifact binding');
   assert(graph.inputBuild?.apkSha256 === build.artifact.apkSha256, 'signing APK hash binding');
@@ -61,7 +62,7 @@ if (!failures.length) {
   assert(graph.physicalReceipt?.realGmailPass === false, 'real Gmail must remain open');
   assert(graph.historicalEvidenceBoundary?.previousPr === 62, 'historical PR boundary');
   assert(graph.historicalEvidenceBoundary?.inheritedAsCurrentPhysicalPass === false, 'old evidence inheritance forbidden');
-  assert(graph.claims?.staticSignerHandoffReady === true, 'static signer handoff ready');
+  assert(graph.claims?.staticSignerHandoffReady === false, 'static signer handoff must remain false before exact CI');
   assert(graph.claims?.physicalSigningPass === false, 'physical signing pass forbidden before local execution');
   assert(graph.claims?.buildReady === false, 'BUILD_READY must remain false');
   assert(graph.claims?.releaseReady === false, 'RELEASE_READY must remain false');
@@ -119,7 +120,8 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('FINANCESENSOR_R2_TRUSTED_EDGE_SIGNER_HANDOFF=PASS');
+console.log('FINANCESENSOR_R2_TRUSTED_EDGE_SIGNER_HANDOFF=CANDIDATE');
+console.log('STATIC_SIGNER_HANDOFF_READY=0');
 console.log('INPUT_APK_SHA256=c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d');
 console.log('EXPECTED_SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0');
 console.log('PRIVATE_SIGNER_IN_PUBLIC_CI=0');
