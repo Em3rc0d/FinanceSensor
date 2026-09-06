@@ -3,7 +3,7 @@
   "project": "FinanceSensor",
   "candidate": "0.1.0-alpha.1+1001",
   "gate": "TRUSTED_EDGE_STABLE_LAB_SIGNING",
-  "status": "STATIC_READY_PHYSICAL_SIGNING_REQUIRED",
+  "status": "STATIC_IMPLEMENTED_CI_PENDING_PHYSICAL_SIGNING_REQUIRED",
   "asOf": "2026-09-05",
   "inputBuild": {
     "receipt": "graph/alpha2-human-test-build.json",
@@ -37,6 +37,7 @@
     "deterministicPasswordZeroizationClaimed": false,
     "sessionOnlyPasswordCustody": true
   },
+  "staticImplementationReceipt": null,
   "physicalReceipt": {
     "trustedEdgeSigningPass": false,
     "signedApkSha256": null,
@@ -53,7 +54,7 @@
     "reason": "A physical receipt for a prior APK cannot certify the newly frozen build artifact."
   },
   "claims": {
-    "staticSignerHandoffReady": true,
+    "staticSignerHandoffReady": false,
     "physicalSigningPass": false,
     "alpha2PhysicalProductPass": false,
     "buildReady": false,
