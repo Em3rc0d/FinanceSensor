@@ -4,10 +4,14 @@ on:
   pull_request:
     paths:
       - 'graph/alpha2-design-freeze.json'
+      - 'graph/mk0-r3-r10-closure-contract.json'
+      - 'graph/mk0-r3-r10-closure-receipt-schema.json'
       - 'mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md'
       - 'mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md'
+      - 'mk0/10-evidence/EV-MK0-R3-R10-CLOSURE-CONTRACT-2026-09-07.md'
       - 'mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md'
       - 'tools/validate-alpha2-design-freeze.mjs'
+      - 'tools/validate-mk0-r3-r10-closure-contract.mjs'
       - '.github/workflows/alpha2-design-freeze.yml'
   workflow_dispatch:
 
@@ -24,8 +28,13 @@ jobs:
         with:
           node-version: '22'
       - run: node tools/validate-alpha2-design-freeze.mjs
+      - run: node tools/validate-mk0-r3-r10-closure-contract.mjs
       - name: Assert static design boundary
         run: |
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
+          echo 'PUBLIC_CI_PHYSICAL_PROMOTION=0'
+          echo 'PUBLIC_CI_BUILD_READY_PROMOTION=0'
+          echo 'PUBLIC_CI_RELEASE_PROMOTION=0'
           echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'
