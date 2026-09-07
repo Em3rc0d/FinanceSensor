@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import './validate-alpha2-canonical-candidate.mjs';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -119,7 +120,7 @@ for (const marker of [
 ]) {
   if (!dashboardInsights.includes(marker)) throw new Error(`ALPHA2_DASHBOARD_INSIGHT_RULE_MISSING:${marker}`);
 }
-if (!main.includes("Text('Cuenta \${item.accountDisplay}')")) {
+if (!main.includes("Text('Cuenta ${item.accountDisplay}')")) {
   throw new Error('ALPHA2_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
 }
 
