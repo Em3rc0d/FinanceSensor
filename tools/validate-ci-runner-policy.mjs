@@ -121,7 +121,7 @@ const contracts = {
   'alpha2-integrated-runtime.yml': {
     markers: [
       'node tools/validate-alpha2-integrated-runtime.mjs', '--target lib/main_alpha2.dart',
-      'ANDROID_COMPILE_SDK=37', 'ANDROID_MIN_SDK=31', 'ANDROID_TARGET_SDK=36',
+      'ANDROID_COMPILE_SDK=37', 'ANDROID_MIN_SDK=24', 'ANDROID_TARGET_SDK=36',
       'ANDROID_AGP_VERSION=9.1.1', 'ANDROID_GRADLE_VERSION=9.3.1', 'SQLCIPHER_VERSION=4.18.0',
       'REAL_OAUTH_EXECUTED_BY_CI=NO', 'REAL_GMAIL_EXECUTED_BY_CI=NO', 'REAL_FINANCIAL_DATA_IN_CI=NO',
       'PHYSICAL_SQLCIPHER_PASS=NO', 'PHYSICAL_ALPHA2_PASS=NO', 'BUILD_READY=NO', 'RELEASE_READY=NO'
