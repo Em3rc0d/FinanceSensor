@@ -50,6 +50,15 @@ jobs:
     steps:
       - name: Checkout exact head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify checked-out SHA
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA='${{ github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "CHECKED_OUT_SHA=$EXPECTED_SHA"
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -172,11 +181,16 @@ jobs:
             exit 1
           fi
 
+          BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
+          BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = '7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33'
+          test "$BUNDLE_BYTES" = '86226530'
+
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v5-AUDIT.txt" <<EOF
           BUNDLE_V5_GENERATION=PASS
           BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip
-          BUNDLE_SHA256=$(sha256sum "$OUT" | awk '{print $1}')
-          BUNDLE_BYTES=$(stat -c '%s' "$OUT")
+          BUNDLE_SHA256=${BUNDLE_SHA256}
+          BUNDLE_BYTES=${BUNDLE_BYTES}
           BUNDLE_FILES=8
           ZIP_STRUCTURE=PASS
           ZIP_INTEGRITY=PASS
@@ -199,7 +213,7 @@ jobs:
       - name: Upload deterministic v5 bundle
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-r1-trusted-edge-bundle-v5-${{ github.sha }}
+          name: financesensor-alpha2-r1-trusted-edge-bundle-v5-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip
             FinanceSensor-ALPHA2-R1-BUNDLE-v5-AUDIT.txt
