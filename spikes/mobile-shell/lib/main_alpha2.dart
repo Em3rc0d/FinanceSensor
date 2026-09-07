@@ -407,6 +407,10 @@ class _Coverage extends StatelessWidget {
     final imported = result.statementOutcomes.where((item) => item.status == 'IMPORTED').length;
     final review = result.statementOutcomes.where((item) => item.status == 'REVIEW_REQUIRED').length;
     final quarantined = result.statementOutcomes.where((item) => item.status == 'QUARANTINED_PROFILE').length;
+    final monthly = result.productGate.monthlyClose;
+    final pendingMappings = result.productGate.ownershipDecisions
+        .where((item) => item.ownedNodeId == null)
+        .length;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -417,11 +421,30 @@ class _Coverage extends StatelessWidget {
             const SizedBox(height: 6),
             const Text('Mostramos estados y conteos; no un porcentaje global de “evidencia”.'),
             const SizedBox(height: 14),
+            _CoverageRow(
+              label: 'Estado mensual',
+              value: _monthlyStatusLabel(monthly?.status.name),
+            ),
+            if (result.productGate.accountMappingRequired)
+              _CoverageRow(
+                label: 'Mapeo de cuenta',
+                value: pendingMappings > 0
+                    ? 'Requerido · $pendingMappings'
+                    : 'Requerido',
+              )
+            else if (result.productGate.ownershipDecisions.isNotEmpty)
+              const _CoverageRow(label: 'Mapeo de cuenta', value: 'Confirmado'),
             _CoverageRow(label: 'Gmail observado', value: '${result.gmailEvidenceCount}'),
             _CoverageRow(label: 'EECC importados', value: '$imported'),
             _CoverageRow(label: 'EECC a revisar', value: '$review'),
             _CoverageRow(label: 'Perfiles en cuarentena', value: '$quarantined'),
             _CoverageRow(label: 'Relaciones pendientes', value: '${result.runtime.pendingResolutions.length}'),
+            _CoverageRow(label: 'Gaps conocidos', value: '${result.projection.knowledgeGaps.length}'),
+            if (result.productGate.blockingReasons.isNotEmpty)
+              _CoverageRow(
+                label: 'Bloqueos de cierre',
+                value: '${result.productGate.blockingReasons.length}',
+              ),
           ],
         ),
       ),
@@ -531,6 +554,17 @@ String _truthLabel(String state) => switch (state) {
       'OBSERVED' => 'Observado',
       'PARTIAL' => 'Parcial',
       _ => 'Por confirmar',
+    };
+
+String _monthlyStatusLabel(String? state) => switch (state) {
+      'reconciled' => 'Reconciliado',
+      'reviewRequired' => 'Revisión requerida',
+      'waitingForStatements' => 'Esperando EECC',
+      'importing' => 'Importando',
+      'reconciling' => 'Reconciliando',
+      'reopened' => 'Reabierto',
+      'openLive' => 'Mes abierto',
+      _ => 'Sin cierre evaluado',
     };
 
 String _money(double value, String currency) {
