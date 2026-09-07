@@ -139,6 +139,7 @@ class Alpha2MonthlyCloseEvaluation {
     required this.missingStatementCount,
     required this.unresolvedCount,
     required this.blockingConflictCount,
+    this.externalBlockingReasons = const <String>[],
   });
 
   final String evaluationKey;
@@ -160,10 +161,12 @@ class Alpha2MonthlyCloseEvaluation {
   final int missingStatementCount;
   final int unresolvedCount;
   final int blockingConflictCount;
+  final List<String> externalBlockingReasons;
 
   bool get allIncludedExpectedSourcesCovered =>
       includedCount > 0 && reconciledIncludedCount == includedCount;
-  bool get zeroBlockingConflicts => blockingConflictCount == 0;
+  bool get zeroBlockingConflicts =>
+      blockingConflictCount == 0 && externalBlockingReasons.isEmpty;
 }
 
 Alpha2CoverageProjection projectAlpha2Coverage(
@@ -254,6 +257,7 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
   Alpha2CloseActivity activity = Alpha2CloseActivity.idle,
   Alpha2ReopenSignal? reopenSignal,
   String closeScopeVersion = 'A2_CLOSE_SCOPE_V1',
+  List<String> externalBlockingReasons = const <String>[],
 }) {
   if (tenantId.trim().isEmpty) {
     throw ArgumentError('MONTHLY_CLOSE_TENANT_REQUIRED');
@@ -273,6 +277,12 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
       throw ArgumentError('MONTHLY_CLOSE_DUPLICATE_COVERAGE_ID');
     }
   }
+  final externalBlocks = externalBlockingReasons
+      .map((item) => item.trim().toUpperCase())
+      .where((item) => item.isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort();
 
   final projections = coverages.map(projectAlpha2Coverage).toList()
     ..sort((a, b) => a.id.compareTo(b.id));
@@ -303,8 +313,9 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
     0,
     (sum, item) => sum + item.unresolvedCount,
   );
-  final allIncludedReady =
-      included.isNotEmpty && included.every((item) => item.readyForClose);
+  final allIncludedReady = included.isNotEmpty &&
+      included.every((item) => item.readyForClose) &&
+      externalBlocks.isEmpty;
 
   var status = Alpha2MonthlyCloseStatus.openLive;
   var reason = 'MONTH_LIVE';
@@ -312,16 +323,19 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
       reopenSignal != null) {
     status = Alpha2MonthlyCloseStatus.reopened;
     reason = _reopenWire(reopenSignal);
-  } else if (!closeRequested &&
-      previousStatus == Alpha2MonthlyCloseStatus.openLive) {
-    status = Alpha2MonthlyCloseStatus.openLive;
-    reason = 'CLOSE_NOT_REQUESTED';
   } else if (activity == Alpha2CloseActivity.importing) {
     status = Alpha2MonthlyCloseStatus.importing;
     reason = 'IMPORT_IN_PROGRESS';
   } else if (activity == Alpha2CloseActivity.reconciling) {
     status = Alpha2MonthlyCloseStatus.reconciling;
     reason = 'RECONCILIATION_IN_PROGRESS';
+  } else if (externalBlocks.isNotEmpty) {
+    status = Alpha2MonthlyCloseStatus.reviewRequired;
+    reason = externalBlocks.first;
+  } else if (!closeRequested &&
+      previousStatus == Alpha2MonthlyCloseStatus.openLive) {
+    status = Alpha2MonthlyCloseStatus.openLive;
+    reason = 'CLOSE_NOT_REQUESTED';
   } else if (included.isEmpty) {
     status = Alpha2MonthlyCloseStatus.reviewRequired;
     reason = 'NO_INCLUDED_SOURCES';
@@ -360,6 +374,7 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
     '$closeRequested',
     activity.name,
     reopenSignal?.name ?? '',
+    ...externalBlocks.map((item) => 'external:$item'),
     ...projections.map(
       (item) =>
           '${item.id}:${item.readyForClose}:${item.blockingReasons.join(",")}',
@@ -386,6 +401,7 @@ Alpha2MonthlyCloseEvaluation evaluateAlpha2MonthlyClose({
     missingStatementCount: missingStatements,
     unresolvedCount: unresolvedCount,
     blockingConflictCount: blockingConflictCount,
+    externalBlockingReasons: List<String>.unmodifiable(externalBlocks),
   );
 }
 
