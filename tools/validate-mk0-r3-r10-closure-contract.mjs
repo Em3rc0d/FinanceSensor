@@ -13,10 +13,7 @@ const paths = {
 const failures = [];
 const fail = message => failures.push(message);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-for (const path of Object.values(paths)) {
-  if (!fs.existsSync(path)) fail(`missing ${path}`);
-}
+for (const path of Object.values(paths)) if (!fs.existsSync(path)) fail(`missing ${path}`);
 
 if (!failures.length) {
   const contract = JSON.parse(fs.readFileSync(paths.contract, 'utf8'));
@@ -44,21 +41,13 @@ if (!failures.length) {
 
   const laws = contract.globalLaws ?? {};
   for (const key of [
-    'exactRepoShaRequired',
-    'parentReceiptsRequired',
-    'evidenceRequired',
-    'residualRisksRequired',
-    'noneKnownRequiresRationale',
-    'reopenTriggersRequired',
-    'contradictionAuditRequired',
-    'buildReadyRequiresGMk0Closed',
-    'upstreamContradictionReopensOwner'
+    'exactRepoShaRequired', 'parentReceiptsRequired', 'evidenceRequired',
+    'residualRisksRequired', 'noneKnownRequiresRationale', 'reopenTriggersRequired',
+    'contradictionAuditRequired', 'buildReadyRequiresGMk0Closed', 'upstreamContradictionReopensOwner'
   ]) if (laws[key] !== true) fail(`global law ${key} must be true`);
   for (const key of [
-    'publicCiCanClaimPhysicalPass',
-    'publicCiCanPromoteBuildReady',
-    'publicCiCanPromoteReleaseReady',
-    'releaseReadyImpliedByBuildReady'
+    'publicCiCanClaimPhysicalPass', 'publicCiCanPromoteBuildReady',
+    'publicCiCanPromoteReleaseReady', 'releaseReadyImpliedByBuildReady'
   ]) if (laws[key] !== false) fail(`global law ${key} must be false`);
   if (laws.residualRisksMinItems !== 1) fail('residual risks must contain at least one explicit entry');
   if (laws.reopenTriggersMinItems !== 1) fail('reopen triggers must contain at least one explicit entry');
@@ -83,7 +72,6 @@ if (!failures.length) {
   if (schema.properties?.parentReceipts?.minItems !== 1) fail('receipt must reference at least one parent receipt');
   if (schema.properties?.evidence?.minItems !== 1) fail('receipt must reference evidence');
   if (schema.properties?.sanitizationPass?.const !== true) fail('receipt sanitizationPass must be true');
-
   for (const forbidden of ['password', 'token', 'privateKey', 'keystore', 'rawGmailBody', 'rawMime', 'rawStatementPdf']) {
     if (Object.prototype.hasOwnProperty.call(schema.properties ?? {}, forbidden)) fail(`receipt schema exposes forbidden field ${forbidden}`);
   }
@@ -96,16 +84,10 @@ if (!failures.length) {
 
   const designById = new Map((design.nodes ?? []).map(node => [node.id, node]));
   const expectedDeps = new Map([
-    ['R3', ['R2']],
-    ['R4', ['R2']],
-    ['R5', ['R2']],
-    ['R6', ['R3', 'R4', 'R5']],
-    ['R7', ['R6']],
-    ['R8', ['R7']],
-    ['R9', ['R8']],
-    ['R10', ['R9']]
+    ['R3', ['R2']], ['R4', ['R2']], ['R5', ['R2']],
+    ['R6', ['R3', 'R4', 'R5']], ['R7', ['R6']], ['R8', ['R7']],
+    ['R9', ['R8']], ['R10', ['R9']]
   ]);
-
   for (const id of expectedIds) {
     const node = byId.get(id);
     const designNode = designById.get(id);
@@ -126,46 +108,27 @@ if (!failures.length) {
 
   const exactEvidence = new Map([
     ['R3', [
-      'R2_SANITIZED_OWNED_ANDROID_RECEIPT',
-      'REFRESH_BEFORE_REVOKE_PASS',
-      'REFRESHED_BEARER_ACCEPTED_BY_GMAIL',
-      'REQUEST_RESPONSE_BYTES_BY_ENDPOINT',
-      'ENDPOINT_LATENCY_BY_ENDPOINT',
-      'MOBILE_CREDENTIAL_CUSTODY_INSPECTED',
-      'PROVIDER_REVOKE_RESULT_RECORDED',
-      'GOOGLE_RESTRICTED_SCOPE_VERIFICATION_STATUS_RECORDED',
-      'GOOGLE_SECURITY_ASSESSMENT_APPLICABILITY_RECORDED',
-      'CONSENT_DISCLOSURE_MATCHES_OBSERVED_DATA_PATH'
+      'R2_SANITIZED_OWNED_ANDROID_RECEIPT', 'REFRESH_BEFORE_REVOKE_PASS',
+      'REFRESHED_BEARER_ACCEPTED_BY_GMAIL', 'REQUEST_RESPONSE_BYTES_BY_ENDPOINT',
+      'ENDPOINT_LATENCY_BY_ENDPOINT', 'MOBILE_CREDENTIAL_CUSTODY_INSPECTED',
+      'PROVIDER_REVOKE_RESULT_RECORDED', 'GOOGLE_RESTRICTED_SCOPE_VERIFICATION_STATUS_RECORDED',
+      'GOOGLE_SECURITY_ASSESSMENT_APPLICABILITY_RECORDED', 'CONSENT_DISCLOSURE_MATCHES_OBSERVED_DATA_PATH'
     ]],
     ['R4', [
-      'R2_SANITIZED_OWNED_ANDROID_RECEIPT',
-      'NETWORK_STORAGE_CACHE_TEMP_INSPECTED',
-      'ANDROID_CREDENTIAL_CUSTODY_INSPECTED',
-      'IOS_CREDENTIAL_CUSTODY_INSPECTED',
-      'TELEMETRY_REDACTION_INSPECTED',
-      'CRASH_REPORT_REDACTION_INSPECTED',
-      'CLOUD_DELETION_OBSERVED',
-      'WITNESS_DELETION_OBSERVED',
-      'BACKUP_RETENTION_AT_OR_BELOW_35_DAYS',
-      'PRE_DELETE_BACKUP_CANNOT_RESURRECT_TENANT_AUTHORITY'
+      'R2_SANITIZED_OWNED_ANDROID_RECEIPT', 'NETWORK_STORAGE_CACHE_TEMP_INSPECTED',
+      'ANDROID_CREDENTIAL_CUSTODY_INSPECTED', 'IOS_CREDENTIAL_CUSTODY_INSPECTED',
+      'TELEMETRY_REDACTION_INSPECTED', 'CRASH_REPORT_REDACTION_INSPECTED',
+      'CLOUD_DELETION_OBSERVED', 'WITNESS_DELETION_OBSERVED',
+      'BACKUP_RETENTION_AT_OR_BELOW_35_DAYS', 'PRE_DELETE_BACKUP_CANNOT_RESURRECT_TENANT_AUTHORITY'
     ]],
     ['R5', [
-      'ANDROID_WRAP_IOS_UNWRAP_PASS',
-      'IOS_WRAP_ANDROID_UNWRAP_PASS',
-      'ANDROID_SIGN_IOS_VERIFY_PASS',
-      'IOS_SIGN_ANDROID_VERIFY_PASS',
-      'NEGATIVE_CRYPTO_MATRIX_FAILS_CLOSED',
-      'THREE_WITNESSES_PRESENT',
-      'TWO_OF_THREE_QUORUM_PASS',
-      'AT_LEAST_TWO_FAILURE_DOMAINS',
-      'CRASH_RESTART_PASS',
-      'PARTITION_REJOIN_PASS',
-      'LONG_OFFLINE_REJOIN_PASS',
-      'ALL_DEVICES_LOST_RECOVERY_PASS',
-      'TRK_ROTATION_PASS',
-      'RECOVERY_KEY_ROTATION_PASS',
-      'NEW_RECOVERY_KIT_ISSUED',
-      'OLD_DEVICE_DENIED_FUTURE_EPOCH',
+      'ANDROID_WRAP_IOS_UNWRAP_PASS', 'IOS_WRAP_ANDROID_UNWRAP_PASS',
+      'ANDROID_SIGN_IOS_VERIFY_PASS', 'IOS_SIGN_ANDROID_VERIFY_PASS',
+      'NEGATIVE_CRYPTO_MATRIX_FAILS_CLOSED', 'THREE_WITNESSES_PRESENT',
+      'TWO_OF_THREE_QUORUM_PASS', 'AT_LEAST_TWO_FAILURE_DOMAINS',
+      'CRASH_RESTART_PASS', 'PARTITION_REJOIN_PASS', 'LONG_OFFLINE_REJOIN_PASS',
+      'ALL_DEVICES_LOST_RECOVERY_PASS', 'TRK_ROTATION_PASS', 'RECOVERY_KEY_ROTATION_PASS',
+      'NEW_RECOVERY_KIT_ISSUED', 'OLD_DEVICE_DENIED_FUTURE_EPOCH',
       'OLD_RECOVERY_KIT_DENIED_FUTURE_EPOCH'
     ]]
   ]);
@@ -175,14 +138,9 @@ if (!failures.length) {
   }
 
   const expectedLedgerStates = new Map([
-    ['Q-003', 'ACTIVE'],
-    ['Q-004', 'ACTIVE'],
-    ['Q-005', 'ACTIVE'],
-    ['A-001', 'DRAFTED'],
-    ['SEC-001', 'DRAFTED'],
-    ['DM-001', 'DRAFTED'],
-    ['WF-001', 'DRAFTED'],
-    ['OPS-001', 'DRAFTED']
+    ['Q-003', 'ACTIVE'], ['Q-004', 'ACTIVE'], ['Q-005', 'ACTIVE'],
+    ['A-001', 'DRAFTED'], ['SEC-001', 'DRAFTED'], ['DM-001', 'DRAFTED'],
+    ['WF-001', 'DRAFTED'], ['OPS-001', 'OPEN']
   ]);
   for (const [id, status] of expectedLedgerStates) {
     const node = ledger.nodes?.find(item => item.id === id);
@@ -196,7 +154,6 @@ if (!failures.length) {
   if (ledger.buildReady !== false) fail('closure ledger buildReady must remain false');
   if (readiness.buildReady !== false) fail('build-readiness manifest must remain false');
   if (readiness.law !== 'BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED') fail('build-readiness law drifted');
-
   if (r2.laws?.r2DoesNotCloseQ003Q004Q005 !== true) fail('R2 must not close Q-003/Q-004/Q-005');
   if (r2.laws?.physicalPassCannotBeDerivedFromPublicCi !== true) fail('R2 physical pass must not derive from public CI');
   if (r2.laws?.buildReadyPromotionAllowed !== false) fail('R2 must not promote BUILD_READY');
@@ -206,25 +163,15 @@ if (!failures.length) {
     if (!template.includes(marker)) fail(`closure receipt template missing marker: ${marker}`);
   }
 
-  const state = contract.currentState ?? {};
   const expectedState = {
-    R3: 'PHYSICAL_OR_PROVIDER_OPEN',
-    R4: 'PHYSICAL_OR_PROVIDER_OPEN',
-    R5: 'PHYSICAL_OR_PROVIDER_OPEN',
-    R6: 'BLOCKED_BY_PRIOR_NODE',
-    R7: 'AUDIT_OPEN',
-    R8: 'AUDIT_OPEN',
-    R9: 'BLOCKED_BY_PRIOR_NODE',
-    R10: 'BLOCKED_BY_PRIOR_NODE',
-    q003: 'ACTIVE',
-    q004: 'ACTIVE',
-    q005: 'ACTIVE',
-    gMk0: 'OPEN',
-    buildReady: false,
-    releaseReady: false
+    R3: 'PHYSICAL_OR_PROVIDER_OPEN', R4: 'PHYSICAL_OR_PROVIDER_OPEN', R5: 'PHYSICAL_OR_PROVIDER_OPEN',
+    R6: 'BLOCKED_BY_PRIOR_NODE', R7: 'AUDIT_OPEN', R8: 'AUDIT_OPEN',
+    R9: 'BLOCKED_BY_PRIOR_NODE', R10: 'BLOCKED_BY_PRIOR_NODE',
+    q003: 'ACTIVE', q004: 'ACTIVE', q005: 'ACTIVE', gMk0: 'OPEN',
+    buildReady: false, releaseReady: false
   };
   for (const [key, value] of Object.entries(expectedState)) {
-    if (state[key] !== value) fail(`currentState ${key} drifted; expected ${value}, got ${state[key]}`);
+    if (contract.currentState?.[key] !== value) fail(`currentState ${key} drifted; expected ${value}, got ${contract.currentState?.[key]}`);
   }
 }
 
