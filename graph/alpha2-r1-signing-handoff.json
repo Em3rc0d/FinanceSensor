@@ -40,7 +40,18 @@
     "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
     "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
     "powershellParserRequired": true,
-    "privateSigningMaterialAllowed": false
+    "privateSigningMaterialAllowed": false,
+    "receipt": {
+      "prNumber": 92,
+      "certifiedHead": "75d286fc90f22c93c47b0ac55e5d5e294c3f097b",
+      "prRunId": 34135491080,
+      "prJobId": 101785339450,
+      "prConclusion": "SUCCESS",
+      "mergeSha": "32f9493773fb61fcae0785e0f55894ca6fc29aa7",
+      "postMergeRunId": 34135590675,
+      "postMergeJobId": 101785658752,
+      "postMergeConclusion": "SUCCESS"
+    }
   },
   "status": "HANDOFF_READY_PHYSICAL_OPEN",
   "trustedEdgeSigningPass": false,

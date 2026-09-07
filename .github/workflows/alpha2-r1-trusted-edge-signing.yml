@@ -10,10 +10,12 @@ on:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md'
       - 'mk0/10-evidence/EV-ALPHA2-R1-SIGNING-HANDOFF-2026-09-07.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R1-CI-ROUTING-2026-09-07.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches:
@@ -23,10 +25,12 @@ on:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md'
       - 'mk0/10-evidence/EV-ALPHA2-R1-SIGNING-HANDOFF-2026-09-07.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R1-CI-ROUTING-2026-09-07.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions:
@@ -54,6 +58,9 @@ jobs:
 
       - name: R1 trusted-edge handoff boundary
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
+
+      - name: R1 CI routing receipt
+        run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
       - name: Preserve physical boundary
         run: |
