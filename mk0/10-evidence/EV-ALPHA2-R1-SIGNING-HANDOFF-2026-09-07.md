@@ -1,10 +1,10 @@
 # EV — Alpha.2 R1 Trusted-Edge Signing Handoff — 2026-09-07
 
-Status: **BUNDLE_GENERATION_OPEN / PHYSICAL_OPEN**
+Status: **HANDOFF_READY_PHYSICAL_OPEN**
 
-The owned-device installability failure on `+2001` reopened R1. This evidence binds the repaired `+2002` canonical APK and the exact repository signer that will be packaged into v4. It does **not** claim that trusted-edge physical signing has happened.
+The owned-device installability failure on `+2001` reopened R1. The repaired `+2002` canonical APK and its exact trusted-edge signer are now frozen into the deterministic v4 handoff. This evidence does **not** claim that trusted-edge physical signing has happened.
 
-## Current authority
+## Current authority — v4 only
 
 ```text
 CANDIDATE=0.2.0-alpha.2+2002
@@ -26,9 +26,23 @@ DIRECT_PASSWORD_PIPE=FORBIDDEN
 EXPECTED_SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
 ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
 EXACT_SCOPE=gmail.readonly
+APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
 BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip
-BUNDLE_STATUS=GENERATION_PENDING
+BUNDLE_SHA256=a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e
+BUNDLE_BYTES=86636368
+BUNDLE_FILES=8
+ZIP_STRUCTURE=PASS
+ZIP_INTEGRITY=PASS
+MANIFEST_INTEGRITY=PASS
+PRIVATE_KEY_FILES=0
+SECRET_LIKE_VALUE_MATCHES=0
+GENERATION_RUN_ID=34165897243
+GENERATION_JOB_ID=101876751681
+GENERATION_ARTIFACT_ID=10034132918
+GENERATION_CONCLUSION=SUCCESS
 ```
+
+The GitHub Actions outer artifact was downloaded twice because the first transport copy did not match GitHub's artifact digest and failed decompression. That copy was rejected. The retry matched GitHub's exact artifact digest `c589f53ecdc77356ccce2dcfdeb3a1a2c51175862eb98d94068370f9f9892f2d`; its inner v4 ZIP passed decompression, all seven manifest payload checks, exact PS1/CMD Git-blob recomputation, and the public `apksigner.jar` digest above.
 
 ## Superseded handoffs
 
@@ -44,13 +58,13 @@ BUNDLE_V1_SHA256=b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a
 BUNDLE_V1_STATUS=REJECTED_SUPERSEDED
 ```
 
-v3 was internally valid for `+2001`, but it is now unusable because its fail-closed input pin targets the superseded APK. v1/v2 remain rejected for their earlier tooling defects.
+v3 was internally valid for `+2001`, but its fail-closed input pin makes it invalid for the repaired candidate. v1/v2 remain rejected for their earlier tooling defects.
 
-## v4 generation law
+## v4 audit
 
-Public CI may only assemble public-safe handoff material. It may download the immutable canonical artifact, package the exact Git PS1/CMD blobs, package a public `apksigner.jar`, generate a manifest/audit receipt and upload the bundle. It may not possess or use the private `FINANCESENSOR_R2_LAB` keystore or password and may not claim physical signing.
+The v4 bundle contains exactly eight entries: the canonical APK, exact repository PS1/CMD signer scripts, public `apksigner.jar`, canonical CI evidence, a source receipt, instructions and the SHA-256 manifest. No private signing material is present.
 
-The v4 ZIP is built deterministically with fixed ZIP timestamps. After the first successful generation, its final ZIP digest, bytes and `apksigner.jar` digest must be frozen back into `graph/alpha2-r1-signing-handoff.json` and revalidated before authorization.
+Public CI only assembled and audited public-safe handoff material. It did not possess or use the private `FINANCESENSOR_R2_LAB` keystore or password and did not execute real OAuth or Gmail.
 
 ## Trust boundary
 
@@ -58,7 +72,7 @@ Private `.jks`, `.keystore`, `.p12`, `.pfx`, private PEM material, passwords, OA
 
 ## Physical closure condition
 
-Once v4 becomes `HANDOFF_READY_PHYSICAL_OPEN`, R1 may close only after the locally executed signer emits a sanitized receipt proving:
+R1 may close only after local execution of v4 emits a sanitized receipt proving:
 
 ```text
 FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS
