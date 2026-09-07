@@ -4,6 +4,8 @@ Status: **HANDOFF_READY_PHYSICAL_OPEN**
 
 This evidence binds the exact canonical Alpha.2 APK and the exact statically certified R2 signer to one trusted-edge handoff bundle. It does **not** claim that physical signing has happened.
 
+The original R1 bundle is **SUPERSEDED** because Windows PowerShell 5.1 converted `keytool.exe` password-prompt stderr into `NativeCommandError` when the password was piped directly into the native command. The v2 handoff preserves every candidate/signature pin while replacing the fragile pipe with `System.Diagnostics.ProcessStartInfo` and explicitly redirected stdin/stdout/stderr.
+
 ```text
 FINANCESENSOR_R1_TRUSTED_EDGE_HANDOFF=READY
 DESIGN_GOVERNANCE_SHA=416b8e3a1632d549d7d7d0d3026d18f969c57dd2
@@ -14,23 +16,28 @@ CANONICAL_ARTIFACT_ID=10004110513
 CANONICAL_ARTIFACT_ZIP_SHA256=812c60b563248c5a86ac053a59c64f9f9b6c01e4d55225c426596d418813d736
 INPUT_APK_SHA256=7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f
 INPUT_APK_BYTES=182053563
-SIGNER_PS1_GIT_BLOB=ce80c83698e0c3f02fab4819c7b5ad58b5d107dc
+SIGNER_PS1_GIT_BLOB=d2aadb1bda90bbbcc3d7aa0e10a5835ef068a297
 SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
+WINDOWS_NATIVE_STDIN=PROCESS_START_INFO_REDIRECTED
+DIRECT_PASSWORD_PIPE=FORBIDDEN
 EXPECTED_SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
 APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
-BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE.zip
-BUNDLE_SHA256=b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8
-BUNDLE_BYTES=86239981
+BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip
+BUNDLE_SHA256=c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5
+BUNDLE_BYTES=86531567
 BUNDLE_FILES=8
 PRIVATE_KEY_FILES=0
 SECRET_LIKE_VALUE_MATCHES=0
 ZIP_STRUCTURE=PASS
 ZIP_INTEGRITY=PASS
+SUPERSEDED_BUNDLE_SHA256=b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8
 ```
 
 ## Trust boundary
 
-The handoff bundle contains the canonical CI-signed input APK, the byte-identical repository signer scripts, public `apksigner.jar`, sanitized CI evidence, and local instructions/manifest only.
+The handoff bundle contains the canonical CI-signed input APK, the repository signer scripts, public `apksigner.jar`, sanitized CI evidence, and local instructions/manifest only.
+
+The v2 signer does not use environment variables or direct native-command PowerShell pipes for password transport. `keytool` and `apksigner` receive session-only password lines through explicitly redirected child-process stdin.
 
 The bundle contains **no** private `.jks`, `.keystore`, `.p12`, `.pfx`, PEM private key, password, OAuth token, Gmail content, or financial plaintext.
 
