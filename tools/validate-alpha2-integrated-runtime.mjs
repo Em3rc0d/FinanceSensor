@@ -5,6 +5,8 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const [
   authorityText,
   pipeline,
+  productGate,
+  monthlyCoverage,
   projection,
   runtime,
   transactionScanner,
@@ -19,6 +21,8 @@ const [
 ] = await Promise.all([
   read('graph/alpha2-mobile-runtime-authority.json'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_product_gate.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_monthly_coverage.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_projection.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_runtime.dart'),
   read('spikes/mobile-shell/native/android/Alpha2TransactionScanner.kt'),
@@ -56,6 +60,24 @@ if (!pipeline.includes('Alpha2BcpSavingsGeometryParser')) throw new Error('ALPHA
 if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_PARSE_REVIEW_FAIL_CLOSED_MISSING');
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
 if (!runtime.includes('blockedFromMaterialization')) throw new Error('ALPHA2_AMBIGUOUS_DOUBLE_COUNT_GUARD_MISSING');
+
+if (!pipeline.includes('evaluateAlpha2ProductGate(')) throw new Error('ALPHA2_EF_PRODUCT_GATE_NOT_EXECUTED');
+if (!pipeline.includes('monthlyClose: productGate.monthlyClose')) throw new Error('ALPHA2_F_TO_G_PROJECTION_NOT_WIRED');
+for (const marker of [
+  'ACCOUNT_MAPPING_REQUIRED',
+  'resolveAlpha2StatementOwnership(',
+  'confirmAlpha2OwnershipByUser(',
+  'Alpha2AccountReconciliationState.reconciled',
+  'evaluateAlpha2MonthlyClose('
+]) {
+  if (!productGate.includes(marker)) throw new Error(`ALPHA2_PRODUCT_GATE_MARKER_MISSING:${marker}`);
+}
+if (!monthlyCoverage.includes('externalBlockingReasons')) {
+  throw new Error('ALPHA2_MONTHLY_EXTERNAL_BLOCKS_NOT_MODELED');
+}
+if (!monthlyCoverage.includes('externalBlocks.isNotEmpty')) {
+  throw new Error('ALPHA2_MONTHLY_EXTERNAL_BLOCKS_NOT_FAIL_CLOSED');
+}
 
 if (/confidence\s*[:=]/i.test(transactionScanner) || transactionScanner.includes('0.96')) {
   throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
@@ -105,6 +127,9 @@ console.log('NEXT_ADR=ADR-039');
 console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
+console.log('ACCOUNT_GRAPH_PRODUCT_GATE=WIRED');
+console.log('MONTHLY_COVERAGE_PRODUCT_GATE=WIRED');
+console.log('BANK_CURRENCY_ONLY_AUTO_OWNERSHIP=FORBIDDEN');
 console.log('GENERIC_STATEMENT_PARSER_PRODUCT_AUTHORITY=0');
 console.log('PUBLIC_EVIDENCE_PERCENTAGE=0');
 console.log('E2EE_SECOND_PROTOCOL_CREATED=0');
