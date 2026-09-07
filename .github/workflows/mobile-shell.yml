@@ -131,6 +131,8 @@ jobs:
           generated_package = 'com.financesensor.lab.financesensor_mobile_shell'
           kts = Path('android/app/build.gradle.kts')
           groovy = Path('android/app/build.gradle')
+          kts_deps = '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n    implementation("net.zetetic:sqlcipher-android:4.18.0")\n}\n'
+          groovy_deps = '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n    implementation "net.zetetic:sqlcipher-android:4.18.0"\n}\n'
 
           if kts.exists():
               text = kts.read_text()
@@ -145,13 +147,7 @@ jobs:
               text = text.replace(markers[1], 'targetSdk = 36')
               text = text.replace(markers[2], f'applicationId = "{physical_package}"')
               if 'sqlcipher-android:4.18.0' not in text:
-                  text += '''
-
-dependencies {
-    implementation("com.google.android.gms:play-services-auth:21.6.0")
-    implementation("net.zetetic:sqlcipher-android:4.18.0")
-}
-'''
+                  text += kts_deps
               kts.write_text(text)
               print('ANDROID_GRADLE_DIALECT=KOTLIN_DSL')
           elif groovy.exists():
@@ -167,13 +163,7 @@ dependencies {
               text = text.replace(markers[1], 'targetSdkVersion 36')
               text = text.replace(markers[2], f'applicationId "{physical_package}"')
               if 'sqlcipher-android:4.18.0' not in text:
-                  text += '''
-
-dependencies {
-    implementation "com.google.android.gms:play-services-auth:21.6.0"
-    implementation "net.zetetic:sqlcipher-android:4.18.0"
-}
-'''
+                  text += groovy_deps
               groovy.write_text(text)
               print('ANDROID_GRADLE_DIALECT=GROOVY')
           else:
