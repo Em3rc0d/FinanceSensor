@@ -28,19 +28,30 @@
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip",
-    "status": "GENERATION_PENDING",
-    "sha256": null,
-    "bytes": null,
+    "status": "READY",
+    "sha256": "7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33",
+    "bytes": 86226530,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
-    "zipStructure": null,
-    "zipIntegrity": null,
-    "manifestIntegrity": null,
-    "ps1GitBlobVerified": null,
-    "cmdGitBlobVerified": null,
-    "apksignerSha256": null,
-    "supersedesBundleSha256": "a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e"
+    "zipStructure": "PASS",
+    "zipIntegrity": "PASS",
+    "manifestIntegrity": "PASS",
+    "ps1GitBlobVerified": "efe59ef464007c8af9f67fd184926f74e403ca08",
+    "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
+    "supersedesBundleSha256": "a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e",
+    "generationReceipt": {
+      "prNumber": 100,
+      "runId": 34168182736,
+      "jobId": 101883281871,
+      "artifactId": 10034846865,
+      "artifactWrapperSha256": "8da5131e83e33cff1595ce00ee2d2588f13b8ab971061d679aa1df6336192861",
+      "observedPrHeadSha": "af43e408b4b162d9b9fe6c9f6ec5d9169cc1712e",
+      "checkoutModeAtGeneration": "PR_MERGE_REF",
+      "independentBundleAudit": "PASS",
+      "exactHeadRegenerationRequiredBeforeMerge": true
+    }
   },
   "supersededBundles": [
     {
@@ -76,9 +87,10 @@
     "powershellParserRequired": true,
     "privateSigningMaterialAllowed": false,
     "bundleGenerationInPublicCi": true,
-    "physicalSigningInPublicCi": false
+    "physicalSigningInPublicCi": false,
+    "exactBranchHeadCheckoutRequired": true
   },
-  "status": "BUNDLE_GENERATION_OPEN_PHYSICAL_OPEN",
+  "status": "HANDOFF_READY_PHYSICAL_OPEN",
   "trustedEdgeSigningPass": false,
   "signedApkSha256": null,
   "physicalAlpha2Pass": false,
