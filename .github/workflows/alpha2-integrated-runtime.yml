@@ -105,24 +105,29 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           physical_package = 'com.financesensor.lab.gmailconnection.r2'
           generated_package = 'com.financesensor.lab.financesensor_mobile_shell'
           kts = Path('android/app/build.gradle.kts')
           groovy = Path('android/app/build.gradle')
+          settings = Path('android/settings.gradle.kts')
+          wrapper = Path('android/gradle/wrapper/gradle-wrapper.properties')
 
           if kts.exists():
               text = kts.read_text()
               markers = (
+                  'compileSdk = flutter.compileSdkVersion',
                   'minSdk = flutter.minSdkVersion',
                   'targetSdk = flutter.targetSdkVersion',
                   f'applicationId = "{generated_package}"',
               )
               if not all(marker in text for marker in markers):
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
-              text = text.replace(markers[0], 'minSdk = 31')
-              text = text.replace(markers[1], 'targetSdk = 36')
-              text = text.replace(markers[2], f'applicationId = "{physical_package}"')
+              text = text.replace(markers[0], 'compileSdk = 37')
+              text = text.replace(markers[1], 'minSdk = 31')
+              text = text.replace(markers[2], 'targetSdk = 36')
+              text = text.replace(markers[3], f'applicationId = "{physical_package}"')
               dependencies = '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n    implementation("net.zetetic:sqlcipher-android:4.18.0")\n}\n'
               if 'sqlcipher-android:4.18.0' not in text:
                   text += dependencies
@@ -130,21 +135,42 @@ jobs:
           elif groovy.exists():
               text = groovy.read_text()
               markers = (
+                  'compileSdkVersion flutter.compileSdkVersion',
                   'minSdkVersion flutter.minSdkVersion',
                   'targetSdkVersion flutter.targetSdkVersion',
                   f'applicationId "{generated_package}"',
               )
               if not all(marker in text for marker in markers):
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
-              text = text.replace(markers[0], 'minSdkVersion 31')
-              text = text.replace(markers[1], 'targetSdkVersion 36')
-              text = text.replace(markers[2], f'applicationId "{physical_package}"')
+              text = text.replace(markers[0], 'compileSdkVersion 37')
+              text = text.replace(markers[1], 'minSdkVersion 31')
+              text = text.replace(markers[2], 'targetSdkVersion 36')
+              text = text.replace(markers[3], f'applicationId "{physical_package}"')
               dependencies = '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n    implementation "net.zetetic:sqlcipher-android:4.18.0"\n}\n'
               if 'sqlcipher-android:4.18.0' not in text:
                   text += dependencies
               groovy.write_text(text)
           else:
               raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+
+          if not settings.exists():
+              raise SystemExit('ANDROID_SETTINGS_KTS_NOT_FOUND')
+          settings_text = settings.read_text()
+          agp_old = 'id("com.android.application") version "9.0.1" apply false'
+          agp_new = 'id("com.android.application") version "9.1.1" apply false'
+          if agp_old not in settings_text:
+              raise SystemExit('EXPECTED_FLUTTER_AGP_9_0_1_MARKER_NOT_FOUND')
+          settings.write_text(settings_text.replace(agp_old, agp_new, 1))
+
+          if not wrapper.exists():
+              raise SystemExit('ANDROID_GRADLE_WRAPPER_NOT_FOUND')
+          wrapper_text = wrapper.read_text()
+          pattern = r'gradle-9\.1\.0-(all|bin)\.zip'
+          if not re.search(pattern, wrapper_text):
+              raise SystemExit('EXPECTED_FLUTTER_GRADLE_9_1_0_MARKER_NOT_FOUND')
+          wrapper.write_text(
+              re.sub(pattern, lambda match: f'gradle-9.3.1-{match.group(1)}.zip', wrapper_text, count=1)
+          )
 
           target_dir = Path('android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell')
           target_dir.mkdir(parents=True, exist_ok=True)
@@ -176,8 +202,11 @@ jobs:
         working-directory: spikes/mobile-shell
         run: |
           set -euo pipefail
+          grep -R -E -q 'compileSdk(Version)?\s*[= ]\s*37' android/app/build.gradle*
           grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
           grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+          grep -q 'id("com.android.application") version "9.1.1" apply false' android/settings.gradle.kts
+          grep -E -q 'gradle-9\.3\.1-(all|bin)\.zip' android/gradle/wrapper/gradle-wrapper.properties
           grep -R -q 'com.financesensor.lab.gmailconnection.r2' android/app/build.gradle*
           grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
           grep -R -q 'sqlcipher-android:4.18.0' android/app/build.gradle*
@@ -189,6 +218,11 @@ jobs:
           grep -q 'runtimeFetchEnabled = false' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/Alpha2StatementDiscoveryScanner.kt
           ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          echo 'ANDROID_COMPILE_SDK=37'
+          echo 'ANDROID_MIN_SDK=31'
+          echo 'ANDROID_TARGET_SDK=36'
+          echo 'ANDROID_AGP_VERSION=9.1.1'
+          echo 'ANDROID_GRADLE_VERSION=9.3.1'
 
       - name: Resolve Flutter dependencies
         working-directory: spikes/mobile-shell
@@ -223,6 +257,11 @@ jobs:
           SOURCE_COMMIT=${GITHUB_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
+          ANDROID_COMPILE_SDK=37
+          ANDROID_MIN_SDK=31
+          ANDROID_TARGET_SDK=36
+          ANDROID_AGP_VERSION=9.1.1
+          ANDROID_GRADLE_VERSION=9.3.1
           DART_FINANCIAL_AUTHORITY=YES
           KOTLIN_TRUSTED_EDGE=YES
           NODE_PRODUCT_RUNTIME=NO
@@ -241,6 +280,7 @@ jobs:
           TRUSTED_EDGE_RESIGN_REQUIRED=YES
           REAL_OAUTH_EXECUTED_BY_CI=NO
           REAL_GMAIL_EXECUTED_BY_CI=NO
+          REAL_FINANCIAL_DATA_IN_CI=NO
           PHYSICAL_SQLCIPHER_PASS=NO
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
