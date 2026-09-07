@@ -27,10 +27,12 @@ const expected = {
   packageName: 'com.financesensor.lab.gmailconnection.r2',
   scope: 'gmail.readonly',
   apksignerSha256: '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180',
-  bundleName: 'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip',
-  bundleSha256: 'c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5',
-  bundleBytes: 86531567,
-  supersededBundleSha256: 'b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8'
+  bundleName: 'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v3.zip',
+  bundleSha256: 'dbb310bf1efddda91793b996543568b8fff57c4379561fdfeec98eedbe70c90d',
+  bundleBytes: 86191424,
+  rejectedV1: 'b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8',
+  rejectedV2: 'c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5',
+  rejectedV2ObservedPs1: '7ddce7fe22ef8a65cad5edf5c9f42cb87dbd4010'
 };
 
 function assert(cond, message) {
@@ -45,7 +47,7 @@ function gitBlobSha1(buffer) {
     .digest('hex');
 }
 
-assert(graph.schemaVersion === 'A2_R1_TRUSTED_EDGE_HANDOFF_V2', 'R1 handoff schema drifted');
+assert(graph.schemaVersion === 'A2_R1_TRUSTED_EDGE_HANDOFF_V3', 'R1 handoff schema drifted');
 assert(graph.project === 'FinanceSensor', 'project drifted');
 assert(graph.candidate === expected.candidate, 'candidate drifted');
 assert(graph.designGovernanceSha === expected.designGovernanceSha, 'design governance SHA drifted');
@@ -67,15 +69,26 @@ assert(graph.signer?.androidOauthPackage === expected.packageName, 'OAuth packag
 assert(graph.signer?.exactScope === expected.scope, 'OAuth scope drifted');
 assert(graph.publicTooling?.apksignerSha256 === expected.apksignerSha256, 'public apksigner digest drifted');
 
-assert(graph.handoffBundle?.name === expected.bundleName, 'R1 v2 bundle name drifted');
-assert(graph.handoffBundle?.sha256 === expected.bundleSha256, 'R1 v2 bundle digest drifted');
-assert(graph.handoffBundle?.bytes === expected.bundleBytes, 'R1 v2 bundle bytes drifted');
-assert(graph.handoffBundle?.files === 8, 'R1 v2 bundle file count drifted');
+assert(graph.handoffBundle?.name === expected.bundleName, 'R1 v3 bundle name drifted');
+assert(graph.handoffBundle?.sha256 === expected.bundleSha256, 'R1 v3 bundle digest drifted');
+assert(graph.handoffBundle?.bytes === expected.bundleBytes, 'R1 v3 bundle bytes drifted');
+assert(graph.handoffBundle?.files === 8, 'R1 v3 bundle file count drifted');
 assert(graph.handoffBundle?.privateKeyFiles === 0, 'private signing file detected in handoff authority');
 assert(graph.handoffBundle?.secretLikeValueMatches === 0, 'secret-like material detected in handoff authority');
 assert(graph.handoffBundle?.zipStructure === 'PASS', 'bundle ZIP structure not PASS');
 assert(graph.handoffBundle?.zipIntegrity === 'PASS', 'bundle ZIP integrity not PASS');
-assert(graph.handoffBundle?.supersedesBundleSha256 === expected.supersededBundleSha256, 'superseded v1 bundle identity drifted');
+assert(graph.handoffBundle?.manifestIntegrity === 'PASS', 'bundle manifest integrity not PASS');
+assert(graph.handoffBundle?.ps1GitBlobVerified === expected.ps1Blob, 'v3 packaged PS1 blob verification drifted');
+assert(graph.handoffBundle?.cmdGitBlobVerified === expected.cmdBlob, 'v3 packaged CMD blob verification drifted');
+assert(graph.handoffBundle?.supersedesBundleSha256 === expected.rejectedV2, 'v3 supersession authority drifted');
+assert(JSON.stringify(graph.handoffBundle?.supersessionChain) === JSON.stringify([expected.rejectedV1, expected.rejectedV2]), 'bundle supersession chain drifted');
+
+const rejectedV1 = graph.rejectedBundles?.find((x) => x.sha256 === expected.rejectedV1);
+const rejectedV2 = graph.rejectedBundles?.find((x) => x.sha256 === expected.rejectedV2);
+assert(rejectedV1?.reason === 'WINDOWS_POWERSHELL_NATIVE_STDERR_PIPE_FAILURE' && rejectedV1?.safeToUse === false, 'v1 rejection boundary drifted');
+assert(rejectedV2?.reason === 'PACKAGED_PS1_GIT_BLOB_MISMATCH' && rejectedV2?.safeToUse === false, 'v2 rejection boundary drifted');
+assert(rejectedV2?.observedPs1GitBlob === expected.rejectedV2ObservedPs1, 'v2 observed PS1 blob drifted');
+assert(rejectedV2?.expectedPs1GitBlob === expected.ps1Blob, 'v2 expected PS1 blob drifted');
 
 assert(graph.ciGate?.workflow === 'Alpha.2 R1 Trusted-Edge Signing', 'R1 CI workflow authority drifted');
 assert(graph.ciGate?.workflowPath === workflowPath, 'R1 CI workflow path drifted');
@@ -97,11 +110,13 @@ for (const marker of [
   expected.apkSha256,
   String(expected.apkBytes),
   expected.signerSha1,
-  "function Invoke-ProcessWithStdin",
+  'function Invoke-ProcessWithStdin',
   'RedirectStandardInput = $true',
   'RedirectStandardError = $true',
   'Invoke-ProcessWithStdin -FileName $keytool',
-  'Invoke-ProcessWithStdin -FileName $java'
+  'Invoke-ProcessWithStdin -FileName $java',
+  "'--ks-pass', 'stdin'",
+  "'--key-pass', 'stdin'"
 ]) {
   assert(signer.includes(marker), `signer missing frozen/robust marker: ${marker}`);
 }
@@ -120,10 +135,16 @@ for (const marker of [
   String(expected.bundleBytes),
   expected.apkSha256,
   expected.ps1Blob,
+  expected.cmdBlob,
   expected.signerSha1,
   'WINDOWS_NATIVE_STDIN=PROCESS_START_INFO_REDIRECTED',
   'DIRECT_PASSWORD_PIPE=FORBIDDEN',
-  `SUPERSEDED_BUNDLE_SHA256=${expected.supersededBundleSha256}`,
+  `BUNDLE_V1_SHA256=${expected.rejectedV1}`,
+  'BUNDLE_V1_STATUS=REJECTED_SUPERSEDED',
+  `BUNDLE_V2_SHA256=${expected.rejectedV2}`,
+  'BUNDLE_V2_STATUS=REJECTED_SUPERSEDED',
+  `BUNDLE_V2_OBSERVED_PS1_GIT_BLOB=${expected.rejectedV2ObservedPs1}`,
+  `BUNDLE_V2_EXPECTED_PS1_GIT_BLOB=${expected.ps1Blob}`,
   'R1_TRUSTED_EDGE_SIGNING=OPEN',
   'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_ON_R1',
   'BUILD_READY=NO',
@@ -143,8 +164,7 @@ for (const path of [
   'mk0/10-evidence/EV-ALPHA2-R1-SIGNING-HANDOFF-2026-09-07.md',
   '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 ]) {
-  const occurrences = workflow.split(path).length - 1;
-  assert(occurrences >= 2 || path === '.github/workflows/alpha2-r1-trusted-edge-signing.yml' && occurrences >= 2, `R1 workflow routing missing PR/push path: ${path}`);
+  assert(workflow.split(path).length - 1 >= 2, `R1 workflow routing missing PR/push path: ${path}`);
 }
 assert(workflow.includes('node tools/validate-alpha2-canonical-candidate.mjs'), 'R1 workflow must execute canonical candidate validator');
 assert(workflow.includes('node tools/validate-alpha2-r1-signing-handoff.mjs'), 'R1 workflow must execute R1 handoff validator');
@@ -152,6 +172,7 @@ assert(workflow.includes('contents: read'), 'R1 workflow must remain read-only')
 assert(!workflow.includes('secrets.'), 'R1 public workflow must not consume GitHub secrets');
 
 console.log('ALPHA2_R1_SIGNING_HANDOFF=PASS');
+console.log('ALPHA2_R1_BUNDLE_V3=PASS');
 console.log('ALPHA2_R1_SIGNER_GIT_BLOBS=PASS');
 console.log('ALPHA2_R1_WINDOWS_STDIN=PASS');
 console.log('ALPHA2_R1_CI_ROUTING=PASS');
