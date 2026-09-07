@@ -1,0 +1,56 @@
+name: Alpha.2 Consolidated Product Contract
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-consolidated-product-contract.json'
+      - 'mk0/03-design/ALPHA2-CONSOLIDATED-MONEY-EXPERIENCE.md'
+      - 'mk0/04-architecture/ALPHA2-CONSOLIDATED-PIPELINE.md'
+      - 'mk0/05-data-model/SOURCE-AUTHORITY-AND-CANONICAL-BINDINGS.md'
+      - 'mk0/06-wireframes/WEB-CONSOLIDATED-DASHBOARD.md'
+      - 'mk0/07-plan/ALPHA2-INTEGRATED-MILESTONE-PLAN.md'
+      - 'mk0/09-test/ALPHA2-INTEGRATED-GATE-MATRIX.md'
+      - 'mk0/10-evidence/EV-HUMAN-TEST-CONFIDENCE-AUDIT-2026-09-06.md'
+      - 'mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
+      - 'tools/validate-alpha2-consolidated-product-contract.mjs'
+      - '.github/workflows/alpha2-consolidated-contract.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-consolidated-product-contract.json'
+      - 'mk0/03-design/ALPHA2-CONSOLIDATED-MONEY-EXPERIENCE.md'
+      - 'mk0/04-architecture/ALPHA2-CONSOLIDATED-PIPELINE.md'
+      - 'mk0/05-data-model/SOURCE-AUTHORITY-AND-CANONICAL-BINDINGS.md'
+      - 'mk0/06-wireframes/WEB-CONSOLIDATED-DASHBOARD.md'
+      - 'mk0/07-plan/ALPHA2-INTEGRATED-MILESTONE-PLAN.md'
+      - 'mk0/09-test/ALPHA2-INTEGRATED-GATE-MATRIX.md'
+      - 'mk0/10-evidence/EV-HUMAN-TEST-CONFIDENCE-AUDIT-2026-09-06.md'
+      - 'mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
+      - 'tools/validate-alpha2-consolidated-product-contract.mjs'
+      - '.github/workflows/alpha2-consolidated-contract.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alpha2-consolidated-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate consolidated product contract
+        run: node tools/validate-alpha2-consolidated-product-contract.mjs
