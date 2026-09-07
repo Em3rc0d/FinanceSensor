@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "ALPHA2_MOBILE_RUNTIME_AUTHORITY_V1",
   "status": "IMPLEMENTATION_OPEN_PHYSICAL_MILESTONE_OPEN",
-  "asOf": "2026-09-06",
+  "asOf": "2026-09-07",
   "adr": "ADR-038",
   "authorities": {
     "kotlin": {
@@ -69,6 +69,13 @@
     "nativeProtectedWrapRequired": true,
     "rawDekToDartAllowed": false,
     "rawDekDurableAllowed": false
+  },
+  "trustedEdgeSigning": {
+    "candidate": "0.2.0-alpha.2+2001",
+    "windowsNativeStdin": "PROCESS_START_INFO_REDIRECTED",
+    "directPasswordPipeAllowed": false,
+    "environmentPasswordHandoffAllowed": false,
+    "physicalSigningPass": false
   },
   "physicalCadence": {
     "mode": "MILESTONE_ONLY",
