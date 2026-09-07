@@ -158,15 +158,15 @@ if ([string]::IsNullOrWhiteSpace($Keystore) -or -not (Test-Path -LiteralPath $Ke
 
 $StoreSecure = Read-Host 'Keystore password (trusted-edge session only)' -AsSecureString
 $StorePass = Convert-SecureStringToPlain $StoreSecure
-$env:FINANCESENSOR_R2_STORE_PASS = $StorePass
-$env:FINANCESENSOR_R2_KEY_PASS = $StorePass
 
 try {
   Write-Host "FINANCESENSOR_CANDIDATE=$Candidate"
   Write-Host "SOURCE_COMMIT=$ExpectedSourceCommit"
   Write-Host "INPUT_APK_SHA256=$InputHash"
 
-  $listing = & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -list -v -keystore $Keystore -storepass:env FINANCESENSOR_R2_STORE_PASS 2>&1
+  # Do not pass the password via command-line arguments or environment variables.
+  # With -storepass omitted, keytool reads the password from standard input.
+  $listing = $StorePass | & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -list -v -keystore $Keystore 2>&1
   if ($LASTEXITCODE -ne 0) { throw 'Could not open the selected keystore with that password.' }
 
   $Alias = $null
@@ -184,13 +184,13 @@ try {
 
   Remove-OutputArtifacts -OutputPath $OutputFull
 
-  & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass env:FINANCESENSOR_R2_STORE_PASS --key-pass env:FINANCESENSOR_R2_KEY_PASS --out $OutputFull $InputFull
+  # Android apksigner explicitly supports stdin for keystore/key passwords.
+  @($StorePass, $StorePass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
   if ($LASTEXITCODE -ne 0) {
     Remove-OutputArtifacts -OutputPath $OutputFull
     $KeySecure = Read-Host 'Private key password (only if different from keystore password)' -AsSecureString
     $KeyPass = Convert-SecureStringToPlain $KeySecure
-    $env:FINANCESENSOR_R2_KEY_PASS = $KeyPass
-    & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass env:FINANCESENSOR_R2_STORE_PASS --key-pass env:FINANCESENSOR_R2_KEY_PASS --out $OutputFull $InputFull
+    @($StorePass, $KeyPass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
     if ($LASTEXITCODE -ne 0) {
       Remove-OutputArtifacts -OutputPath $OutputFull
       throw 'Local signing failed. No output APK or receipt was retained.'
@@ -251,11 +251,9 @@ catch {
 }
 finally {
   # PowerShell/.NET strings do not provide deterministic zeroization. The contract
-  # is session-only custody plus prompt/env cleanup; no stronger claim is made.
+  # is session-only custody plus prompt cleanup; no stronger claim is made.
   $StorePass = $null
   if (Get-Variable KeyPass -ErrorAction SilentlyContinue) { $KeyPass = $null }
   $StoreSecure = $null
   if (Get-Variable KeySecure -ErrorAction SilentlyContinue) { $KeySecure = $null }
-  Remove-Item Env:FINANCESENSOR_R2_STORE_PASS -ErrorAction SilentlyContinue
-  Remove-Item Env:FINANCESENSOR_R2_KEY_PASS -ErrorAction SilentlyContinue
 }
