@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 
 import 'alpha2_ingress.dart';
 import 'alpha2_models.dart';
+import 'alpha2_product_gate.dart';
 import 'alpha2_projection.dart';
 import 'alpha2_runtime.dart';
 import 'alpha2_statement_geometry.dart';
@@ -36,6 +37,7 @@ class Alpha2PipelineResult {
     required this.gmailEvidenceCount,
     required this.statementOutcomes,
     required this.runtime,
+    required this.productGate,
     required this.projection,
   });
 
@@ -43,6 +45,7 @@ class Alpha2PipelineResult {
   final int gmailEvidenceCount;
   final List<Alpha2StatementImportOutcome> statementOutcomes;
   final Alpha2RuntimeResult runtime;
+  final Alpha2ProductGateResult productGate;
   final Alpha2PublicDashboardProjection projection;
 }
 
@@ -62,6 +65,8 @@ class Alpha2Pipeline {
   Future<Alpha2PipelineResult> refresh({
     required String tenantId,
     required Alpha2StatementPasswordProvider passwordProvider,
+    Alpha2ProductGateContext productGateContext =
+        const Alpha2ProductGateContext(),
   }) async {
     if (tenantId.trim().isEmpty) {
       throw ArgumentError('ALPHA2_PIPELINE_TENANT_REQUIRED');
@@ -95,9 +100,15 @@ class Alpha2Pipeline {
     final persisted = await vault.readSafeEvidence();
     final evidence = persisted.map(alpha2EvidenceFromSafeVaultRow).toList();
     final runtime = runAlpha2CanonicalRuntime(evidence: evidence);
+    final productGate = evaluateAlpha2ProductGate(
+      tenantId: tenantId,
+      evidence: evidence,
+      runtime: runtime,
+      context: productGateContext,
+    );
     final projection = buildAlpha2PublicProjection(
       canonicalTransactions: runtime.canonicalTransactions,
-      monthlyClose: null,
+      monthlyClose: productGate.monthlyClose,
     );
     return Alpha2PipelineResult(
       ingressCoverage: batch.coverage,
@@ -105,6 +116,7 @@ class Alpha2Pipeline {
       statementOutcomes:
           List<Alpha2StatementImportOutcome>.unmodifiable(statementOutcomes),
       runtime: runtime,
+      productGate: productGate,
       projection: projection,
     );
   }
