@@ -9,6 +9,8 @@ const [
   monthlyCoverage,
   projection,
   runtime,
+  sensor,
+  statementStrict,
   transactionScanner,
   statementScanner,
   vaultBridge,
@@ -25,6 +27,8 @@ const [
   read('spikes/mobile-shell/lib/alpha2/alpha2_monthly_coverage.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_projection.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_runtime.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_sensor_v1.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_statement_strict_adapter.dart'),
   read('spikes/mobile-shell/native/android/Alpha2TransactionScanner.kt'),
   read('spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt'),
   read('spikes/mobile-shell/native/android/Alpha2VaultBridge.kt'),
@@ -57,9 +61,18 @@ for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 
 }
 
 if (!pipeline.includes('Alpha2BcpSavingsGeometryParser')) throw new Error('ALPHA2_BCP_GEOMETRY_PARSER_NOT_WIRED');
+if (!pipeline.includes('Alpha2StrictBcpSavingsAdapter')) throw new Error('ALPHA2_STATEMENT_STRICT_ADAPTER_NOT_WIRED');
 if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_PARSE_REVIEW_FAIL_CLOSED_MISSING');
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
 if (!runtime.includes('blockedFromMaterialization')) throw new Error('ALPHA2_AMBIGUOUS_DOUBLE_COUNT_GUARD_MISSING');
+for (const marker of [
+  'A2_BCP_SAVINGS_COMPLETENESS_V1',
+  'STATEMENT_MONETARY_ROW_UNEXPLAINED',
+  'audit.monetaryRows > audit.explainedMonetaryRows',
+  'review.add(alpha2UnexplainedMonetaryRowCode)'
+]) {
+  if (!statementStrict.includes(marker)) throw new Error(`ALPHA2_STATEMENT_COMPLETENESS_MARKER_MISSING:${marker}`);
+}
 
 if (!pipeline.includes('evaluateAlpha2ProductGate(')) throw new Error('ALPHA2_EF_PRODUCT_GATE_NOT_EXECUTED');
 if (!pipeline.includes('monthlyClose: productGate.monthlyClose')) throw new Error('ALPHA2_F_TO_G_PROJECTION_NOT_WIRED');
@@ -77,6 +90,15 @@ if (!monthlyCoverage.includes('externalBlockingReasons')) {
 }
 if (!monthlyCoverage.includes('externalBlocks.isNotEmpty')) {
   throw new Error('ALPHA2_MONTHLY_EXTERNAL_BLOCKS_NOT_FAIL_CLOSED');
+}
+if (!sensor.includes("reason == 'ACCOUNT_MAPPING_REQUIRED'")) {
+  throw new Error('ALPHA2_ACCOUNT_MAPPING_SENSOR_GAP_NOT_WIRED');
+}
+if (!sensor.includes('monthlyClose.externalBlockingReasons')) {
+  throw new Error('ALPHA2_EXTERNAL_PRODUCT_GAPS_NOT_SURFACED');
+}
+if (!main.includes('Estado mensual') || !main.includes('Mapeo de cuenta')) {
+  throw new Error('ALPHA2_MOBILE_COVERAGE_PRODUCT_STATE_MISSING');
 }
 
 if (/confidence\s*[:=]/i.test(transactionScanner) || transactionScanner.includes('0.96')) {
@@ -127,8 +149,11 @@ console.log('NEXT_ADR=ADR-039');
 console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
+console.log('STATEMENT_STRICT_COMPLETENESS=WIRED');
+console.log('STATEMENT_PARTIAL_BATCH_IMPORT=FORBIDDEN');
 console.log('ACCOUNT_GRAPH_PRODUCT_GATE=WIRED');
 console.log('MONTHLY_COVERAGE_PRODUCT_GATE=WIRED');
+console.log('ACCOUNT_MAPPING_KNOWLEDGE_GAP=WIRED');
 console.log('BANK_CURRENCY_ONLY_AUTO_OWNERSHIP=FORBIDDEN');
 console.log('GENERIC_STATEMENT_PARSER_PRODUCT_AUTHORITY=0');
 console.log('PUBLIC_EVIDENCE_PERCENTAGE=0');
