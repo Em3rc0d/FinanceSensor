@@ -1,4 +1,4 @@
-# ADR-021 — Dual-source authority and web projection
+# ADR-037 — Dual-source authority and web projection
 
 **Status:** ACCEPTED FOR ALPHA.2 DESIGN  
 **Date:** 2026-09-06
