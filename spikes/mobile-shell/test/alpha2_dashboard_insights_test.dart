@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_dashboard_insights.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_models.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_projection.dart';
+import 'package:financesensor_mobile_shell/alpha2/alpha2_sensor_v1.dart';
 
 void main() {
   Alpha2PublicTransaction tx({
