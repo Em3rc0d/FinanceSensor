@@ -9,6 +9,7 @@ import 'alpha2_product_gate.dart';
 import 'alpha2_projection.dart';
 import 'alpha2_runtime.dart';
 import 'alpha2_statement_geometry.dart';
+import 'alpha2_statement_strict_adapter.dart';
 import 'alpha2_vault.dart';
 
 typedef Alpha2StatementPasswordProvider = Future<String?> Function(
@@ -54,13 +55,15 @@ class Alpha2Pipeline {
     required this.ingress,
     required this.vault,
     this.pdfReader = const Alpha2StructuredPdfReader(),
-    this.bcpSavingsParser = const Alpha2BcpSavingsGeometryParser(),
+    this.bcpSavingsParser = const Alpha2StrictBcpSavingsAdapter(
+      geometryParser: Alpha2BcpSavingsGeometryParser(),
+    ),
   });
 
   final Alpha2IngressSource ingress;
   final Alpha2Vault vault;
   final Alpha2StructuredPdfReader pdfReader;
-  final Alpha2BcpSavingsGeometryParser bcpSavingsParser;
+  final Alpha2StrictBcpSavingsAdapter bcpSavingsParser;
 
   Future<Alpha2PipelineResult> refresh({
     required String tenantId,
