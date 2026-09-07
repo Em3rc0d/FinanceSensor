@@ -81,6 +81,7 @@ function Find-BundledApkSignerJar([string]$InputPath) {
   return $null
 }
 
+
 function Quote-ProcessArgument([string]$Value) {
   if ($null -eq $Value) { return '""' }
   return '"' + $Value.Replace('"', '\"') + '"'
