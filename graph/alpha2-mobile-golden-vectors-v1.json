@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "contract": "ALPHA2_MOBILE_GOLDEN_VECTORS_V1",
+  "referenceRuntime": "NODE_STATIC_CERTIFIED",
+  "productRuntime": "DART",
+  "identityParityRequired": false,
+  "semanticParityRequired": true,
+  "reconciliation": [
+    {
+      "id": "D_STRONG_CONFIRMED",
+      "left": {"evidenceId":"g1","tenantId":"t1","amount":10,"currency":"PEN","occurredAt":"2026-08-01T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","institutionCode":"BCP","accountId":"acct1","merchantCanonical":"UBER","externalReference":"REF1","direction":"OUT"},
+      "candidates": [{"evidenceId":"s1","tenantId":"t1","amount":10,"currency":"PEN","occurredAt":"2026-08-01T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_STATEMENT","institutionCode":"BCP","accountId":"acct1","merchantCanonical":"UBER","externalReference":"REF1","direction":"OUT"}],
+      "expected": {"outcome":"CONFIRMED","topScore":100,"selectedEvidenceId":"s1"}
+    },
+    {
+      "id": "D_AMOUNT_ONLY_NOT_CONFIRMED",
+      "left": {"evidenceId":"g2","tenantId":"t1","amount":15,"currency":"PEN","occurredAt":"2026-08-02T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","direction":"OUT"},
+      "candidates": [{"evidenceId":"s2","tenantId":"t1","amount":15,"currency":"PEN","occurredAt":"2026-08-02T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_STATEMENT","direction":"OUT"}],
+      "expected": {"outcome":"PROPOSED","topScore":50,"selectedEvidenceId":"s2"}
+    },
+    {
+      "id": "D_AMBIGUOUS_REVIEW",
+      "left": {"evidenceId":"g3","tenantId":"t1","amount":20,"currency":"PEN","occurredAt":"2026-08-03T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","institutionCode":"BCP","accountId":"acct2","merchantCanonical":"SPOTIFY","direction":"OUT"},
+      "candidates": [
+        {"evidenceId":"s3a","tenantId":"t1","amount":20,"currency":"PEN","occurredAt":"2026-08-03T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_STATEMENT","institutionCode":"BCP","accountId":"acct2","merchantCanonical":"SPOTIFY","direction":"OUT"},
+        {"evidenceId":"s3b","tenantId":"t1","amount":20,"currency":"PEN","occurredAt":"2026-08-03T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_STATEMENT","institutionCode":"BCP","accountId":"acct2","merchantCanonical":"SPOTIFY","direction":"OUT"}
+      ],
+      "expected": {"outcome":"REVIEW","topScore":85,"margin":0}
+    },
+    {
+      "id": "D_SAME_CHANNEL_REJECTED",
+      "left": {"evidenceId":"g4","tenantId":"t1","amount":30,"currency":"PEN","occurredAt":"2026-08-04T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","direction":"OUT"},
+      "candidates": [{"evidenceId":"g5","tenantId":"t1","amount":30,"currency":"PEN","occurredAt":"2026-08-04T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","direction":"OUT"}],
+      "expected": {"outcome":"REJECTED","veto":"SOURCE_CHANNEL_NOT_INDEPENDENT"}
+    },
+    {
+      "id": "D_CROSS_CURRENCY_REJECTED",
+      "left": {"evidenceId":"g6","tenantId":"t1","amount":40,"currency":"PEN","occurredAt":"2026-08-05T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_NOTIFICATION","direction":"OUT"},
+      "candidates": [{"evidenceId":"s6","tenantId":"t1","amount":40,"currency":"USD","occurredAt":"2026-08-05T12:00:00Z","semanticType":"EXPENSE","evidenceClass":"BANK_STATEMENT","direction":"OUT"}],
+      "expected": {"outcome":"REJECTED","veto":"CURRENCY_MISMATCH"}
+    }
+  ],
+  "accountGraph": [
+    {"id":"E_BANK_CURRENCY_ONLY_PROBABLE","mode":"BANK_CURRENCY_ONLY","expectedState":"PROBABLE"},
+    {"id":"E_MASKED_ONE_PERIOD_PROBABLE","mode":"MASKED_ONE_PERIOD","expectedState":"PROBABLE","expectedPeriods":1},
+    {"id":"E_MASKED_TWO_PERIOD_CONFIRMED","mode":"MASKED_TWO_PERIODS","expectedState":"SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE","expectedPeriods":2},
+    {"id":"E_EXACT_STABLE_ID_CONFIRMED","mode":"EXACT_STABLE_IDENTIFIER","expectedState":"SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE","expectedPeriods":1}
+  ],
+  "monthlyCoverage": [
+    {"id":"F_MISSING_STATEMENT_WAITING","mode":"MISSING_STATEMENT","expectedStatus":"WAITING_FOR_STATEMENTS"},
+    {"id":"F_ALL_COVERED_RECONCILED","mode":"ALL_COVERED","expectedStatus":"RECONCILED"},
+    {"id":"F_BLOCKING_CONFLICT_REVIEW","mode":"BLOCKING_CONFLICT","expectedStatus":"REVIEW_REQUIRED"},
+    {"id":"F_USER_EXCLUDED_VISIBLE","mode":"ONE_INCLUDED_ONE_EXCLUDED","expectedStatus":"RECONCILED","expectedExcluded":1}
+  ],
+  "sensor": [
+    {"id":"G_FEE_COMISIONES","mode":"FEE_CATEGORY","expectedCategory":"Comisiones"},
+    {"id":"G_TWO_OCCURRENCES_NO_RECURRENCE","mode":"TWO_MONTHLY","expectedRecurring":0},
+    {"id":"G_THREE_OCCURRENCES_MONTHLY_CANDIDATE","mode":"THREE_MONTHLY","expectedRecurring":1,"expectedCadence":"MONTHLY","expectedState":"CANDIDATE"},
+    {"id":"G_CARD_PAYMENT_EXCLUDED_CASHFLOW","mode":"CARD_PAYMENT","expectedCashflowBuckets":0},
+    {"id":"G_CROSS_CURRENCY_SEPARATE","mode":"CROSS_CURRENCY","expectedCashflowBuckets":2}
+  ]
+}

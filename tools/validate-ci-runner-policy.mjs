@@ -19,6 +19,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'alpha2-statement-fetch-parse.yml',
   'alpha2-financial-vault.yml',
   'alpha2-consolidated-contract.yml',
+  'alpha2-integrated-runtime.yml',
 ]);
 
 const RETIRED_WORKFLOWS = new Set(['gmail-live-spike.yml']);
@@ -269,6 +270,38 @@ const contracts = {
         'Alpha.2 consolidated contract CI is static only and may not execute trusted-edge/provider flows'],
     ],
   },
+  'alpha2-integrated-runtime.yml': {
+    markers: [
+      'node tools/validate-alpha2-integrated-runtime.mjs',
+      '--target lib/main_alpha2.dart',
+      'ANDROID_COMPILE_SDK=37',
+      'ANDROID_MIN_SDK=31',
+      'ANDROID_TARGET_SDK=36',
+      'ANDROID_AGP_VERSION=9.1.1',
+      'ANDROID_GRADLE_VERSION=9.3.1',
+      'SQLCIPHER_VERSION=4.18.0',
+      'REAL_OAUTH_EXECUTED_BY_CI=NO',
+      'REAL_GMAIL_EXECUTED_BY_CI=NO',
+      'REAL_FINANCIAL_DATA_IN_CI=NO',
+      'PHYSICAL_SQLCIPHER_PASS=NO',
+      'PHYSICAL_ALPHA2_PASS=NO',
+      'BUILD_READY=NO',
+      'RELEASE_READY=NO',
+      'contents: read',
+      'runs-on: ubuntu-latest',
+    ],
+    markerLabel: 'Alpha.2 integrated public CI boundary',
+    forbidden: [
+      [/\$\{\{\s*secrets\./,
+        'Alpha.2 integrated public CI may not receive secrets'],
+      [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/,
+        'Alpha.2 integrated public CI may not receive Gmail/OAuth credentials'],
+      [/FINANCESENSOR_R2_LAB.*(PASSWORD|PRIVATE|KEYSTORE)|storePassword|keyPassword/i,
+        'Alpha.2 integrated public CI may not receive stable private signing material'],
+      [/REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES|REAL_FINANCIAL_DATA_IN_CI=YES|PHYSICAL_SQLCIPHER_PASS=YES|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i,
+        'Alpha.2 integrated public CI contains a forbidden promotion marker'],
+    ],
+  },
 };
 
 for (const [file, contract] of Object.entries(contracts)) {
@@ -330,4 +363,8 @@ console.log('ALPHA2_FINANCIAL_VAULT_REAL_PLAINTEXT_IN_CI=0');
 console.log('ALPHA2_FINANCIAL_VAULT_REAL_PLATFORM_KEYSTORE_IN_CI=0');
 console.log('ALPHA2_FINANCIAL_VAULT_PLAINTEXT_SQLITE_FALLBACK=0');
 console.log('ALPHA2_CONSOLIDATED_CONTRACT_STATIC_ONLY=1');
+console.log('ALPHA2_INTEGRATED_PUBLIC_CI_REAL_OAUTH=0');
+console.log('ALPHA2_INTEGRATED_PUBLIC_CI_REAL_GMAIL=0');
+console.log('ALPHA2_INTEGRATED_PUBLIC_CI_REAL_FINANCIAL_DATA=0');
+console.log('ALPHA2_INTEGRATED_PUBLIC_CI_PHYSICAL_PASS=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');

@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  crypto: 3.0.7
   pdfrx: 2.4.8
 
 dev_dependencies:
