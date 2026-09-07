@@ -1,3 +1,4 @@
+import './validate-prebuild-remainder-design.mjs';
 import fs from 'node:fs';
 
 const manifestPath = 'graph/build-readiness.json';
@@ -236,6 +237,9 @@ console.log('TENANCY_MODEL=PASS');
 console.log('MK0_SCOPE=PASS');
 console.log('IMPLEMENTATION_PLAN=PASS');
 console.log('IMPLEMENTATION_BASELINE=FROZEN');
+console.log('PREBUILD_REMAINDER_DESIGN=PASS');
+console.log('NEXT_EXECUTION_NODE=R1_TRUSTED_EDGE_SIGNING');
+console.log('UNMAPPED_PRODUCT_BUILD=FORBIDDEN');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('SEC_001=DRAFTED');
 console.log('WF_001=DRAFTED');
