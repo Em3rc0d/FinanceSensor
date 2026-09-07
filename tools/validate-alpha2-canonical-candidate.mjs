@@ -77,7 +77,14 @@ for (const marker of [
 ]) {
   assert(signer.includes(marker), `signer missing frozen marker: ${marker}`);
 }
-assert(signer.includes('--ks-pass stdin') && signer.includes('--key-pass stdin'), 'signer must use stdin password handoff');
+assert(signer.includes('--ks-pass', 'stdin') || signer.includes("'--ks-pass', 'stdin'"), 'signer must use stdin keystore password handoff');
+assert(signer.includes('--key-pass', 'stdin') || signer.includes("'--key-pass', 'stdin'"), 'signer must use stdin private-key password handoff');
+assert(signer.includes('function Invoke-ProcessWithStdin'), 'Windows native-process stdin wrapper is required');
+assert(signer.includes('RedirectStandardInput = $true') && signer.includes('RedirectStandardError = $true'), 'native process streams must be redirected explicitly');
+assert(signer.includes('Invoke-ProcessWithStdin -FileName $keytool'), 'keytool must run through redirected stdin wrapper');
+assert(signer.includes('Invoke-ProcessWithStdin -FileName $java'), 'apksigner must run through redirected stdin wrapper');
+assert(!signer.includes('$StorePass | & $keytool'), 'direct keytool password pipe is forbidden on Windows PowerShell');
+assert(!signer.includes('@($StorePass, $StorePass) | & $java'), 'direct apksigner password pipe is forbidden on Windows PowerShell');
 assert(!signer.includes('FINANCESENSOR_R2_STORE_PASS') && !signer.includes('FINANCESENSOR_R2_KEY_PASS'), 'environment password handoff is forbidden');
 
 const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Language.Parser]::ParseFile('${signerPath}',[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1}`;
@@ -93,3 +100,4 @@ assert(evidence.includes('RELEASE_READY                   NO'), 'evidence must p
 
 console.log('ALPHA2_CANONICAL_CANDIDATE_RECEIPT=PASS');
 console.log('ALPHA2_TRUSTED_EDGE_SIGNER_PARSE=PASS');
+console.log('ALPHA2_WINDOWS_NATIVE_STDIN=PASS');
