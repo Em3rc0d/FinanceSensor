@@ -81,6 +81,44 @@ function Find-BundledApkSignerJar([string]$InputPath) {
   return $null
 }
 
+
+function Quote-ProcessArgument([string]$Value) {
+  if ($null -eq $Value) { return '""' }
+  return '"' + $Value.Replace('"', '\"') + '"'
+}
+
+function Invoke-ProcessWithStdin([string]$FileName, [string[]]$Arguments, [string[]]$InputLines) {
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $FileName
+  $psi.Arguments = (($Arguments | ForEach-Object { Quote-ProcessArgument $_ }) -join ' ')
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.CreateNoWindow = $true
+
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $psi
+  if (-not $process.Start()) { throw "Could not start native process: $FileName" }
+
+  $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+  $stderrTask = $process.StandardError.ReadToEndAsync()
+  foreach ($line in $InputLines) { $process.StandardInput.WriteLine($line) }
+  $process.StandardInput.Close()
+  $process.WaitForExit()
+
+  $stdout = $stdoutTask.Result
+  $stderr = $stderrTask.Result
+  $combined = @()
+  if ($stdout) { $combined += ($stdout -split "`r?`n") }
+  if ($stderr) { $combined += ($stderr -split "`r?`n") }
+
+  return [pscustomobject]@{
+    ExitCode = $process.ExitCode
+    Lines = @($combined | Where-Object { $_ -ne '' })
+  }
+}
+
 function Remove-OutputArtifacts([string]$OutputPath) {
   Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath "$OutputPath.sha256" -Force -ErrorAction SilentlyContinue
@@ -126,8 +164,8 @@ if ($InputHash -ne $ExpectedInputSha256 -or $InputInfo.Length -ne $ExpectedInput
   throw "Canonical input mismatch. SHA256=$InputHash Bytes=$($InputInfo.Length). Expected SHA256=$ExpectedInputSha256 Bytes=$ExpectedInputBytes. Nothing was signed."
 }
 
-& $java -jar $SignerJarFull verify --print-certs $InputFull *> $null
-if ($LASTEXITCODE -ne 0) { throw 'Canonical input failed apksigner verification. Nothing was signed.' }
+$inputVerify = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'verify', '--print-certs', $InputFull) -InputLines @()
+if ($inputVerify.ExitCode -ne 0) { throw 'Canonical input failed apksigner verification. Nothing was signed.' }
 
 $Keystore = Choose-File -Title 'Select private FINANCESENSOR_R2_LAB keystore' -Filter 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*' -FallbackPrompt 'Full path to private FINANCESENSOR_R2_LAB keystore'
 if ([string]::IsNullOrWhiteSpace($Keystore) -or -not (Test-Path -LiteralPath $Keystore)) { throw 'Keystore was not selected or does not exist.' }
@@ -137,12 +175,15 @@ $StorePass = Convert-SecureStringToPlain $StoreSecure
 if ([string]::IsNullOrEmpty($StorePass)) { throw 'Empty keystore password is not accepted.' }
 
 try {
+  # Windows PowerShell 5.1 may surface native stderr prompts as NativeCommandError.
+  # Use redirected stdin/stdout/stderr so keytool/apksigner prompts cannot abort the script.
   Write-Host "FINANCESENSOR_ALPHA2_CANDIDATE=$Candidate"
   Write-Host "SOURCE_COMMIT=$ExpectedSourceCommit"
   Write-Host "INPUT_APK_SHA256=$InputHash"
 
-  $listing = $StorePass | & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -list -v -keystore $Keystore 2>&1
-  if ($LASTEXITCODE -ne 0) { throw 'Could not open the selected keystore with that password.' }
+  $keytoolResult = Invoke-ProcessWithStdin -FileName $keytool -Arguments @('-J-Duser.language=en', '-J-Duser.country=US', '-list', '-v', '-keystore', $Keystore) -InputLines @($StorePass)
+  if ($keytoolResult.ExitCode -ne 0) { throw 'Could not open the selected keystore with that password.' }
+  $listing = $keytoolResult.Lines
 
   $Alias = $null
   $CurrentAlias = $null
@@ -156,21 +197,21 @@ try {
   if (-not $Alias) { throw "Selected keystore does not contain frozen R2 identity $ExpectedSignerSha1. Nothing was signed." }
 
   Remove-OutputArtifacts -OutputPath $OutputFull
-  @($StorePass, $StorePass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
-  if ($LASTEXITCODE -ne 0) {
+  $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $StorePass)
+  if ($signResult.ExitCode -ne 0) {
     Remove-OutputArtifacts -OutputPath $OutputFull
     $KeySecure = Read-Host 'Private key password (only if different from keystore password)' -AsSecureString
     $KeyPass = Convert-SecureStringToPlain $KeySecure
     if ([string]::IsNullOrEmpty($KeyPass)) { throw 'Signing failed and no distinct key password was provided.' }
-    @($StorePass, $KeyPass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
-    if ($LASTEXITCODE -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Local signing failed. No output APK or receipt was retained.' }
+    $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $KeyPass)
+    if ($signResult.ExitCode -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Local signing failed. No output APK or receipt was retained.' }
   }
 
-  $verify = & $java -jar $SignerJarFull verify --print-certs $OutputFull 2>&1
-  if ($LASTEXITCODE -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Signed APK failed apksigner verification. Output deleted.' }
+  $verifyResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'verify', '--print-certs', $OutputFull) -InputLines @()
+  if ($verifyResult.ExitCode -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Signed APK failed apksigner verification. Output deleted.' }
 
   $ObservedSigner = $null
-  foreach ($line in $verify) {
+  foreach ($line in $verifyResult.Lines) {
     if ([string]$line -match 'certificate SHA-1 digest:\s*([0-9A-Fa-f:]+)') { $ObservedSigner = Normalize-Sha1 $Matches[1]; break }
   }
   if ($ObservedSigner -ne $ExpectedSignerSha1) { Remove-OutputArtifacts -OutputPath $OutputFull; throw "Signer mismatch. Observed=$ObservedSigner Expected=$ExpectedSignerSha1. Output deleted." }
