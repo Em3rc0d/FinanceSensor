@@ -1,7 +1,9 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 const graph = JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json', 'utf8'));
-const signer = fs.readFileSync('tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1', 'utf8');
+const signerPath = 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1';
+const signer = fs.readFileSync(signerPath, 'utf8');
 const evidence = fs.readFileSync('mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md', 'utf8');
 
 const expected = {
@@ -78,6 +80,11 @@ for (const marker of [
 assert(signer.includes('--ks-pass stdin') && signer.includes('--key-pass stdin'), 'signer must use stdin password handoff');
 assert(!signer.includes('FINANCESENSOR_R2_STORE_PASS') && !signer.includes('FINANCESENSOR_R2_KEY_PASS'), 'environment password handoff is forbidden');
 
+const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Language.Parser]::ParseFile('${signerPath}',[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1}`;
+const parsed = spawnSync('pwsh', ['-NoProfile', '-Command', psCommand], { encoding: 'utf8' });
+assert(parsed.error == null, `pwsh unavailable for signer parser gate: ${parsed.error?.message ?? ''}`);
+assert(parsed.status === 0, `PowerShell signer parse failed:\n${parsed.stdout ?? ''}\n${parsed.stderr ?? ''}`);
+
 for (const marker of [expected.candidate, expected.sourceCommit, expected.apkSha256, String(expected.artifactId)]) {
   assert(evidence.includes(marker), `evidence missing canonical marker: ${marker}`);
 }
@@ -85,3 +92,4 @@ assert(evidence.includes('BUILD_READY                     NO'), 'evidence must p
 assert(evidence.includes('RELEASE_READY                   NO'), 'evidence must preserve RELEASE_READY=NO');
 
 console.log('ALPHA2_CANONICAL_CANDIDATE_RECEIPT=PASS');
+console.log('ALPHA2_TRUSTED_EDGE_SIGNER_PARSE=PASS');
