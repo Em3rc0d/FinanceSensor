@@ -13,7 +13,9 @@ const [
   main,
   syncAdapter,
   webModel,
-  webHtml
+  webHtml,
+  webApp,
+  adrIndex
 ] = await Promise.all([
   read('graph/alpha2-mobile-runtime-authority.json'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'),
@@ -25,7 +27,9 @@ const [
   read('spikes/mobile-shell/lib/main_alpha2.dart'),
   read('spikes/e2ee-sync/src/alpha2-projection-adapter.js'),
   read('product/labs/web-dashboard/projection-model.mjs'),
-  read('product/labs/web-dashboard/index.html')
+  read('product/labs/web-dashboard/index.html'),
+  read('product/labs/web-dashboard/app.js'),
+  read('mk0/11-decisions/ADR-INDEX.md')
 ]);
 
 const authority = JSON.parse(authorityText);
@@ -36,6 +40,13 @@ if (authority.authorities?.node?.shippedProductRuntime !== false) throw new Erro
 if (authority.publicProjection?.numericConfidenceAllowed !== false) throw new Error('ALPHA2_PUBLIC_CONFIDENCE_FORBIDDEN');
 if (authority.physicalCadence?.mode !== 'MILESTONE_ONLY') throw new Error('ALPHA2_PHYSICAL_CADENCE_MISMATCH');
 if (authority.claims?.buildReady !== false || authority.claims?.releaseReady !== false) throw new Error('ALPHA2_PREMATURE_READY_CLAIM');
+
+if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) {
+  throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
+}
+if (!adrIndex.includes('**Next available ADR:** `ADR-039`.')) {
+  throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
+}
 
 for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 'FinancialMailScanner']) {
   if (pipeline.includes(forbidden) || main.includes(forbidden)) throw new Error(`ALPHA2_LEGACY_RUNTIME_REFERENCE:${forbidden}`);
@@ -83,11 +94,14 @@ for (const key of ['confidence', 'matchScore', 'evidencePercent', 'rawPdf', 'pdf
 }
 if (!syncAdapter.includes("from './protocol.js'")) throw new Error('ALPHA2_SECOND_SYNC_PROTOCOL_FORBIDDEN');
 if (!syncAdapter.includes('createEncryptedEnvelope')) throw new Error('ALPHA2_EXISTING_E2EE_ENVELOPE_NOT_REUSED');
-if (!webHtml.includes('Entró') || !webHtml.includes('Salió') || !webHtml.includes('Cobertura')) {
+const webSurface = `${webHtml}\n${webApp}`;
+if (!webSurface.includes('Entró') || !webSurface.includes('Salió') || !webSurface.includes('Cobertura')) {
   throw new Error('ALPHA2_WEB_CORE_UX_MISSING');
 }
 
 console.log('ALPHA2_INTEGRATED_RUNTIME_ARCHITECTURE=PASS');
+console.log('ADR_038_REGISTERED=YES');
+console.log('NEXT_ADR=ADR-039');
 console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
