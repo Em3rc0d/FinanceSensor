@@ -312,10 +312,13 @@ List<Alpha2KnowledgeGap> deriveAlpha2KnowledgeGaps({
   }
 
   if (monthlyClose != null) {
-    final reasons = monthlyClose.sources
+    final sourceReasons = monthlyClose.sources
         .expand((source) => source.blockingReasons)
-        .toSet()
-        .toList()
+        .toSet();
+    final reasons = <String>{
+      ...sourceReasons,
+      ...monthlyClose.externalBlockingReasons,
+    }.toList()
       ..sort();
     for (final reason in reasons) {
       final sourceIds = monthlyClose.sources
@@ -323,13 +326,16 @@ List<Alpha2KnowledgeGap> deriveAlpha2KnowledgeGaps({
           .map((source) => source.id)
           .toList()
         ..sort();
+      final origin = sourceIds.isEmpty ? 'EXTERNAL_PRODUCT_GATE' : 'SOURCE_COVERAGE';
       gaps.add(
         Alpha2KnowledgeGap(
           id: _deterministicId(
             'gap',
-            'MONTHLY|${monthlyClose.closeId}|$reason|${sourceIds.join(",")}',
+            'MONTHLY|${monthlyClose.closeId}|$origin|$reason|${sourceIds.join(",")}',
           ),
-          kind: 'MONTHLY_COVERAGE',
+          kind: reason == 'ACCOUNT_MAPPING_REQUIRED'
+              ? 'ACCOUNT_MAPPING'
+              : 'MONTHLY_COVERAGE',
           reason: reason,
           truthState: Alpha2TruthState.unknown,
           algorithmVersion: alpha2SensorVersion,
