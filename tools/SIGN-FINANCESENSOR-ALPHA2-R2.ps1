@@ -7,16 +7,16 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Candidate = '0.2.0-alpha.2+2001'
-$ExpectedSourceCommit = 'f658363772b8d3652a81a8a4275a571f2f409ed8'
-$ExpectedInputSha256 = '7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f'
-$ExpectedInputBytes = 182053563
-$CanonicalRunId = '34082101187'
-$CanonicalArtifactId = '10004110513'
+$Candidate = '0.2.0-alpha.2+2002'
+$ExpectedSourceCommit = '3e83fbaa74c31b11fb46cccfa3a5c31d882d4093'
+$ExpectedInputSha256 = 'a0351e615a7c57b142029422351d1fd384ee42430f2e06a10ceb8bd126d081cf'
+$ExpectedInputBytes = 176012379
+$CanonicalRunId = '34163911830'
+$CanonicalArtifactId = '10033624133'
 $ExpectedSignerSha1 = '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $ExpectedPackage = 'com.financesensor.lab.gmailconnection.r2'
 $ExpectedScope = 'gmail.readonly'
-$DefaultOutputName = 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2001.apk'
+$DefaultOutputName = 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2002.apk'
 
 function Convert-SecureStringToPlain([Security.SecureString]$Secure) {
   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
