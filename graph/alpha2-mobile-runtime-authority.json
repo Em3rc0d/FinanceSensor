@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "contract": "ALPHA2_MOBILE_RUNTIME_AUTHORITY_V1",
+  "status": "IMPLEMENTATION_OPEN_PHYSICAL_MILESTONE_OPEN",
+  "asOf": "2026-09-06",
+  "adr": "ADR-038",
+  "authorities": {
+    "kotlin": {
+      "oauthAuthority": true,
+      "gmailHttpAuthority": true,
+      "shortLivedBearerCustody": true,
+      "statementCandidateSessionHandles": true,
+      "androidKeystoreAuthority": true,
+      "sqlcipherAuthority": true,
+      "financialCategorizationAuthority": false,
+      "reconciliationAuthority": false,
+      "coverageAuthority": false,
+      "sensorAuthority": false
+    },
+    "dart": {
+      "statementPdfParse": true,
+      "typedEvidenceNormalization": true,
+      "canonicalTransactionAuthority": true,
+      "reconciliationAuthority": true,
+      "accountGraphAuthority": true,
+      "monthlyCoverageAuthority": true,
+      "sensorAuthority": true,
+      "minimizedProjectionAuthority": true,
+      "oauthLongLivedCustody": false,
+      "durableRawDekCustody": false
+    },
+    "node": {
+      "referenceOracle": true,
+      "goldenVectorGenerator": true,
+      "historicalCertificationHarness": true,
+      "shippedProductRuntime": false
+    }
+  },
+  "truth": {
+    "gmailDefault": "OBSERVED",
+    "statementDefault": "POSTED",
+    "canonicalAfterConfirmedIndependentMatch": "RECONCILED",
+    "sourceObservationIsCanonicalTransaction": false,
+    "matchScoreIsProbability": false
+  },
+  "publicProjection": {
+    "numericConfidenceAllowed": false,
+    "matchScoreAllowed": false,
+    "evidencePercentAllowed": false,
+    "rawGmailIdentifierAllowed": false,
+    "rawGmailBodyAllowed": false,
+    "rawMimeAllowed": false,
+    "rawStatementPdfAllowed": false,
+    "statementPasswordAllowed": false,
+    "truthStates": ["UNKNOWN", "PARTIAL", "OBSERVED", "POSTED", "RECONCILED"]
+  },
+  "parity": {
+    "goldenVectorsRequired": true,
+    "nodeAndDartSemanticParityRequired": true,
+    "languageSpecificObjectIdentityParityRequired": false,
+    "versionedRuleChangesRequireVectorUpdate": true,
+    "dartIsProductAuthorityAfterPort": true
+  },
+  "vault": {
+    "sqlcipherFamily": "SQLCIPHER_4_X",
+    "sqlcipherVersion": "4.18.0",
+    "plaintextFallbackAllowed": false,
+    "randomDekBits": 256,
+    "nativeProtectedWrapRequired": true,
+    "rawDekToDartAllowed": false,
+    "rawDekDurableAllowed": false
+  },
+  "physicalCadence": {
+    "mode": "MILESTONE_ONLY",
+    "perSliceApkPromotionAllowed": false,
+    "exactShaIntegratedGateRequired": true,
+    "requiredInternalGates": [
+      "DART_A_G_SYNTHETIC",
+      "GOLDEN_PARITY",
+      "VAULT_NATIVE_COMPILE",
+      "ANDROID_COMPILE",
+      "REPLAY_IDEMPOTENCY",
+      "PRIVACY_BOUNDARY",
+      "MINIMIZED_WEB_PROJECTION",
+      "WEB_BUILD_OR_STATIC_CONTRACT"
+    ]
+  },
+  "claims": {
+    "runtimeAuthorityFrozen": true,
+    "dartAGIntegrated": false,
+    "physicalVaultPass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

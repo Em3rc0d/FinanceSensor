@@ -62,8 +62,9 @@ Supersedes / superseded by
 | ADR-035 | Statement ETL and monthly reconciliation | ACCEPTED FOR MK0 DESIGN / REAL FORMAT EVIDENCE OPEN | sanitized multi-bank format corpus + Android monthly-close proof |
 | ADR-036 | Alpha.2 financial memory and Gmail statement discovery | ACCEPTED FOR BOUNDED DESIGN FREEZE / IMPLEMENTATION AND PHYSICAL PROOF OPEN | Alpha.2-A implementation, encrypted-vault proof and multi-profile physical campaign |
 | ADR-037 | Dual-source authority and canonical web projection | ACCEPTED FOR ALPHA.2 DESIGN / IMPLEMENTATION OPEN | integrated A-G mobile runtime + canonical web/sync evidence |
+| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity | ACCEPTED FOR ALPHA.2 IMPLEMENTATION / PHYSICAL MILESTONE OPEN | integrated A-G exact-head CI + owned-device SQLCipher/statement/reconciliation proof |
 
-**Next available ADR:** `ADR-038`.
+**Next available ADR:** `ADR-039`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
@@ -419,6 +420,39 @@ Evidence/decision:
 - `../07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md`
 - `../../graph/alpha2-design-freeze.json`
 - `../../tools/validate-alpha2-design-freeze.mjs`
+
+## ADR-038 evidence boundary
+
+ADR-038 freezes one product financial authority while preserving native security custody and the certified Node implementation as a reference oracle:
+
+```text
+ANDROID OAUTH / GMAIL / KEYSTORE / SQLCIPHER     KOTLIN AUTHORITY
+CANONICAL FINANCIAL ENGINE                        DART AUTHORITY
+NODE ALPHA.2 IMPLEMENTATION                       REFERENCE ORACLE ONLY
+NODE SHIPPED PRODUCT RUNTIME                      FORBIDDEN
+GMAIL DEFAULT TRUTH                               OBSERVED
+STATEMENT DEFAULT TRUTH                           POSTED
+CONFIRMED INDEPENDENT MATCH                       RECONCILED
+PUBLIC NUMERIC CONFIDENCE                         FORBIDDEN
+PUBLIC MATCH SCORE                                FORBIDDEN
+PUBLIC EVIDENCE PERCENTAGE                        FORBIDDEN
+GOLDEN NODE↔DART SEMANTIC PARITY                  REQUIRED
+PHYSICAL APK CADENCE                              MILESTONE ONLY
+BUILD_READY                                       UNCHANGED / false
+```
+
+Evidence/decision:
+
+- `ADR-038-ALPHA2-MOBILE-RUNTIME-AUTHORITY-AND-PARITY.md`
+- `../../graph/alpha2-mobile-runtime-authority.json`
+- `../../graph/alpha2-mobile-golden-vectors-v1.json`
+- `../../tools/validate-alpha2-mobile-golden-vectors.mjs`
+- `../../tools/validate-alpha2-integrated-runtime.mjs`
+- `../../spikes/mobile-shell/lib/alpha2/`
+- `../../spikes/e2ee-sync/src/alpha2-projection-adapter.js`
+- `../../product/labs/web-dashboard/`
+
+Acceptance authorizes controlled implementation and exact-head CI. It does not promote SQLCipher, statement parsing, reconciliation, sync, web, or Alpha.2 to physical/product pass.
 
 ## Decision discipline
 
