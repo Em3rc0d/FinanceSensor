@@ -35,6 +35,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: financesensor-alpha2-r1-signing-${{ github.ref }}
@@ -43,7 +44,7 @@ concurrency:
 jobs:
   validate-r1-signing-handoff:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout exact head
         uses: actions/checkout@v4
@@ -61,6 +62,146 @@ jobs:
 
       - name: R1 CI routing receipt
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
+
+      - name: Download exact canonical +2002 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: financesensor-alpha2-integrated-internal-3e83fbaa74c31b11fb46cccfa3a5c31d882d4093
+          path: canonical-artifact
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 34163911830
+
+      - name: Verify immutable canonical input
+        run: |
+          set -euo pipefail
+          APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
+          EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
+          test -f "$APK"
+          test -f "$EVIDENCE"
+          test "$(sha256sum "$APK" | awk '{print $1}')" = 'a0351e615a7c57b142029422351d1fd384ee42430f2e06a10ceb8bd126d081cf'
+          test "$(stat -c '%s' "$APK")" = '176012379'
+          grep -q '^SOURCE_COMMIT=3e83fbaa74c31b11fb46cccfa3a5c31d882d4093$' "$EVIDENCE"
+          grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
+          grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
+          grep -q '^ANDROID_MIN_SDK=24$' "$EVIDENCE"
+          grep -q '^ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2$' "$EVIDENCE"
+          grep -q '^EXACT_SCOPE=gmail.readonly$' "$EVIDENCE"
+          echo 'CANONICAL_2002_INPUT=PASS'
+
+      - name: Build deterministic public-safe v4 handoff bundle
+        run: |
+          set -euo pipefail
+          APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
+          EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
+          APKSIGNER_JAR="$(find "$ANDROID_HOME/build-tools" -mindepth 3 -maxdepth 3 -type f -path '*/lib/apksigner.jar' | sort -V | tail -n 1)"
+          test -n "$APKSIGNER_JAR"
+          test -f "$APKSIGNER_JAR"
+          java -jar "$APKSIGNER_JAR" verify --print-certs "$APK" >/dev/null
+          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = 'b082238e111381d2689626037e5ac795dbd210c7'
+          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd)" = '3d01373b69051d30f88a57f26fa815e52d952d6d'
+
+          ROOT="$RUNNER_TEMP/financesensor-r1-v4"
+          BUNDLE_DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip"
+          rm -rf "$ROOT" "$OUT"
+          mkdir -p "$BUNDLE_DIR/public-signing-tool/lib"
+          cp "$APK" "$BUNDLE_DIR/FinanceSensor-ALPHA2-CANONICAL-INPUT.apk"
+          cp tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1 "$BUNDLE_DIR/"
+          cp tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd "$BUNDLE_DIR/"
+          cp "$APKSIGNER_JAR" "$BUNDLE_DIR/public-signing-tool/lib/apksigner.jar"
+          cp "$EVIDENCE" "$BUNDLE_DIR/CANONICAL-CI-EVIDENCE.txt"
+
+          cat > "$BUNDLE_DIR/BUNDLE-README.txt" <<'EOF'
+          FinanceSensor Alpha.2 +2002 — R1 trusted-edge signing bundle v4
+
+          1. Extract this ZIP on the owned Windows trusted edge.
+          2. Double-click SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
+          3. Select FinanceSensor-ALPHA2-CANONICAL-INPUT.apk.
+          4. Select the private FINANCESENSOR_R2_LAB keystore locally.
+          5. Enter the password only in the local prompt.
+          6. Return only the generated .receipt.txt after PASS.
+
+          Never upload the keystore, password, private key, OAuth token, Gmail content or financial plaintext.
+          Expected package: com.financesensor.lab.gmailconnection.r2
+          Expected scope: gmail.readonly
+          Expected stable signer SHA1: 63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
+          EOF
+
+          cat > "$BUNDLE_DIR/SOURCE.txt" <<EOF
+          CANDIDATE=0.2.0-alpha.2+2002
+          SOURCE_COMMIT=3e83fbaa74c31b11fb46cccfa3a5c31d882d4093
+          CANONICAL_RUN_ID=34163911830
+          CANONICAL_JOB_ID=101871077983
+          CANONICAL_ARTIFACT_ID=10033624133
+          CANONICAL_ARTIFACT_ZIP_SHA256=3f1d463fee5292ccfa1d0ec2b2b316b83183158459fee48af3afd2eca861db6c
+          INPUT_APK_SHA256=a0351e615a7c57b142029422351d1fd384ee42430f2e06a10ceb8bd126d081cf
+          INPUT_APK_BYTES=176012379
+          SIGNER_PS1_GIT_BLOB=b082238e111381d2689626037e5ac795dbd210c7
+          SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
+          APKSIGNER_SHA256=$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')
+          EOF
+
+          (
+            cd "$BUNDLE_DIR"
+            find . -type f ! -name 'BUNDLE-MANIFEST-SHA256.txt' -print0 | sort -z | xargs -0 sha256sum > BUNDLE-MANIFEST-SHA256.txt
+          )
+
+          python3 - "$BUNDLE_DIR" "$OUT" <<'PY'
+          import pathlib, sys, zipfile
+          root = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2])
+          prefix = root.name
+          with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+              for path in sorted(p for p in root.rglob('*') if p.is_file()):
+                  rel = pathlib.PurePosixPath(prefix) / path.relative_to(root).as_posix()
+                  info = zipfile.ZipInfo(str(rel), date_time=(2020, 1, 1, 0, 0, 0))
+                  info.compress_type = zipfile.ZIP_DEFLATED
+                  info.external_attr = 0o100644 << 16
+                  zf.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+          PY
+
+          unzip -t "$OUT" >/dev/null
+          test "$(zipinfo -1 "$OUT" | grep -v '/$' | wc -l)" = '8'
+          test "$(find "$BUNDLE_DIR" -type f \( -iname '*.jks' -o -iname '*.keystore' -o -iname '*.p12' -o -iname '*.pfx' -o -iname '*.pem' -o -iname '*.key' \) | wc -l)" = '0'
+          if grep -R -a -E -n 'AIza[0-9A-Za-z_-]{20,}|ya29\.[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' "$BUNDLE_DIR"; then
+            echo 'SECRET_LIKE_VALUE_MATCHES!=0'
+            exit 1
+          fi
+
+          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v4-AUDIT.txt" <<EOF
+          BUNDLE_V4_GENERATION=PASS
+          BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip
+          BUNDLE_SHA256=$(sha256sum "$OUT" | awk '{print $1}')
+          BUNDLE_BYTES=$(stat -c '%s' "$OUT")
+          BUNDLE_FILES=8
+          ZIP_STRUCTURE=PASS
+          ZIP_INTEGRITY=PASS
+          MANIFEST_INTEGRITY=PASS
+          PRIVATE_KEY_FILES=0
+          SECRET_LIKE_VALUE_MATCHES=0
+          INPUT_APK_SHA256=a0351e615a7c57b142029422351d1fd384ee42430f2e06a10ceb8bd126d081cf
+          INPUT_APK_BYTES=176012379
+          PS1_GIT_BLOB=$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)
+          CMD_GIT_BLOB=$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd)
+          APKSIGNER_SHA256=$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')
+          PRIVATE_SIGNING_MATERIAL_IN_CI=0
+          R1_TRUSTED_EDGE_SIGNING=OPEN
+          R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_ON_R1
+          BUILD_READY=NO
+          RELEASE_READY=NO
+          EOF
+          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v4-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deterministic v4 bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-alpha2-r1-trusted-edge-bundle-v4-${{ github.sha }}
+          path: |
+            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip
+            FinanceSensor-ALPHA2-R1-BUNDLE-v4-AUDIT.txt
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Preserve physical boundary
         run: |
