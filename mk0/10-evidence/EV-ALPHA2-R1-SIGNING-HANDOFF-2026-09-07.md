@@ -1,8 +1,8 @@
 # EV — Alpha.2 R1 Trusted-Edge Signing Handoff — 2026-09-07
 
-Status: **BUNDLE_GENERATION_OPEN_PHYSICAL_OPEN**
+Status: **HANDOFF_READY_PHYSICAL_OPEN**
 
-This evidence binds the exact canonical Alpha.2 `+2003` APK and the exact fail-closed R2 signer source. It does **not** claim that the v5 handoff bundle has been frozen yet, nor that physical signing has happened.
+This evidence binds the exact canonical Alpha.2 `+2003` APK, the exact fail-closed R2 signer source, and the independently audited deterministic v5 handoff bundle. It does **not** claim that physical signing has happened.
 
 ## Current +2003 authority
 
@@ -30,26 +30,39 @@ OWNED_DEVICE_LAUNCH_PASS=YES
 
 The owned-device installation/launch observation is recorded separately as sanitized evidence. The visible Google authorization failure is not promoted because this input is still signed by the ephemeral CI debug signer.
 
-## v5 generation state
+## v5 audited authority
+
+The first v5 generation ran on PR #100 and produced the deterministic inner bundle below. The GitHub Actions wrapper was downloaded and its SHA-256 matched GitHub's artifact digest exactly. The inner bundle was then extracted and independently audited.
 
 ```text
 BUNDLE_NAME=FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip
-BUNDLE_STATUS=GENERATION_PENDING
-BUNDLE_FILES_EXPECTED=8
-PRIVATE_KEY_FILES_ALLOWED=0
-SECRET_LIKE_VALUE_MATCHES_ALLOWED=0
-PUBLIC_CI_PHYSICAL_SIGNING=0
+BUNDLE_STATUS=READY
+BUNDLE_SHA256=7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33
+BUNDLE_BYTES=86226530
+BUNDLE_FILES=8
+ZIP_STRUCTURE=PASS
+ZIP_INTEGRITY=PASS
+MANIFEST_INTEGRITY=PASS
+PRIVATE_KEY_FILES=0
+SECRET_LIKE_VALUE_MATCHES=0
+APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
+PS1_GIT_BLOB_VERIFIED=efe59ef464007c8af9f67fd184926f74e403ca08
+CMD_GIT_BLOB_VERIFIED=3d01373b69051d30f88a57f26fa815e52d952d6d
 ```
 
-The R1 public workflow must build v5 from exactly:
+Generation receipt:
 
-- canonical artifact `10034303033`;
-- exact repository PS1 blob `efe59ef464007c8af9f67fd184926f74e403ca08`;
-- exact CMD blob `3d01373b69051d30f88a57f26fa815e52d952d6d`;
-- public `apksigner.jar`;
-- sanitized CI evidence and local instructions.
+```text
+PR_NUMBER=100
+STAGING_PR_HEAD=af43e408b4b162d9b9fe6c9f6ec5d9169cc1712e
+R1_RUN_ID=34168182736
+R1_JOB_ID=101883281871
+R1_ARTIFACT_ID=10034846865
+ACTIONS_ARTIFACT_WRAPPER_SHA256=8da5131e83e33cff1595ce00ee2d2588f13b8ab971061d679aa1df6336192861
+INDEPENDENT_BUNDLE_AUDIT=PASS
+```
 
-The generated ZIP must be independently audited before its SHA-256 and byte size become authority.
+The initial generation exposed a governance subtlety: on a `pull_request` event, default `actions/checkout` checks out the PR merge ref rather than the branch-head SHA. The deterministic bundle itself was independently verified and is byte-bound to the exact canonical APK and signer blobs, but the final certification still requires an explicit branch-head checkout and regeneration before merge. This is being enforced in the final R1/R2 workflow revision.
 
 ## Superseded / forbidden handoffs
 
@@ -67,7 +80,7 @@ BUNDLE_V4_SHA256=a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321
 BUNDLE_V4_STATUS=REJECTED_ABANDONED_ALPHA2_2002_STAGING
 ```
 
-Only the future audited v5 is allowed to reach the trusted edge for `+2003` signing.
+Only audited v5 is allowed to reach the trusted edge for `+2003` signing after final exact-head CI and post-merge verification.
 
 ## Trust boundary
 
@@ -75,7 +88,7 @@ The private `FINANCESENSOR_R2_LAB` keystore, private key and passwords remain on
 
 ## Physical closure condition
 
-After v5 is frozen, R1 may close only if the local signer produces a sanitized receipt containing:
+R1 may close only if the local signer produces a sanitized receipt containing:
 
 ```text
 FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS
