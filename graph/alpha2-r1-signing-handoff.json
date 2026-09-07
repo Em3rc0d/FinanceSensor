@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V1",
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V2",
   "project": "FinanceSensor",
   "candidate": "0.2.0-alpha.2+2001",
   "designGovernanceSha": "416b8e3a1632d549d7d7d0d3026d18f969c57dd2",
@@ -12,8 +12,10 @@
     "bytes": 182053563
   },
   "signer": {
-    "powershellGitBlob": "ce80c83698e0c3f02fab4819c7b5ad58b5d107dc",
+    "powershellGitBlob": "01ca6fd26656db15cb2de9aa330cd0b45ea22a75",
     "cmdGitBlob": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "windowsNativeIo": "PROCESS_START_INFO_REDIRECTED_STDIN_STDOUT_STDERR",
+    "directNativePasswordPipeline": false,
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly"
@@ -22,14 +24,15 @@
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
   },
   "handoffBundle": {
-    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE.zip",
-    "sha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8",
-    "bytes": 86239981,
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip",
+    "sha256": "6ce4ec9fcb2e42043e89387cb4f21d1dd1bbe5ef079807e62e0bdad479be50d5",
+    "bytes": 86531678,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
     "zipStructure": "PASS",
-    "zipIntegrity": "PASS"
+    "zipIntegrity": "PASS",
+    "supersedesBundleSha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8"
   },
   "status": "HANDOFF_READY_PHYSICAL_OPEN",
   "trustedEdgeSigningPass": false,
