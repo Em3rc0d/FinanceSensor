@@ -1,42 +1,45 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V1",
-  "candidate": "0.2.0-alpha.2+2001",
-  "certifiedPrHead": "3640244fb12aabf818b002399f3b7cc28fbde14c",
-  "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V2",
+  "candidate": "0.2.0-alpha.2+2002",
+  "certifiedPrHead": "81513c047f8bbf627eae64537be90a5f909328fb",
+  "sourceCommit": "3e83fbaa74c31b11fb46cccfa3a5c31d882d4093",
+  "supersedes": {
+    "candidate": "0.2.0-alpha.2+2001",
+    "apkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
+    "reason": "OWNED_DEVICE_INSTALLABILITY_FAILURE_MINSDK31"
+  },
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 34082101187,
-    "jobId": 101619210181,
-    "artifactId": 10004110513,
-    "artifactName": "financesensor-alpha2-integrated-internal-f658363772b8d3652a81a8a4275a571f2f409ed8",
-    "artifactZipSha256": "812c60b563248c5a86ac053a59c64f9f9b6c01e4d55225c426596d418813d736",
+    "runId": 34163911830,
+    "jobId": 101871077983,
+    "artifactId": 10033624133,
+    "artifactName": "financesensor-alpha2-integrated-internal-3e83fbaa74c31b11fb46cccfa3a5c31d882d4093",
+    "artifactZipSha256": "3f1d463fee5292ccfa1d0ec2b2b316b83183158459fee48af3afd2eca861db6c",
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
-    "apkBytes": 182053563,
+    "apkSha256": "a0351e615a7c57b142029422351d1fd384ee42430f2e06a10ceb8bd126d081cf",
+    "apkBytes": 176012379,
+    "androidMinSdk": 24,
+    "androidTargetSdk": 36,
+    "apkSignatureVerify": "PASS",
+    "apkAapt2Parse": "PASS",
     "publicCiSigner": "EPHEMERAL_DEBUG",
     "trustedEdgeResignRequired": true
   },
   "postMergeConsensus": [
-    {"workflow":"Alpha.2 Integrated Runtime","runId":34082101187,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Mobile Shell","runId":34082101124,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Android Human Test Alpha","runId":34082101222,"conclusion":"SUCCESS_REGRESSION_ONLY"},
-    {"workflow":"FinanceSensor Android Gmail Connection","runId":34082101167,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Statement ETL Contract","runId":34082101119,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Public Readiness","runId":34082101150,"conclusion":"SUCCESS"},
-    {"workflow":"Alpha.2 Design Freeze","runId":34082103953,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Heartbeat","runId":34082101109,"conclusion":"SUCCESS"}
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34163911830,"jobId":101871077983,"conclusion":"SUCCESS"}
   ],
   "nonAuthoritativeArtifacts": [
     {
-      "workflow": "FinanceSensor Mobile Shell",
-      "artifactId": 10004110068,
-      "reason": "Independent ephemeral debug signing makes its APK hash non-canonical even though source and runtime gates match."
+      "workflow": "Alpha.2 Integrated Runtime PR merge-ref",
+      "artifactId": 10033487002,
+      "apkSha256": "756c1697332e487f748d6a283c8069285aeb08afde5f59806ca0fa202985215d",
+      "reason": "Pre-merge corroboration only. Ephemeral debug signer and merge-ref provenance make these bytes non-canonical after merge."
     },
     {
       "workflow": "FinanceSensor Android Human Test Alpha",
       "artifactId": 10004093091,
       "apkSha256": "1525db5ae9ace01e7201ec8f529121c52efa6e414114e8a3cc661ba5ef14c3f9",
-      "reason": "Legacy bounded Human Test harness; its evidence explicitly states ALPHA2_MOBILE_INTEGRATION=OPEN. Regression authority only."
+      "reason": "Legacy bounded Human Test harness; regression authority only."
     }
   ],
   "signing": {
