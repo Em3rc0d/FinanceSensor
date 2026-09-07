@@ -81,6 +81,43 @@ function Find-BundledApkSignerJar([string]$InputPath) {
   return $null
 }
 
+function Quote-ProcessArgument([string]$Value) {
+  if ($null -eq $Value) { return '""' }
+  return '"' + $Value.Replace('"', '\"') + '"'
+}
+
+function Invoke-ProcessWithStdin([string]$FileName, [string[]]$Arguments, [string[]]$InputLines) {
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $FileName
+  $psi.Arguments = (($Arguments | ForEach-Object { Quote-ProcessArgument $_ }) -join ' ')
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.CreateNoWindow = $true
+
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $psi
+  if (-not $process.Start()) { throw "Could not start native process: $FileName" }
+
+  $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+  $stderrTask = $process.StandardError.ReadToEndAsync()
+  foreach ($line in $InputLines) { $process.StandardInput.WriteLine($line) }
+  $process.StandardInput.Close()
+  $process.WaitForExit()
+
+  $stdout = $stdoutTask.Result
+  $stderr = $stderrTask.Result
+  $combined = @()
+  if ($stdout) { $combined += ($stdout -split "`r?`n") }
+  if ($stderr) { $combined += ($stderr -split "`r?`n") }
+
+  return [pscustomobject]@{
+    ExitCode = $process.ExitCode
+    Lines = @($combined | Where-Object { $_ -ne '' })
+  }
+}
+
 function Remove-OutputArtifacts([string]$OutputPath) {
   Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath "$OutputPath.sha256" -Force -ErrorAction SilentlyContinue
@@ -141,8 +178,9 @@ try {
   Write-Host "SOURCE_COMMIT=$ExpectedSourceCommit"
   Write-Host "INPUT_APK_SHA256=$InputHash"
 
-  $listing = $StorePass | & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -list -v -keystore $Keystore 2>&1
-  if ($LASTEXITCODE -ne 0) { throw 'Could not open the selected keystore with that password.' }
+  $keytoolResult = Invoke-ProcessWithStdin -FileName $keytool -Arguments @('-J-Duser.language=en', '-J-Duser.country=US', '-list', '-v', '-keystore', $Keystore) -InputLines @($StorePass)
+  if ($keytoolResult.ExitCode -ne 0) { throw 'Could not open the selected keystore with that password.' }
+  $listing = $keytoolResult.Lines
 
   $Alias = $null
   $CurrentAlias = $null
@@ -156,14 +194,14 @@ try {
   if (-not $Alias) { throw "Selected keystore does not contain frozen R2 identity $ExpectedSignerSha1. Nothing was signed." }
 
   Remove-OutputArtifacts -OutputPath $OutputFull
-  @($StorePass, $StorePass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
-  if ($LASTEXITCODE -ne 0) {
+  $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $StorePass)
+  if ($signResult.ExitCode -ne 0) {
     Remove-OutputArtifacts -OutputPath $OutputFull
     $KeySecure = Read-Host 'Private key password (only if different from keystore password)' -AsSecureString
     $KeyPass = Convert-SecureStringToPlain $KeySecure
     if ([string]::IsNullOrEmpty($KeyPass)) { throw 'Signing failed and no distinct key password was provided.' }
-    @($StorePass, $KeyPass) | & $java -jar $SignerJarFull sign --ks $Keystore --ks-key-alias $Alias --ks-pass stdin --key-pass stdin --out $OutputFull $InputFull
-    if ($LASTEXITCODE -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Local signing failed. No output APK or receipt was retained.' }
+    $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $KeyPass)
+    if ($signResult.ExitCode -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Local signing failed. No output APK or receipt was retained.' }
   }
 
   $verify = & $java -jar $SignerJarFull verify --print-certs $OutputFull 2>&1
