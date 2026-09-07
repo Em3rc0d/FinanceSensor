@@ -134,8 +134,8 @@ jobs:
           groovy = Path('android/app/build.gradle')
           settings = Path('android/settings.gradle.kts')
           wrapper = Path('android/gradle/wrapper/gradle-wrapper.properties')
-          kts_deps = '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n    implementation("net.zetetic:sqlcipher-android:4.18.0")\n}\n'
-          groovy_deps = '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n    implementation "net.zetetic:sqlcipher-android:4.18.0"\n}\n'
+          kts_deps = '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n    implementation("net.zetetic:sqlcipher-android:4.18.0")\n    implementation("androidx.sqlite:sqlite:2.7.0")\n}\n'
+          groovy_deps = '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n    implementation "net.zetetic:sqlcipher-android:4.18.0"\n    implementation "androidx.sqlite:sqlite:2.7.0"\n}\n'
 
           if kts.exists():
               text = kts.read_text()
@@ -233,6 +233,7 @@ jobs:
           grep -R -q 'com.financesensor.lab.gmailconnection.r2' android/app/build.gradle*
           grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
           grep -R -q 'sqlcipher-android:4.18.0' android/app/build.gradle*
+          grep -R -q 'androidx.sqlite:sqlite:2.7.0' android/app/build.gradle*
           grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
           grep -q 'android:allowBackup="false"' android/app/src/main/AndroidManifest.xml
           grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
@@ -246,6 +247,7 @@ jobs:
           echo 'ANDROID_TARGET_SDK=36'
           echo 'ANDROID_AGP_VERSION=9.1.1'
           echo 'ANDROID_GRADLE_VERSION=9.3.1'
+          echo 'ANDROIDX_SQLITE_VERSION=2.7.0'
           echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2'
           echo 'SQLCIPHER_VERSION=4.18.0'
 
@@ -303,6 +305,7 @@ jobs:
           ANDROID_TARGET_SDK=36
           ANDROID_AGP_VERSION=9.1.1
           ANDROID_GRADLE_VERSION=9.3.1
+          ANDROIDX_SQLITE_VERSION=2.7.0
           DART_FINANCIAL_AUTHORITY=YES
           KOTLIN_TRUSTED_EDGE=YES
           NODE_PRODUCT_RUNTIME=NO
