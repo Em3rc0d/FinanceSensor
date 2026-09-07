@@ -222,7 +222,7 @@ class Alpha2BcpSavingsGeometryParser {
             : Alpha2FlowDirection.outflow;
         final description = columns['description']?.trim() ?? '';
         final semantic = _savingsSemantic(description, direction);
-        final amount = hasCredit ? credit! : debit!;
+        final amount = hasCredit ? credit : debit!;
         final sequence = rows.length;
         final digest = sha256
             .convert(
