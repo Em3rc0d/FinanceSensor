@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V1",
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "implements": "graph/prebuild-remainder-design.json#R2",
+  "status": "BLOCKED_ON_R1_SIGNING",
+  "candidate": {
+    "id": "0.2.0-alpha.2+2001",
+    "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
+    "canonicalInputApkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
+    "canonicalInputApkBytes": 182053563,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "gmailScope": "gmail.readonly"
+  },
+  "laws": {
+    "sameSignedCandidateRequired": true,
+    "perSliceApkPromotionAllowed": false,
+    "allSubgatesMustPassForR2": true,
+    "anyCandidateIdentityChangeInvalidatesCampaign": true,
+    "physicalPassCannotBeDerivedFromPublicCi": true,
+    "r2DoesNotCloseQ003Q004Q005": true,
+    "buildReadyPromotionAllowed": false,
+    "releaseReadyPromotionAllowed": false
+  },
+  "evidencePolicy": {
+    "githubReceiptClass": "SANITIZED_SUMMARY_ONLY",
+    "rawTrustedEdgeEvidenceInGitHub": false,
+    "forbiddenInGitHub": [
+      "PRIVATE_KEY",
+      "KEYSTORE",
+      "KEYSTORE_PASSWORD",
+      "OAUTH_ACCESS_TOKEN",
+      "OAUTH_REFRESH_TOKEN",
+      "RAW_GMAIL_BODY",
+      "RAW_MIME",
+      "REAL_GMAIL_MESSAGE_ID",
+      "REAL_GMAIL_ATTACHMENT_ID",
+      "RAW_STATEMENT_PDF",
+      "PDF_PASSWORD",
+      "RAW_FINANCIAL_PLAINTEXT",
+      "MERCHANT_LEVEL_PHYSICAL_SAMPLE",
+      "ACCOUNT_NUMBER"
+    ],
+    "allowedReceiptFields": [
+      "candidateId",
+      "sourceCommit",
+      "signedApkSha256",
+      "signedApkBytes",
+      "signerSha1",
+      "androidPackage",
+      "gmailScope",
+      "deviceClass",
+      "androidApiLevel",
+      "gateId",
+      "gateStatus",
+      "stableResultCode",
+      "coarseCounters",
+      "replayDigest",
+      "sanitizationPass"
+    ]
+  },
+  "subgates": [
+    {
+      "id": "OD0",
+      "contract": "SIGNED_APK_INSTALL_AND_LAUNCH",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["R1_TRUSTED_EDGE_SIGNING_PASS"],
+      "physicalClaims": ["SIGNED_APK_HASH_MATCH", "SIGNER_SHA1_MATCH", "INSTALL_PASS", "LAUNCH_PASS"]
+    },
+    {
+      "id": "OD1",
+      "contract": "EXACT_GMAIL_READONLY_OAUTH",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD0"],
+      "physicalClaims": ["ANDROID_PACKAGE_MATCH", "EXACT_SCOPE_GMAIL_READONLY", "REAL_OAUTH_PASS", "NO_OFFLINE_ACCESS_REQUEST"]
+    },
+    {
+      "id": "OD2",
+      "contract": "METADATA_FIRST_STATEMENT_DISCOVERY",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD1"],
+      "physicalClaims": ["METADATA_FIRST_PASS", "ATTACHMENT_BYTES_NOT_FETCHED_BEFORE_STRONG_CANDIDATE", "RAW_GMAIL_IDENTITY_REMAINS_NATIVE_ONLY"]
+    },
+    {
+      "id": "OD3",
+      "contract": "BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD2"],
+      "physicalClaims": ["BCP_SAVINGS_FETCH_ALLOWED", "BCP_CREDIT_FETCH_BLOCKED", "RIPLEY_CREDIT_FETCH_BLOCKED", "GENERIC_FALLBACK_ABSENT"]
+    },
+    {
+      "id": "OD4",
+      "contract": "BCP_SAVINGS_STRICT_PARSE_OR_FAIL_CLOSED",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD3"],
+      "physicalClaims": ["GEOMETRY_HEADERS_RESOLVED", "UNEXPLAINED_MONETARY_ROW_QUARANTINES_BATCH", "PDF_PASSWORD_SESSION_ONLY", "RAW_PDF_NOT_DURABLE"]
+    },
+    {
+      "id": "OD5",
+      "contract": "SQLCIPHER_PERSISTENCE_AND_REOPEN",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD4"],
+      "physicalClaims": ["SQLCIPHER_4_18_ACTIVE", "ANDROID_KEYSTORE_WRAP_ACTIVE", "PLAINTEXT_SQLITE_FALLBACK_ABSENT", "PERSIST_REOPEN_PASS", "NO_BACKUP_PATH_PASS"]
+    },
+    {
+      "id": "OD6",
+      "contract": "RECONCILIATION_NO_FALSE_AUTO_CONFIRM",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD5"],
+      "physicalClaims": ["GMAIL_AND_STATEMENT_STRONG_MATCH_SINGLE_CANONICAL_MOVEMENT", "AMBIGUOUS_RELATION_FAILS_CLOSED", "CROSS_CURRENCY_NOT_RECONCILED", "NO_DOUBLE_COUNT"]
+    },
+    {
+      "id": "OD7",
+      "contract": "ACCOUNT_GRAPH_NO_BANK_CURRENCY_ONLY_CONFIRM",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD6"],
+      "physicalClaims": ["BANK_CURRENCY_ONLY_REMAINS_PROBABLE", "CONFIRMATION_REQUIRES_CERTIFIED_STABLE_EVIDENCE_OR_USER_ACTION", "ACCOUNT_MAPPING_GAP_VISIBLE"]
+    },
+    {
+      "id": "OD8",
+      "contract": "MONTHLY_COVERAGE_NO_FALSE_COMPLETE",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD7"],
+      "physicalClaims": ["INFLOW_OUTFLOW_SEPARATE", "MISSING_EXPECTED_SOURCE_BLOCKS_RECONCILED", "BLOCKING_CONFLICT_VISIBLE", "NO_GLOBAL_UNQUALIFIED_PERCENT"]
+    },
+    {
+      "id": "OD9",
+      "contract": "SENSOR_PROJECTION_NO_NUMERIC_CONFIDENCE_OR_ADVICE",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD8"],
+      "physicalClaims": ["NO_PUBLIC_CONFIDENCE_PERCENT", "NO_AUTOMATED_FINANCIAL_ADVICE", "CARD_PAYMENT_NOT_EXPENSE", "TRANSFERS_NOT_EXPENSE", "PEN_USD_SEPARATE", "KNOWLEDGE_GAPS_VISIBLE"]
+    },
+    {
+      "id": "OD10",
+      "contract": "DISCONNECT_AND_LOCAL_SECRET_CUSTODY_CHECK",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD9"],
+      "physicalClaims": ["DISCONNECT_PASS", "OLD_BEARER_DENIED_OR_EXPLICITLY_UNVERIFIED", "TOKEN_PLAINTEXT_ABSENT_FROM_ORDINARY_STORAGE", "GMAIL_FINANCIAL_PLAINTEXT_ABSENT_FROM_LOGS"]
+    },
+    {
+      "id": "OD11",
+      "contract": "SAME_CANDIDATE_REPLAY_AND_IDEMPOTENCY",
+      "status": "BLOCKED_BY_R1",
+      "requires": ["OD10"],
+      "physicalClaims": ["SECOND_PASS_SAME_SIGNED_APK", "NO_DUPLICATE_CANONICAL_MOVEMENTS", "SEMANTIC_REPLAY_STABLE", "REPLAY_DIGEST_RECORDED"]
+    }
+  ],
+  "feeders": {
+    "R3_Q003": ["OD1", "OD2", "OD3", "OD10"],
+    "R4_Q004": ["OD2", "OD4", "OD5", "OD10"],
+    "R5_Q005": ["OD5"],
+    "note": "R2 supplies owned-Android evidence only; provider, deletion/backup, cross-platform crypto, witness and recovery phases remain independently open."
+  },
+  "receipt": {
+    "schema": "graph/alpha2-r2-sanitized-receipt-schema.json",
+    "expectedPathPattern": "graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-<date>.json",
+    "current": null
+  },
+  "currentState": {
+    "r1TrustedEdgeSigning": "OPEN",
+    "r2PhysicalCampaign": "BLOCKED_ON_R1",
+    "q003": "ACTIVE",
+    "q004": "ACTIVE",
+    "q005": "ACTIVE",
+    "gMk0": "OPEN",
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

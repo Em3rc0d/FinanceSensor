@@ -1,0 +1,109 @@
+name: Alpha.2 R2 Owned-Device Campaign Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/prebuild-remainder-design.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/physical-closure-campaign.json'
+      - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
+      - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/prebuild-remainder-design.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/physical-closure-campaign.json'
+      - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
+      - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-alpha2-r2-campaign-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-r2-campaign-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: R2 owned-device campaign contract
+        run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
+
+      - name: R2 prebuild blockchain chain
+        run: node tools/validate-alpha2-r2-chain.mjs
+
+      - name: R1 signing receipt reducer synthetic contract
+        run: |
+          cat > /tmp/alpha2-r1-synthetic-receipt.txt <<'EOF'
+          FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS
+          FINANCESENSOR_ALPHA2_CANDIDATE=0.2.0-alpha.2+2001
+          SOURCE_COMMIT=f658363772b8d3652a81a8a4275a571f2f409ed8
+          CANONICAL_RUN_ID=34082101187
+          CANONICAL_ARTIFACT_ID=10004110513
+          INPUT_APK_SHA256=7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f
+          INPUT_APK_BYTES=182053563
+          SIGNED_APK_SHA256=1111111111111111111111111111111111111111111111111111111111111111
+          SIGNED_APK_BYTES=182060000
+          SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
+          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
+          EXACT_SCOPE=gmail.readonly
+          PRIVATE_SIGNING_MATERIAL_IN_GITHUB=0
+          REAL_OAUTH_EXECUTED_BY_SIGNING_STEP=0
+          REAL_GMAIL_EXECUTED_BY_SIGNING_STEP=0
+          ALPHA2_MOBILE_INTEGRATION_CI=PASS
+          ALPHA2_MOBILE_INTEGRATION_PHYSICAL=OPEN
+          PHYSICAL_SQLCIPHER_PASS=NO
+          PHYSICAL_ALPHA2_PASS=NO
+          BUILD_READY=NO
+          RELEASE_READY=NO
+          EOF
+          node tools/reduce-alpha2-r1-signing-receipt.mjs /tmp/alpha2-r1-synthetic-receipt.txt > /tmp/alpha2-r1-reduced.txt
+          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-reduced.txt
+          grep -q '"r2OwnedDeviceCampaignUnblocked": true' /tmp/alpha2-r1-reduced.txt
+          grep -q '"buildReady": false' /tmp/alpha2-r1-reduced.txt
+
+      - name: CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+
+      - name: Preserve physical boundary
+        run: |
+          set -euo pipefail
+          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_ON_R1'
+          echo 'REAL_OAUTH_IN_CI=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'REAL_FINANCIAL_DATA_IN_CI=0'
+          echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
+          echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'
