@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "SYNTHETIC_OAUTH_REDIRECT_FIXTURE",
+  "redirectUri": "http://127.0.0.1:43210/oauth/callback",
+  "scope": "https://www.googleapis.com/auth/gmail.readonly",
+  "containsRealCredentialMaterial": false,
+  "containsRealAuthorizationCode": false,
+  "containsRealToken": false
+}

@@ -1,0 +1,21 @@
+name: Gmail Bearer Reachability Spike — RETIRED
+
+# Historical Level-B evidence only.
+# Real Gmail bearer/OAuth authority must never enter self-hosted FinanceSensor CI.
+# Level C is executed only on the controlled local edge runtime.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retired:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retired boundary
+        run: |
+          echo 'RETIRED: Gmail bearer reachability is not executable in CI.'
+          echo 'SELF_HOSTED_CI != FINANCESENSOR_TRUSTED_EDGE'

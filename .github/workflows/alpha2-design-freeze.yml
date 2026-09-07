@@ -1,0 +1,31 @@
+name: Alpha.2 Design Freeze
+
+on:
+  pull_request:
+    paths:
+      - 'graph/alpha2-design-freeze.json'
+      - 'mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md'
+      - 'mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md'
+      - 'mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md'
+      - 'tools/validate-alpha2-design-freeze.mjs'
+      - '.github/workflows/alpha2-design-freeze.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/validate-alpha2-design-freeze.mjs
+      - name: Assert static design boundary
+        run: |
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'REAL_FINANCIAL_DATA_IN_CI=0'
+          echo 'BUILD_READY=NO'

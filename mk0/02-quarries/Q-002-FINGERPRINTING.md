@@ -1,119 +1,115 @@
 # Q-002 — Transaction Fingerprinting, Deduplication and Idempotency
 
 **Priority:** P0  
-**Status:** OPEN
+**Status:** CLOSED
 
 ## Question
 
-How do we recognize the same economic event when different sources, devices or provider states expose different identifiers?
+How do we recognize the same economic event when different sources, devices or provider states expose different identifiers without accidentally merging two genuine purchases?
 
-## Problem
-
-The same purchase may appear as:
-
-- bank authorization email;
-- bank posted-transaction email;
-- merchant receipt;
-- invoice PDF;
-- bank API transaction later;
-- duplicate ingestion from another authorized device.
-
-A naive implementation creates duplicate expenses.
-
-## Central rule
+## Closed rule
 
 ```text
 provider_source_id != canonical_transaction_id
 ```
 
-External IDs remain provenance signals, not economic identity.
+Source-native IDs are provenance/matching signals, not canonical economic identity.
 
-## Candidate fingerprint dimensions
+## Resolver identity policy
 
-A fingerprint/resolver may consider:
+```text
+exact stable evidence replay
+→ IDEMPOTENT
+
+strong cross-artifact reference
++ no hard contradiction
+→ AUTO-MERGE
+
+strong weak-signal similarity
++ independent sources
++ no hard reference
+→ REVIEW
+
+same-source same-value nearby events
++ distinct evidence identity
+→ KEEP SEPARATE
+```
+
+The system intentionally prefers a visible/recoverable false split or review over a silent false merge.
+
+## Hard contradiction gates
+
+Known mismatch on any of these blocks automatic identity:
 
 ```text
 tenant
-financial account / payment instrument
-amount
 currency
-merchant canonical identity
-merchant raw identity
-time window
-event semantic type
-authorization/posted state
-source family
-receipt/order/invoice references
-provider IDs
-evidence hashes
+amount at cent precision
+flow direction
+financial account when both known
+payment instrument when both known
+incompatible semantic type
 ```
 
-No single field is sufficient in all cases.
+Strong references cannot override those contradictions.
 
-## Resolution levels
+## Benchmark contract
 
-### Deterministic match
+Thresholds were frozen before benchmark acceptance in:
 
-Examples:
-
-- identical immutable source artifact reprocessed;
-- exact receipt/order reference with compatible amount;
-- known authorization→posting linkage.
-
-### Strong probabilistic/composite match
-
-Example:
+`spikes/canonical-resolver/BENCHMARK-CONTRACT.md`
 
 ```text
-same tenant
-same card
-same amount/currency
-merchant normalized equal
-within temporal tolerance
-compatible source types
+UNSAFE_FALSE_MERGES          = 0
+AUTO_MERGE_PRECISION         = 100%
+HARD_LINK_FALSE_SPLITS       = 0
+REPLAY_DUPLICATE_COUNT       = 0
+DECISION_ACCURACY            >= 95%
 ```
 
-### Ambiguous
+## Observed benchmark
 
-Do not force the match. Create/reuse a `ReviewTask`.
-
-## Device idempotency
-
-Each evidence event should have enough source identity to guarantee:
+The 28-scenario adversarial benchmark produced:
 
 ```text
-process(E) once == process(E) N times
+unsafeFalseMerges       0
+autoMergePrecision      100%
+hardLinkFalseSplits     0
+replayDuplicateCount    0
+decisionAccuracy        100%
 ```
 
-Multi-device execution must also converge when Device A and Device B observe overlapping evidence.
+The full canonical resolver suite passed **98/98** at the closure-candidate baseline.
 
-## False-positive cost
+## Multi-device correctness link
 
-Incorrectly merging two genuine equal-value purchases is also financial corruption. Deduplication therefore optimizes correctness, not merely reducing duplicates.
+Processing leases remain an optimization, not a correctness primitive. `spikes/e2ee-sync/test/lease-failure.test.js` demonstrates duplicate work can occur without duplicating canonical financial truth.
 
-## Finding
+## Evidence
 
-Transaction resolution is an identity problem, not a database UNIQUE constraint problem.
+- `spikes/canonical-resolver/BENCHMARK-CONTRACT.md`
+- `spikes/canonical-resolver/src/resolver.js`
+- `spikes/canonical-resolver/test/fingerprinting.test.js`
+- `spikes/canonical-resolver/test/fingerprinting-benchmark.test.js`
+- `spikes/canonical-resolver/test/resolver.test.js`
+- `spikes/e2ee-sync/test/lease-failure.test.js`
+- `mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md`
 
-## Implication
+## Non-claims
 
-FinanceSensor needs a dedicated resolver with deterministic rules, composite fingerprints, confidence and explicit ambiguity.
+Q-002 closure does not prove:
 
-## Candidate decision
+- production precision/recall for every provider;
+- final provider-specific score calibration;
+- every future pending→posted pattern;
+- every future bank-API identity rule.
 
-Create separate identities for:
+A supported real-data benchmark that exposes a false merge or missing identity signal reopens Q-002.
 
-1. `SourceArtifact`;
-2. `FinancialEvidence`;
-3. `FinancialEventCandidate`;
-4. `CanonicalFinancialEvent`.
+## Closure receipt
 
-Keep resolver lineage linking all layers.
+`mk0/11-decisions/closure-receipts/Q-002.md`
 
-## Closure criteria
-
-- benchmark dataset includes duplicates, same-amount real purchases, pending→posted, refund/reversal and multi-device replay;
-- precision/recall targets defined;
-- no duplicate canonical event under exact replay;
-- ambiguous cases never silently force-merge;
-- property-based/idempotency test design completed.
+```text
+Q-002 = CLOSED
+```
