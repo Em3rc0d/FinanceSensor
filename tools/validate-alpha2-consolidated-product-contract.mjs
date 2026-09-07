@@ -9,12 +9,13 @@ const paths = {
   plan: 'mk0/07-plan/ALPHA2-INTEGRATED-MILESTONE-PLAN.md',
   tests: 'mk0/09-test/ALPHA2-INTEGRATED-GATE-MATRIX.md',
   audit: 'mk0/10-evidence/EV-HUMAN-TEST-CONFIDENCE-AUDIT-2026-09-06.md',
-  adr: 'mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md',
+  adr: 'mk0/11-decisions/ADR-037-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md',
 };
 
 const failures = [];
 const assert = (value, message) => { if (!value) failures.push(message); };
 for (const path of Object.values(paths)) assert(fs.existsSync(path), `missing ${path}`);
+assert(!fs.existsSync('mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'), 'colliding ADR-021 alias must not exist');
 
 if (!failures.length) {
   const graph = JSON.parse(fs.readFileSync(paths.graph, 'utf8'));
@@ -87,6 +88,7 @@ if (!failures.length) {
   assert(docs.plan.includes('No new physical APK is requested for intermediate slices.'), 'plan no-churn rule');
   assert(docs.tests.includes('ANY_INTERNAL_GATE_FAILS'), 'test pre-physical gate');
   assert(docs.audit.includes('confidence = 0.96'), 'confidence audit root cause');
+  assert(docs.adr.startsWith('# ADR-037 — Dual-source authority and web projection'), 'ADR numbering');
   assert(docs.adr.includes('PRIMARY_SOURCE_ROLE != EXCLUSIVE_SEMANTICS'), 'ADR source-role law');
 }
 
@@ -97,6 +99,7 @@ if (failures.length) {
 }
 
 console.log('ALPHA2_CONSOLIDATED_PRODUCT_CONTRACT=PASS');
+console.log('ADR_DUAL_SOURCE=037');
 console.log('DESIGN_FROZEN=YES');
 console.log('PUBLIC_FIXED_EVIDENCE_PERCENT=FORBIDDEN');
 console.log('GMAIL_DEFAULT_TRUTH=OBSERVED');
