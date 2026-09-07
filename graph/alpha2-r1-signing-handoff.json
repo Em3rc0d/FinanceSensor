@@ -2,7 +2,7 @@
   "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V2",
   "project": "FinanceSensor",
   "candidate": "0.2.0-alpha.2+2001",
-  "designGovernanceSha": "416b8e3a1632d549d7d0d3026d18f969c57dd2",
+  "designGovernanceSha": "416b8e3a1632d549d7d7d0d3026d18f969c57dd2",
   "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
   "canonicalRunId": 34082101187,
   "canonicalArtifactId": 10004110513,
@@ -33,6 +33,14 @@
     "zipStructure": "PASS",
     "zipIntegrity": "PASS",
     "supersedesBundleSha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8"
+  },
+  "ciGate": {
+    "workflow": "Alpha.2 R1 Trusted-Edge Signing",
+    "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
+    "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
+    "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
+    "powershellParserRequired": true,
+    "privateSigningMaterialAllowed": false
   },
   "status": "HANDOFF_READY_PHYSICAL_OPEN",
   "trustedEdgeSigningPass": false,

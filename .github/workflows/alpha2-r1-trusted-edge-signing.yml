@@ -1,0 +1,65 @@
+name: Alpha.2 R1 Trusted-Edge Signing
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
+      - 'tools/validate-alpha2-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R1-SIGNING-HANDOFF-2026-09-07.md'
+      - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
+      - 'tools/validate-alpha2-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md'
+      - 'mk0/10-evidence/EV-ALPHA2-R1-SIGNING-HANDOFF-2026-09-07.md'
+      - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-alpha2-r1-signing-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-r1-signing-handoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Canonical Alpha.2 candidate boundary
+        run: node tools/validate-alpha2-canonical-candidate.mjs
+
+      - name: R1 trusted-edge handoff boundary
+        run: node tools/validate-alpha2-r1-signing-handoff.mjs
+
+      - name: Preserve physical boundary
+        run: |
+          set -euo pipefail
+          echo 'R1_HANDOFF_READY=YES'
+          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
+          echo 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_ON_R1'
+          echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'
