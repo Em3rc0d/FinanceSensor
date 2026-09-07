@@ -1,42 +1,48 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V1",
-  "candidate": "0.2.0-alpha.2+2001",
-  "certifiedPrHead": "3640244fb12aabf818b002399f3b7cc28fbde14c",
-  "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V2",
+  "candidate": "0.2.0-alpha.2+2003",
+  "certifiedPrHead": "25f0f79c3b21b78e8ca52c8a02cdf696d6d17b8c",
+  "sourceCommit": "c29a68e5326a187a7c82e6d66254ae05b6a4178a",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 34082101187,
-    "jobId": 101619210181,
-    "artifactId": 10004110513,
-    "artifactName": "financesensor-alpha2-integrated-internal-f658363772b8d3652a81a8a4275a571f2f409ed8",
-    "artifactZipSha256": "812c60b563248c5a86ac053a59c64f9f9b6c01e4d55225c426596d418813d736",
+    "runId": 34166127407,
+    "jobId": 101877387416,
+    "artifactId": 10034303033,
+    "artifactName": "financesensor-alpha2-integrated-internal-c29a68e5326a187a7c82e6d66254ae05b6a4178a",
+    "artifactZipSha256": "17489354c2b3da1a3389c2fa991ac9d444f8eb58d031c030d05e0d20fbed481f",
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
-    "apkBytes": 182053563,
+    "apkSha256": "93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6",
+    "apkBytes": 182090843,
+    "minSdk": 31,
+    "targetSdk": 36,
+    "compileSdk": 37,
+    "signatureVerify": "PASS",
+    "aapt2Parse": "PASS",
     "publicCiSigner": "EPHEMERAL_DEBUG",
     "trustedEdgeResignRequired": true
   },
+  "physicalInstallabilityObservation": {
+    "status": "PASS_INSTALL_AND_LAUNCH_ONLY",
+    "installPass": true,
+    "launchPass": true,
+    "oauthPass": false,
+    "oauthFailureObserved": "GOOGLE_COULD_NOT_AUTHORIZE_CONNECTION_SECURELY",
+    "oauthInterpretation": "NON_PROMOTING_EXPECTED_WITH_EPHEMERAL_DEBUG_SIGNER",
+    "rawScreenshotInGitHub": false,
+    "sanitizedEvidence": "mk0/10-evidence/EV-ALPHA2-2003-PHYSICAL-INSTALLABILITY-OBSERVATION-2026-09-07.md"
+  },
   "postMergeConsensus": [
-    {"workflow":"Alpha.2 Integrated Runtime","runId":34082101187,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Mobile Shell","runId":34082101124,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Android Human Test Alpha","runId":34082101222,"conclusion":"SUCCESS_REGRESSION_ONLY"},
-    {"workflow":"FinanceSensor Android Gmail Connection","runId":34082101167,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Statement ETL Contract","runId":34082101119,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Public Readiness","runId":34082101150,"conclusion":"SUCCESS"},
-    {"workflow":"Alpha.2 Design Freeze","runId":34082103953,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Heartbeat","runId":34082101109,"conclusion":"SUCCESS"}
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34166127407,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34166128378,"conclusion":"SUCCESS"}
   ],
-  "nonAuthoritativeArtifacts": [
+  "nonAuthoritativeCandidates": [
     {
-      "workflow": "FinanceSensor Mobile Shell",
-      "artifactId": 10004110068,
-      "reason": "Independent ephemeral debug signing makes its APK hash non-canonical even though source and runtime gates match."
+      "candidate": "0.2.0-alpha.2+2002",
+      "reason": "Diagnostic installability candidate only; lowering minSdk to 24 contradicted ADR-013 protected ECDH Android Keystore baseline and was superseded by PR #98."
     },
     {
-      "workflow": "FinanceSensor Android Human Test Alpha",
-      "artifactId": 10004093091,
-      "apkSha256": "1525db5ae9ace01e7201ec8f529121c52efa6e414114e8a3cc661ba5ef14c3f9",
-      "reason": "Legacy bounded Human Test harness; its evidence explicitly states ALPHA2_MOBILE_INTEGRATION=OPEN. Regression authority only."
+      "candidate": "0.2.0-alpha.2+2001",
+      "reason": "Superseded by the installability repair sequence and current +2003 authority."
     }
   ],
   "signing": {
@@ -50,6 +56,9 @@
     "realOauthExecutedByCi": false,
     "realGmailExecutedByCi": false,
     "realFinancialDataInCi": false,
+    "ownedDeviceInstallPass": true,
+    "ownedDeviceLaunchPass": true,
+    "ownedDeviceStableSignerOauthPass": false,
     "physicalSqlcipherPass": false,
     "physicalAlpha2Pass": false,
     "buildReady": false,
