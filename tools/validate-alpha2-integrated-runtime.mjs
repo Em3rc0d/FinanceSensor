@@ -57,7 +57,10 @@ if (authority.claims?.buildReady !== false || authority.claims?.releaseReady !==
 if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) {
   throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
 }
-if (!adrIndex.includes('**Next available ADR:** `ADR-039`.')) {
+if (!adrIndex.includes('| ADR-039 | Alpha.2 installability incident and Android baseline retention |')) {
+  throw new Error('ALPHA2_ADR_039_REGISTRY_MISSING');
+}
+if (!adrIndex.includes('**Next available ADR:** `ADR-040`.')) {
   throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
 }
 
@@ -168,7 +171,8 @@ if (!webSurface.includes('Entró') || !webSurface.includes('Salió') || !webSurf
 
 console.log('ALPHA2_INTEGRATED_RUNTIME_ARCHITECTURE=PASS');
 console.log('ADR_038_REGISTERED=YES');
-console.log('NEXT_ADR=ADR-039');
+console.log('ADR_039_REGISTERED=YES');
+console.log('NEXT_ADR=ADR-040');
 console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
