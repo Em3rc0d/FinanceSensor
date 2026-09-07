@@ -63,8 +63,9 @@ Supersedes / superseded by
 | ADR-036 | Alpha.2 financial memory and Gmail statement discovery | ACCEPTED FOR BOUNDED DESIGN FREEZE / IMPLEMENTATION AND PHYSICAL PROOF OPEN | Alpha.2-A implementation, encrypted-vault proof and multi-profile physical campaign |
 | ADR-037 | Dual-source authority and canonical web projection | ACCEPTED FOR ALPHA.2 DESIGN / IMPLEMENTATION OPEN | integrated A-G mobile runtime + canonical web/sync evidence |
 | ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity | ACCEPTED FOR ALPHA.2 IMPLEMENTATION / PHYSICAL MILESTONE OPEN | integrated A-G exact-head CI + owned-device SQLCipher/statement/reconciliation proof |
+| ADR-039 | Alpha.2 installability incident and Android baseline retention | ACCEPTED FOR ALPHA.2 REPAIR / PHYSICAL REVALIDATION REQUIRED | +2003 API-31 install/launch observation before canonical re-freeze |
 
-**Next available ADR:** `ADR-039`.
+**Next available ADR:** `ADR-040`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
@@ -453,6 +454,30 @@ Evidence/decision:
 - `../../product/labs/web-dashboard/`
 
 Acceptance authorizes controlled implementation and exact-head CI. It does not promote SQLCipher, statement parsing, reconciliation, sync, web, or Alpha.2 to physical/product pass.
+
+## ADR-039 evidence boundary
+
+ADR-039 records the installability incident without allowing a diagnostic compatibility tweak to rewrite the accepted Android security baseline:
+
+```text
++2002                              DIAGNOSTIC ONLY
++2002 MIN SDK                      24 / NON-CANONICAL
+ANDROID PRODUCT MIN SDK            31 / RETAINED
+APK SIGNATURE VALIDATION           APKSIGNER REQUIRED
+APK MANIFEST/PARSER VALIDATION     AAPT2 REQUIRED
+PUBLIC CI DEBUG SIGNER             NON-AUTHORITY
+DEBUG SIGNER AS GOOGLE OAUTH ID    FORBIDDEN
+NEXT DIAGNOSTIC CANDIDATE          0.2.0-alpha.2+2003
+R1 / R2 PROMOTION                  STILL OPEN
+```
+
+Evidence/decision:
+
+- `ADR-039-ALPHA2-INSTALLABILITY-INCIDENT-AND-ANDROID-BASELINE-RETENTION.md`
+- `../10-evidence/EV-ALPHA2-2002-PHYSICAL-INSTALLABILITY-OBSERVATION-2026-09-07.md`
+- `ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md`
+- `../../tools/validate-mobile-stack.mjs`
+- `../../.github/workflows/alpha2-integrated-runtime.yml`
 
 ## Decision discipline
 
