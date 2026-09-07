@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'alpha2/alpha2_dashboard_sections.dart';
 import 'alpha2/alpha2_ingress.dart';
 import 'alpha2/alpha2_pipeline.dart';
 import 'alpha2/alpha2_projection.dart';
@@ -254,6 +255,12 @@ class _Alpha2HomeState extends State<Alpha2Home> {
                 sliver: SliverToBoxAdapter(child: _Coverage(result: _result!)),
               ),
               SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                sliver: SliverToBoxAdapter(
+                  child: Alpha2FinanceInsightsSections(projection: projection),
+                ),
+              ),
+              SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                 sliver: SliverToBoxAdapter(
                   child: Text('Movimientos', style: Theme.of(context).textTheme.titleLarge),
@@ -473,6 +480,7 @@ class _TransactionTile extends StatelessWidget {
           Text('${item.occurredAt.day.toString().padLeft(2, '0')}/${item.occurredAt.month.toString().padLeft(2, '0')}/${item.occurredAt.year}'),
           _TruthChip(state: item.truthState.name.toUpperCase()),
           if (item.category != null) Text(item.category!),
+          if (item.accountDisplay != null) Text('Cuenta ${item.accountDisplay}'),
         ],
       ),
       trailing: Text('$sign${_money(item.amount, item.currency)}', style: const TextStyle(fontWeight: FontWeight.w800)),
