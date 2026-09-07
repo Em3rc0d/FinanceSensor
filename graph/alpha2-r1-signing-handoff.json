@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V2",
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V3",
   "project": "FinanceSensor",
   "candidate": "0.2.0-alpha.2+2001",
   "designGovernanceSha": "416b8e3a1632d549d7d7d0d3026d18f969c57dd2",
@@ -24,16 +24,39 @@
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
   },
   "handoffBundle": {
-    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip",
-    "sha256": "c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5",
-    "bytes": 86531567,
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v3.zip",
+    "sha256": "dbb310bf1efddda91793b996543568b8fff57c4379561fdfeec98eedbe70c90d",
+    "bytes": 86191424,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
     "zipStructure": "PASS",
     "zipIntegrity": "PASS",
-    "supersedesBundleSha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8"
+    "manifestIntegrity": "PASS",
+    "ps1GitBlobVerified": "d2aadb1bda90bbbcc3d7aa0e10a5835ef068a297",
+    "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "supersedesBundleSha256": "c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5",
+    "supersessionChain": [
+      "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8",
+      "c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5"
+    ]
   },
+  "rejectedBundles": [
+    {
+      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE.zip",
+      "sha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8",
+      "reason": "WINDOWS_POWERSHELL_NATIVE_STDERR_PIPE_FAILURE",
+      "safeToUse": false
+    },
+    {
+      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip",
+      "sha256": "c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5",
+      "reason": "PACKAGED_PS1_GIT_BLOB_MISMATCH",
+      "observedPs1GitBlob": "7ddce7fe22ef8a65cad5edf5c9f42cb87dbd4010",
+      "expectedPs1GitBlob": "d2aadb1bda90bbbcc3d7aa0e10a5835ef068a297",
+      "safeToUse": false
+    }
+  ],
   "ciGate": {
     "workflow": "Alpha.2 R1 Trusted-Edge Signing",
     "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
