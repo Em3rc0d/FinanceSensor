@@ -15,6 +15,8 @@ const [
   statementScanner,
   vaultBridge,
   main,
+  dashboardSections,
+  dashboardInsights,
   syncAdapter,
   webModel,
   webHtml,
@@ -33,6 +35,8 @@ const [
   read('spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt'),
   read('spikes/mobile-shell/native/android/Alpha2VaultBridge.kt'),
   read('spikes/mobile-shell/lib/main_alpha2.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_dashboard_sections.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_dashboard_insights.dart'),
   read('spikes/e2ee-sync/src/alpha2-projection-adapter.js'),
   read('product/labs/web-dashboard/projection-model.mjs'),
   read('product/labs/web-dashboard/index.html'),
@@ -101,6 +105,24 @@ if (!main.includes('Estado mensual') || !main.includes('Mapeo de cuenta')) {
   throw new Error('ALPHA2_MOBILE_COVERAGE_PRODUCT_STATE_MISSING');
 }
 
+if (!main.includes('Alpha2FinanceInsightsSections(projection: projection)')) {
+  throw new Error('ALPHA2_MOBILE_FINANCE_INSIGHTS_NOT_WIRED');
+}
+for (const marker of ['Categorías', 'Recurrentes', 'Lo que falta confirmar']) {
+  if (!dashboardSections.includes(marker)) throw new Error(`ALPHA2_MOBILE_INSIGHT_SECTION_MISSING:${marker}`);
+}
+for (const marker of [
+  'summarizeAlpha2Categories',
+  'Alpha2FlowDirection.outflow',
+  'Alpha2SemanticType.cardPayment',
+  'summarizeAlpha2KnowledgeGaps'
+]) {
+  if (!dashboardInsights.includes(marker)) throw new Error(`ALPHA2_DASHBOARD_INSIGHT_RULE_MISSING:${marker}`);
+}
+if (!main.includes("Text('Cuenta \${item.accountDisplay}')")) {
+  throw new Error('ALPHA2_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
+}
+
 if (/confidence\s*[:=]/i.test(transactionScanner) || transactionScanner.includes('0.96')) {
   throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
 }
@@ -155,6 +177,9 @@ console.log('ACCOUNT_GRAPH_PRODUCT_GATE=WIRED');
 console.log('MONTHLY_COVERAGE_PRODUCT_GATE=WIRED');
 console.log('ACCOUNT_MAPPING_KNOWLEDGE_GAP=WIRED');
 console.log('BANK_CURRENCY_ONLY_AUTO_OWNERSHIP=FORBIDDEN');
+console.log('MOBILE_CATEGORIES_VISIBLE=YES');
+console.log('MOBILE_RECURRENT_CANDIDATES_VISIBLE=YES');
+console.log('MOBILE_KNOWLEDGE_GAPS_VISIBLE=YES');
 console.log('GENERIC_STATEMENT_PARSER_PRODUCT_AUTHORITY=0');
 console.log('PUBLIC_EVIDENCE_PERCENTAGE=0');
 console.log('E2EE_SECOND_PROTOCOL_CREATED=0');
