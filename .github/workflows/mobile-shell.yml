@@ -7,32 +7,48 @@ on:
       - jett/mk0-foundation
     paths:
       - 'spikes/mobile-shell/**'
+      - 'spikes/e2ee-sync/src/alpha2-projection-adapter.js'
+      - 'spikes/e2ee-sync/test/alpha2-projection-adapter.test.js'
+      - 'product/labs/web-dashboard/**'
       - 'graph/mobile-statement-ingress.json'
+      - 'graph/alpha2-mobile-golden-vectors-v1.json'
+      - 'graph/alpha2-mobile-runtime-authority.json'
       - 'tools/validate-mobile-shell.mjs'
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-mobile-statement-ingress.mjs'
       - 'tools/validate-implementation-baseline.mjs'
+      - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
+      - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md'
       - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
       - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
       - 'mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md'
       - 'mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md'
+      - 'mk0/11-decisions/ADR-038-ALPHA2-MOBILE-RUNTIME-AUTHORITY-AND-PARITY.md'
       - '.github/workflows/mobile-shell.yml'
   push:
     branches:
       - jett/mk0-foundation
     paths:
       - 'spikes/mobile-shell/**'
+      - 'spikes/e2ee-sync/src/alpha2-projection-adapter.js'
+      - 'spikes/e2ee-sync/test/alpha2-projection-adapter.test.js'
+      - 'product/labs/web-dashboard/**'
       - 'graph/mobile-statement-ingress.json'
+      - 'graph/alpha2-mobile-golden-vectors-v1.json'
+      - 'graph/alpha2-mobile-runtime-authority.json'
       - 'tools/validate-mobile-shell.mjs'
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-mobile-statement-ingress.mjs'
       - 'tools/validate-implementation-baseline.mjs'
+      - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
+      - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md'
       - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
       - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
       - 'mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md'
       - 'mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md'
+      - 'mk0/11-decisions/ADR-038-ALPHA2-MOBILE-RUNTIME-AUTHORITY-AND-PARITY.md'
       - '.github/workflows/mobile-shell.yml'
 
 permissions:
@@ -45,16 +61,36 @@ concurrency:
 jobs:
   android-debug-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Integrated Alpha.2 architecture + reference vectors
+        run: |
+          node tools/validate-alpha2-integrated-runtime.mjs
+          node tools/validate-alpha2-mobile-golden-vectors.mjs
+
+      - name: Existing E2EE protocol + Alpha.2 projection
+        working-directory: spikes/e2ee-sync
+        run: npm test
+
+      - name: Web companion contract
+        working-directory: product/labs/web-dashboard
+        run: |
+          npm test
+          npm run validate
 
       - name: Setup Flutter 3.44.7
         uses: subosito/flutter-action@v2
@@ -85,53 +121,111 @@ jobs:
             --org=com.financesensor.lab \
             .
 
-      - name: Apply FinanceSensor Android baseline
+      - name: Apply Alpha.2 Android trusted edge baseline
         working-directory: spikes/mobile-shell
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
+          physical_package = 'com.financesensor.lab.gmailconnection.r2'
+          generated_package = 'com.financesensor.lab.financesensor_mobile_shell'
           kts = Path('android/app/build.gradle.kts')
           groovy = Path('android/app/build.gradle')
 
           if kts.exists():
               text = kts.read_text()
-              old_min = 'minSdk = flutter.minSdkVersion'
-              old_target = 'targetSdk = flutter.targetSdkVersion'
-              if old_min not in text:
-                  raise SystemExit('EXPECTED_FLUTTER_MINSDK_MARKER_NOT_FOUND')
-              if old_target not in text:
-                  raise SystemExit('EXPECTED_FLUTTER_TARGETSDK_MARKER_NOT_FOUND')
-              text = text.replace(old_min, 'minSdk = 31')
-              text = text.replace(old_target, 'targetSdk = 36')
+              markers = (
+                  'minSdk = flutter.minSdkVersion',
+                  'targetSdk = flutter.targetSdkVersion',
+                  f'applicationId = "{generated_package}"',
+              )
+              if not all(marker in text for marker in markers):
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(markers[0], 'minSdk = 31')
+              text = text.replace(markers[1], 'targetSdk = 36')
+              text = text.replace(markers[2], f'applicationId = "{physical_package}"')
+              if 'sqlcipher-android:4.18.0' not in text:
+                  text += '''
+
+dependencies {
+    implementation("com.google.android.gms:play-services-auth:21.6.0")
+    implementation("net.zetetic:sqlcipher-android:4.18.0")
+}
+'''
               kts.write_text(text)
               print('ANDROID_GRADLE_DIALECT=KOTLIN_DSL')
           elif groovy.exists():
               text = groovy.read_text()
-              old_min = 'minSdkVersion flutter.minSdkVersion'
-              old_target = 'targetSdkVersion flutter.targetSdkVersion'
-              if old_min not in text:
-                  raise SystemExit('EXPECTED_FLUTTER_MINSDK_MARKER_NOT_FOUND')
-              if old_target not in text:
-                  raise SystemExit('EXPECTED_FLUTTER_TARGETSDK_MARKER_NOT_FOUND')
-              text = text.replace(old_min, 'minSdkVersion 31')
-              text = text.replace(old_target, 'targetSdkVersion 36')
+              markers = (
+                  'minSdkVersion flutter.minSdkVersion',
+                  'targetSdkVersion flutter.targetSdkVersion',
+                  f'applicationId "{generated_package}"',
+              )
+              if not all(marker in text for marker in markers):
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(markers[0], 'minSdkVersion 31')
+              text = text.replace(markers[1], 'targetSdkVersion 36')
+              text = text.replace(markers[2], f'applicationId "{physical_package}"')
+              if 'sqlcipher-android:4.18.0' not in text:
+                  text += '''
+
+dependencies {
+    implementation "com.google.android.gms:play-services-auth:21.6.0"
+    implementation "net.zetetic:sqlcipher-android:4.18.0"
+}
+'''
               groovy.write_text(text)
               print('ANDROID_GRADLE_DIALECT=GROOVY')
           else:
               raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+
+          target_dir = Path('android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell')
+          target_dir.mkdir(parents=True, exist_ok=True)
+          sources = {
+              Path('native/android/Alpha2MainActivity.kt'): target_dir / 'MainActivity.kt',
+              Path('native/android/Alpha2TransactionScanner.kt'): target_dir / 'Alpha2TransactionScanner.kt',
+              Path('native/android/Alpha2StatementDiscoveryScanner.kt'): target_dir / 'Alpha2StatementDiscoveryScanner.kt',
+              Path('native/android/Alpha2VaultBridge.kt'): target_dir / 'Alpha2VaultBridge.kt',
+          }
+          for source, target in sources.items():
+              if not source.exists():
+                  raise SystemExit(f'NATIVE_SOURCE_NOT_FOUND:{source}')
+              target.write_text(source.read_text())
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.INTERNET" />'
+          marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          if permission not in manifest_text:
+              if marker not in manifest_text:
+                  raise SystemExit('ANDROID_MANIFEST_ROOT_MARKER_NOT_FOUND')
+              manifest_text = manifest_text.replace(marker, marker + '\n    ' + permission, 1)
+          if 'android:allowBackup=' not in manifest_text:
+              manifest_text = manifest_text.replace('<application', '<application android:allowBackup="false"', 1)
+          manifest.write_text(manifest_text)
           PY
 
-      - name: Verify Android baseline
+      - name: Verify Android integrated baseline
         working-directory: spikes/mobile-shell
         run: |
           test -f android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
           grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
           grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
-          ! grep -R -E -q 'minSdk(Version)?\s*[= ]\s*(2[0-9]|30)\b' android/app/build.gradle*
+          grep -R -q 'com.financesensor.lab.gmailconnection.r2' android/app/build.gradle*
+          grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
+          grep -R -q 'sqlcipher-android:4.18.0' android/app/build.gradle*
+          grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:allowBackup="false"' android/app/src/main/AndroidManifest.xml
+          grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'Alpha2VaultBridge' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'SQLCIPHER_VERSION = "4.18.0"' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/Alpha2VaultBridge.kt
+          ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           echo 'ANDROID_LANGUAGE=KOTLIN'
           echo 'ANDROID_MIN_SDK=31'
           echo 'ANDROID_TARGET_SDK=36'
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2'
+          echo 'SQLCIPHER_VERSION=4.18.0'
 
       - name: Resolve dependencies
         working-directory: spikes/mobile-shell
@@ -156,38 +250,64 @@ jobs:
         working-directory: spikes/mobile-shell
         run: flutter analyze
 
-      - name: Widget and statement tests
+      - name: A-G parity replay and widget tests
         working-directory: spikes/mobile-shell
         run: flutter test
 
-      - name: Build Android debug APK
-        working-directory: spikes/mobile-shell
-        run: flutter build apk --debug
-
-      - name: APK evidence
+      - name: Build Alpha.2 integrated Android debug APK
         working-directory: spikes/mobile-shell
         run: |
-          test -f build/app/outputs/flutter-apk/app-debug.apk
-          sha256sum build/app/outputs/flutter-apk/app-debug.apk | tee build/app/outputs/flutter-apk/app-debug.apk.sha256
-          stat -c 'APK_BYTES=%s' build/app/outputs/flutter-apk/app-debug.apk
-          echo 'FINANCESENSOR_MOBILE_SHELL_APK=DEBUG_ONLY' >> "$GITHUB_STEP_SUMMARY"
-          echo 'ANDROID_MIN_SDK=31' >> "$GITHUB_STEP_SUMMARY"
-          echo 'ANDROID_TARGET_SDK=36' >> "$GITHUB_STEP_SUMMARY"
-          echo 'MOBILE_STATEMENT_RUNTIME=PDFRX_2_4_8' >> "$GITHUB_STEP_SUMMARY"
-          echo 'MOBILE_STATEMENT_STATIC_READY=PASS' >> "$GITHUB_STEP_SUMMARY"
-          echo 'MOBILE_STATEMENT_PHYSICAL_PASS=OPEN' >> "$GITHUB_STEP_SUMMARY"
-          echo 'PASSWORD_MEMORY_ZEROIZATION_CLAIM=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'REAL_GMAIL=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'REAL_OAUTH=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'REAL_FINANCIAL_DATA=0' >> "$GITHUB_STEP_SUMMARY"
-          echo 'BUILD_READY=NO' >> "$GITHUB_STEP_SUMMARY"
+          flutter build apk --debug \
+            --target lib/main_alpha2.dart \
+            --build-name 0.2.0-alpha.2 \
+            --build-number 2001
 
-      - name: Upload debug APK
+      - name: Integrated APK evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          APK='build/app/outputs/flutter-apk/app-debug.apk'
+          test -f "$APK"
+          APK_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          APK_BYTES="$(stat -c '%s' "$APK")"
+          printf '%s  %s\n' "$APK_SHA256" "$APK" > "$APK.sha256"
+          cat > alpha2-integrated-ci-evidence.txt <<EOF
+          ALPHA2_INTEGRATED_RUNTIME_CI=PASS
+          SOURCE_COMMIT=${GITHUB_SHA}
+          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
+          EXACT_SCOPE=gmail.readonly
+          DART_FINANCIAL_AUTHORITY=YES
+          KOTLIN_TRUSTED_EDGE=YES
+          NODE_PRODUCT_RUNTIME=NO
+          SQLCIPHER_VERSION=4.18.0
+          PLAINTEXT_SQLITE_FALLBACK=NO
+          GENERIC_STATEMENT_PARSER_PRODUCT_AUTHORITY=NO
+          BCP_SAVINGS_GEOMETRY_ADAPTER=YES
+          BCP_CREDIT_FETCH_ENABLED=NO
+          RIPLEY_CREDIT_FETCH_ENABLED=NO
+          PUBLIC_EVIDENCE_PERCENTAGE=NO
+          E2EE_EXISTING_PROTOCOL_REUSED=YES
+          WEB_PUBLIC_PROJECTION_SCHEMA=ALPHA2_PUBLIC_DASHBOARD_V1
+          INTERNAL_APK_SHA256=${APK_SHA256}
+          INTERNAL_APK_BYTES=${APK_BYTES}
+          PUBLIC_CI_SIGNER=EPHEMERAL_DEBUG
+          TRUSTED_EDGE_RESIGN_REQUIRED=YES
+          REAL_OAUTH_EXECUTED_BY_CI=NO
+          REAL_GMAIL_EXECUTED_BY_CI=NO
+          PHYSICAL_SQLCIPHER_PASS=NO
+          PHYSICAL_ALPHA2_PASS=NO
+          BUILD_READY=NO
+          RELEASE_READY=NO
+          EOF
+          cat alpha2-integrated-ci-evidence.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload integrated debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-mobile-shell-android-debug
+          name: financesensor-alpha2-integrated-internal
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+            spikes/mobile-shell/alpha2-integrated-ci-evidence.txt
           if-no-files-found: error
           retention-days: 7
