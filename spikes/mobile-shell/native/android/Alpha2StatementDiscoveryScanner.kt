@@ -141,7 +141,7 @@ class Alpha2StatementDiscoveryScanner {
                         senderDomain(headers["from"].orEmpty()) in it.senderDomains &&
                             it.subjectMarkers.any { marker -> normalize(headers["subject"].orEmpty()).contains(normalize(marker)) }
                     }
-                    if (matchingProfiles.size != 1 || matchingProfiles.single.id != profile.id) {
+                    if (matchingProfiles.size != 1 || matchingProfiles.single().id != profile.id) {
                         if (matchingProfiles.size > 1) conflicts += 1
                         continue
                     }
