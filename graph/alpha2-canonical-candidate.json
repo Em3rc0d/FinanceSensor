@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V1",
+  "candidate": "0.2.0-alpha.2+2001",
+  "certifiedPrHead": "3640244fb12aabf818b002399f3b7cc28fbde14c",
+  "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
+  "authority": {
+    "workflow": "Alpha.2 Integrated Runtime",
+    "runId": 34082101187,
+    "jobId": 101619210181,
+    "artifactId": 10004110513,
+    "artifactName": "financesensor-alpha2-integrated-internal-f658363772b8d3652a81a8a4275a571f2f409ed8",
+    "artifactZipSha256": "812c60b563248c5a86ac053a59c64f9f9b6c01e4d55225c426596d418813d736",
+    "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
+    "apkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
+    "apkBytes": 182053563,
+    "publicCiSigner": "EPHEMERAL_DEBUG",
+    "trustedEdgeResignRequired": true
+  },
+  "postMergeConsensus": [
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34082101187,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Mobile Shell","runId":34082101124,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Android Human Test Alpha","runId":34082101222,"conclusion":"SUCCESS_REGRESSION_ONLY"},
+    {"workflow":"FinanceSensor Android Gmail Connection","runId":34082101167,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Statement ETL Contract","runId":34082101119,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34082101150,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34082103953,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34082101109,"conclusion":"SUCCESS"}
+  ],
+  "nonAuthoritativeArtifacts": [
+    {
+      "workflow": "FinanceSensor Mobile Shell",
+      "artifactId": 10004110068,
+      "reason": "Independent ephemeral debug signing makes its APK hash non-canonical even though source and runtime gates match."
+    },
+    {
+      "workflow": "FinanceSensor Android Human Test Alpha",
+      "artifactId": 10004093091,
+      "apkSha256": "1525db5ae9ace01e7201ec8f529121c52efa6e414114e8a3cc661ba5ef14c3f9",
+      "reason": "Legacy bounded Human Test harness; its evidence explicitly states ALPHA2_MOBILE_INTEGRATION=OPEN. Regression authority only."
+    }
+  ],
+  "signing": {
+    "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeSigningPass": false,
+    "signedApkSha256": null
+  },
+  "boundaries": {
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "physicalSqlcipherPass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
