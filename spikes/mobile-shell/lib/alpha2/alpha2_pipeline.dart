@@ -204,14 +204,28 @@ String _gmailSourceReceipt(String evidenceId) {
   return 'gmail-src:$value';
 }
 
+class _DigestCapture implements Sink<Digest> {
+  Digest? value;
+
+  @override
+  void add(Digest data) {
+    if (value != null) throw StateError('ALPHA2_DIGEST_MULTIPLE_VALUES');
+    value = data;
+  }
+
+  @override
+  void close() {}
+}
+
 String _statementSourceReceipt(String profileId, Uint8List encryptedPdfBytes) {
-  final hasher = AccumulatorSink<Digest>();
-  final input = sha256.startChunkedConversion(hasher);
+  final capture = _DigestCapture();
+  final input = sha256.startChunkedConversion(capture);
   input.add(utf8.encode('FINANCESENSOR_ALPHA2_STATEMENT_SOURCE_V1|$profileId|'));
   input.add(encryptedPdfBytes);
   input.close();
-  final digest = hasher.events.single.toString();
-  return 'stmt-src:${digest.substring(0, 48)}';
+  final digest = capture.value;
+  if (digest == null) throw StateError('ALPHA2_STATEMENT_DIGEST_MISSING');
+  return 'stmt-src:${digest.toString().substring(0, 48)}';
 }
 
 Alpha2Evidence alpha2EvidenceFromSafeVaultRow(Map<String, Object?> row) {
@@ -251,16 +265,16 @@ Alpha2Evidence alpha2EvidenceFromSafeVaultRow(Map<String, Object?> row) {
 }
 
 Alpha2SemanticType _semantic(String? raw) => switch ((raw ?? '').toUpperCase()) {
-      'EXPENSE' || 'PURCHASE' || 'expense' => Alpha2SemanticType.expense,
-      'INCOME' || 'DEPOSIT' || 'SALARY' || 'income' => Alpha2SemanticType.income,
-      'FEE' || 'fee' => Alpha2SemanticType.fee,
-      'CASH_WITHDRAWAL' || 'cashWithdrawal' => Alpha2SemanticType.cashWithdrawal,
-      'SERVICE_PAYMENT' || 'servicePayment' => Alpha2SemanticType.servicePayment,
-      'CARD_PAYMENT' || 'cardPayment' => Alpha2SemanticType.cardPayment,
-      'INTERNAL_TRANSFER' || 'internalTransfer' => Alpha2SemanticType.internalTransfer,
-      'EXTERNAL_TRANSFER' || 'externalTransfer' => Alpha2SemanticType.externalTransfer,
-      'REFUND' || 'refund' => Alpha2SemanticType.refund,
-      'REVERSAL' || 'reversal' => Alpha2SemanticType.reversal,
+      'EXPENSE' || 'PURCHASE' => Alpha2SemanticType.expense,
+      'INCOME' || 'DEPOSIT' || 'SALARY' => Alpha2SemanticType.income,
+      'FEE' => Alpha2SemanticType.fee,
+      'CASHWITHDRAWAL' || 'CASH_WITHDRAWAL' => Alpha2SemanticType.cashWithdrawal,
+      'SERVICEPAYMENT' || 'SERVICE_PAYMENT' => Alpha2SemanticType.servicePayment,
+      'CARDPAYMENT' || 'CARD_PAYMENT' => Alpha2SemanticType.cardPayment,
+      'INTERNALTRANSFER' || 'INTERNAL_TRANSFER' => Alpha2SemanticType.internalTransfer,
+      'EXTERNALTRANSFER' || 'EXTERNAL_TRANSFER' => Alpha2SemanticType.externalTransfer,
+      'REFUND' => Alpha2SemanticType.refund,
+      'REVERSAL' => Alpha2SemanticType.reversal,
       _ => Alpha2SemanticType.unknown,
     };
 
