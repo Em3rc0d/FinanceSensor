@@ -201,8 +201,8 @@ class Alpha2VaultBridge(private val context: Context) {
                 db.insertOrThrow("derived_evidence", null, values)
             }
             db.setTransactionSuccessful()
-        } catch (_: VaultException) {
-            throw
+        } catch (error: VaultException) {
+            throw error
         } catch (_: Exception) {
             throw VaultException("ALPHA2_VAULT_ATOMIC_COMMIT_FAILED", "Evidence batch rolled back")
         } finally {
