@@ -77,8 +77,27 @@ for (const marker of [
 ]) {
   assert(signer.includes(marker), `signer missing frozen marker: ${marker}`);
 }
-assert(signer.includes('--ks-pass stdin') && signer.includes('--key-pass stdin'), 'signer must use stdin password handoff');
+
+assert(signer.includes('--ks-pass') && signer.includes("'stdin'"), 'signer must use stdin password handoff');
+assert(signer.includes('--key-pass') && signer.includes("'stdin'"), 'signer must use stdin key-password handoff');
 assert(!signer.includes('FINANCESENSOR_R2_STORE_PASS') && !signer.includes('FINANCESENSOR_R2_KEY_PASS'), 'environment password handoff is forbidden');
+
+for (const marker of [
+  'function Invoke-ProcessWithStdin',
+  'System.Diagnostics.ProcessStartInfo',
+  '$psi.UseShellExecute = $false',
+  '$psi.RedirectStandardInput = $true',
+  '$psi.RedirectStandardOutput = $true',
+  '$psi.RedirectStandardError = $true',
+  '$keytoolResult = Invoke-ProcessWithStdin',
+  '$signResult = Invoke-ProcessWithStdin',
+  '$verifyResult = Invoke-ProcessWithStdin',
+  '$inputVerify = Invoke-ProcessWithStdin'
+]) {
+  assert(signer.includes(marker), `Windows native-process hardening missing: ${marker}`);
+}
+assert(!signer.includes('$StorePass | & $keytool'), 'direct keytool pipeline is forbidden on Windows trusted edge');
+assert(!signer.includes('@($StorePass, $StorePass) | & $java'), 'direct apksigner password pipeline is forbidden on Windows trusted edge');
 
 const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Language.Parser]::ParseFile('${signerPath}',[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1}`;
 const parsed = spawnSync('pwsh', ['-NoProfile', '-Command', psCommand], { encoding: 'utf8' });
@@ -93,3 +112,4 @@ assert(evidence.includes('RELEASE_READY                   NO'), 'evidence must p
 
 console.log('ALPHA2_CANONICAL_CANDIDATE_RECEIPT=PASS');
 console.log('ALPHA2_TRUSTED_EDGE_SIGNER_PARSE=PASS');
+console.log('ALPHA2_TRUSTED_EDGE_WINDOWS_NATIVE_IO=PASS');
