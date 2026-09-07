@@ -13,7 +13,7 @@ on:
       - 'mk0/07-plan/ALPHA2-INTEGRATED-MILESTONE-PLAN.md'
       - 'mk0/09-test/ALPHA2-INTEGRATED-GATE-MATRIX.md'
       - 'mk0/10-evidence/EV-HUMAN-TEST-CONFIDENCE-AUDIT-2026-09-06.md'
-      - 'mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
+      - 'mk0/11-decisions/ADR-037-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
       - 'tools/validate-alpha2-consolidated-product-contract.mjs'
       - '.github/workflows/alpha2-consolidated-contract.yml'
   push:
@@ -28,7 +28,7 @@ on:
       - 'mk0/07-plan/ALPHA2-INTEGRATED-MILESTONE-PLAN.md'
       - 'mk0/09-test/ALPHA2-INTEGRATED-GATE-MATRIX.md'
       - 'mk0/10-evidence/EV-HUMAN-TEST-CONFIDENCE-AUDIT-2026-09-06.md'
-      - 'mk0/11-decisions/ADR-021-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
+      - 'mk0/11-decisions/ADR-037-DUAL-SOURCE-AUTHORITY-AND-WEB-PROJECTION.md'
       - 'tools/validate-alpha2-consolidated-product-contract.mjs'
       - '.github/workflows/alpha2-consolidated-contract.yml'
 
