@@ -125,7 +125,7 @@ jobs:
               if not all(marker in text for marker in markers):
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
               text = text.replace(markers[0], 'compileSdk = 37')
-              text = text.replace(markers[1], 'minSdk = 31')
+              text = text.replace(markers[1], 'minSdk = 24')
               text = text.replace(markers[2], 'targetSdk = 36')
               text = text.replace(markers[3], f'applicationId = "{physical_package}"')
               dependencies = '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n    implementation("net.zetetic:sqlcipher-android:4.18.0")\n    implementation("androidx.sqlite:sqlite:2.7.0")\n}\n'
@@ -143,7 +143,7 @@ jobs:
               if not all(marker in text for marker in markers):
                   raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
               text = text.replace(markers[0], 'compileSdkVersion 37')
-              text = text.replace(markers[1], 'minSdkVersion 31')
+              text = text.replace(markers[1], 'minSdkVersion 24')
               text = text.replace(markers[2], 'targetSdkVersion 36')
               text = text.replace(markers[3], f'applicationId "{physical_package}"')
               dependencies = '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n    implementation "net.zetetic:sqlcipher-android:4.18.0"\n    implementation "androidx.sqlite:sqlite:2.7.0"\n}\n'
@@ -203,7 +203,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -R -E -q 'compileSdk(Version)?\s*[= ]\s*37' android/app/build.gradle*
-          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*24' android/app/build.gradle*
           grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
           grep -q 'id("com.android.application") version "9.1.1" apply false' android/settings.gradle.kts
           grep -E -q 'gradle-9\.3\.1-(all|bin)\.zip' android/gradle/wrapper/gradle-wrapper.properties
@@ -220,7 +220,7 @@ jobs:
           ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
           echo 'ANDROID_COMPILE_SDK=37'
-          echo 'ANDROID_MIN_SDK=31'
+          echo 'ANDROID_MIN_SDK=24'
           echo 'ANDROID_TARGET_SDK=36'
           echo 'ANDROID_AGP_VERSION=9.1.1'
           echo 'ANDROID_GRADLE_VERSION=9.3.1'
@@ -244,7 +244,23 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2001
+            --build-number 2002
+
+      - name: Verify APK parser and signature surface
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          APK='build/app/outputs/flutter-apk/app-debug.apk'
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -n "$BUILD_TOOLS"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
+          printf '%s\n' "$BADGING"
+          grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
+          grep -q "sdkVersion:'24'" <<< "$BADGING"
+          grep -q "targetSdkVersion:'36'" <<< "$BADGING"
+          echo 'APK_SIGNATURE_VERIFY=PASS'
+          echo 'APK_AAPT2_PARSE=PASS'
 
       - name: Freeze internal compile evidence
         working-directory: spikes/mobile-shell
@@ -260,7 +276,7 @@ jobs:
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
           ANDROID_COMPILE_SDK=37
-          ANDROID_MIN_SDK=31
+          ANDROID_MIN_SDK=24
           ANDROID_TARGET_SDK=36
           ANDROID_AGP_VERSION=9.1.1
           ANDROID_GRADLE_VERSION=9.3.1
@@ -277,6 +293,8 @@ jobs:
           PUBLIC_EVIDENCE_PERCENTAGE=NO
           E2EE_EXISTING_PROTOCOL_REUSED=YES
           WEB_PUBLIC_PROJECTION_SCHEMA=ALPHA2_PUBLIC_DASHBOARD_V1
+          APK_SIGNATURE_VERIFY=PASS
+          APK_AAPT2_PARSE=PASS
           INTERNAL_APK_SHA256=${APK_SHA256}
           INTERNAL_APK_BYTES=${APK_BYTES}
           PUBLIC_CI_SIGNER=EPHEMERAL_DEBUG
