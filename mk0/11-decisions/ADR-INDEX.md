@@ -61,8 +61,9 @@ Supersedes / superseded by
 | ADR-034 | Mobile statement PDF runtime | ACCEPTED FOR MOBILE STATIC SPIKE / PHYSICAL DEVICE VALIDATION REQUIRED | Android encrypted-PDF runtime + owned-device statement proof; iOS remains open |
 | ADR-035 | Statement ETL and monthly reconciliation | ACCEPTED FOR MK0 DESIGN / REAL FORMAT EVIDENCE OPEN | sanitized multi-bank format corpus + Android monthly-close proof |
 | ADR-036 | Alpha.2 financial memory and Gmail statement discovery | ACCEPTED FOR BOUNDED DESIGN FREEZE / IMPLEMENTATION AND PHYSICAL PROOF OPEN | Alpha.2-A implementation, encrypted-vault proof and multi-profile physical campaign |
+| ADR-037 | Dual-source authority and canonical web projection | ACCEPTED FOR ALPHA.2 DESIGN / IMPLEMENTATION OPEN | integrated A-G mobile runtime + canonical web/sync evidence |
 
-**Next available ADR:** `ADR-037`.
+**Next available ADR:** `ADR-038`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 
@@ -175,7 +176,7 @@ ACCOUNT AUTH                     SUPABASE AUTH / FINANCESENSOR IDENTITY
 TENANT AUTHORIZATION             OWNERSHIP/MEMBERSHIP + RLS
 SERVICE ROLE IN MOBILE           FORBIDDEN
 GMAIL API EXECUTION IN CLOUD     FORBIDDEN
-GMAIL REFRESH TOKEN IN CLOUD     FORBIDDEN
+GMAIL REFRESH_TOKEN IN CLOUD     FORBIDDEN
 FINANCIAL PLAINTEXT NORMAL PATH  FORBIDDEN
 OPAQUE E2EE RELAY                ALLOWED
 INDEPENDENT WITNESS              OUTSIDE RELAY FAILURE DOMAIN REQUIRED
