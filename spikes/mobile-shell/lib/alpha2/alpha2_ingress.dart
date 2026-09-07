@@ -13,6 +13,7 @@ class Alpha2StatementCandidateHandle {
     required this.state,
     required this.byteLength,
     required this.requiresLocalPassword,
+    required this.fetchEligible,
   });
 
   final String handle;
@@ -22,6 +23,7 @@ class Alpha2StatementCandidateHandle {
   final String state;
   final int byteLength;
   final bool requiresLocalPassword;
+  final bool fetchEligible;
 
   factory Alpha2StatementCandidateHandle.fromMap(Map<Object?, Object?> raw) {
     final handle = raw['handle'] as String? ?? '';
@@ -46,6 +48,7 @@ class Alpha2StatementCandidateHandle {
       state: state.toUpperCase(),
       byteLength: byteLength,
       requiresLocalPassword: raw['requiresLocalPassword'] == true,
+      fetchEligible: raw['fetchEligible'] == true,
     );
   }
 }
