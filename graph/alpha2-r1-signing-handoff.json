@@ -104,11 +104,17 @@
     "physicalSigningInPublicCi": false,
     "exactBranchHeadCheckoutRequired": true
   },
-  "physicalReceipt": null,
-  "status": "READY_FOR_TRUSTED_EDGE_SIGNING",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
+  "physicalReceipt": {
+    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json",
+    "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.txt",
+    "receivedDate": "2026-09-08",
+    "sanitizationPass": true,
+    "rawPrivateMaterialCommitted": false
+  },
+  "status": "TRUSTED_EDGE_SIGNING_PASS",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85",
+  "signedApkBytes": 182116902,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
