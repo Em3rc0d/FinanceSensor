@@ -1,15 +1,15 @@
 {
-  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V6",
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V7",
   "project": "FinanceSensor",
-  "candidate": "0.2.0-alpha.2+2004",
-  "sourceCommit": "8030a8a2946f7ea288290f64662e52a928d851a3",
-  "canonicalRunId": 34243314002,
-  "canonicalJobId": 102118791920,
-  "canonicalArtifactId": 10063170773,
-  "canonicalArtifactZipSha256": "346e51e507f0f2328508747afc69234be4217046783ef25bfe872203da848d75",
+  "candidate": "0.2.0-alpha.2+2005",
+  "sourceCommit": "d99e7e4765adfc96bed9d914b2b6f296f9712242",
+  "canonicalRunId": 34257413733,
+  "canonicalJobId": 102166618707,
+  "canonicalArtifactId": 10068684066,
+  "canonicalArtifactZipSha256": "536495ef92218477156c2cf95a3dc636071187b239750787788ccc1d1a32a7b2",
   "inputApk": {
-    "sha256": "14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1",
-    "bytes": 182091971,
+    "sha256": "dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c",
+    "bytes": 182092699,
     "minSdk": 31,
     "targetSdk": 36,
     "signatureVerify": "PASS",
@@ -19,7 +19,7 @@
     "physicalClaimsInheritedFromPriorCandidate": false
   },
   "signer": {
-    "powershellGitBlob": "f8090c669f1532698b65043d91cb63cdefa2b589",
+    "powershellGitBlob": "5c0ec28fa27ed0a67547c4b1d0c59c07c6c26911",
     "cmdGitBlob": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "windowsNativeStdin": "PROCESS_START_INFO_REDIRECTED",
     "directPasswordPipe": "FORBIDDEN",
@@ -28,35 +28,30 @@
     "exactScope": "gmail.readonly"
   },
   "handoffBundle": {
-    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip",
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip",
     "status": "READY_FROZEN",
-    "sha256": "6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d",
-    "bytes": 86227316,
+    "sha256": "201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1",
+    "bytes": 86227523,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
     "zipStructure": "PASS",
     "zipIntegrity": "PASS",
     "manifestIntegrity": "PASS",
-    "ps1GitBlobVerified": "f8090c669f1532698b65043d91cb63cdefa2b589",
+    "ps1GitBlobVerified": "5c0ec28fa27ed0a67547c4b1d0c59c07c6c26911",
     "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
-    "supersedesBundleSha256": "7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33",
-    "generationReceipt": {
-      "prNumber": 105,
-      "runId": 34246846876,
-      "jobId": 102130898420,
-      "artifactId": 10064357867,
-      "artifactWrapperSha256": "2dc25ab17a6562a7978f2c81ea7e2f6c29e750074b5f74f90db4afcc45e9ed42",
-      "observedPrHeadSha": "bee7518dec724863e60d25733a824791846d5c6d",
-      "innerBundleSha256": "6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d",
-      "innerBundleBytes": 86227316,
-      "independentBundleAudit": "PASS",
-      "exactHeadRegenerationRequiredBeforeMerge": true
-    },
+    "supersedesBundleSha256": "6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d",
+    "generationReceipt": null,
     "certificationReceipt": null
   },
   "supersededBundles": [
+    {
+      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip",
+      "sha256": "6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d",
+      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2004_RUNTIME_AFTER_POST_PASSWORD_SAFE_STOP_AND_FETCH_ISOLATION_REPAIR",
+      "safeToUse": false
+    },
     {
       "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip",
       "sha256": "7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33",
