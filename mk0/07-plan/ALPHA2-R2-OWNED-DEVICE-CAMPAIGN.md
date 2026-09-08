@@ -1,15 +1,15 @@
 # Alpha.2 R2 — Single Owned-Device Campaign
 
-Status: **DESIGN FROZEN / R1 PASS / OD0 READY**
+Status: **DESIGN FROZEN / R1 OPEN / R2 BLOCKED**
 
 ## Purpose
 
 R2 is one controlled owned-Android campaign over exactly one stable-signed Alpha.2 APK. It is not a sequence of per-slice APK promotions and it is not a substitute for the later Q-003/Q-004/Q-005 closure phases.
 
 ```text
-R1 sanitized signing receipt — PASS
-        ↓ exact SIGNED_APK_SHA256
-OD0 install + launch — READY
+R1 trusted-edge signing — OPEN
+        ↓ sanitized current-candidate receipt required
+OD0 install + launch — BLOCKED
         ↓
 OD1 exact gmail.readonly OAuth
         ↓
@@ -38,41 +38,46 @@ R2 sanitized receipt
 
 ## Current identity law
 
-Every OD0..OD11 observation MUST bind the same:
+R1 is reopened on the post-merge `+2006` authority. Once trusted-edge signing passes, every OD0..OD11 observation MUST bind the same signed APK produced from this canonical input:
 
-- candidate: `0.2.0-alpha.2+2005`
-- source: `d99e7e4765adfc96bed9d914b2b6f296f9712242`
-- canonical run: `34257413733`
-- canonical artifact: `10068684066`
-- canonical input APK SHA256: `dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c`
-- canonical input APK bytes: `182092699`
-- stable signed APK SHA256: `530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85`
-- stable signed APK bytes: `182116902`
+- candidate: `0.2.0-alpha.2+2006`
+- source: `e26bab7cd87c5e686898998e867d8fb25c99db27`
+- canonical run: `34278019055`
+- canonical job: `102235745821`
+- canonical artifact: `10076715491`
+- canonical artifact ZIP SHA256: `f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309`
+- canonical input APK SHA256: `11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179`
+- canonical input APK bytes: `182102047`
 - package: `com.financesensor.lab.gmailconnection.r2`
 - scope: `gmail.readonly`
 - stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
-- R1 receipt: `graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json`
+- R1 handoff bundle: `FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip`
+- stable signed APK SHA256: **OPEN / must come from the +2006 trusted-edge receipt**
+- R1 physical receipt: **OPEN / must bind +2006**
 
-The historical `+2001` design snapshot remains immutable in the prebuild design. The existing source/APK reopen law allowed execution authority to move through diagnostic/superseded candidates without rewriting that historical snapshot. `+2003` and `+2004` physical/signing observations remain historical only after the +2005 source/APK identity change.
+The historical `+2001` design snapshot remains immutable in the prebuild design. The source/APK reopen law moves execution authority without rewriting that historical snapshot. All `+2005` signing/physical observations are historical only after the `+2006` source/APK identity change.
 
-If the stable signed APK hash changes, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
+The prior `+2005` stable-signed APK (`530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85`) MUST NOT donate OD evidence to `+2006`.
+
+If the future stable-signed `+2006` APK hash changes after R2 starts, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
 
 ## Campaign rules
 
 1. **One APK, one campaign.** No per-slice physical promotion.
 2. **Fail closed.** A FAIL or INCONCLUSIVE gate does not get converted to PASS by a later gate.
 3. **No synthetic inheritance.** CI PASS cannot satisfy an OD gate.
-4. **No signature inheritance.** Install/launch observed on an ephemeral CI-debug APK does not satisfy OD0 for the stable-signed APK.
+4. **No signature inheritance.** Install/launch or OAuth observed on another candidate cannot satisfy `+2006`.
 5. **No raw evidence in GitHub.** Only sanitized receipts may be committed.
 6. **No hidden coverage.** Missing or quarantined sources remain visible gaps.
 7. **No generic statement parser authority.** BCP Credit and Ripley Credit remain fetch/parse quarantined until their own physical profiles close.
 8. **No numeric confidence UX.** Reconciliation scores remain internal; public truth uses states.
 9. **No readiness shortcut.** R2 PASS does not close Q-003, Q-004, Q-005, G-MK0, BUILD_READY or RELEASE_READY.
+10. **Single-pass diagnostic contract.** The current `+2006` UI may expose only coarse statement-stage outcomes; it must not expose passwords, raw PDF/Gmail identifiers, financial plaintext or provider exception details.
 
 ## OD gates
 
 ### OD0 — Stable signed APK install and launch
-Install the exact stable APK hash above. Prove signer identity, APK hash match, successful install and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
+After R1 PASS, install the exact `+2006` stable APK hash from the sanitized signing receipt. Prove signer identity, APK hash match, successful install and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
 
 ### OD1 — Exact Gmail readonly OAuth
 Prove the package is the frozen R2 package and requested authority is exactly `gmail.readonly`. R2 does not request offline access.
@@ -84,7 +89,7 @@ Prove discovery inspects metadata before attachment bytes and does not expose re
 Only a STRONG fetch-eligible profile may download attachment bytes. BCP Savings is the current allowed physical path. BCP Credit and Ripley Credit remain blocked.
 
 ### OD4 — BCP Savings strict parse
-Use geometry/header authority. A monetary row that cannot be explained quarantines the batch. PDF password is session-only; raw PDF is not durable.
+Use geometry/header authority. A monetary row that cannot be explained quarantines the batch. PDF password is session-only; raw PDF is not durable. The `+2006` single-pass outcome surface may distinguish password/PDF/parser rejection without converting uncertainty into import.
 
 ### OD5 — Financial vault
 Prove SQLCipher 4.18.0 + Android Keystore protected path, persistence/reopen, `noBackupFilesDir`, and absence of plaintext SQLite fallback.
@@ -134,9 +139,9 @@ financial authority changed         → reopen affected OD6..OD11
 Current execution state:
 
 ```text
-R1_TRUSTED_EDGE_SIGNING = PASS
-R2_PHYSICAL_CAMPAIGN    = READY
-R2_NEXT_GATE            = OD0_SIGNED_APK_INSTALL_AND_LAUNCH
+R1_TRUSTED_EDGE_SIGNING = OPEN
+R2_PHYSICAL_CAMPAIGN    = BLOCKED_BY_R1
+R2_NEXT_GATE            = BLOCKED_UNTIL_R1_PASS
 PHYSICAL_ALPHA2_PASS    = NO
 Q003_Q004_Q005          = ACTIVE
 G_MK0                   = OPEN
