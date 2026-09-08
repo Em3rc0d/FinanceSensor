@@ -42,8 +42,8 @@ if (!failures.length) {
     ['signerSha1', canonical.signing?.expectedSignerSha1],
   ];
   for (const [key, expected] of currentBindings) if (candidate[key] !== expected) fail(`candidate ${key} drifted from canonical receipt`);
-  if (candidate.id !== '0.2.0-alpha.2+2004' || candidate.sourceCommit !== '8030a8a2946f7ea288290f64662e52a928d851a3') fail('current R2 identity must be +2004 post-merge authority');
-  if (candidate.canonicalInputApkSha256 !== '14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1' || candidate.canonicalInputApkBytes !== 182091971) fail('current R2 canonical APK identity drifted');
+  if (candidate.id !== '0.2.0-alpha.2+2005' || candidate.sourceCommit !== 'd99e7e4765adfc96bed9d914b2b6f296f9712242') fail('current R2 identity must be +2005 post-merge authority');
+  if (candidate.canonicalInputApkSha256 !== 'dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c' || candidate.canonicalInputApkBytes !== 182092699) fail('current R2 canonical APK identity drifted');
   if (candidate.minSdk !== 31) fail('R2 current candidate must retain minSdk 31');
   if (candidate.installabilityObservation !== 'OPEN_FOR_CURRENT_CANDIDATE') fail('current candidate physical installability must be open');
   if (candidate.stableSignedInstallability !== 'BLOCKED_BY_R1_SIGNING') fail('stable signed installability must remain blocked by R1');
@@ -53,12 +53,14 @@ if (!failures.length) {
   if (r1.candidate !== candidate.id || r1.sourceCommit !== candidate.sourceCommit) fail('R1/R2 candidate identity mismatch');
   if (r1.inputApk?.sha256 !== candidate.canonicalInputApkSha256 || r1.inputApk?.bytes !== candidate.canonicalInputApkBytes) fail('R1/R2 canonical APK mismatch');
   if (r1.signer?.expectedSignerSha1 !== candidate.signerSha1 || r1.signer?.androidOauthPackage !== candidate.androidPackage || r1.signer?.exactScope !== candidate.gmailScope) fail('R1/R2 signer/package/scope mismatch');
-  if (r1.trustedEdgeSigningPass !== false || r1.physicalReceipt !== null || r1.signedApkSha256 !== null || r1.signedApkBytes !== null) fail('R1 must remain open before +2004 trusted-edge receipt');
+  if (r1.trustedEdgeSigningPass !== false || r1.physicalReceipt !== null || r1.signedApkSha256 !== null || r1.signedApkBytes !== null) fail('R1 must remain open before +2005 trusted-edge receipt');
   if (!['READY_FOR_TRUSTED_EDGE_SIGNING_BUNDLE_STAGING','READY_FOR_TRUSTED_EDGE_SIGNING'].includes(r1.status)) fail(`unexpected R1 staging status ${r1.status}`);
 
   if (campaign.r1PhysicalReceipt !== null) fail('R2 must not bind a historical R1 receipt as current');
   if (campaign.status !== 'BLOCKED_BY_R1_SIGNING') fail(`R2 must be BLOCKED_BY_R1_SIGNING; got ${campaign.status}`);
-  if (campaign.historicalInvalidatedCampaign?.candidate !== '0.2.0-alpha.2+2003' || campaign.historicalInvalidatedCampaign?.continuationAllowed !== false || campaign.historicalInvalidatedCampaign?.evidenceInheritanceAllowed !== false) fail('+2003 campaign invalidation boundary missing');
+  const invalidated = campaign.historicalInvalidatedCampaign ?? {};
+  if (invalidated.candidate !== '0.2.0-alpha.2+2004' || invalidated.continuationAllowed !== false || invalidated.evidenceInheritanceAllowed !== false) fail('+2004 campaign invalidation boundary missing');
+  if (!/POST_PASSWORD|SOURCE_APK_IDENTITY_CHANGE|FETCH_ISOLATION/.test(invalidated.reason ?? '')) fail('+2004 invalidation reason must bind the post-password/fetch-repair identity change');
 
   const laws = campaign.laws ?? {};
   for (const key of ['sameSignedCandidateRequired','allSubgatesMustPassForR2','anyCandidateIdentityChangeInvalidatesCampaign','physicalPassCannotBeDerivedFromPublicCi','r2DoesNotCloseQ003Q004Q005']) if (laws[key] !== true) fail(`R2 law ${key} must be true`);
@@ -104,7 +106,7 @@ if (failures.length) {
 }
 
 console.log('ALPHA2_R2_OWNED_DEVICE_CAMPAIGN_CONTRACT=PASS');
-console.log('CANONICAL_IDENTITY=ALPHA2_2004_POSTMERGE');
+console.log('CANONICAL_IDENTITY=ALPHA2_2005_POSTMERGE');
 console.log('R1_PHYSICAL_SIGNING=OPEN');
 console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1');
 console.log('R2_NEXT_GATE=BLOCKED_UNTIL_R1_PASS');
