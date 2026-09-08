@@ -76,17 +76,17 @@ jobs:
       - name: R2 prebuild blockchain chain
         run: node tools/validate-alpha2-r2-chain.mjs
 
-      - name: Future R1 +2004 signing receipt reducer regression
+      - name: Future R1 +2005 signing receipt reducer regression
         run: |
           set -euo pipefail
-          cat > /tmp/alpha2-r1-2004-synthetic-receipt.txt <<'EOF'
+          cat > /tmp/alpha2-r1-2005-synthetic-receipt.txt <<'EOF'
           FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS
-          FINANCESENSOR_ALPHA2_CANDIDATE=0.2.0-alpha.2+2004
-          SOURCE_COMMIT=8030a8a2946f7ea288290f64662e52a928d851a3
-          CANONICAL_RUN_ID=34243314002
-          CANONICAL_ARTIFACT_ID=10063170773
-          INPUT_APK_SHA256=14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1
-          INPUT_APK_BYTES=182091971
+          FINANCESENSOR_ALPHA2_CANDIDATE=0.2.0-alpha.2+2005
+          SOURCE_COMMIT=d99e7e4765adfc96bed9d914b2b6f296f9712242
+          CANONICAL_RUN_ID=34257413733
+          CANONICAL_ARTIFACT_ID=10068684066
+          INPUT_APK_SHA256=dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c
+          INPUT_APK_BYTES=182092699
           SIGNED_APK_SHA256=1111111111111111111111111111111111111111111111111111111111111111
           SIGNED_APK_BYTES=182120000
           SIGNER_SHA1=63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
@@ -102,12 +102,12 @@ jobs:
           BUILD_READY=NO
           RELEASE_READY=NO
           EOF
-          node tools/reduce-alpha2-r1-signing-receipt.mjs /tmp/alpha2-r1-2004-synthetic-receipt.txt > /tmp/alpha2-r1-2004-reduced.txt
-          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2004-reduced.txt
-          grep -q '"candidate": "0.2.0-alpha.2+2004"' /tmp/alpha2-r1-2004-reduced.txt
-          grep -q '"r2OwnedDeviceCampaignUnblocked": true' /tmp/alpha2-r1-2004-reduced.txt
-          grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-2004-reduced.txt
-          grep -q '"buildReady": false' /tmp/alpha2-r1-2004-reduced.txt
+          node tools/reduce-alpha2-r1-signing-receipt.mjs /tmp/alpha2-r1-2005-synthetic-receipt.txt > /tmp/alpha2-r1-2005-reduced.txt
+          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2005-reduced.txt
+          grep -q '"candidate": "0.2.0-alpha.2+2005"' /tmp/alpha2-r1-2005-reduced.txt
+          grep -q '"r2OwnedDeviceCampaignUnblocked": true' /tmp/alpha2-r1-2005-reduced.txt
+          grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-2005-reduced.txt
+          grep -q '"buildReady": false' /tmp/alpha2-r1-2005-reduced.txt
 
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
