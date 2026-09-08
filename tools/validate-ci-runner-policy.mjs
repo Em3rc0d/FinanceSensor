@@ -57,7 +57,7 @@ for (const file of ACTIVE_WORKFLOWS) {
 const contracts = {
   'mobile-shell.yml': {
     markers: ['flutter build apk --debug', 'REAL_GMAIL=0', 'REAL_OAUTH=0', 'REAL_FINANCIAL_DATA=0', 'BUILD_READY=NO'],
-    forbidden: [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c-helper/i],
+    forbidden: [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i],
   },
   'mobile-gmail-connection.yml': {
     markers: [
@@ -65,7 +65,7 @@ const contracts = {
       'APP_REFRESH_TOKEN_CUSTODY=0', 'DART_BEARER_CUSTODY=0', 'OFFLINE_ACCESS_REQUESTED=0',
       'REAL_OAUTH_EXECUTED_BY_CI=0', 'REAL_GMAIL_EXECUTED_BY_CI=0', 'BUILD_READY=NO'
     ],
-    forbidden: [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c-helper/i],
+    forbidden: [/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i],
   },
   'mobile-human-test-alpha.yml': {
     markers: [
