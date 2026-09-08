@@ -1,19 +1,19 @@
 {
   "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V3",
-  "candidate": "0.2.0-alpha.2+2005",
-  "certifiedPrHead": "9d0e54a4cabddfa8a5e634bc6c2e58b4fe169f9b",
-  "sourceCommit": "d99e7e4765adfc96bed9d914b2b6f296f9712242",
+  "candidate": "0.2.0-alpha.2+2006",
+  "certifiedPrHead": "d696322ce97e66e6c401cfe045b3e3c31902d02d",
+  "sourceCommit": "e26bab7cd87c5e686898998e867d8fb25c99db27",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 34257413733,
-    "jobId": 102166618707,
-    "artifactId": 10068684066,
-    "artifactName": "financesensor-alpha2-2005-candidate-34257413733",
-    "artifactZipSha256": "536495ef92218477156c2cf95a3dc636071187b239750787788ccc1d1a32a7b2",
-    "artifactZipBytes": 87250264,
+    "runId": 34278019055,
+    "jobId": 102235745821,
+    "artifactId": 10076715491,
+    "artifactName": "financesensor-alpha2-2006-candidate-34278019055",
+    "artifactZipSha256": "f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309",
+    "artifactZipBytes": 87254679,
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c",
-    "apkBytes": 182092699,
+    "apkSha256": "11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179",
+    "apkBytes": 182102047,
     "minSdk": 31,
     "targetSdk": 36,
     "compileSdk": 37,
@@ -28,19 +28,23 @@
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "Candidate identity changed after the +2004 owned-device post-password safe-stop and statement-fetch isolation repair. Physical claims must be reacquired on the stable-signed +2005 APK.",
+    "reason": "Candidate identity changed after the +2005 owned-device password fan-out observation and the single-pass EECC diagnostic hardening. All physical claims must be reacquired on one stable-signed +2006 APK.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
-    {"workflow":"Alpha.2 Integrated Runtime","runId":34257413733,"conclusion":"SUCCESS"},
-    {"workflow":"Alpha.2 Design Freeze","runId":34257418398,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Heartbeat","runId":34257413806,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Public Readiness","runId":34257413671,"conclusion":"SUCCESS"}
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34278019055,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34278023629,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34278019107,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34278019054,"conclusion":"SUCCESS"}
   ],
   "nonAuthoritativeCandidates": [
     {
+      "candidate": "0.2.0-alpha.2+2005",
+      "reason": "Superseded after stable-signer OAuth reached the BCP Savings password handoff but repeated password prompts and insufficient stage observability were found. PR #111 fixed prompt fan-out and PR #113 cut +2006 with single-pass sanitized diagnostics. No +2005 R1/R2 physical claim may be inherited by +2006."
+    },
+    {
       "candidate": "0.2.0-alpha.2+2004",
-      "reason": "Superseded after owned-device evidence reached the session-only BCP Savings password handoff and then stopped downstream; PR #107 repaired candidate-local statement-fetch rejection handling. No +2004 R1/R2 physical claim may be inherited by +2005."
+      "reason": "Superseded after owned-device evidence reached the session-only BCP Savings password handoff and then stopped downstream; later repairs changed source/APK identity."
     },
     {
       "candidate": "0.2.0-alpha.2+2003",
