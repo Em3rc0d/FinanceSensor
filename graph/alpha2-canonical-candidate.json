@@ -1,19 +1,19 @@
 {
   "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V3",
-  "candidate": "0.2.0-alpha.2+2004",
-  "certifiedPrHead": "b68094b895ce9fddb555115a7eb8efe8ed6adb5a",
-  "sourceCommit": "8030a8a2946f7ea288290f64662e52a928d851a3",
+  "candidate": "0.2.0-alpha.2+2005",
+  "certifiedPrHead": "9d0e54a4cabddfa8a5e634bc6c2e58b4fe169f9b",
+  "sourceCommit": "d99e7e4765adfc96bed9d914b2b6f296f9712242",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 34243314002,
-    "jobId": 102118791920,
-    "artifactId": 10063170773,
-    "artifactName": "financesensor-alpha2-2004-candidate-34243314002",
-    "artifactZipSha256": "346e51e507f0f2328508747afc69234be4217046783ef25bfe872203da848d75",
-    "artifactZipBytes": 87249623,
+    "runId": 34257413733,
+    "jobId": 102166618707,
+    "artifactId": 10068684066,
+    "artifactName": "financesensor-alpha2-2005-candidate-34257413733",
+    "artifactZipSha256": "536495ef92218477156c2cf95a3dc636071187b239750787788ccc1d1a32a7b2",
+    "artifactZipBytes": 87250264,
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1",
-    "apkBytes": 182091971,
+    "apkSha256": "dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c",
+    "apkBytes": 182092699,
     "minSdk": 31,
     "targetSdk": 36,
     "compileSdk": 37,
@@ -28,19 +28,23 @@
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "Candidate identity changed after the +2003 EECC password-dialog lifecycle failure. Physical claims must be reacquired on the stable-signed +2004 APK.",
+    "reason": "Candidate identity changed after the +2004 owned-device post-password safe-stop and statement-fetch isolation repair. Physical claims must be reacquired on the stable-signed +2005 APK.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
-    {"workflow":"Alpha.2 Integrated Runtime","runId":34243314002,"conclusion":"SUCCESS"},
-    {"workflow":"Alpha.2 Design Freeze","runId":34243319410,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Heartbeat","runId":34243313877,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Public Readiness","runId":34243313903,"conclusion":"SUCCESS"}
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34257413733,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34257418398,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34257413806,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34257413671,"conclusion":"SUCCESS"}
   ],
   "nonAuthoritativeCandidates": [
     {
+      "candidate": "0.2.0-alpha.2+2004",
+      "reason": "Superseded after owned-device evidence reached the session-only BCP Savings password handoff and then stopped downstream; PR #107 repaired candidate-local statement-fetch rejection handling. No +2004 R1/R2 physical claim may be inherited by +2005."
+    },
+    {
       "candidate": "0.2.0-alpha.2+2003",
-      "reason": "Superseded after a stable-signed owned-device EECC password-dialog lifecycle failure. Its R1 signing receipt remains historical but no R2 physical claim may be inherited by +2004."
+      "reason": "Superseded after a stable-signed owned-device EECC password-dialog lifecycle failure. Its R1 signing receipt remains historical but no R2 physical claim may be inherited by later candidates."
     },
     {
       "candidate": "0.2.0-alpha.2+2002",
