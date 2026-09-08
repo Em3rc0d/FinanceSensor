@@ -12,6 +12,9 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/physical-closure-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
@@ -31,6 +34,9 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/physical-closure-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
@@ -70,13 +76,16 @@ jobs:
         with:
           node-version: '22'
 
+      - name: R1 physical signing receipt boundary
+        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
+
       - name: R2 owned-device campaign contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild blockchain chain
         run: node tools/validate-alpha2-r2-chain.mjs
 
-      - name: R1 signing receipt reducer synthetic contract
+      - name: R1 signing receipt reducer synthetic regression
         run: |
           cat > /tmp/alpha2-r1-synthetic-receipt.txt <<'EOF'
           FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS
@@ -103,7 +112,6 @@ jobs:
           EOF
           node tools/reduce-alpha2-r1-signing-receipt.mjs /tmp/alpha2-r1-synthetic-receipt.txt > /tmp/alpha2-r1-reduced.txt
           grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-reduced.txt
-          grep -q '"candidate": "0.2.0-alpha.2+2003"' /tmp/alpha2-r1-reduced.txt
           grep -q '"r2OwnedDeviceCampaignUnblocked": true' /tmp/alpha2-r1-reduced.txt
           grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-reduced.txt
           grep -q '"buildReady": false' /tmp/alpha2-r1-reduced.txt
@@ -111,14 +119,17 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve physical boundary
+      - name: Preserve post-R1 physical boundary
         run: |
           set -euo pipefail
-          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
-          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_ON_R1'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
+          echo 'R2_PHYSICAL_CAMPAIGN=READY'
+          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
           echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
+          echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "A2_R1_PHYSICAL_SIGNING_RECEIPT_V1",
+  "candidate": "0.2.0-alpha.2+2003",
+  "sourceCommit": "c29a68e5326a187a7c82e6d66254ae05b6a4178a",
+  "canonicalRunId": 34166127407,
+  "canonicalArtifactId": 10034303033,
+  "inputApkSha256": "93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6",
+  "inputApkBytes": 182090843,
+  "signedApkSha256": "7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6",
+  "signedApkBytes": 182116902,
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+  "gmailScope": "gmail.readonly",
+  "trustedEdgeSigningPass": true,
+  "r2OwnedDeviceCampaignUnblocked": true,
+  "physicalAlpha2Pass": false,
+  "buildReady": false,
+  "releaseReady": false,
+  "sanitizationPass": true,
+  "evidenceClass": "SANITIZED_TRUSTED_EDGE_RECEIPT",
+  "receivedDate": "2026-09-08",
+  "rawPrivateMaterialCommitted": false
+}

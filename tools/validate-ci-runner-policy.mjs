@@ -36,9 +36,7 @@ const workflowFiles = fs.readdirSync(workflowDir)
   .sort();
 
 for (const file of workflowFiles) {
-  if (!ACTIVE_WORKFLOWS.has(file) && !RETIRED_WORKFLOWS.has(file)) {
-    fail(file, 'workflow is not registered in the CI runner policy');
-  }
+  if (!ACTIVE_WORKFLOWS.has(file) && !RETIRED_WORKFLOWS.has(file)) fail(file, 'workflow is not registered in the CI runner policy');
 }
 
 for (const file of ACTIVE_WORKFLOWS) {
@@ -130,20 +128,30 @@ const contracts = {
   },
   'alpha2-r1-trusted-edge-signing.yml': {
     markers: [
-      'node tools/validate-alpha2-canonical-candidate.mjs', 'node tools/validate-alpha2-r1-signing-handoff.mjs',
-      'node tools/validate-alpha2-r1-ci-routing-receipt.mjs', 'R1_HANDOFF_READY=YES',
-      'R1_TRUSTED_EDGE_SIGNING=OPEN', 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_ON_R1', 'BUILD_READY=NO', 'RELEASE_READY=NO'
+      'node tools/validate-alpha2-canonical-candidate.mjs',
+      'node tools/validate-alpha2-r1-signing-handoff.mjs',
+      'node tools/validate-alpha2-r1-physical-signing-receipt.mjs',
+      'node tools/validate-alpha2-r1-ci-routing-receipt.mjs',
+      'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT',
+      'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0',
+      'R2_OWNED_DEVICE_CAMPAIGN=READY',
+      'PHYSICAL_ALPHA2_PASS=NO', 'BUILD_READY=NO', 'RELEASE_READY=NO'
     ],
-    forbidden: [/R1_TRUSTED_EDGE_SIGNING=PASS|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i],
+    forbidden: [/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i],
   },
   'alpha2-r2-owned-device-campaign.yml': {
     markers: [
-      'node tools/validate-alpha2-r2-owned-device-campaign.mjs', 'node tools/validate-alpha2-r2-chain.mjs',
-      'node tools/validate-ci-runner-policy.mjs', 'R1_TRUSTED_EDGE_SIGNING=OPEN', 'R2_PHYSICAL_CAMPAIGN=BLOCKED_ON_R1',
+      'node tools/validate-alpha2-r1-physical-signing-receipt.mjs',
+      'node tools/validate-alpha2-r2-owned-device-campaign.mjs',
+      'node tools/validate-alpha2-r2-chain.mjs',
+      'node tools/validate-ci-runner-policy.mjs',
+      'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT',
+      'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0',
+      'R2_PHYSICAL_CAMPAIGN=READY', 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH',
       'REAL_OAUTH_IN_CI=0', 'REAL_GMAIL_IN_CI=0', 'REAL_FINANCIAL_DATA_IN_CI=0',
-      'PRIVATE_SIGNING_MATERIAL_IN_CI=0', 'BUILD_READY=NO', 'RELEASE_READY=NO'
+      'PRIVATE_SIGNING_MATERIAL_IN_CI=0', 'PHYSICAL_ALPHA2_PASS=NO', 'BUILD_READY=NO', 'RELEASE_READY=NO'
     ],
-    forbidden: [/R1_TRUSTED_EDGE_SIGNING=PASS|R2_PHYSICAL_CAMPAIGN=PASS|REAL_OAUTH_IN_CI=1|REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_DATA_IN_CI=1|PRIVATE_SIGNING_MATERIAL_IN_CI=1|BUILD_READY=YES|RELEASE_READY=YES/i],
+    forbidden: [/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|R2_PHYSICAL_CAMPAIGN=PASS|REAL_OAUTH_IN_CI=1|REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_DATA_IN_CI=1|PRIVATE_SIGNING_MATERIAL_IN_CI=1|BUILD_READY=YES|RELEASE_READY=YES/i],
   },
 };
 
@@ -182,7 +190,7 @@ console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
 console.log('ALPHA2_R1_WORKFLOW_REGISTERED=1');
 console.log('ALPHA2_R2_WORKFLOW_REGISTERED=1');
-console.log('PUBLIC_CI_PHYSICAL_PROMOTION=0');
+console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0');
 console.log('PUBLIC_CI_BUILD_READY_PROMOTION=0');
 console.log('PUBLIC_CI_RELEASE_READY_PROMOTION=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
