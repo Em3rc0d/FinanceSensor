@@ -253,7 +253,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2003
+            --build-number 2004
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -266,7 +266,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2003'" <<< "$BADGING"
+          grep -q "versionCode='2004'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -282,7 +282,9 @@ jobs:
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2003
+          CANDIDATE_ID=0.2.0-alpha.2+2004
+          CANDIDATE_STATUS=PROVISIONAL_FIX_VALIDATION
+          CANONICAL_CANDIDATE_PROMOTION=NO
           SOURCE_COMMIT=${GITHUB_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
