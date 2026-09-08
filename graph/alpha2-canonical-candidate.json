@@ -1,18 +1,19 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V2",
-  "candidate": "0.2.0-alpha.2+2003",
-  "certifiedPrHead": "25f0f79c3b21b78e8ca52c8a02cdf696d6d17b8c",
-  "sourceCommit": "c29a68e5326a187a7c82e6d66254ae05b6a4178a",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V3",
+  "candidate": "0.2.0-alpha.2+2004",
+  "certifiedPrHead": "b68094b895ce9fddb555115a7eb8efe8ed6adb5a",
+  "sourceCommit": "8030a8a2946f7ea288290f64662e52a928d851a3",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 34166127407,
-    "jobId": 101877387416,
-    "artifactId": 10034303033,
-    "artifactName": "financesensor-alpha2-integrated-internal-c29a68e5326a187a7c82e6d66254ae05b6a4178a",
-    "artifactZipSha256": "17489354c2b3da1a3389c2fa991ac9d444f8eb58d031c030d05e0d20fbed481f",
+    "runId": 34243314002,
+    "jobId": 102118791920,
+    "artifactId": 10063170773,
+    "artifactName": "financesensor-alpha2-2004-candidate-34243314002",
+    "artifactZipSha256": "346e51e507f0f2328508747afc69234be4217046783ef25bfe872203da848d75",
+    "artifactZipBytes": 87249623,
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6",
-    "apkBytes": 182090843,
+    "apkSha256": "14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1",
+    "apkBytes": 182091971,
     "minSdk": 31,
     "targetSdk": 36,
     "compileSdk": 37,
@@ -22,27 +23,32 @@
     "trustedEdgeResignRequired": true
   },
   "physicalInstallabilityObservation": {
-    "status": "PASS_INSTALL_AND_LAUNCH_ONLY",
-    "installPass": true,
-    "launchPass": true,
+    "status": "OPEN_FOR_CURRENT_CANDIDATE",
+    "installPass": false,
+    "launchPass": false,
     "oauthPass": false,
-    "oauthFailureObserved": "GOOGLE_COULD_NOT_AUTHORIZE_CONNECTION_SECURELY",
-    "oauthInterpretation": "NON_PROMOTING_EXPECTED_WITH_EPHEMERAL_DEBUG_SIGNER",
-    "rawScreenshotInGitHub": false,
-    "sanitizedEvidence": "mk0/10-evidence/EV-ALPHA2-2003-PHYSICAL-INSTALLABILITY-OBSERVATION-2026-09-07.md"
+    "inheritanceFromPriorCandidateAllowed": false,
+    "reason": "Candidate identity changed after the +2003 EECC password-dialog lifecycle failure. Physical claims must be reacquired on the stable-signed +2004 APK.",
+    "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
-    {"workflow":"Alpha.2 Integrated Runtime","runId":34166127407,"conclusion":"SUCCESS"},
-    {"workflow":"Alpha.2 Design Freeze","runId":34166128378,"conclusion":"SUCCESS"}
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34243314002,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34243319410,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34243313877,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34243313903,"conclusion":"SUCCESS"}
   ],
   "nonAuthoritativeCandidates": [
     {
+      "candidate": "0.2.0-alpha.2+2003",
+      "reason": "Superseded after a stable-signed owned-device EECC password-dialog lifecycle failure. Its R1 signing receipt remains historical but no R2 physical claim may be inherited by +2004."
+    },
+    {
       "candidate": "0.2.0-alpha.2+2002",
-      "reason": "Diagnostic installability candidate only; lowering minSdk to 24 contradicted ADR-013 protected ECDH Android Keystore baseline and was superseded by PR #98."
+      "reason": "Diagnostic installability candidate only; lowering minSdk to 24 contradicted ADR-013 and was superseded."
     },
     {
       "candidate": "0.2.0-alpha.2+2001",
-      "reason": "Superseded by the installability repair sequence and current +2003 authority."
+      "reason": "Superseded by the installability repair sequence."
     }
   ],
   "signing": {
@@ -56,8 +62,8 @@
     "realOauthExecutedByCi": false,
     "realGmailExecutedByCi": false,
     "realFinancialDataInCi": false,
-    "ownedDeviceInstallPass": true,
-    "ownedDeviceLaunchPass": true,
+    "ownedDeviceInstallPass": false,
+    "ownedDeviceLaunchPass": false,
     "ownedDeviceStableSignerOauthPass": false,
     "physicalSqlcipherPass": false,
     "physicalAlpha2Pass": false,
