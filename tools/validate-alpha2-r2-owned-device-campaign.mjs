@@ -9,11 +9,13 @@ const paths = {
   r1Receipt: 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json',
   physical: 'graph/physical-closure-campaign.json',
 };
+const incidentPath = 'mk0/10-evidence/EV-ALPHA2-2003-R2-PHYSICAL-RUNTIME-INCIDENT-2026-09-08.md';
 
 const failures = [];
 const fail = message => failures.push(message);
 const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
 for (const path of Object.values(paths)) if (!fs.existsSync(path)) fail(`missing ${path}`);
+if (!fs.existsSync(incidentPath)) fail(`missing ${incidentPath}`);
 
 if (!failures.length) {
   const campaign = readJson(paths.campaign);
@@ -47,7 +49,7 @@ if (!failures.length) {
   for (const [key, expected] of currentBindings) if (candidate[key] !== expected) fail(`candidate ${key} drifted from current canonical receipt`);
   if (candidate.minSdk !== 31) fail('R2 current candidate must retain minSdk 31');
   if (candidate.installabilityObservation !== 'PASS_INSTALL_AND_LAUNCH_ONLY_ON_EPHEMERAL_INPUT') fail('ephemeral-input installability observation drifted');
-  if (candidate.stableSignedInstallability !== 'OPEN') fail('stable signed APK must remain physically unverified before OD0');
+  if (candidate.stableSignedInstallability !== 'OBSERVED_RUNTIME_REACHED_PASSWORD_UI_NOT_GATE_CERTIFIED') fail('stable-signed +2003 incident observation drifted');
   if (canonical.authority?.minSdk !== 31) fail('current canonical minSdk must remain 31');
   if (canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current canonical APK parser/signature gates must PASS');
   if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null) fail('canonical CI receipt itself may not pre-certify trusted-edge signing');
@@ -55,13 +57,22 @@ if (!failures.length) {
   if (r1.candidate !== candidate.id || r1.sourceCommit !== candidate.sourceCommit) fail('R1/R2 candidate identity mismatch');
   if (r1.inputApk?.sha256 !== candidate.canonicalInputApkSha256 || r1.inputApk?.bytes !== candidate.canonicalInputApkBytes) fail('R1/R2 canonical APK mismatch');
   if (r1.signer?.expectedSignerSha1 !== candidate.signerSha1 || r1.signer?.androidOauthPackage !== candidate.androidPackage || r1.signer?.exactScope !== candidate.gmailScope) fail('R1/R2 signer/package/scope mismatch');
-  if (r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true) fail('R1 must be physically closed before R2 is ready');
+  if (r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true) fail('R1 +2003 signing receipt must remain historically PASS');
   if (r1.signedApkSha256 !== r1Receipt.signedApkSha256 || r1.signedApkBytes !== r1Receipt.signedApkBytes) fail('R1 graph/receipt signed APK mismatch');
   if (r1Receipt.trustedEdgeSigningPass !== true || r1Receipt.sanitizationPass !== true || r1Receipt.rawPrivateMaterialCommitted !== false) fail('R1 physical receipt is not admissible');
   if (campaign.r1PhysicalReceipt !== paths.r1Receipt) fail('R2 exact R1 receipt binding drifted');
   if (candidate.signedApkSha256 !== r1Receipt.signedApkSha256 || candidate.signedApkBytes !== r1Receipt.signedApkBytes) fail('R2 signed candidate must equal R1 receipt');
 
-  if (campaign.status !== 'READY_FOR_PHYSICAL_CAMPAIGN') fail(`R2 must be READY_FOR_PHYSICAL_CAMPAIGN; got ${campaign.status}`);
+  if (campaign.status !== 'INVALIDATED_BY_PHYSICAL_RUNTIME_FAILURE') fail(`R2 +2003 must remain invalidated after physical runtime failure; got ${campaign.status}`);
+  const incident = campaign.physicalIncident ?? {};
+  if (incident.date !== '2026-09-08') fail('R2 incident date drifted');
+  if (incident.evidence !== incidentPath) fail('R2 incident evidence binding missing');
+  if (incident.surface !== 'STATEMENT_PASSWORD_DIALOG_TEARDOWN') fail('R2 incident surface drifted');
+  if (incident.result !== 'FLUTTER_FRAMEWORK_ASSERTION') fail('R2 incident result drifted');
+  if (incident.assertionClass !== 'InheritedElement.debugDeactivated:_dependents.isEmpty') fail('R2 assertion class drifted');
+  if (incident.parserResultObserved !== false) fail('R2 incident must not claim a parser result');
+  if (incident.rawScreenshotInGitHub !== false || incident.secretMaterialCommitted !== false) fail('R2 incident sanitization boundary drifted');
+  if (incident.requiresReplacementCandidate !== true || incident.mixEvidenceWithReplacementCandidateAllowed !== false) fail('R2 replacement-candidate law missing');
 
   const laws = campaign.laws ?? {};
   for (const key of ['sameSignedCandidateRequired','allSubgatesMustPassForR2','anyCandidateIdentityChangeInvalidatesCampaign','physicalPassCannotBeDerivedFromPublicCi','r2DoesNotCloseQ003Q004Q005']) if (laws[key] !== true) fail(`R2 law ${key} must be true`);
@@ -74,8 +85,8 @@ if (!failures.length) {
   if (JSON.stringify(subgates.map(x => x.id)) !== JSON.stringify(expectedIds)) fail('R2 gate ordering must be OD0..OD11');
   if (new Set(subgates.map(x => x.contract)).size !== subgates.length) fail('duplicate R2 subgate contract');
   for (const required of frozenR2?.subgates ?? []) if (!subgates.some(x => x.contract === required)) fail(`R2 campaign missing frozen subgate ${required}`);
-  if (subgates[0]?.status !== 'READY_FOR_PHYSICAL') fail('OD0 must be ready after R1 PASS');
-  for (const gate of subgates.slice(1)) if (gate.status !== 'BLOCKED_BY_PRIOR_GATE') fail(`${gate.id} must remain blocked by prior gate`);
+  if (subgates[0]?.status !== 'INVALIDATED_NOT_CERTIFIED') fail('OD0 may not be promoted solely because the incident reached a later UI surface');
+  for (const gate of subgates.slice(1)) if (gate.status !== 'BLOCKED_BY_INVALIDATED_CAMPAIGN') fail(`${gate.id} must remain blocked by the invalidated +2003 campaign`);
   for (const gate of subgates) if (!Array.isArray(gate.physicalClaims) || gate.physicalClaims.length === 0) fail(`${gate.id} missing physical claims`);
 
   const evidence = campaign.evidencePolicy ?? {};
@@ -95,11 +106,11 @@ if (!failures.length) {
   }
 
   const state = campaign.currentState ?? {};
-  if (state.r1TrustedEdgeSigning !== 'PASS') fail('R1 current state must be PASS');
-  if (state.r2PhysicalCampaign !== 'READY') fail('R2 physical state must be READY');
+  if (state.r1TrustedEdgeSigning !== 'PASS_FOR_2003_ONLY') fail('R1 state must remain PASS only for immutable +2003');
+  if (state.r2PhysicalCampaign !== 'INVALIDATED_PENDING_REPLACEMENT_CANDIDATE') fail('R2 state must remain invalidated pending replacement candidate');
   for (const q of ['q003','q004','q005']) if (state[q] !== 'ACTIVE') fail(`${q} must remain ACTIVE`);
   if (state.gMk0 !== 'OPEN') fail('G-MK0 must remain OPEN');
-  if (state.buildReady !== false || state.releaseReady !== false) fail('R2 readiness cannot be promoted by R1 receipt');
+  if (state.buildReady !== false || state.releaseReady !== false) fail('R2 incident cannot promote readiness');
 }
 
 if (failures.length) {
@@ -109,13 +120,11 @@ if (failures.length) {
 }
 
 console.log('ALPHA2_R2_OWNED_DEVICE_CAMPAIGN_CONTRACT=PASS');
-console.log('CANONICAL_IDENTITY_SOURCE=CURRENT_CANONICAL_RECEIPT_AFTER_REOPEN');
-console.log('HISTORICAL_PREBUILD_SNAPSHOT=MUTATION_FORBIDDEN');
-console.log('R1_PHYSICAL_SIGNING=PASS');
-console.log('R2_PHYSICAL_CAMPAIGN=READY');
-console.log('R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH');
-console.log('SAME_SIGNED_CANDIDATE_REQUIRED=YES');
-console.log('R2_REQUIRED_GATES=12');
+console.log('CANONICAL_2003_IDENTITY=IMMUTABLE_FAILED_PHYSICAL_CAMPAIGN');
+console.log('R1_2003_PHYSICAL_SIGNING=PASS_HISTORICAL_ONLY');
+console.log('R2_2003_PHYSICAL_CAMPAIGN=INVALIDATED');
+console.log('R2_REPLACEMENT_CANDIDATE_REQUIRED=YES');
+console.log('R2_EVIDENCE_MIX_WITH_REPLACEMENT=FORBIDDEN');
 console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=NO');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=OPEN');

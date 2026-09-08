@@ -5,6 +5,7 @@ import 'alpha2/alpha2_ingress.dart';
 import 'alpha2/alpha2_pipeline.dart';
 import 'alpha2/alpha2_projection.dart';
 import 'alpha2/alpha2_session.dart';
+import 'alpha2/alpha2_statement_password_dialog.dart';
 import 'alpha2/alpha2_vault.dart';
 
 void main() {
@@ -139,64 +140,13 @@ class _Alpha2HomeState extends State<Alpha2Home> {
 
   Future<String?> _requestStatementPassword(
     Alpha2StatementCandidateHandle candidate,
-  ) async {
-    if (!mounted) return null;
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Abrir estado de cuenta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${candidate.institutionCode} · ${candidate.productType}',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'La clave se usa únicamente para abrir este PDF en esta sesión. No se guarda ni se sincroniza.',
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                obscureText: true,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Clave del PDF',
-                  border: OutlineInputBorder(),
-                ),
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) Navigator.of(context).pop(value);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Ahora no'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  Navigator.of(context).pop(controller.text);
-                }
-              },
-              child: const Text('Abrir localmente'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      controller.clear();
-      controller.dispose();
-    }
+  ) {
+    if (!mounted) return Future<String?>.value();
+    return showAlpha2StatementPasswordDialog(
+      context: context,
+      institutionCode: candidate.institutionCode,
+      productType: candidate.productType,
+    );
   }
 
   @override

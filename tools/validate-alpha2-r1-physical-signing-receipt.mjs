@@ -6,9 +6,10 @@ const reducedPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026
 const r1Path = 'graph/alpha2-r1-signing-handoff.json';
 const r2Path = 'graph/alpha2-r2-owned-device-campaign.json';
 const reducerPath = 'tools/reduce-alpha2-r1-signing-receipt.mjs';
+const incidentPath = 'mk0/10-evidence/EV-ALPHA2-2003-R2-PHYSICAL-RUNTIME-INCIDENT-2026-09-08.md';
 
 function assert(cond, message) { if (!cond) throw new Error(message); }
-for (const path of [sourcePath, reducedPath, r1Path, r2Path, reducerPath]) assert(fs.existsSync(path), `missing ${path}`);
+for (const path of [sourcePath, reducedPath, r1Path, r2Path, reducerPath, incidentPath]) assert(fs.existsSync(path), `missing ${path}`);
 
 const source = fs.readFileSync(sourcePath, 'utf8');
 const reduced = JSON.parse(fs.readFileSync(reducedPath, 'utf8'));
@@ -53,29 +54,37 @@ for (const [key, value] of Object.entries(expected)) {
 assert(reduced.evidenceClass === 'SANITIZED_TRUSTED_EDGE_RECEIPT', 'receipt evidence class drifted');
 assert(reduced.rawPrivateMaterialCommitted === false, 'raw private material boundary drifted');
 
-assert(r1.status === 'TRUSTED_EDGE_SIGNING_PASS', 'R1 must be closed by physical signing receipt');
+assert(r1.status === 'TRUSTED_EDGE_SIGNING_PASS', 'R1 must remain closed by its physical signing receipt');
 assert(r1.trustedEdgeSigningPass === true, 'R1 trusted-edge PASS missing');
 assert(r1.signedApkSha256 === expected.signedApkSha256 && r1.signedApkBytes === expected.signedApkBytes, 'R1 signed APK identity drifted');
 assert(r1.physicalReceipt?.path === reducedPath, 'R1 physical receipt binding drifted');
 assert(r1.physicalReceipt?.sanitizationPass === true && r1.physicalReceipt?.rawPrivateMaterialCommitted === false, 'R1 receipt sanitization boundary drifted');
 assert(r1.physicalAlpha2Pass === false && r1.buildReady === false && r1.releaseReady === false, 'R1 receipt may not promote downstream readiness');
 
-assert(r2.status === 'READY_FOR_PHYSICAL_CAMPAIGN', 'R2 must be ready after R1 PASS');
-assert(r2.r1PhysicalReceipt === reducedPath, 'R2 must bind exact R1 receipt');
+// Temporal distinction: the R1 receipt legitimately unblocked R2 when accepted.
+// A later physical runtime failure may invalidate that R2 campaign without
+// rewriting or revoking the historical R1 signing fact for +2003.
+assert(r2.status === 'INVALIDATED_BY_PHYSICAL_RUNTIME_FAILURE', 'R2 +2003 must record the later physical runtime invalidation');
+assert(r2.r1PhysicalReceipt === reducedPath, 'R2 must retain the exact historical R1 receipt binding');
 assert(r2.candidate?.signedApkSha256 === expected.signedApkSha256 && r2.candidate?.signedApkBytes === expected.signedApkBytes, 'R2 signed candidate drifted');
-assert(r2.currentState?.r1TrustedEdgeSigning === 'PASS', 'R2 current state must record R1 PASS');
-assert(r2.currentState?.r2PhysicalCampaign === 'READY', 'R2 physical campaign must be READY');
-assert(r2.subgates?.[0]?.id === 'OD0' && r2.subgates?.[0]?.status === 'READY_FOR_PHYSICAL', 'OD0 must be the only ready physical gate');
-for (const gate of r2.subgates?.slice(1) ?? []) assert(gate.status === 'BLOCKED_BY_PRIOR_GATE', `${gate.id} must remain blocked by prior gate`);
-assert(r2.currentState?.q003 === 'ACTIVE' && r2.currentState?.q004 === 'ACTIVE' && r2.currentState?.q005 === 'ACTIVE', 'Q003/Q004/Q005 cannot close from R1 receipt');
-assert(r2.currentState?.gMk0 === 'OPEN' && r2.currentState?.buildReady === false && r2.currentState?.releaseReady === false, 'R1 receipt cannot promote G-MK0/build/release');
+assert(r2.physicalIncident?.evidence === incidentPath, 'R2 physical incident evidence binding missing');
+assert(r2.physicalIncident?.requiresReplacementCandidate === true, 'R2 incident must require a replacement candidate');
+assert(r2.physicalIncident?.mixEvidenceWithReplacementCandidateAllowed === false, 'R2 +2003 evidence may not be mixed with a replacement candidate');
+assert(r2.currentState?.r1TrustedEdgeSigning === 'PASS_FOR_2003_ONLY', 'R2 current state must preserve R1 PASS as +2003-only history');
+assert(r2.currentState?.r2PhysicalCampaign === 'INVALIDATED_PENDING_REPLACEMENT_CANDIDATE', 'R2 physical campaign must remain invalidated');
+assert(r2.subgates?.[0]?.id === 'OD0' && r2.subgates?.[0]?.status === 'INVALIDATED_NOT_CERTIFIED', 'OD0 must not be promoted from the incident alone');
+for (const gate of r2.subgates?.slice(1) ?? []) assert(gate.status === 'BLOCKED_BY_INVALIDATED_CAMPAIGN', `${gate.id} must remain blocked by the invalidated campaign`);
+assert(r2.currentState?.q003 === 'ACTIVE' && r2.currentState?.q004 === 'ACTIVE' && r2.currentState?.q005 === 'ACTIVE', 'Q003/Q004/Q005 cannot close from R1 receipt or failed R2');
+assert(r2.currentState?.gMk0 === 'OPEN' && r2.currentState?.buildReady === false && r2.currentState?.releaseReady === false, 'R1 receipt and failed R2 cannot promote G-MK0/build/release');
 
 console.log('ALPHA2_R1_PHYSICAL_SIGNING_RECEIPT=PASS');
 console.log(`SIGNED_APK_SHA256=${expected.signedApkSha256}`);
 console.log(`SIGNED_APK_BYTES=${expected.signedApkBytes}`);
 console.log(`SIGNER_SHA1=${expected.signerSha1}`);
-console.log('R1_TRUSTED_EDGE_SIGNING=PASS');
-console.log('R2_PHYSICAL_CAMPAIGN=READY');
+console.log('R1_2003_TRUSTED_EDGE_SIGNING=PASS_HISTORICAL');
+console.log('R1_ORIGINALLY_UNBLOCKED_R2=YES');
+console.log('R2_2003_PHYSICAL_CAMPAIGN=INVALIDATED_LATER');
+console.log('REPLACEMENT_CANDIDATE_REQUIRED=YES');
 console.log('PHYSICAL_ALPHA2_PASS=NO');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=OPEN');
