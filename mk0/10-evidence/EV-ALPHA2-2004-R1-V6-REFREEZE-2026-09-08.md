@@ -38,7 +38,7 @@ Post-merge consensus on the Stage A SHA:
 - FinanceSensor Heartbeat `34243313877`: SUCCESS
 - FinanceSensor Public Readiness `34243313903`: SUCCESS
 
-## R1 v6 staging boundary
+## R1 v6 frozen handoff
 
 The trusted-edge signer is repinned to the canonical `+2004` input only. Current signer authorities:
 
@@ -49,16 +49,39 @@ The trusted-edge signer is repinned to the canonical `+2004` input only. Current
 - direct password pipe: forbidden
 - private signing material in public CI: forbidden
 
-Bundle v6 is generated deterministically in public CI from the immutable canonical APK, public signer scripts, public `apksigner.jar`, canonical CI evidence, README, SOURCE receipt, and manifest. Public CI may build and validate the handoff bundle but cannot originate a physical signing PASS.
+Initial deterministic v6 generation on PR #105:
 
-The bundle must remain `STAGING_UNFROZEN` until its exact SHA256 and byte size are observed, independently audited, written back to the R1 authority, and reproduced by a second exact-head CI run. Only then may its state become `READY_FROZEN`.
+- observed PR head: `bee7518dec724863e60d25733a824791846d5c6d`
+- R1 run: `34246846876`
+- job: `102130898420`
+- artifact: `10064357867`
+- artifact wrapper SHA256: `2dc25ab17a6562a7978f2c81ea7e2f6c29e750074b5f74f90db4afcc45e9ed42`
+- inner bundle: `FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip`
+- inner v6 SHA256: `6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d`
+- inner v6 bytes: `86227316`
+- files: `8`
+- private-key files: `0`
+- secret-like matches: `0`
+- ZIP structure: PASS
+- ZIP integrity: PASS
+- manifest integrity: PASS
+- packaged PowerShell Git blob: `f8090c669f1532698b65043d91cb63cdefa2b589`
+- packaged CMD Git blob: `3d01373b69051d30f88a57f26fa815e52d952d6d`
+- packaged canonical APK SHA256: `14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1`
+- packaged canonical APK bytes: `182091971`
+- packaged apksigner SHA256: `2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180`
+
+The downloaded Actions wrapper matched GitHub's artifact digest exactly. The inner v6 ZIP was independently extracted and audited outside Actions. These exact inner bytes are now frozen in `graph/alpha2-r1-signing-handoff.json` and the R1 workflow must reproduce the same SHA256 and byte size on the final exact PR head before merge.
+
+Public CI may build and validate this handoff bundle but cannot originate a physical signing PASS. A future physical receipt must be generated only by the trusted Windows edge with the private R2 keystore and must bind the current `+2004` source/APK identity.
 
 ## Current state
 
 - `+2003 R1 trusted-edge signing`: HISTORICAL PASS ONLY
 - `+2003 R2 campaign`: STOPPED / NO CONTINUATION
 - `+2004 canonical APK`: CLOSED / AUTHORITATIVE
-- `+2004 R1 trusted-edge signing`: OPEN
+- `+2004 R1 v6 bundle`: READY_FROZEN
+- `+2004 R1 trusted-edge physical signing`: OPEN
 - `+2004 R2 physical campaign`: BLOCKED_BY_R1
 - OD0: BLOCKED_BY_R1_SIGNING
 - Q-003 / Q-004 / Q-005: ACTIVE
