@@ -1,15 +1,15 @@
 # Alpha.2 R2 — Single Owned-Device Campaign
 
-Status: **DESIGN FROZEN / BLOCKED ON R1 PHYSICAL SIGNING**
+Status: **DESIGN FROZEN / R1 PASS / OD0 READY**
 
 ## Purpose
 
 R2 is one controlled owned-Android campaign over exactly one stable-signed Alpha.2 APK. It is not a sequence of per-slice APK promotions and it is not a substitute for the later Q-003/Q-004/Q-005 closure phases.
 
 ```text
-R1 sanitized signing receipt
+R1 sanitized signing receipt — PASS
         ↓ exact SIGNED_APK_SHA256
-OD0 install + launch
+OD0 install + launch — READY
         ↓
 OD1 exact gmail.readonly OAuth
         ↓
@@ -36,37 +36,43 @@ OD11 same-APK replay/idempotency
 R2 sanitized receipt
 ```
 
-## Identity law
+## Current identity law
 
 Every OD0..OD11 observation MUST bind the same:
 
-- candidate: `0.2.0-alpha.2+2001`
-- source: `f658363772b8d3652a81a8a4275a571f2f409ed8`
+- candidate: `0.2.0-alpha.2+2003`
+- source: `c29a68e5326a187a7c82e6d66254ae05b6a4178a`
+- canonical input APK SHA256: `93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6`
+- stable signed APK SHA256: `7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6`
+- stable signed APK bytes: `182116902`
 - package: `com.financesensor.lab.gmailconnection.r2`
 - scope: `gmail.readonly`
 - stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
-- signed APK SHA256: supplied only by the accepted R1 trusted-edge receipt.
+- R1 receipt: `graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json`
 
-If the signed APK hash changes, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
+The historical `+2001` design snapshot remains immutable in the prebuild design. The existing source/APK reopen law permitted rebinding execution first to diagnostic `+2002` and finally to installable `+2003` without rewriting that historical snapshot.
+
+If the stable signed APK hash changes, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
 
 ## Campaign rules
 
 1. **One APK, one campaign.** No per-slice physical promotion.
 2. **Fail closed.** A FAIL or INCONCLUSIVE gate does not get converted to PASS by a later gate.
 3. **No synthetic inheritance.** CI PASS cannot satisfy an OD gate.
-4. **No raw evidence in GitHub.** Only a sanitized receipt may be committed.
-5. **No hidden coverage.** Missing or quarantined sources remain visible gaps.
-6. **No generic statement parser authority.** BCP Credit and Ripley Credit remain fetch/parse quarantined until their own physical profiles close.
-7. **No numeric confidence UX.** Reconciliation scores remain internal; public truth uses states.
-8. **No readiness shortcut.** R2 PASS does not close Q-003, Q-004, Q-005, G-MK0, BUILD_READY or RELEASE_READY.
+4. **No signature inheritance.** Install/launch observed on the ephemeral CI-debug APK does not satisfy OD0 for the stable-signed APK.
+5. **No raw evidence in GitHub.** Only sanitized receipts may be committed.
+6. **No hidden coverage.** Missing or quarantined sources remain visible gaps.
+7. **No generic statement parser authority.** BCP Credit and Ripley Credit remain fetch/parse quarantined until their own physical profiles close.
+8. **No numeric confidence UX.** Reconciliation scores remain internal; public truth uses states.
+9. **No readiness shortcut.** R2 PASS does not close Q-003, Q-004, Q-005, G-MK0, BUILD_READY or RELEASE_READY.
 
 ## OD gates
 
 ### OD0 — Stable signed APK install and launch
-Prove the installed candidate hash/signature identity and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
+Install the exact stable APK hash above. Prove signer identity, APK hash match, successful install and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
 
 ### OD1 — Exact Gmail readonly OAuth
-Prove the package is the frozen R2 package and the requested authority is exactly `gmail.readonly`. R2 does not request offline access.
+Prove the package is the frozen R2 package and requested authority is exactly `gmail.readonly`. R2 does not request offline access.
 
 ### OD2 — Metadata-first statement discovery
 Prove discovery inspects metadata before attachment bytes and does not expose real Gmail identifiers to Dart/public projection.
@@ -90,13 +96,13 @@ Bank+currency alone cannot system-confirm ownership. Missing mapping must remain
 Inflow/outflow remain independent, expected missing sources block RECONCILED, conflicts remain visible, and no unqualified global percentage appears.
 
 ### OD9 — Sensor/dashboard
-No `96%`-style confidence, no automated financial advice, transfers/card payments stay outside expense, PEN/USD remain separate, and knowledge gaps are visible.
+No public numeric confidence, no automated financial advice, transfers/card payments stay outside expense, PEN/USD remain separate, and knowledge gaps are visible.
 
 ### OD10 — Disconnect/custody
 Prove local disconnect behavior, protected credential removal/denial semantics, and absence of token/Gmail/financial plaintext in ordinary storage/logs. This is feeder evidence only; broader Q-004 deletion/backup remains open.
 
 ### OD11 — Replay/idempotency
-Repeat the same bounded campaign input on the same signed APK. Canonical movements must not duplicate and semantic output must remain stable. Store only a sanitized replay digest/counters.
+Repeat the same bounded campaign input on the same stable signed APK. Canonical movements must not duplicate and semantic output must remain stable. Store only a sanitized replay digest/counters.
 
 ## Sanitized receipt
 
@@ -115,18 +121,22 @@ R2 cannot satisfy provider verification, backup/deletion lifecycle, Android↔iO
 ## Reopen law
 
 ```text
-SOURCE / CANONICAL APK changed     → reopen R1 + R2
-SIGNED APK hash changed            → invalidate all OD0..OD11 evidence
-PACKAGE / SCOPE / data path changed→ reopen R2 + R3 + R4 + R7
-VAULT crypto semantics changed     → reopen OD5..OD11 + dependent audits
-financial authority changed        → reopen affected OD6..OD11
+SOURCE / CANONICAL APK changed      → reopen R1 + R2
+SIGNED APK hash changed             → invalidate all OD0..OD11 evidence
+PACKAGE / SCOPE / data path changed → reopen R2 + R3 + R4 + R7
+VAULT crypto semantics changed      → reopen OD5..OD11 + dependent audits
+financial authority changed         → reopen affected OD6..OD11
 ```
 
-Until an accepted R1 receipt exists:
+Current execution state:
 
 ```text
-R1_TRUSTED_EDGE_SIGNING = OPEN
-R2_PHYSICAL_CAMPAIGN    = BLOCKED_ON_R1
+R1_TRUSTED_EDGE_SIGNING = PASS
+R2_PHYSICAL_CAMPAIGN    = READY
+R2_NEXT_GATE            = OD0_SIGNED_APK_INSTALL_AND_LAUNCH
+PHYSICAL_ALPHA2_PASS    = NO
+Q003_Q004_Q005          = ACTIVE
+G_MK0                   = OPEN
 BUILD_READY             = NO
 RELEASE_READY           = NO
 ```
