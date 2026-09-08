@@ -51,6 +51,21 @@
       "checkoutModeAtGeneration": "PR_MERGE_REF",
       "independentBundleAudit": "PASS",
       "exactHeadRegenerationRequiredBeforeMerge": true
+    },
+    "certificationReceipt": {
+      "certifiedHead": "a076c399e13a22863935d443748c0b3affe150d7",
+      "exactHeadR1RunId": 34168480789,
+      "exactHeadR1JobId": 101884144830,
+      "exactHeadR2RunId": 34168480790,
+      "exactHeadR2JobId": 101884114083,
+      "mergeSha": "0e62deb139fc423f0be19aa139c95648c55379fd",
+      "postMergeR1RunId": 34168640111,
+      "postMergeR1JobId": 101884576393,
+      "postMergeR2RunId": 34168640052,
+      "postMergeR2JobId": 101884576316,
+      "postMergeArtifactId": 10034986460,
+      "postMergeArtifactWrapperSha256": "898dd22850dce2def9382acf7afb42d729f0eca5e3fd2cabaf7d8e8813c60ea3",
+      "innerBundleReproduced": true
     }
   },
   "supersededBundles": [
@@ -84,15 +99,27 @@
     "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
     "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
     "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
+    "physicalReceiptValidator": "tools/validate-alpha2-r1-physical-signing-receipt.mjs",
     "powershellParserRequired": true,
     "privateSigningMaterialAllowed": false,
     "bundleGenerationInPublicCi": true,
     "physicalSigningInPublicCi": false,
     "exactBranchHeadCheckoutRequired": true
   },
-  "status": "HANDOFF_READY_PHYSICAL_OPEN",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
+  "physicalReceipt": {
+    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json",
+    "evidenceClass": "SANITIZED_TRUSTED_EDGE_RECEIPT",
+    "signedApkSha256": "7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6",
+    "signedApkBytes": 182116902,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "sanitizationPass": true,
+    "rawPrivateMaterialCommitted": false,
+    "receivedDate": "2026-09-08"
+  },
+  "status": "TRUSTED_EDGE_SIGNING_PASS",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6",
+  "signedApkBytes": 182116902,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
