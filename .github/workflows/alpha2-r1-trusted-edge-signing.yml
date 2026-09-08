@@ -16,10 +16,9 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json'
-      - 'mk0/10-evidence/EV-ALPHA2-2004-POST-PASSWORD-SAFE-STOP-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2005-R1-V7-REFREEZE-2026-09-08.md'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-V8-REFREEZE-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches:
@@ -35,10 +34,9 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json'
-      - 'mk0/10-evidence/EV-ALPHA2-2004-POST-PASSWORD-SAFE-STOP-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2005-R1-V7-REFREEZE-2026-09-08.md'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-V8-REFREEZE-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions:
@@ -81,17 +79,14 @@ jobs:
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
-      - name: R1 sanitized physical signing receipt boundary
-        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
-
-      - name: Download exact canonical +2005 artifact
+      - name: Download exact canonical +2006 artifact
         uses: actions/download-artifact@v4
         with:
-          name: financesensor-alpha2-2005-candidate-34257413733
+          name: financesensor-alpha2-2006-candidate-34278019055
           path: canonical-artifact
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 34257413733
+          run-id: 34278019055
 
       - name: Verify immutable canonical input
         shell: bash
@@ -101,18 +96,19 @@ jobs:
           EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
           test -f "$APK"
           test -f "$EVIDENCE"
-          test "$(sha256sum "$APK" | awk '{print $1}')" = 'dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c'
-          test "$(stat -c '%s' "$APK")" = '182092699'
-          grep -q '^SOURCE_COMMIT=d99e7e4765adfc96bed9d914b2b6f296f9712242$' "$EVIDENCE"
-          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2005$' "$EVIDENCE"
+          test "$(sha256sum "$APK" | awk '{print $1}')" = '11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179'
+          test "$(stat -c '%s' "$APK")" = '182102047'
+          grep -q '^SOURCE_COMMIT=e26bab7cd87c5e686898998e867d8fb25c99db27$' "$EVIDENCE"
+          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2006$' "$EVIDENCE"
           grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
           grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
           grep -q '^ANDROID_MIN_SDK=31$' "$EVIDENCE"
           grep -q '^ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2$' "$EVIDENCE"
           grep -q '^EXACT_SCOPE=gmail.readonly$' "$EVIDENCE"
-          echo 'CANONICAL_2005_INPUT=PASS'
+          grep -q '^SINGLE_PASS_EECC_DIAGNOSTICS=YES$' "$EVIDENCE"
+          echo 'CANONICAL_2006_INPUT=PASS'
 
-      - name: Reproduce deterministic public-safe v7 handoff bundle
+      - name: Reproduce deterministic public-safe v8 handoff bundle
         shell: bash
         run: |
           set -euo pipefail
@@ -122,12 +118,13 @@ jobs:
           test -n "$APKSIGNER_JAR"
           test -f "$APKSIGNER_JAR"
           java -jar "$APKSIGNER_JAR" verify --print-certs "$APK" >/dev/null
-          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = '5c0ec28fa27ed0a67547c4b1d0c59c07c6c26911'
+          test "$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')" = '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'
+          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = '91acbc974afcd16e01a14ff531bd1503c812da5b'
           test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd)" = '3d01373b69051d30f88a57f26fa815e52d952d6d'
 
-          ROOT="$RUNNER_TEMP/financesensor-r1-v7"
-          BUNDLE_DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7"
-          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip"
+          ROOT="$RUNNER_TEMP/financesensor-r1-v8"
+          BUNDLE_DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip"
           rm -rf "$ROOT" "$OUT"
           mkdir -p "$BUNDLE_DIR/public-signing-tool/lib"
           cp "$APK" "$BUNDLE_DIR/FinanceSensor-ALPHA2-CANONICAL-INPUT.apk"
@@ -137,7 +134,7 @@ jobs:
           cp "$EVIDENCE" "$BUNDLE_DIR/CANONICAL-CI-EVIDENCE.txt"
 
           cat > "$BUNDLE_DIR/BUNDLE-README.txt" <<'EOF'
-          FinanceSensor Alpha.2 +2005 — R1 trusted-edge signing bundle v7
+          FinanceSensor Alpha.2 +2006 — R1 trusted-edge signing bundle v8
 
           1. Extract this ZIP on the owned Windows trusted edge.
           2. Double-click SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
@@ -153,15 +150,15 @@ jobs:
           EOF
 
           cat > "$BUNDLE_DIR/SOURCE.txt" <<EOF
-          CANDIDATE=0.2.0-alpha.2+2005
-          SOURCE_COMMIT=d99e7e4765adfc96bed9d914b2b6f296f9712242
-          CANONICAL_RUN_ID=34257413733
-          CANONICAL_JOB_ID=102166618707
-          CANONICAL_ARTIFACT_ID=10068684066
-          CANONICAL_ARTIFACT_ZIP_SHA256=536495ef92218477156c2cf95a3dc636071187b239750787788ccc1d1a32a7b2
-          INPUT_APK_SHA256=dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c
-          INPUT_APK_BYTES=182092699
-          SIGNER_PS1_GIT_BLOB=5c0ec28fa27ed0a67547c4b1d0c59c07c6c26911
+          CANDIDATE=0.2.0-alpha.2+2006
+          SOURCE_COMMIT=e26bab7cd87c5e686898998e867d8fb25c99db27
+          CANONICAL_RUN_ID=34278019055
+          CANONICAL_JOB_ID=102235745821
+          CANONICAL_ARTIFACT_ID=10076715491
+          CANONICAL_ARTIFACT_ZIP_SHA256=f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309
+          INPUT_APK_SHA256=11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179
+          INPUT_APK_BYTES=182102047
+          SIGNER_PS1_GIT_BLOB=91acbc974afcd16e01a14ff531bd1503c812da5b
           SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
           APKSIGNER_SHA256=$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')
           EOF
@@ -169,6 +166,7 @@ jobs:
           (
             cd "$BUNDLE_DIR"
             find . -type f ! -name 'BUNDLE-MANIFEST-SHA256.txt' -print0 | sort -z | xargs -0 sha256sum > BUNDLE-MANIFEST-SHA256.txt
+            sha256sum -c BUNDLE-MANIFEST-SHA256.txt
           )
 
           python3 - "$BUNDLE_DIR" "$OUT" <<'PY'
@@ -195,42 +193,42 @@ jobs:
 
           BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
-          test "$BUNDLE_SHA256" = '201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1'
-          test "$BUNDLE_BYTES" = '86227523'
-          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v7-AUDIT.txt" <<EOF
-          BUNDLE_V7_REPRODUCTION=PASS
+          test "$BUNDLE_SHA256" = 'c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80'
+          test "$BUNDLE_BYTES" = '86232702'
+          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v8-AUDIT.txt" <<EOF
+          BUNDLE_V8_REPRODUCTION=PASS
           BUNDLE_SHA256=${BUNDLE_SHA256}
           BUNDLE_BYTES=${BUNDLE_BYTES}
           PRIVATE_KEY_FILES=0
           SECRET_LIKE_VALUE_MATCHES=0
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
-          R1_V7_FROZEN_BYTES=PASS
-          R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT
-          R2_OWNED_DEVICE_CAMPAIGN=READY
+          R1_V8_FROZEN_BYTES=PASS
+          R1_TRUSTED_EDGE_SIGNING=OPEN
+          R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
           EOF
-          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v7-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v8-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload reproduced v7 bundle
+      - name: Upload reproduced v8 bundle
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-r1-trusted-edge-bundle-v7-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          name: financesensor-alpha2-r1-trusted-edge-bundle-v8-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: |
-            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip
-            FinanceSensor-ALPHA2-R1-BUNDLE-v7-AUDIT.txt
+            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip
+            FinanceSensor-ALPHA2-R1-BUNDLE-v8-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
 
-      - name: Preserve post-receipt trust boundary
+      - name: Preserve pre-signing boundary
         run: |
           set -euo pipefail
-          echo 'R1_V7_FROZEN_BYTES=PASS'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'R1_V8_FROZEN_BYTES=PASS'
+          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_OWNED_DEVICE_CAMPAIGN=READY'
+          echo 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'
