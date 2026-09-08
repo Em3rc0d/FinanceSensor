@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('native attachment fetch rejection stays candidate-local', () async {
     final ingress = _FetchRejectingIngress(
-      const PlatformException(
+      PlatformException(
         code: 'ALPHA2_STATEMENT_GMAIL_HTTP_429',
         message: 'must not cross the safe boundary',
         details: 'must not cross the safe boundary',
@@ -37,7 +37,7 @@ void main() {
 
   test('unknown native fetch code is collapsed before entering product state', () async {
     final ingress = _FetchRejectingIngress(
-      const PlatformException(
+      PlatformException(
         code: 'RAW_PRIVATE_PROVIDER_MESSAGE',
         message: 'private provider detail',
       ),
@@ -56,8 +56,10 @@ void main() {
       result.statementOutcomes.single.reviewCodes,
       <String>['ALPHA2_STATEMENT_FETCH_FAILED'],
     );
-    expect(result.statementOutcomes.single.reviewCodes.join(' '),
-        isNot(contains('private provider detail')));
+    expect(
+      result.statementOutcomes.single.reviewCodes.join(' '),
+      isNot(contains('private provider detail')),
+    );
   });
 }
 
