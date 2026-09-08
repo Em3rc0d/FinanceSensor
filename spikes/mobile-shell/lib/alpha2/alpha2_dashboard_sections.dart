@@ -217,6 +217,11 @@ String _gapLabel(String reason) => switch (reason) {
       'MISSING_STATEMENT' => 'Falta un estado de cuenta esperado',
       'BLOCKING_CONFLICT' => 'Hay un conflicto que requiere revisión',
       'UNRESOLVED_ITEM' => 'Hay movimientos pendientes de reconciliar',
+      'STATEMENT_PASSWORD_REQUIRED' => 'La clave del EECC fue omitida en esta actualización',
+      'STATEMENT_FETCH_REJECTED' => 'No se pudo descargar un EECC desde Gmail',
+      'STATEMENT_PDF_REJECTED' => 'El PDF o su clave no pudieron abrirse localmente',
+      'STATEMENT_STRICT_REVIEW_REQUIRED' => 'El EECC llegó al parser estricto y requiere revisión',
+      'STATEMENT_PERSISTENCE_REJECTED' => 'El EECC no pudo guardarse en el almacén cifrado',
       _ => 'Hay información pendiente de confirmar',
     };
 

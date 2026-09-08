@@ -138,6 +138,7 @@ class Alpha2PublicDashboardProjection {
 Alpha2PublicDashboardProjection buildAlpha2PublicProjection({
   required List<Alpha2CanonicalTransaction> canonicalTransactions,
   required Alpha2MonthlyCloseEvaluation? monthlyClose,
+  Map<String, int> statementStatusCounts = const <String, int>{},
 }) {
   final sorted = List<Alpha2CanonicalTransaction>.from(canonicalTransactions)
     ..sort((a, b) {
@@ -165,10 +166,13 @@ Alpha2PublicDashboardProjection buildAlpha2PublicProjection({
     monthlyClose: monthlyClose,
   );
   final recurrence = deriveAlpha2RecurringCandidates(sorted);
-  final gaps = deriveAlpha2KnowledgeGaps(
-    events: sorted,
-    monthlyClose: monthlyClose,
-  );
+  final gaps = <Alpha2KnowledgeGap>[
+    ...deriveAlpha2KnowledgeGaps(
+      events: sorted,
+      monthlyClose: monthlyClose,
+    ),
+    ..._statementOutcomeGaps(statementStatusCounts),
+  ]..sort((a, b) => a.id.compareTo(b.id));
   final monthlyState = monthlyClose == null
       ? null
       : Alpha2PublicMonthlyState(
@@ -185,9 +189,38 @@ Alpha2PublicDashboardProjection buildAlpha2PublicProjection({
     transactions: List<Alpha2PublicTransaction>.unmodifiable(transactions),
     cashflow: cashflow,
     recurringCandidates: recurrence,
-    knowledgeGaps: gaps,
+    knowledgeGaps: List<Alpha2KnowledgeGap>.unmodifiable(gaps),
     monthlyState: monthlyState,
   );
+}
+
+List<Alpha2KnowledgeGap> _statementOutcomeGaps(
+  Map<String, int> statementStatusCounts,
+) {
+  const reasons = <String, String>{
+    'PASSWORD_REQUIRED': 'STATEMENT_PASSWORD_REQUIRED',
+    'FETCH_REJECTED': 'STATEMENT_FETCH_REJECTED',
+    'PDF_REJECTED': 'STATEMENT_PDF_REJECTED',
+    'REVIEW_REQUIRED': 'STATEMENT_STRICT_REVIEW_REQUIRED',
+    'PERSISTENCE_REJECTED': 'STATEMENT_PERSISTENCE_REJECTED',
+  };
+  final gaps = <Alpha2KnowledgeGap>[];
+  for (final entry in reasons.entries) {
+    final count = statementStatusCounts[entry.key] ?? 0;
+    for (var index = 0; index < count; index += 1) {
+      gaps.add(
+        Alpha2KnowledgeGap(
+          id: 'stmt_gap_${entry.key.toLowerCase()}_${index + 1}',
+          kind: 'STATEMENT_IMPORT',
+          reason: entry.value,
+          truthState: Alpha2TruthState.unknown,
+          algorithmVersion: alpha2SensorVersion,
+          evidenceInputs: const <String>[],
+        ),
+      );
+    }
+  }
+  return gaps;
 }
 
 String? _safeAccountDisplay(String? accountId, String? instrumentId) {
