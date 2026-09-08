@@ -35,10 +35,11 @@ if (!failures.length) {
     signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
   };
   const current = {
-    candidate: '0.2.0-alpha.2+2003',
-    sourceCommit: 'c29a68e5326a187a7c82e6d66254ae05b6a4178a',
-    apkSha256: '93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6',
-    apkBytes: 182090843,
+    schemaVersion: 'A2_CANONICAL_CANDIDATE_RECEIPT_V3',
+    candidate: '0.2.0-alpha.2+2004',
+    sourceCommit: '8030a8a2946f7ea288290f64662e52a928d851a3',
+    apkSha256: '14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1',
+    apkBytes: 182091971,
   };
 
   if (design.schemaVersion !== frozen.schemaVersion) fail('prebuild design schema mismatch');
@@ -47,8 +48,7 @@ if (!failures.length) {
   if (design.frozenAtBaseCommit !== frozen.base) fail('design base commit drifted');
   if (design.authority?.closureLedger !== paths.ledger || design.authority?.buildReadiness !== paths.readiness || design.authority?.physicalCampaign !== paths.campaign || design.authority?.canonicalCandidate !== paths.canonical) fail('prebuild authority mapping drifted');
 
-  // canonicalAlpha2 is the immutable identity observed when the design itself was frozen.
-  // Candidate identity changes reopen R1/R2; they do not rewrite the historical design snapshot.
+  // Historical design snapshot is immutable. The current canonical receipt is dynamic authority.
   const snapshot = design.canonicalAlpha2 ?? {};
   for (const [key, value] of Object.entries({candidate:frozen.candidate,sourceCommit:frozen.sourceCommit,apkSha256:frozen.apkSha256,apkBytes:frozen.apkBytes,package:frozen.package,scope:frozen.scope,stableSignerSha1:frozen.signerSha1})) {
     if (snapshot[key] !== value) fail(`historical canonical Alpha.2 snapshot ${key} drifted`);
@@ -59,18 +59,20 @@ if (!failures.length) {
   const reopen = (design.reopenRules ?? []).find(rule => rule.signal === 'SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED');
   if (JSON.stringify(reopen?.reopens) !== JSON.stringify(['R1','R2'])) fail('source/APK reopen mapping drifted');
 
-  if (canonical.schemaVersion !== 'A2_CANONICAL_CANDIDATE_RECEIPT_V2') fail('current canonical receipt schema mismatch');
+  if (canonical.schemaVersion !== current.schemaVersion) fail('current canonical receipt schema mismatch');
   if (canonical.candidate !== current.candidate) fail('current canonical receipt candidate mismatch');
   if (canonical.sourceCommit !== current.sourceCommit) fail('current canonical receipt source mismatch');
   if (canonical.authority?.apkSha256 !== current.apkSha256) fail('current canonical receipt APK digest mismatch');
   if (canonical.authority?.apkBytes !== current.apkBytes) fail('current canonical receipt APK bytes mismatch');
-  if (canonical.authority?.minSdk !== 31 || canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current API31 installability evidence incomplete');
+  if (canonical.authority?.minSdk !== 31 || canonical.authority?.targetSdk !== 36 || canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current API31 canonical verification incomplete');
   if (canonical.signing?.androidOauthPackage !== frozen.package || canonical.signing?.exactScope !== frozen.scope || canonical.signing?.expectedSignerSha1 !== frozen.signerSha1) fail('package/scope/stable signer drifted across candidate reopen');
-  if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.boundaries?.physicalAlpha2Pass !== false) fail('physical state cannot be promoted by canonical refreeze');
-  if (canonical.boundaries?.ownedDeviceInstallPass !== true || canonical.boundaries?.ownedDeviceLaunchPass !== true) fail('current owned-device installability prerequisite missing');
+  if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null || canonical.boundaries?.physicalAlpha2Pass !== false) fail('physical state cannot be promoted by canonical refreeze');
+  if (canonical.boundaries?.ownedDeviceInstallPass !== false || canonical.boundaries?.ownedDeviceLaunchPass !== false) fail('current +2004 physical installability must be reacquired rather than inherited');
+  if (canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed !== false) fail('prior-candidate physical inheritance must remain forbidden');
   const superseded2001 = (canonical.nonAuthoritativeCandidates ?? []).find(x => x.candidate === frozen.candidate);
   const superseded2002 = (canonical.nonAuthoritativeCandidates ?? []).find(x => x.candidate === '0.2.0-alpha.2+2002');
-  if (!superseded2001 || !superseded2002) fail('current canonical receipt must record +2001/+2002 supersession');
+  const superseded2003 = (canonical.nonAuthoritativeCandidates ?? []).find(x => x.candidate === '0.2.0-alpha.2+2003');
+  if (!superseded2001 || !superseded2002 || !superseded2003) fail('current canonical receipt must record +2001/+2002/+2003 supersession');
 
   for (const law of [
     'DESIGN_FREEZE_PASS_DOES_NOT_EQUAL_BUILD_READY','UNMAPPED_PRODUCT_BUILD_IS_FORBIDDEN','STATIC_PASS_DOES_NOT_EQUAL_PHYSICAL_PASS',
@@ -132,7 +134,8 @@ if (failures.length) {
 console.log('PREBUILD_REMAINDER_DESIGN=PASS');
 console.log('REMAINDER_NODES=11');
 console.log('DESIGN_FREEZE_SNAPSHOT=IMMUTABLE');
-console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2003');
+console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2004');
+console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN_REACQUIRE');
 console.log('NEXT_EXECUTION_NODE=R1_TRUSTED_EDGE_SIGNING');
 console.log('UNMAPPED_PRODUCT_BUILD=FORBIDDEN');
 console.log('Q003_Q004_Q005=ACTIVE');
