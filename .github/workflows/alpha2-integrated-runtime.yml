@@ -59,8 +59,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - name: Checkout exact head
+      - name: Checkout exact branch head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Assert exact checked-out SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          echo "EXACT_HEAD_SHA=$ACTUAL_SHA"
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -177,9 +188,7 @@ jobs:
           pattern = r'gradle-9\.1\.0-(all|bin)\.zip'
           if not re.search(pattern, wrapper_text):
               raise SystemExit('EXPECTED_FLUTTER_GRADLE_9_1_0_MARKER_NOT_FOUND')
-          wrapper.write_text(
-              re.sub(pattern, lambda match: f'gradle-9.3.1-{match.group(1)}.zip', wrapper_text, count=1)
-          )
+          wrapper.write_text(re.sub(pattern, lambda match: f'gradle-9.3.1-{match.group(1)}.zip', wrapper_text, count=1))
 
           target_dir = Path('android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell')
           target_dir.mkdir(parents=True, exist_ok=True)
@@ -253,7 +262,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2003
+            --build-number 2004
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -266,7 +275,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2003'" <<< "$BADGING"
+          grep -q "versionCode='2004'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -278,12 +287,13 @@ jobs:
           set -euo pipefail
           APK='build/app/outputs/flutter-apk/app-debug.apk'
           test -f "$APK"
+          SOURCE_SHA="$(git rev-parse HEAD)"
           APK_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2003
-          SOURCE_COMMIT=${GITHUB_SHA}
+          CANDIDATE_ID=0.2.0-alpha.2+2004
+          SOURCE_COMMIT=${SOURCE_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
           ANDROID_COMPILE_SDK=37
@@ -324,7 +334,7 @@ jobs:
       - name: Upload internal compile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-integrated-internal-${{ github.sha }}
+          name: financesensor-alpha2-2004-candidate-${{ github.run_id }}
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/alpha2-integrated-ci-evidence.txt
