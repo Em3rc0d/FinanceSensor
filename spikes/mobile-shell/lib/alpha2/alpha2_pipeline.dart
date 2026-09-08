@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
@@ -133,8 +132,6 @@ class Alpha2Pipeline {
     if (!candidate.fetchEligible ||
         candidate.state != 'STRONG' ||
         candidate.profileId != alpha2BcpSavingsProfileId) {
-      // Visible/quarantined profiles are intentionally not fetched. No generic
-      // parser fallback exists here.
       await ingress.releaseStatementHandle(candidate.handle);
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
@@ -191,7 +188,6 @@ class Alpha2Pipeline {
       );
 
       if (!parsed.importable) {
-        // Never combine derived rows with a non-imported terminal source state.
         await vault.commitEvidenceBatch(
           sourceReceiptId: sourceReceiptId,
           evidence: const <Alpha2Evidence>[],
