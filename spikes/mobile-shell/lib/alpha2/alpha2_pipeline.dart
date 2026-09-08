@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 
 import 'alpha2_ingress.dart';
 import 'alpha2_models.dart';
@@ -15,6 +16,19 @@ import 'alpha2_vault.dart';
 typedef Alpha2StatementPasswordProvider = Future<String?> Function(
   Alpha2StatementCandidateHandle candidate,
 );
+
+/// Stable, privacy-safe failure emitted by the Alpha.2 orchestration layer.
+///
+/// The code identifies only the failing stage. Raw exceptions, Gmail ids, PDF
+/// contents, attachment ids and passwords must never cross into this object.
+class Alpha2PipelineFailure implements Exception {
+  const Alpha2PipelineFailure(this.safeCode);
+
+  final String safeCode;
+
+  @override
+  String toString() => safeCode;
+}
 
 class Alpha2StatementImportOutcome {
   const Alpha2StatementImportOutcome({
@@ -74,18 +88,33 @@ class Alpha2Pipeline {
     if (tenantId.trim().isEmpty) {
       throw ArgumentError('ALPHA2_PIPELINE_TENANT_REQUIRED');
     }
-    await vault.initialize();
-    final batch = await ingress.scan();
+
+    await _guardAsync(
+      'A2_VAULT_INITIALIZE',
+      () => vault.initialize(),
+    );
+    final batch = await _guardAsync(
+      'A2_INGRESS_SCAN',
+      () => ingress.scan(),
+    );
 
     // Gmail-derived observations already cross the platform boundary as minimized,
     // opaque receipts. Persist each independently so replay cannot turn a repeated
     // scan into duplicate financial evidence.
     for (final evidence in batch.gmailEvidence) {
-      final normalized = evidence.normalized();
-      await vault.commitEvidenceBatch(
-        sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),
-        evidence: <Alpha2Evidence>[normalized],
-        terminalState: 'IMPORTED',
+      late final Alpha2Evidence normalized;
+      try {
+        normalized = evidence.normalized();
+      } catch (_) {
+        throw const Alpha2PipelineFailure('A2_GMAIL_EVIDENCE_REJECTED');
+      }
+      await _guardAsync(
+        'A2_GMAIL_VAULT_WRITE',
+        () => vault.commitEvidenceBatch(
+          sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),
+          evidence: <Alpha2Evidence>[normalized],
+          terminalState: 'IMPORTED',
+        ),
       );
     }
 
@@ -100,18 +129,36 @@ class Alpha2Pipeline {
       );
     }
 
-    final persisted = await vault.readSafeEvidence();
-    final evidence = persisted.map(alpha2EvidenceFromSafeVaultRow).toList();
-    final runtime = runAlpha2CanonicalRuntime(evidence: evidence);
-    final productGate = evaluateAlpha2ProductGate(
-      tenantId: tenantId,
-      evidence: evidence,
-      runtime: runtime,
-      context: productGateContext,
+    final persisted = await _guardAsync(
+      'A2_VAULT_READ',
+      () => vault.readSafeEvidence(),
     );
-    final projection = buildAlpha2PublicProjection(
-      canonicalTransactions: runtime.canonicalTransactions,
-      monthlyClose: productGate.monthlyClose,
+    final evidence = <Alpha2Evidence>[];
+    try {
+      evidence.addAll(persisted.map(alpha2EvidenceFromSafeVaultRow));
+    } catch (_) {
+      throw const Alpha2PipelineFailure('A2_VAULT_SAFE_ROW_REJECTED');
+    }
+
+    final runtime = _guardSync(
+      'A2_CANONICAL_RUNTIME',
+      () => runAlpha2CanonicalRuntime(evidence: evidence),
+    );
+    final productGate = _guardSync(
+      'A2_PRODUCT_GATE',
+      () => evaluateAlpha2ProductGate(
+        tenantId: tenantId,
+        evidence: evidence,
+        runtime: runtime,
+        context: productGateContext,
+      ),
+    );
+    final projection = _guardSync(
+      'A2_PUBLIC_PROJECTION',
+      () => buildAlpha2PublicProjection(
+        canonicalTransactions: runtime.canonicalTransactions,
+        monthlyClose: productGate.monthlyClose,
+      ),
     );
     return Alpha2PipelineResult(
       ingressCoverage: batch.coverage,
@@ -134,7 +181,7 @@ class Alpha2Pipeline {
         candidate.profileId != alpha2BcpSavingsProfileId) {
       // Visible/quarantined profiles are intentionally not fetched. No generic
       // parser fallback exists here.
-      await ingress.releaseStatementHandle(candidate.handle);
+      await _releaseStatementHandle(candidate.handle);
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
         status: 'QUARANTINED_PROFILE',
@@ -143,9 +190,12 @@ class Alpha2Pipeline {
       );
     }
 
-    final password = await passwordProvider(candidate);
+    final password = await _guardAsync(
+      'A2_PASSWORD_PROVIDER',
+      () => passwordProvider(candidate),
+    );
     if (password == null || password.isEmpty) {
-      await ingress.releaseStatementHandle(candidate.handle);
+      await _releaseStatementHandle(candidate.handle);
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
         status: 'PASSWORD_REQUIRED',
@@ -156,24 +206,52 @@ class Alpha2Pipeline {
 
     Uint8List? bytes;
     try {
-      bytes = await ingress.fetchStatementBytes(candidate.handle);
+      try {
+        bytes = await ingress.fetchStatementBytes(candidate.handle);
+      } on PlatformException catch (error) {
+        if (error.code == 'REAUTH_REQUIRED') {
+          throw const Alpha2PipelineFailure('A2_SESSION_REAUTH_REQUIRED');
+        }
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: <String>[_statementFetchReviewCode(error.code)],
+        );
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>['STATEMENT_FETCH_FAILED_SAFE'],
+        );
+      }
+
       final sourceReceiptId = _statementSourceReceipt(candidate.profileId, bytes);
       final layout = await pdfReader.extractLayout(
         encryptedPdfBytes: bytes,
         password: password,
       );
-      final parsed = bcpSavingsParser.parse(
-        layout: layout,
-        sourceReceiptId: sourceReceiptId,
-        tenantId: tenantId,
-      );
+      late final Alpha2StatementParseResult parsed;
+      try {
+        parsed = bcpSavingsParser.parse(
+          layout: layout,
+          sourceReceiptId: sourceReceiptId,
+          tenantId: tenantId,
+        );
+      } catch (_) {
+        throw const Alpha2PipelineFailure('A2_STATEMENT_STRICT_PARSE');
+      }
 
       if (!parsed.importable) {
         // Never combine derived rows with a non-imported terminal source state.
-        await vault.commitEvidenceBatch(
-          sourceReceiptId: sourceReceiptId,
-          evidence: const <Alpha2Evidence>[],
-          terminalState: 'QUARANTINED',
+        await _guardAsync(
+          'A2_STATEMENT_VAULT_WRITE',
+          () => vault.commitEvidenceBatch(
+            sourceReceiptId: sourceReceiptId,
+            evidence: const <Alpha2Evidence>[],
+            terminalState: 'QUARANTINED',
+          ),
         );
         return Alpha2StatementImportOutcome(
           profileId: candidate.profileId,
@@ -184,10 +262,13 @@ class Alpha2Pipeline {
         );
       }
 
-      await vault.commitEvidenceBatch(
-        sourceReceiptId: sourceReceiptId,
-        evidence: parsed.evidence,
-        terminalState: 'IMPORTED',
+      await _guardAsync(
+        'A2_STATEMENT_VAULT_WRITE',
+        () => vault.commitEvidenceBatch(
+          sourceReceiptId: sourceReceiptId,
+          evidence: parsed.evidence,
+          terminalState: 'IMPORTED',
+        ),
       );
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
@@ -205,10 +286,62 @@ class Alpha2Pipeline {
       );
     } finally {
       if (bytes != null) bytes.fillRange(0, bytes.length, 0);
-      await ingress.releaseStatementHandle(candidate.handle);
+      await _releaseStatementHandle(candidate.handle);
       // password is a Dart String. We deliberately make no zeroization claim.
     }
   }
+
+  Future<void> _releaseStatementHandle(String handle) => _guardAsync(
+        'A2_STATEMENT_HANDLE_RELEASE',
+        () => ingress.releaseStatementHandle(handle),
+      );
+}
+
+Future<T> _guardAsync<T>(
+  String fallbackSafeCode,
+  Future<T> Function() action,
+) async {
+  try {
+    return await action();
+  } on Alpha2PipelineFailure {
+    rethrow;
+  } on PlatformException catch (error) {
+    if (error.code == 'REAUTH_REQUIRED') {
+      throw const Alpha2PipelineFailure('A2_SESSION_REAUTH_REQUIRED');
+    }
+    throw Alpha2PipelineFailure(fallbackSafeCode);
+  } catch (_) {
+    throw Alpha2PipelineFailure(fallbackSafeCode);
+  }
+}
+
+T _guardSync<T>(String safeCode, T Function() action) {
+  try {
+    return action();
+  } on Alpha2PipelineFailure {
+    rethrow;
+  } catch (_) {
+    throw Alpha2PipelineFailure(safeCode);
+  }
+}
+
+String _statementFetchReviewCode(String nativeCode) {
+  if (nativeCode == 'ALPHA2_STATEMENT_HANDLE_NOT_FOUND') {
+    return 'STATEMENT_FETCH_HANDLE_EXPIRED';
+  }
+  if (nativeCode == 'ALPHA2_STATEMENT_PROFILE_QUARANTINED') {
+    return 'STATEMENT_FETCH_PROFILE_QUARANTINED';
+  }
+  if (nativeCode.startsWith('ALPHA2_STATEMENT_GMAIL_HTTP_')) {
+    return 'STATEMENT_FETCH_GMAIL_HTTP_REJECTED';
+  }
+  if (nativeCode == 'ALPHA2_STATEMENT_ATTACHMENT_EMPTY' ||
+      nativeCode == 'ALPHA2_STATEMENT_ATTACHMENT_INVALID_BASE64' ||
+      nativeCode == 'ALPHA2_STATEMENT_ATTACHMENT_SIZE_INVALID' ||
+      nativeCode == 'ALPHA2_STATEMENT_PDF_SIGNATURE_INVALID') {
+    return 'STATEMENT_FETCH_ATTACHMENT_REJECTED';
+  }
+  return 'STATEMENT_FETCH_FAILED_SAFE';
 }
 
 String _gmailSourceReceipt(String evidenceId) {
