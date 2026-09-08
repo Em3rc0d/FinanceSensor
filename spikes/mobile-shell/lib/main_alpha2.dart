@@ -289,7 +289,7 @@ class _Alpha2StatementPasswordDialogState
           ),
           const SizedBox(height: 8),
           const Text(
-            'La clave se usa únicamente para abrir este PDF en esta sesión. No se guarda ni se sincroniza.',
+            'La clave se usa únicamente durante esta actualización local para abrir los EECC de este perfil. No se guarda ni se sincroniza.',
           ),
           const SizedBox(height: 16),
           TextField(
@@ -442,7 +442,7 @@ class _Coverage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imported = result.statementOutcomes.where((item) => item.status == 'IMPORTED').length;
-    final review = result.statementOutcomes.where((item) => item.status == 'REVIEW_REQUIRED').length;
+    final review = result.statementOutcomes.where((item) => item.requiresReview).length;
     final quarantined = result.statementOutcomes.where((item) => item.status == 'QUARANTINED_PROFILE').length;
     final monthly = result.productGate.monthlyClose;
     final pendingMappings = result.productGate.ownershipDecisions

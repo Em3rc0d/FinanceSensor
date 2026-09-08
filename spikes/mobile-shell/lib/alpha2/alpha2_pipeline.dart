@@ -30,6 +30,15 @@ class Alpha2StatementImportOutcome {
   final int evidenceCount;
   final List<String> reviewCodes;
   final String? statementPeriodId;
+
+  bool get requiresReview => switch (status) {
+        'REVIEW_REQUIRED' ||
+        'PDF_REJECTED' ||
+        'FETCH_REJECTED' ||
+        'PASSWORD_REQUIRED' =>
+          true,
+        _ => false,
+      };
 }
 
 class Alpha2PipelineResult {
@@ -89,15 +98,37 @@ class Alpha2Pipeline {
       );
     }
 
+    // A statement password is session-only authority for one institution/product
+    // profile during this refresh. Multiple statement candidates from the same
+    // profile must not trigger indistinguishable password dialogs one after another.
+    // Null is cached too: choosing "Ahora no" skips the remaining candidates for
+    // that profile during this refresh without persisting or synchronizing a secret.
+    final sessionPasswords = <String, String?>{};
+    Future<String?> sessionPasswordProvider(
+      Alpha2StatementCandidateHandle candidate,
+    ) async {
+      final key = candidate.profileId;
+      if (sessionPasswords.containsKey(key)) return sessionPasswords[key];
+      final password = await passwordProvider(candidate);
+      sessionPasswords[key] = password;
+      return password;
+    }
+
     final statementOutcomes = <Alpha2StatementImportOutcome>[];
-    for (final candidate in batch.statementCandidates) {
-      statementOutcomes.add(
-        await _importStatementCandidate(
-          tenantId: tenantId,
-          candidate: candidate,
-          passwordProvider: passwordProvider,
-        ),
-      );
+    try {
+      for (final candidate in batch.statementCandidates) {
+        statementOutcomes.add(
+          await _importStatementCandidate(
+            tenantId: tenantId,
+            candidate: candidate,
+            passwordProvider: sessionPasswordProvider,
+          ),
+        );
+      }
+    } finally {
+      // Dart String values cannot be reliably zeroized. Clearing this map only
+      // guarantees FinanceSensor does not intentionally retain them after refresh.
+      sessionPasswords.clear();
     }
 
     final persisted = await vault.readSafeEvidence();
