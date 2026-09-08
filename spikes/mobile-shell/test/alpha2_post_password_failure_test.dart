@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:financesensor_mobile_shell/alpha2/alpha2_ingress.dart';
+import 'package:financesensor_mobile_shell/alpha2/alpha2_models.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_pipeline.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_statement_geometry.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_vault.dart';
@@ -99,14 +100,14 @@ class _FetchRejectingIngress implements Alpha2IngressSource {
 
   @override
   Future<Alpha2IngressBatch> scan() async => const Alpha2IngressBatch(
-        gmailEvidence: <Never>[],
+        gmailEvidence: <Alpha2Evidence>[],
         statementCandidates: <Alpha2StatementCandidateHandle>[_candidate],
         coverage: 'TEST_ONLY',
       );
 
   @override
   Future<Uint8List> fetchStatementBytes(String candidateHandle) async {
-    throw const PlatformException(
+    throw PlatformException(
       code: 'ALPHA2_STATEMENT_GMAIL_HTTP_503',
     );
   }
@@ -120,7 +121,7 @@ class _FetchRejectingIngress implements Alpha2IngressSource {
 class _ReauthIngress implements Alpha2IngressSource {
   @override
   Future<Alpha2IngressBatch> scan() async {
-    throw const PlatformException(code: 'REAUTH_REQUIRED');
+    throw PlatformException(code: 'REAUTH_REQUIRED');
   }
 
   @override
