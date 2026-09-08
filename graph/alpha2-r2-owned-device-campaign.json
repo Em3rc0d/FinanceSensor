@@ -3,22 +3,22 @@
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "BLOCKED_BY_R1_SIGNING",
+  "status": "READY_FOR_PHYSICAL_CAMPAIGN",
   "candidate": {
     "id": "0.2.0-alpha.2+2005",
     "sourceCommit": "d99e7e4765adfc96bed9d914b2b6f296f9712242",
     "canonicalInputApkSha256": "dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c",
     "canonicalInputApkBytes": 182092699,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
+    "signedApkSha256": "530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85",
+    "signedApkBytes": 182116902,
     "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
     "installabilityObservation": "OPEN_FOR_CURRENT_CANDIDATE",
-    "stableSignedInstallability": "BLOCKED_BY_R1_SIGNING"
+    "stableSignedInstallability": "READY_FOR_PHYSICAL"
   },
-  "r1PhysicalReceipt": null,
+  "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json",
   "historicalInvalidatedCampaign": {
     "candidate": "0.2.0-alpha.2+2004",
     "signedApkSha256": null,
@@ -74,7 +74,7 @@
     ]
   },
   "subgates": [
-    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"BLOCKED_BY_R1_SIGNING","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
+    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"READY_FOR_PHYSICAL","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
     {"id":"OD1","contract":"EXACT_GMAIL_READONLY_OAUTH","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD0"],"physicalClaims":["ANDROID_PACKAGE_MATCH","EXACT_SCOPE_GMAIL_READONLY","REAL_OAUTH_PASS","NO_OFFLINE_ACCESS_REQUEST"]},
     {"id":"OD2","contract":"METADATA_FIRST_STATEMENT_DISCOVERY","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD1"],"physicalClaims":["METADATA_FIRST_PASS","ATTACHMENT_BYTES_NOT_FETCHED_BEFORE_STRONG_CANDIDATE","RAW_GMAIL_IDENTITY_REMAINS_NATIVE_ONLY"]},
     {"id":"OD3","contract":"BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD2"],"physicalClaims":["BCP_SAVINGS_FETCH_ALLOWED","BCP_CREDIT_FETCH_BLOCKED","RIPLEY_CREDIT_FETCH_BLOCKED","GENERIC_FALLBACK_ABSENT"]},
@@ -99,8 +99,8 @@
     "current": null
   },
   "currentState": {
-    "r1TrustedEdgeSigning": "OPEN",
-    "r2PhysicalCampaign": "BLOCKED_BY_R1",
+    "r1TrustedEdgeSigning": "PASS",
+    "r2PhysicalCampaign": "READY",
     "q003": "ACTIVE",
     "q004": "ACTIVE",
     "q005": "ACTIVE",
