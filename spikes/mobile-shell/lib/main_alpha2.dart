@@ -98,6 +98,7 @@ class _Alpha2HomeState extends State<Alpha2Home> {
 
   Future<void> _refresh() async {
     if (_sessionState?.connected != true) return;
+    final sessionPasswords = <String, String>{};
     setState(() {
       _busy = true;
       _safeError = null;
@@ -105,14 +106,31 @@ class _Alpha2HomeState extends State<Alpha2Home> {
     try {
       final result = await _pipeline.refresh(
         tenantId: tenantId,
-        passwordProvider: _requestStatementPassword,
+        passwordProvider: (candidate) async {
+          final cached = sessionPasswords[candidate.profileId];
+          if (cached != null && cached.isNotEmpty) return cached;
+          final password = await _requestStatementPassword(candidate);
+          if (password != null && password.isNotEmpty) {
+            sessionPasswords[candidate.profileId] = password;
+          }
+          return password;
+        },
       );
       if (!mounted) return;
-      setState(() => _result = result);
+      setState(() {
+        _result = result;
+        _safeError = alpha2StatementOutcomeNotice(result);
+      });
+    } on Alpha2PipelineFailure catch (error) {
+      if (!mounted) return;
+      setState(() => _safeError = alpha2SafeRefreshMessage(error.safeCode));
     } catch (_) {
       if (!mounted) return;
-      setState(() => _safeError = 'La actualización financiera se detuvo de forma segura.');
+      setState(
+        () => _safeError = alpha2SafeRefreshMessage('A2_UNCLASSIFIED_SAFE_STOP'),
+      );
     } finally {
+      sessionPasswords.clear();
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -289,7 +307,7 @@ class _Alpha2StatementPasswordDialogState
           ),
           const SizedBox(height: 8),
           const Text(
-            'La clave se usa únicamente para abrir este PDF en esta sesión. No se guarda ni se sincroniza.',
+            'La clave se usa únicamente durante esta actualización para abrir los EECC compatibles de este perfil. No se guarda ni se sincroniza.',
           ),
           const SizedBox(height: 16),
           TextField(
@@ -438,11 +456,18 @@ class _Cashflow extends StatelessWidget {
 class _Coverage extends StatelessWidget {
   const _Coverage({required this.result});
   final Alpha2PipelineResult result;
-
   @override
   Widget build(BuildContext context) {
     final imported = result.statementOutcomes.where((item) => item.status == 'IMPORTED').length;
-    final review = result.statementOutcomes.where((item) => item.status == 'REVIEW_REQUIRED').length;
+    final review = result.statementOutcomes
+        .where(
+          (item) => const <String>{
+            'REVIEW_REQUIRED',
+            'PDF_REJECTED',
+            'FETCH_REJECTED',
+          }.contains(item.status),
+        )
+        .length;
     final quarantined = result.statementOutcomes.where((item) => item.status == 'QUARANTINED_PROFILE').length;
     final monthly = result.productGate.monthlyClose;
     final pendingMappings = result.productGate.ownershipDecisions
@@ -584,6 +609,45 @@ class _Disconnected extends StatelessWidget {
           child: Text('Sin conexión activa. Ningún dato financiero sale de tu dispositivo para construir esta pantalla.'),
         ),
       );
+}
+
+String? alpha2StatementOutcomeNotice(Alpha2PipelineResult result) {
+  final outcomes = result.statementOutcomes;
+  if (outcomes.any((item) => item.status == 'FETCH_REJECTED')) {
+    return 'Uno o más adjuntos de EECC no pudieron recuperarse de Gmail. La actualización continuó sin inventar datos. Código local: A2_STATEMENT_FETCH_REJECTED.';
+  }
+  if (outcomes.any((item) => item.status == 'PDF_REJECTED')) {
+    return 'Uno o más EECC no pudieron abrirse con la clave indicada o el lector PDF los rechazó. Código local: A2_STATEMENT_PDF_REJECTED.';
+  }
+  if (outcomes.any((item) => item.status == 'REVIEW_REQUIRED')) {
+    return 'El EECC se abrió, pero el parser estricto no pudo certificar toda su estructura. No se importaron filas dudosas. Código local: A2_STATEMENT_STRICT_REVIEW.';
+  }
+  return null;
+}
+
+String alpha2SafeRefreshMessage(String safeCode) {
+  final lead = switch (safeCode) {
+    'A2_SESSION_REAUTH_REQUIRED' =>
+      'La sesión de Gmail necesita volver a autorizarse.',
+    'A2_PASSWORD_PROVIDER' =>
+      'El diálogo local de la clave no pudo completar su ciclo de forma segura.',
+    'A2_STATEMENT_HANDLE_RELEASE' =>
+      'La custodia temporal del EECC no pudo cerrarse como se esperaba.',
+    'A2_STATEMENT_VAULT_WRITE' ||
+    'A2_GMAIL_VAULT_WRITE' ||
+    'A2_VAULT_INITIALIZE' ||
+    'A2_VAULT_READ' ||
+    'A2_VAULT_SAFE_ROW_REJECTED' =>
+      'El almacenamiento cifrado detuvo la actualización para proteger la consistencia.',
+    'A2_STATEMENT_STRICT_PARSE' =>
+      'El parser estricto del EECC detuvo la actualización sin importar datos dudosos.',
+    'A2_CANONICAL_RUNTIME' || 'A2_PRODUCT_GATE' || 'A2_PUBLIC_PROJECTION' =>
+      'La consolidación local detectó un estado que no puede materializar de forma segura.',
+    'A2_INGRESS_SCAN' || 'A2_GMAIL_EVIDENCE_REJECTED' =>
+      'La lectura financiera de Gmail se detuvo antes de consolidar datos.',
+    _ => 'La actualización financiera se detuvo de forma segura.',
+  };
+  return '$lead Código local: $safeCode.';
 }
 
 String _truthLabel(String state) => switch (state) {
