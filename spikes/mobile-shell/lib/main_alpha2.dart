@@ -141,62 +141,11 @@ class _Alpha2HomeState extends State<Alpha2Home> {
     Alpha2StatementCandidateHandle candidate,
   ) async {
     if (!mounted) return null;
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Abrir estado de cuenta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${candidate.institutionCode} · ${candidate.productType}',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'La clave se usa únicamente para abrir este PDF en esta sesión. No se guarda ni se sincroniza.',
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                obscureText: true,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Clave del PDF',
-                  border: OutlineInputBorder(),
-                ),
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) Navigator.of(context).pop(value);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Ahora no'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  Navigator.of(context).pop(controller.text);
-                }
-              },
-              child: const Text('Abrir localmente'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      controller.clear();
-      controller.dispose();
-    }
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Alpha2StatementPasswordDialog(candidate: candidate),
+    );
   }
 
   @override
@@ -286,6 +235,87 @@ class _Alpha2HomeState extends State<Alpha2Home> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class Alpha2StatementPasswordDialog extends StatefulWidget {
+  const Alpha2StatementPasswordDialog({
+    super.key,
+    required this.candidate,
+  });
+
+  final Alpha2StatementCandidateHandle candidate;
+
+  @override
+  State<Alpha2StatementPasswordDialog> createState() =>
+      _Alpha2StatementPasswordDialogState();
+}
+
+class _Alpha2StatementPasswordDialogState
+    extends State<Alpha2StatementPasswordDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.clear();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(String value) {
+    if (value.isEmpty || !mounted) return;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final candidate = widget.candidate;
+    return AlertDialog(
+      title: const Text('Abrir estado de cuenta'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${candidate.institutionCode} · ${candidate.productType}',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'La clave se usa únicamente para abrir este PDF en esta sesión. No se guarda ni se sincroniza.',
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            obscureText: true,
+            enableSuggestions: false,
+            autocorrect: false,
+            decoration: const InputDecoration(
+              labelText: 'Clave del PDF',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: _submit,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Ahora no'),
+        ),
+        FilledButton(
+          onPressed: () => _submit(_controller.text),
+          child: const Text('Abrir localmente'),
+        ),
+      ],
     );
   }
 }
