@@ -40,17 +40,20 @@ R2 sanitized receipt
 
 Every OD0..OD11 observation MUST bind the same:
 
-- candidate: `0.2.0-alpha.2+2003`
-- source: `c29a68e5326a187a7c82e6d66254ae05b6a4178a`
-- canonical input APK SHA256: `93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6`
-- stable signed APK SHA256: `7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6`
+- candidate: `0.2.0-alpha.2+2005`
+- source: `d99e7e4765adfc96bed9d914b2b6f296f9712242`
+- canonical run: `34257413733`
+- canonical artifact: `10068684066`
+- canonical input APK SHA256: `dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c`
+- canonical input APK bytes: `182092699`
+- stable signed APK SHA256: `530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85`
 - stable signed APK bytes: `182116902`
 - package: `com.financesensor.lab.gmailconnection.r2`
 - scope: `gmail.readonly`
 - stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
-- R1 receipt: `graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json`
+- R1 receipt: `graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json`
 
-The historical `+2001` design snapshot remains immutable in the prebuild design. The existing source/APK reopen law permitted rebinding execution first to diagnostic `+2002` and finally to installable `+2003` without rewriting that historical snapshot.
+The historical `+2001` design snapshot remains immutable in the prebuild design. The existing source/APK reopen law allowed execution authority to move through diagnostic/superseded candidates without rewriting that historical snapshot. `+2003` and `+2004` physical/signing observations remain historical only after the +2005 source/APK identity change.
 
 If the stable signed APK hash changes, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
 
@@ -59,7 +62,7 @@ If the stable signed APK hash changes, the entire R2 campaign is invalidated and
 1. **One APK, one campaign.** No per-slice physical promotion.
 2. **Fail closed.** A FAIL or INCONCLUSIVE gate does not get converted to PASS by a later gate.
 3. **No synthetic inheritance.** CI PASS cannot satisfy an OD gate.
-4. **No signature inheritance.** Install/launch observed on the ephemeral CI-debug APK does not satisfy OD0 for the stable-signed APK.
+4. **No signature inheritance.** Install/launch observed on an ephemeral CI-debug APK does not satisfy OD0 for the stable-signed APK.
 5. **No raw evidence in GitHub.** Only sanitized receipts may be committed.
 6. **No hidden coverage.** Missing or quarantined sources remain visible gaps.
 7. **No generic statement parser authority.** BCP Credit and Ripley Credit remain fetch/parse quarantined until their own physical profiles close.
