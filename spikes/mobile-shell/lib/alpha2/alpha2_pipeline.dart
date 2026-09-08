@@ -192,7 +192,16 @@ class Alpha2Pipeline {
 
     final password = await _guardAsync(
       'A2_PASSWORD_PROVIDER',
-      () => passwordProvider(candidate),
+      () async {
+        try {
+          return await passwordProvider(candidate);
+        } catch (_) {
+          // The opaque native handle contains raw Gmail identifiers behind the
+          // platform boundary. Even a UI/provider failure must release it.
+          await ingress.releaseStatementHandle(candidate.handle);
+          rethrow;
+        }
+      },
     );
     if (password == null || password.isEmpty) {
       await _releaseStatementHandle(candidate.handle);
