@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 
 import 'alpha2_ingress.dart';
 import 'alpha2_models.dart';
@@ -156,7 +157,28 @@ class Alpha2Pipeline {
 
     Uint8List? bytes;
     try {
-      bytes = await ingress.fetchStatementBytes(candidate.handle);
+      try {
+        bytes = await ingress.fetchStatementBytes(candidate.handle);
+      } on PlatformException catch (error) {
+        // Attachment retrieval belongs to this one statement candidate. A safe
+        // native rejection must not abort the entire financial refresh or erase
+        // already-minimized Gmail evidence. Only a small allow-listed diagnostic
+        // code crosses back to Dart; message/details are intentionally ignored.
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: <String>[_safeStatementFetchCode(error.code)],
+        );
+      } on StateError {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>['ALPHA2_STATEMENT_BYTES_EMPTY'],
+        );
+      }
+
       final sourceReceiptId = _statementSourceReceipt(candidate.profileId, bytes);
       final layout = await pdfReader.extractLayout(
         encryptedPdfBytes: bytes,
@@ -209,6 +231,13 @@ class Alpha2Pipeline {
       // password is a Dart String. We deliberately make no zeroization claim.
     }
   }
+}
+
+String _safeStatementFetchCode(String rawCode) {
+  final code = rawCode.trim().toUpperCase();
+  if (code == 'REAUTH_REQUIRED') return code;
+  if (RegExp(r'^ALPHA2_STATEMENT_[A-Z0-9_]+$').hasMatch(code)) return code;
+  return 'ALPHA2_STATEMENT_FETCH_FAILED';
 }
 
 String _gmailSourceReceipt(String evidenceId) {
