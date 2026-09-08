@@ -12,12 +12,12 @@ if (!fs.existsSync(receiptPath)) {
 
 const expected = {
   FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING: 'PASS',
-  FINANCESENSOR_ALPHA2_CANDIDATE: '0.2.0-alpha.2+2003',
-  SOURCE_COMMIT: 'c29a68e5326a187a7c82e6d66254ae05b6a4178a',
-  CANONICAL_RUN_ID: '34166127407',
-  CANONICAL_ARTIFACT_ID: '10034303033',
-  INPUT_APK_SHA256: '93d176b9f59b75a44ffcb9634d2a5620b2f0d63bbc75d80e2e1600a7d2cc5ad6',
-  INPUT_APK_BYTES: '182090843',
+  FINANCESENSOR_ALPHA2_CANDIDATE: '0.2.0-alpha.2+2004',
+  SOURCE_COMMIT: '8030a8a2946f7ea288290f64662e52a928d851a3',
+  CANONICAL_RUN_ID: '34243314002',
+  CANONICAL_ARTIFACT_ID: '10063170773',
+  INPUT_APK_SHA256: '14d8134bd6686291155d411e8938af632f1bba0d6ba1b94b5f86b35b13fbc1c1',
+  INPUT_APK_BYTES: '182091971',
   SIGNER_SHA1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
   ANDROID_OAUTH_PACKAGE: 'com.financesensor.lab.gmailconnection.r2',
   EXACT_SCOPE: 'gmail.readonly',
@@ -42,23 +42,15 @@ for (const rawLine of raw.split(/\r?\n/)) {
   const line = rawLine.trim();
   if (!line || line.startsWith('#')) continue;
   const index = line.indexOf('=');
-  if (index <= 0) {
-    failures.push(`invalid receipt line: ${line.slice(0, 40)}`);
-    continue;
-  }
+  if (index <= 0) { failures.push(`invalid receipt line: ${line.slice(0, 40)}`); continue; }
   const key = line.slice(0, index).trim();
   const value = line.slice(index + 1).trim();
-  if (!allowedKeys.has(key)) {
-    failures.push(`unexpected receipt key: ${key}`);
-    continue;
-  }
+  if (!allowedKeys.has(key)) { failures.push(`unexpected receipt key: ${key}`); continue; }
   if (values.has(key)) failures.push(`duplicate receipt key: ${key}`);
   values.set(key, value);
 }
 
-for (const [key, expectedValue] of Object.entries(expected)) {
-  if (values.get(key) !== expectedValue) failures.push(`${key} mismatch`);
-}
+for (const [key, expectedValue] of Object.entries(expected)) if (values.get(key) !== expectedValue) failures.push(`${key} mismatch`);
 for (const key of requiredDynamic) if (!values.has(key)) failures.push(`missing ${key}`);
 
 const signedHash = values.get('SIGNED_APK_SHA256') ?? '';
