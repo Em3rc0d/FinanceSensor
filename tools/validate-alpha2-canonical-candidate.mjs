@@ -6,17 +6,17 @@ const signerPath = 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1';
 const signer = fs.readFileSync(signerPath, 'utf8');
 
 const expected = {
-  candidate: '0.2.0-alpha.2+2005',
-  certifiedPrHead: '9d0e54a4cabddfa8a5e634bc6c2e58b4fe169f9b',
-  sourceCommit: 'd99e7e4765adfc96bed9d914b2b6f296f9712242',
-  runId: 34257413733,
-  jobId: 102166618707,
-  artifactId: 10068684066,
-  artifactName: 'financesensor-alpha2-2005-candidate-34257413733',
-  artifactZipSha256: '536495ef92218477156c2cf95a3dc636071187b239750787788ccc1d1a32a7b2',
-  artifactZipBytes: 87250264,
-  apkSha256: 'dacc7d7281842989904adfc1d3e7b17242b39b20674eb8e7c33e1e339428a44c',
-  apkBytes: 182092699,
+  candidate: '0.2.0-alpha.2+2006',
+  certifiedPrHead: 'd696322ce97e66e6c401cfe045b3e3c31902d02d',
+  sourceCommit: 'e26bab7cd87c5e686898998e867d8fb25c99db27',
+  runId: 34278019055,
+  jobId: 102235745821,
+  artifactId: 10076715491,
+  artifactName: 'financesensor-alpha2-2006-candidate-34278019055',
+  artifactZipSha256: 'f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309',
+  artifactZipBytes: 87254679,
+  apkSha256: '11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179',
+  apkBytes: 182102047,
   signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
 };
 
@@ -36,7 +36,7 @@ assert(graph.authority?.publicCiSigner === 'EPHEMERAL_DEBUG' && graph.authority?
 
 const physical = graph.physicalInstallabilityObservation ?? {};
 assert(physical.status === 'OPEN_FOR_CURRENT_CANDIDATE', 'current physical installability must be open');
-assert(physical.installPass === false && physical.launchPass === false && physical.oauthPass === false, 'physical claims cannot be inherited by +2005');
+assert(physical.installPass === false && physical.launchPass === false && physical.oauthPass === false, 'physical claims cannot be inherited by +2006');
 assert(physical.inheritanceFromPriorCandidateAllowed === false, 'prior-candidate physical inheritance must be forbidden');
 
 assert(graph.signing?.expectedSignerSha1 === expected.signerSha1, 'stable signer identity drifted');
@@ -46,11 +46,14 @@ assert(graph.signing?.trustedEdgeSigningPass === false && graph.signing?.signedA
 for (const key of ['ownedDeviceInstallPass','ownedDeviceLaunchPass','ownedDeviceStableSignerOauthPass','physicalSqlcipherPass','physicalAlpha2Pass','buildReady','releaseReady']) assert(graph.boundaries?.[key] === false, `${key} must remain false`);
 
 const consensus = new Map((graph.postMergeConsensus ?? []).map(x => [x.workflow, x]));
-for (const [workflow, runId] of [['Alpha.2 Integrated Runtime',34257413733],['Alpha.2 Design Freeze',34257418398],['FinanceSensor Heartbeat',34257413806],['FinanceSensor Public Readiness',34257413671]]) {
+for (const [workflow, runId] of [['Alpha.2 Integrated Runtime',34278019055],['Alpha.2 Design Freeze',34278023629],['FinanceSensor Heartbeat',34278019107],['FinanceSensor Public Readiness',34278019054]]) {
   assert(consensus.get(workflow)?.runId === runId && consensus.get(workflow)?.conclusion === 'SUCCESS', `post-merge consensus missing: ${workflow}`);
 }
-const old2004 = (graph.nonAuthoritativeCandidates ?? []).find(x => x.candidate === '0.2.0-alpha.2+2004');
-assert(old2004 && /post-password|safe-stop|fetch/i.test(old2004.reason) && /no \+2004 R1\/R2 physical claim may be inherited/i.test(old2004.reason), '+2004 supersession boundary missing');
+const old2005 = (graph.nonAuthoritativeCandidates ?? []).find(x => x.candidate === '0.2.0-alpha.2+2005');
+assert(old2005 && /password|fan-out|single-pass|diagnostic/i.test(old2005.reason) && /no \+2005 R1\/R2 physical claim may be inherited by \+2006/i.test(old2005.reason), '+2005 supersession boundary missing');
+for (const id of ['0.2.0-alpha.2+2001','0.2.0-alpha.2+2002','0.2.0-alpha.2+2003','0.2.0-alpha.2+2004','0.2.0-alpha.2+2005']) {
+  assert((graph.nonAuthoritativeCandidates ?? []).some(x => x.candidate === id), `supersession record missing: ${id}`);
+}
 
 for (const marker of [expected.candidate, expected.sourceCommit, expected.apkSha256, String(expected.apkBytes), String(expected.runId), String(expected.artifactId), expected.signerSha1, 'ALPHA2_MOBILE_INTEGRATION_PHYSICAL=OPEN', 'BUILD_READY=NO', 'RELEASE_READY=NO']) assert(signer.includes(marker), `signer missing frozen marker: ${marker}`);
 assert(signer.includes("'--ks-pass', 'stdin'") && signer.includes("'--key-pass', 'stdin'"), 'stdin password handoff missing');
@@ -66,6 +69,7 @@ console.log('ALPHA2_CANONICAL_CANDIDATE_RECEIPT=PASS');
 console.log(`CANDIDATE=${expected.candidate}`);
 console.log(`SOURCE_COMMIT=${expected.sourceCommit}`);
 console.log(`APK_SHA256=${expected.apkSha256}`);
+console.log('SINGLE_PASS_EECC_DIAGNOSTICS=BOUND_TO_CANONICAL');
 console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN');
 console.log('R1_TRUSTED_EDGE_SIGNING=OPEN');
 console.log('BUILD_READY=NO');
