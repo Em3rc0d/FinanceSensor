@@ -16,6 +16,8 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2004-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2004-2026-09-08.json'
       - 'mk0/10-evidence/EV-ALPHA2-2003-PASSWORD-DIALOG-PHYSICAL-FAILURE-2026-09-08.md'
       - 'mk0/10-evidence/EV-ALPHA2-2004-R1-V6-REFREEZE-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
@@ -33,6 +35,8 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2004-2026-09-08.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2004-2026-09-08.json'
       - 'mk0/10-evidence/EV-ALPHA2-2003-PASSWORD-DIALOG-PHYSICAL-FAILURE-2026-09-08.md'
       - 'mk0/10-evidence/EV-ALPHA2-2004-R1-V6-REFREEZE-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
@@ -188,6 +192,8 @@ jobs:
 
           BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = '6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d'
+          test "$BUNDLE_BYTES" = '86227316'
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v6-AUDIT.txt" <<EOF
           BUNDLE_V6_REPRODUCTION=PASS
           BUNDLE_SHA256=${BUNDLE_SHA256}
@@ -196,6 +202,7 @@ jobs:
           SECRET_LIKE_VALUE_MATCHES=0
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
+          R1_V6_FROZEN_BYTES=PASS
           R1_TRUSTED_EDGE_SIGNING=OPEN
           R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1
           BUILD_READY=NO
@@ -216,6 +223,7 @@ jobs:
       - name: Preserve pre-signing boundary
         run: |
           set -euo pipefail
+          echo 'R1_V6_FROZEN_BYTES=PASS'
           echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1'
