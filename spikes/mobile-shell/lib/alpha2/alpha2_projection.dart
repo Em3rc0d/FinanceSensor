@@ -194,25 +194,26 @@ Alpha2PublicDashboardProjection buildAlpha2PublicProjection({
   );
 }
 
+const String _fetchDiagnosticPrefix = 'FETCH_DIAGNOSTIC:';
+
 List<Alpha2KnowledgeGap> _statementOutcomeGaps(
   Map<String, int> statementStatusCounts,
 ) {
   const reasons = <String, String>{
     'PASSWORD_REQUIRED': 'STATEMENT_PASSWORD_REQUIRED',
-    'FETCH_REJECTED': 'STATEMENT_FETCH_REJECTED',
     'PDF_REJECTED': 'STATEMENT_PDF_REJECTED',
     'REVIEW_REQUIRED': 'STATEMENT_STRICT_REVIEW_REQUIRED',
     'PERSISTENCE_REJECTED': 'STATEMENT_PERSISTENCE_REJECTED',
   };
   final gaps = <Alpha2KnowledgeGap>[];
-  for (final entry in reasons.entries) {
-    final count = statementStatusCounts[entry.key] ?? 0;
+
+  void addGaps(String idKey, String reason, int count) {
     for (var index = 0; index < count; index += 1) {
       gaps.add(
         Alpha2KnowledgeGap(
-          id: 'stmt_gap_${entry.key.toLowerCase()}_${index + 1}',
+          id: 'stmt_gap_${idKey.toLowerCase()}_${index + 1}',
           kind: 'STATEMENT_IMPORT',
-          reason: entry.value,
+          reason: reason,
           truthState: Alpha2TruthState.unknown,
           algorithmVersion: alpha2SensorVersion,
           evidenceInputs: const <String>[],
@@ -220,7 +221,67 @@ List<Alpha2KnowledgeGap> _statementOutcomeGaps(
       );
     }
   }
+
+  for (final entry in reasons.entries) {
+    addGaps(entry.key, entry.value, statementStatusCounts[entry.key] ?? 0);
+  }
+
+  final fetchReasonCounts = <String, int>{};
+  var classifiedFetchCount = 0;
+  for (final entry in statementStatusCounts.entries) {
+    if (!entry.key.startsWith(_fetchDiagnosticPrefix) || entry.value <= 0) continue;
+    final safeCode = entry.key.substring(_fetchDiagnosticPrefix.length);
+    final reason = _statementFetchReason(safeCode);
+    fetchReasonCounts[reason] = (fetchReasonCounts[reason] ?? 0) + entry.value;
+    classifiedFetchCount += entry.value;
+  }
+  final totalFetchCount = statementStatusCounts['FETCH_REJECTED'] ?? 0;
+  final genericFetchCount = totalFetchCount > classifiedFetchCount
+      ? totalFetchCount - classifiedFetchCount
+      : 0;
+  if (genericFetchCount > 0) {
+    fetchReasonCounts['STATEMENT_FETCH_REJECTED'] =
+        (fetchReasonCounts['STATEMENT_FETCH_REJECTED'] ?? 0) + genericFetchCount;
+  }
+  for (final entry in fetchReasonCounts.entries) {
+    addGaps('fetch_${entry.key}', entry.key, entry.value);
+  }
+
   return gaps;
+}
+
+String _statementFetchReason(String safeCode) {
+  final code = safeCode.trim().toUpperCase();
+  if (code == 'REAUTH_REQUIRED') return 'STATEMENT_REAUTH_REQUIRED';
+  if (code == 'ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT' ||
+      code == 'ALPHA2_STATEMENT_ATTACHMENT_IO_RETRY_EXHAUSTED') {
+    return 'STATEMENT_FETCH_NETWORK_RETRY_EXHAUSTED';
+  }
+  if (code == 'ALPHA2_STATEMENT_GMAIL_HTTP_429') {
+    return 'STATEMENT_FETCH_RATE_LIMITED';
+  }
+  final httpMatch = RegExp(r'^ALPHA2_STATEMENT_GMAIL_HTTP_(\d{3})$').firstMatch(code);
+  if (httpMatch != null) {
+    final status = int.tryParse(httpMatch.group(1) ?? '');
+    if (status == 403) return 'STATEMENT_FETCH_ACCESS_REJECTED';
+    if (status == 404) return 'STATEMENT_ATTACHMENT_NOT_FOUND';
+    if (status == 408 || (status != null && status >= 500 && status <= 599)) {
+      return 'STATEMENT_FETCH_SERVICE_TEMPORARY';
+    }
+    return 'STATEMENT_FETCH_REJECTED';
+  }
+  if (code == 'ALPHA2_STATEMENT_ATTACHMENT_EMPTY' ||
+      code == 'ALPHA2_STATEMENT_ATTACHMENT_INVALID_BASE64' ||
+      code == 'ALPHA2_STATEMENT_ATTACHMENT_SIZE_INVALID' ||
+      code == 'ALPHA2_STATEMENT_ATTACHMENT_SIZE_MISMATCH' ||
+      code == 'ALPHA2_STATEMENT_ATTACHMENT_RESPONSE_INVALID' ||
+      code == 'ALPHA2_STATEMENT_BYTES_EMPTY') {
+    return 'STATEMENT_ATTACHMENT_INVALID';
+  }
+  if (code == 'ALPHA2_STATEMENT_PDF_SIGNATURE_INVALID') {
+    return 'STATEMENT_PDF_SIGNATURE_INVALID';
+  }
+  return 'STATEMENT_FETCH_REJECTED';
 }
 
 String? _safeAccountDisplay(String? accountId, String? instrumentId) {
