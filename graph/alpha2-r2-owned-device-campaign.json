@@ -3,7 +3,7 @@
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "READY_FOR_PHYSICAL_CAMPAIGN",
+  "status": "PHYSICAL_CAMPAIGN_IN_PROGRESS",
   "candidate": {
     "id": "0.2.0-alpha.2+2006",
     "sourceCommit": "e26bab7cd87c5e686898998e867d8fb25c99db27",
@@ -15,8 +15,8 @@
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
-    "installabilityObservation": "OPEN_FOR_CURRENT_CANDIDATE",
-    "stableSignedInstallability": "READY_FOR_OD0_PHYSICAL"
+    "installabilityObservation": "PASS_ON_CURRENT_CANDIDATE",
+    "stableSignedInstallability": "OD0_PASS"
   },
   "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json",
   "historicalInvalidatedCampaign": {
@@ -74,8 +74,8 @@
     ]
   },
   "subgates": [
-    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"READY_FOR_PHYSICAL","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
-    {"id":"OD1","contract":"EXACT_GMAIL_READONLY_OAUTH","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD0"],"physicalClaims":["ANDROID_PACKAGE_MATCH","EXACT_SCOPE_GMAIL_READONLY","REAL_OAUTH_PASS","NO_OFFLINE_ACCESS_REQUEST"]},
+    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"PASS","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
+    {"id":"OD1","contract":"EXACT_GMAIL_READONLY_OAUTH","status":"READY_FOR_PHYSICAL","requires":["OD0"],"physicalClaims":["ANDROID_PACKAGE_MATCH","EXACT_SCOPE_GMAIL_READONLY","REAL_OAUTH_PASS","NO_OFFLINE_ACCESS_REQUEST"]},
     {"id":"OD2","contract":"METADATA_FIRST_STATEMENT_DISCOVERY","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD1"],"physicalClaims":["METADATA_FIRST_PASS","ATTACHMENT_BYTES_NOT_FETCHED_BEFORE_STRONG_CANDIDATE","RAW_GMAIL_IDENTITY_REMAINS_NATIVE_ONLY"]},
     {"id":"OD3","contract":"BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD2"],"physicalClaims":["BCP_SAVINGS_FETCH_ALLOWED","BCP_CREDIT_FETCH_BLOCKED","RIPLEY_CREDIT_FETCH_BLOCKED","GENERIC_FALLBACK_ABSENT"]},
     {"id":"OD4","contract":"BCP_SAVINGS_STRICT_PARSE_OR_FAIL_CLOSED","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD3"],"physicalClaims":["GEOMETRY_HEADERS_RESOLVED","UNEXPLAINED_MONETARY_ROW_QUARANTINES_BATCH","PDF_PASSWORD_SESSION_ONLY","RAW_PDF_NOT_DURABLE"]},
@@ -96,11 +96,12 @@
   "receipt": {
     "schema": "graph/alpha2-r2-sanitized-receipt-schema.json",
     "expectedPathPattern": "graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-<date>.json",
-    "current": null
+    "current": "graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD0-2026-09-09.json"
   },
   "currentState": {
     "r1TrustedEdgeSigning": "PASS",
-    "r2PhysicalCampaign": "READY",
+    "r2PhysicalCampaign": "IN_PROGRESS",
+    "nextGate": "OD1_EXACT_GMAIL_READONLY_OAUTH",
     "q003": "ACTIVE",
     "q004": "ACTIVE",
     "q005": "ACTIVE",

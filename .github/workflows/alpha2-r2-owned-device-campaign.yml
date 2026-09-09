@@ -14,6 +14,7 @@ on:
       - 'graph/physical-closure-campaign.json'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
       - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
@@ -23,6 +24,7 @@ on:
       - 'tools/validate-ci-runner-policy.mjs'
       - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD0-INSTALL-LAUNCH-2026-09-09.md'
       - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
   push:
@@ -37,6 +39,7 @@ on:
       - 'graph/physical-closure-campaign.json'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
       - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
@@ -46,6 +49,7 @@ on:
       - 'tools/validate-ci-runner-policy.mjs'
       - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD0-INSTALL-LAUNCH-2026-09-09.md'
       - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
 
@@ -81,7 +85,7 @@ jobs:
       - name: R1 sanitized signing receipt boundary
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
-      - name: R2 owned-device campaign ready contract
+      - name: R2 owned-device campaign incremental contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild blockchain chain
@@ -102,13 +106,14 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve post-R1 physical boundary
+      - name: Preserve post-OD0 physical boundary
         run: |
           set -euo pipefail
           echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=READY'
-          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
+          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
+          echo 'OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
+          echo 'R2_NEXT_GATE=OD1_EXACT_GMAIL_READONLY_OAUTH'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
