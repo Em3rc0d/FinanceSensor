@@ -1,21 +1,21 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const sourcePath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt';
-const reducedPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json';
+const receiptDir = 'graph/physical-receipts';
+const receiptPrefix = 'ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-';
 const r1Path = 'graph/alpha2-r1-signing-handoff.json';
 const r2Path = 'graph/alpha2-r2-owned-device-campaign.json';
 const reducerPath = 'tools/reduce-alpha2-r1-signing-receipt.mjs';
 
 function assert(cond, message) { if (!cond) throw new Error(message); }
-for (const path of [r1Path, r2Path, reducerPath]) assert(fs.existsSync(path), `missing ${path}`);
+for (const requiredPath of [receiptDir, r1Path, r2Path, reducerPath]) assert(fs.existsSync(requiredPath), `missing ${requiredPath}`);
 
 const r1 = JSON.parse(fs.readFileSync(r1Path, 'utf8'));
 const r2 = JSON.parse(fs.readFileSync(r2Path, 'utf8'));
-const sourceExists = fs.existsSync(sourcePath);
-const reducedExists = fs.existsSync(reducedPath);
-
-assert(sourceExists === reducedExists, 'partial +2006 signing receipt state is forbidden');
+const candidateFiles = fs.readdirSync(receiptDir).filter(name => name.startsWith(receiptPrefix)).sort();
+const candidateTxt = candidateFiles.filter(name => name.endsWith('.txt'));
+const candidateJson = candidateFiles.filter(name => name.endsWith('.json'));
 
 const expectedStatic = {
   schemaVersion: 'A2_R1_PHYSICAL_SIGNING_RECEIPT_V1',
@@ -36,10 +36,11 @@ const expectedStatic = {
   sanitizationPass: true,
 };
 
-if (!sourceExists) {
+if (r1.physicalReceipt === null) {
+  assert(candidateTxt.length === 0 && candidateJson.length === 0, 'unbound +2006 signing receipt files are forbidden while R1 is OPEN');
   assert(r1.candidate === expectedStatic.candidate && r1.sourceCommit === expectedStatic.sourceCommit, 'open R1 must bind current +2006 authority');
   assert(r1.status === 'READY_FOR_TRUSTED_EDGE_SIGNING', `R1 must remain ready for trusted-edge signing; got ${r1.status}`);
-  assert(r1.trustedEdgeSigningPass === false && r1.physicalReceipt === null, 'R1 cannot pre-certify a physical receipt');
+  assert(r1.trustedEdgeSigningPass === false, 'R1 cannot pre-certify trusted-edge signing');
   assert(r1.signedApkSha256 === null && r1.signedApkBytes === null, 'R1 cannot bind a stable APK before receipt');
   assert(r1.physicalAlpha2Pass === false && r1.buildReady === false && r1.releaseReady === false, 'open R1 cannot promote downstream readiness');
 
@@ -62,6 +63,17 @@ if (!sourceExists) {
   console.log('RELEASE_READY=NO');
   process.exit(0);
 }
+
+const reducedPath = r1.physicalReceipt?.path;
+const sourcePath = r1.physicalReceipt?.sourcePath;
+assert(typeof reducedPath === 'string' && typeof sourcePath === 'string', 'R1 physicalReceipt must bind both reduced path and sourcePath');
+assert(path.dirname(reducedPath) === receiptDir && path.dirname(sourcePath) === receiptDir, 'R1 receipt paths must stay inside graph/physical-receipts');
+assert(path.basename(reducedPath).startsWith(receiptPrefix) && reducedPath.endsWith('.json'), 'R1 reduced receipt must be a +2006 JSON receipt');
+assert(path.basename(sourcePath).startsWith(receiptPrefix) && sourcePath.endsWith('.txt'), 'R1 source receipt must be a +2006 TXT receipt');
+assert(path.basename(reducedPath, '.json') === path.basename(sourcePath, '.txt'), 'R1 source/reduced receipt stems must match');
+assert(candidateTxt.length === 1 && candidateJson.length === 1, 'exactly one bound +2006 sanitized receipt pair is allowed');
+assert(path.join(receiptDir, candidateTxt[0]) === sourcePath && path.join(receiptDir, candidateJson[0]) === reducedPath, 'candidate receipt files must equal the graph-bound pair');
+assert(fs.existsSync(sourcePath) && fs.existsSync(reducedPath), 'graph-bound +2006 receipt pair is incomplete');
 
 const source = fs.readFileSync(sourcePath, 'utf8');
 const reduced = JSON.parse(fs.readFileSync(reducedPath, 'utf8'));
@@ -90,7 +102,6 @@ assert(reduced.rawPrivateMaterialCommitted === false, 'raw private material boun
 assert(r1.status === 'TRUSTED_EDGE_SIGNING_PASS' && r1.trustedEdgeSigningPass === true, 'R1 must be closed by current +2006 receipt');
 assert(r1.candidate === expectedStatic.candidate && r1.sourceCommit === expectedStatic.sourceCommit, 'R1 current authority drifted');
 assert(r1.signedApkSha256 === reduced.signedApkSha256 && r1.signedApkBytes === reduced.signedApkBytes, 'R1 signed APK identity drifted');
-assert(r1.physicalReceipt?.path === reducedPath, 'R1 current receipt binding drifted');
 assert(r1.physicalReceipt?.sanitizationPass === true && r1.physicalReceipt?.rawPrivateMaterialCommitted === false, 'R1 receipt sanitization boundary drifted');
 assert(r1.physicalAlpha2Pass === false && r1.buildReady === false && r1.releaseReady === false, 'R1 receipt may not promote downstream readiness');
 
