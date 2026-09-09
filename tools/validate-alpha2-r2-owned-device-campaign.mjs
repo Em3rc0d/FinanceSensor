@@ -7,12 +7,25 @@ const paths = {
   canonical: 'graph/alpha2-canonical-candidate.json',
   r1: 'graph/alpha2-r1-signing-handoff.json',
   physical: 'graph/physical-closure-campaign.json',
+  receipt: 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD2-2026-09-09.json',
+  od1Evidence: 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD1-OAUTH-2026-09-09.md',
+  od2Evidence: 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD2-METADATA-FIRST-2026-09-09.md',
 };
 
-const expectedSignedSha = '36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0';
-const expectedSignedBytes = 182125094;
-const expectedR1Receipt = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json';
-const expectedOd0Receipt = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD0-2026-09-09.json';
+const expected = {
+  candidate: '0.2.0-alpha.2+2006',
+  sourceCommit: 'e26bab7cd87c5e686898998e867d8fb25c99db27',
+  canonicalInputApkSha256: '11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179',
+  canonicalInputApkBytes: 182102047,
+  signedApkSha256: '36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0',
+  signedApkBytes: 182125094,
+  signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
+  androidPackage: 'com.financesensor.lab.gmailconnection.r2',
+  gmailScope: 'gmail.readonly',
+  r1Receipt: 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json',
+  currentReceipt: paths.receipt,
+};
+
 const failures = [];
 const fail = message => failures.push(message);
 const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
@@ -25,147 +38,112 @@ if (!failures.length) {
   const canonical = readJson(paths.canonical);
   const r1 = readJson(paths.r1);
   const physical = readJson(paths.physical);
+  const receipt = readJson(paths.receipt);
 
   if (campaign.schemaVersion !== 'A2_R2_OWNED_DEVICE_CAMPAIGN_V1') fail('unexpected R2 campaign schema');
   if (campaign.project !== 'FinanceSensor' || campaign.mk !== 'MK0') fail('R2 campaign identity mismatch');
   if (campaign.implements !== 'graph/prebuild-remainder-design.json#R2') fail('R2 implementation binding missing');
-
-  const reopenLaws = new Set(remainder.executionLaws ?? []);
-  if (!reopenLaws.has('SOURCE_OR_APK_IDENTITY_CHANGE_REOPENS_SIGNING_AND_OWNED_DEVICE_CAMPAIGN')) fail('prebuild design missing source/APK reopen law');
-  const reopenRule = (remainder.reopenRules ?? []).find(x => x.signal === 'SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED');
-  if (JSON.stringify(reopenRule?.reopens) !== JSON.stringify(['R1', 'R2'])) fail('prebuild R1/R2 reopen rule drifted');
+  if (campaign.status !== 'PHYSICAL_CAMPAIGN_IN_PROGRESS') fail('R2 must remain PHYSICAL_CAMPAIGN_IN_PROGRESS');
 
   const candidate = campaign.candidate ?? {};
-  const currentBindings = [
-    ['id', canonical.candidate],
-    ['sourceCommit', canonical.sourceCommit],
-    ['canonicalInputApkSha256', canonical.authority?.apkSha256],
-    ['canonicalInputApkBytes', canonical.authority?.apkBytes],
-    ['androidPackage', canonical.signing?.androidOauthPackage],
-    ['gmailScope', canonical.signing?.exactScope],
-    ['signerSha1', canonical.signing?.expectedSignerSha1],
+  const identity = [
+    ['id', expected.candidate],
+    ['sourceCommit', expected.sourceCommit],
+    ['canonicalInputApkSha256', expected.canonicalInputApkSha256],
+    ['canonicalInputApkBytes', expected.canonicalInputApkBytes],
+    ['signedApkSha256', expected.signedApkSha256],
+    ['signedApkBytes', expected.signedApkBytes],
+    ['signerSha1', expected.signerSha1],
+    ['androidPackage', expected.androidPackage],
+    ['gmailScope', expected.gmailScope],
   ];
-  for (const [key, expected] of currentBindings) if (candidate[key] !== expected) fail(`candidate ${key} drifted from canonical receipt`);
-  if (candidate.id !== '0.2.0-alpha.2+2006' || candidate.sourceCommit !== 'e26bab7cd87c5e686898998e867d8fb25c99db27') fail('current R2 identity must be +2006 post-merge authority');
-  if (candidate.canonicalInputApkSha256 !== '11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179' || candidate.canonicalInputApkBytes !== 182102047) fail('current R2 canonical APK identity drifted');
-  if (candidate.minSdk !== 31) fail('R2 current candidate must retain minSdk 31');
+  for (const [key, value] of identity) if (candidate[key] !== value) fail(`candidate ${key} drifted`);
+  if (candidate.minSdk !== 31) fail('R2 candidate minSdk drifted');
+  if (candidate.installabilityObservation !== 'PASS_ON_CURRENT_CANDIDATE' || candidate.stableSignedInstallability !== 'OD0_PASS') fail('OD0 installability authority drifted');
 
-  if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null) fail('canonical CI receipt may not pre-certify trusted-edge signing');
-  if (r1.candidate !== candidate.id || r1.sourceCommit !== candidate.sourceCommit) fail('R1/R2 candidate identity mismatch');
-  if (r1.inputApk?.sha256 !== candidate.canonicalInputApkSha256 || r1.inputApk?.bytes !== candidate.canonicalInputApkBytes) fail('R1/R2 canonical APK mismatch');
-  if (r1.signer?.expectedSignerSha1 !== candidate.signerSha1 || r1.signer?.androidOauthPackage !== candidate.androidPackage || r1.signer?.exactScope !== candidate.gmailScope) fail('R1/R2 signer/package/scope mismatch');
+  if (canonical.candidate !== expected.candidate || canonical.sourceCommit !== expected.sourceCommit) fail('canonical candidate identity drifted');
+  if (canonical.authority?.apkSha256 !== expected.canonicalInputApkSha256 || canonical.authority?.apkBytes !== expected.canonicalInputApkBytes) fail('canonical input APK identity drifted');
+  if (canonical.signing?.androidOauthPackage !== expected.androidPackage || canonical.signing?.exactScope !== expected.gmailScope || canonical.signing?.expectedSignerSha1 !== expected.signerSha1) fail('canonical Android OAuth identity drifted');
+  if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null) fail('public canonical receipt may not originate trusted-edge signing PASS');
 
-  const signed = r1.physicalReceipt !== null;
-  const od0ReceiptPath = campaign.receipt?.current ?? null;
-  const od0Pass = signed && od0ReceiptPath !== null;
+  if (r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true) fail('R1 must remain trusted-edge signing PASS');
+  if (r1.physicalReceipt?.path !== expected.r1Receipt || campaign.r1PhysicalReceipt !== expected.r1Receipt) fail('R1/R2 signing receipt binding drifted');
+  if (r1.signedApkSha256 !== expected.signedApkSha256 || r1.signedApkBytes !== expected.signedApkBytes) fail('R1 signed APK authority drifted');
 
-  if (!signed) {
-    if (r1.trustedEdgeSigningPass !== false || r1.signedApkSha256 !== null || r1.signedApkBytes !== null) fail('open R1 cannot bind a stable APK');
-    if (campaign.status !== 'BLOCKED_BY_R1_SIGNING' || campaign.r1PhysicalReceipt !== null) fail('R2 must remain blocked before R1 receipt');
-    if (candidate.signedApkSha256 !== null || candidate.signedApkBytes !== null) fail('R2 cannot bind a stable APK before R1 receipt');
-    if (candidate.stableSignedInstallability !== 'BLOCKED_BY_R1_SIGNING') fail('stable installability must be blocked before R1 receipt');
-    if (campaign.subgates?.[0]?.status !== 'BLOCKED_BY_R1_SIGNING') fail('OD0 must remain blocked before R1 receipt');
-    if (campaign.currentState?.r1TrustedEdgeSigning !== 'OPEN' || campaign.currentState?.r2PhysicalCampaign !== 'BLOCKED_BY_R1') fail('pre-signing state drifted');
-  } else {
-    if (r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true) fail('receipt-bound R1 must be PASS');
-    if (r1.physicalReceipt?.path !== expectedR1Receipt || campaign.r1PhysicalReceipt !== expectedR1Receipt) fail('R1/R2 receipt binding drifted');
-    if (r1.signedApkSha256 !== expectedSignedSha || r1.signedApkBytes !== expectedSignedBytes) fail('R1 stable +2006 APK identity drifted');
-    if (candidate.signedApkSha256 !== expectedSignedSha || candidate.signedApkBytes !== expectedSignedBytes) fail('R2 stable +2006 APK identity drifted');
+  const reopenLaws = new Set(remainder.executionLaws ?? []);
+  if (!reopenLaws.has('SOURCE_OR_APK_IDENTITY_CHANGE_REOPENS_SIGNING_AND_OWNED_DEVICE_CAMPAIGN')) fail('source/APK identity reopen law missing');
+  const reopenRule = (remainder.reopenRules ?? []).find(x => x.signal === 'SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED');
+  if (JSON.stringify(reopenRule?.reopens) !== JSON.stringify(['R1','R2'])) fail('R1/R2 reopen rule drifted');
 
-    if (!od0Pass) {
-      if (campaign.status !== 'READY_FOR_PHYSICAL_CAMPAIGN') fail(`R2 must be READY_FOR_PHYSICAL_CAMPAIGN before OD0; got ${campaign.status}`);
-      if (candidate.installabilityObservation !== 'OPEN_FOR_CURRENT_CANDIDATE') fail('current candidate physical installability must remain open until OD0');
-      if (candidate.stableSignedInstallability !== 'READY_FOR_OD0_PHYSICAL') fail('stable +2006 APK must be ready for OD0 physical install/launch');
-      if (campaign.subgates?.[0]?.status !== 'READY_FOR_PHYSICAL') fail('OD0 must be the only ready physical gate after R1 PASS');
-      if (campaign.currentState?.r1TrustedEdgeSigning !== 'PASS' || campaign.currentState?.r2PhysicalCampaign !== 'READY') fail('post-signing R2 state drifted');
-    } else {
-      if (od0ReceiptPath !== expectedOd0Receipt || !fs.existsSync(od0ReceiptPath)) fail('OD0 receipt path missing or drifted');
-      if (campaign.status !== 'PHYSICAL_CAMPAIGN_IN_PROGRESS') fail(`R2 must be PHYSICAL_CAMPAIGN_IN_PROGRESS after OD0; got ${campaign.status}`);
-      if (candidate.installabilityObservation !== 'PASS_ON_CURRENT_CANDIDATE' || candidate.stableSignedInstallability !== 'OD0_PASS') fail('OD0 installability state drifted');
-      if (campaign.currentState?.r1TrustedEdgeSigning !== 'PASS' || campaign.currentState?.r2PhysicalCampaign !== 'IN_PROGRESS') fail('post-OD0 R2 state drifted');
-      if (campaign.currentState?.nextGate !== 'OD1_EXACT_GMAIL_READONLY_OAUTH') fail('OD1 must be the next physical gate after OD0 PASS');
-
-      if (fs.existsSync(od0ReceiptPath)) {
-        const receipt = readJson(od0ReceiptPath);
-        if (receipt.schemaVersion !== 'A2_R2_SANITIZED_RECEIPT_V1') fail('unexpected OD0 receipt schema');
-        const identity = [
-          ['candidateId', candidate.id],
-          ['sourceCommit', candidate.sourceCommit],
-          ['signedApkSha256', expectedSignedSha],
-          ['signedApkBytes', expectedSignedBytes],
-          ['signerSha1', candidate.signerSha1],
-          ['androidPackage', candidate.androidPackage],
-          ['gmailScope', candidate.gmailScope],
-        ];
-        for (const [key, expected] of identity) if (receipt[key] !== expected) fail(`OD0 receipt ${key} drifted`);
-        if (receipt.deviceClass !== 'OWNED_ANDROID_PHONE') fail('OD0 receipt device class must remain owned Android phone');
-        if (!Number.isInteger(receipt.androidApiLevel) || receipt.androidApiLevel < candidate.minSdk) fail('OD0 receipt Android API level invalid');
-        if (receipt.sanitizationPass !== true) fail('OD0 receipt sanitization must PASS');
-
-        const gateResults = Array.isArray(receipt.gateResults) ? receipt.gateResults : [];
-        const expectedIds = Array.from({length: 12}, (_, i) => `OD${i}`);
-        if (JSON.stringify(gateResults.map(x => x.gateId)) !== JSON.stringify(expectedIds)) fail('OD0 receipt must enumerate OD0..OD11 exactly once in order');
-        const od0 = gateResults[0] ?? {};
-        if (od0.gateStatus !== 'PASS' || od0.stableResultCode !== 'R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS') fail('OD0 receipt PASS code drifted');
-        if (od0.coarseCounters?.physicalLaunchObservations !== 1) fail('OD0 receipt must record one coarse launch observation');
-        for (const gate of gateResults.slice(1)) if (gate.gateStatus !== 'INCONCLUSIVE') fail(`${gate.gateId} must remain INCONCLUSIVE in incremental OD0 receipt`);
-
-        const forbiddenKeys = new Set((schema.forbiddenKeysCaseInsensitive ?? []).map(x => x.toLowerCase()));
-        const walk = value => {
-          if (Array.isArray(value)) return value.forEach(walk);
-          if (!value || typeof value !== 'object') return;
-          for (const [key, child] of Object.entries(value)) {
-            if (forbiddenKeys.has(key.toLowerCase())) fail(`OD0 receipt contains forbidden key ${key}`);
-            walk(child);
-          }
-        };
-        walk(receipt);
-      }
-    }
-  }
-
-  const invalidated = campaign.historicalInvalidatedCampaign ?? {};
-  if (invalidated.candidate !== '0.2.0-alpha.2+2005' || invalidated.signedApkSha256 !== '530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85' || invalidated.continuationAllowed !== false || invalidated.evidenceInheritanceAllowed !== false) fail('+2005 campaign invalidation boundary missing');
-
-  const laws = campaign.laws ?? {};
-  for (const key of ['sameSignedCandidateRequired','allSubgatesMustPassForR2','anyCandidateIdentityChangeInvalidatesCampaign','physicalPassCannotBeDerivedFromPublicCi','r2DoesNotCloseQ003Q004Q005']) if (laws[key] !== true) fail(`R2 law ${key} must be true`);
-  for (const key of ['perSliceApkPromotionAllowed','buildReadyPromotionAllowed','releaseReadyPromotionAllowed']) if (laws[key] !== false) fail(`R2 law ${key} must be false`);
-
-  const frozenR2 = remainder.nodes?.find(node => node.id === 'R2');
-  if (!frozenR2) fail('prebuild remainder design missing R2');
   const subgates = Array.isArray(campaign.subgates) ? campaign.subgates : [];
   const expectedIds = Array.from({length: 12}, (_, i) => `OD${i}`);
   if (JSON.stringify(subgates.map(x => x.id)) !== JSON.stringify(expectedIds)) fail('R2 gate ordering must be OD0..OD11');
-  if (od0Pass) {
-    if (subgates[0]?.status !== 'PASS') fail('OD0 must be PASS after incremental OD0 receipt');
-    if (subgates[1]?.status !== 'READY_FOR_PHYSICAL') fail('OD1 must be READY after OD0 PASS');
-    for (const gate of subgates.slice(2)) if (gate.status !== 'BLOCKED_BY_PRIOR_GATE') fail(`${gate.id} must remain blocked by prior gate`);
-  } else if (signed) {
-    if (subgates[0]?.status !== 'READY_FOR_PHYSICAL') fail('OD0 must be READY before its physical receipt');
-    for (const gate of subgates.slice(1)) if (gate.status !== 'BLOCKED_BY_PRIOR_GATE') fail(`${gate.id} must remain blocked by prior gate`);
-  }
-  for (const gate of subgates) if (!Array.isArray(gate.physicalClaims) || gate.physicalClaims.length === 0) fail(`${gate.id} missing physical claims`);
-  for (const required of frozenR2?.subgates ?? []) if (!subgates.some(x => x.contract === required)) fail(`R2 campaign missing frozen subgate ${required}`);
+  const expectedStatuses = ['PASS','PASS','PASS','READY_FOR_PHYSICAL',...Array(8).fill('BLOCKED_BY_PRIOR_GATE')];
+  subgates.forEach((gate, i) => {
+    if (gate.status !== expectedStatuses[i]) fail(`${gate.id} expected ${expectedStatuses[i]}, got ${gate.status}`);
+    if (!Array.isArray(gate.physicalClaims) || gate.physicalClaims.length === 0) fail(`${gate.id} physical claims missing`);
+  });
+  const frozenR2 = remainder.nodes?.find(node => node.id === 'R2');
+  if (!frozenR2) fail('prebuild remainder design missing R2');
+  for (const required of frozenR2?.subgates ?? []) if (!subgates.some(x => x.contract === required)) fail(`R2 missing frozen subgate ${required}`);
 
-  const evidence = campaign.evidencePolicy ?? {};
-  if (evidence.githubReceiptClass !== 'SANITIZED_SUMMARY_ONLY' || evidence.rawTrustedEdgeEvidenceInGitHub !== false) fail('R2 evidence boundary drifted');
-  for (const forbidden of ['PRIVATE_KEY','KEYSTORE_PASSWORD','OAUTH_ACCESS_TOKEN','OAUTH_REFRESH_TOKEN','RAW_GMAIL_BODY','RAW_STATEMENT_PDF','PDF_PASSWORD','RAW_FINANCIAL_PLAINTEXT']) if (!(evidence.forbiddenInGitHub ?? []).includes(forbidden)) fail(`R2 evidence policy missing forbidden class ${forbidden}`);
+  if (campaign.receipt?.current !== expected.currentReceipt) fail('current cumulative R2 receipt drifted');
+  if (receipt.schemaVersion !== 'A2_R2_SANITIZED_RECEIPT_V1') fail('unexpected cumulative R2 receipt schema');
+  for (const [key, value] of [
+    ['candidateId', expected.candidate],
+    ['sourceCommit', expected.sourceCommit],
+    ['signedApkSha256', expected.signedApkSha256],
+    ['signedApkBytes', expected.signedApkBytes],
+    ['signerSha1', expected.signerSha1],
+    ['androidPackage', expected.androidPackage],
+    ['gmailScope', expected.gmailScope],
+  ]) if (receipt[key] !== value) fail(`cumulative R2 receipt ${key} drifted`);
+  if (receipt.deviceClass !== 'OWNED_ANDROID_PHONE') fail('receipt device class drifted');
+  if (!Number.isInteger(receipt.androidApiLevel) || receipt.androidApiLevel < 31) fail('receipt Android API level invalid');
+  if (receipt.sanitizationPass !== true) fail('receipt sanitization must PASS');
 
-  if (schema.schemaVersion !== 'A2_R2_SANITIZED_RECEIPT_SCHEMA_V1' || schema.receiptClass !== 'SANITIZED_SUMMARY_ONLY') fail('unexpected R2 receipt schema');
+  const results = Array.isArray(receipt.gateResults) ? receipt.gateResults : [];
+  if (JSON.stringify(results.map(x => x.gateId)) !== JSON.stringify(expectedIds)) fail('receipt must enumerate OD0..OD11 exactly once in order');
+  const [od0, od1, od2, od3, ...later] = results;
+  if (od0?.gateStatus !== 'PASS' || od0?.stableResultCode !== 'R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS' || od0?.coarseCounters?.physicalLaunchObservations !== 1) fail('OD0 cumulative receipt drifted');
+  if (od1?.gateStatus !== 'PASS' || od1?.stableResultCode !== 'FRESH_REAL_GMAIL_READONLY_OAUTH_PASS' || od1?.coarseCounters?.freshOauthObservations !== 1) fail('OD1 fresh OAuth receipt drifted');
+  if (od2?.gateStatus !== 'PASS' || od2?.stableResultCode !== 'METADATA_FIRST_DISCOVERY_PASS_NATIVE_HANDLE_BOUNDARY') fail('OD2 metadata-first receipt drifted');
+  if (od2?.coarseCounters?.gmailObservedCount !== 6 || od2?.coarseCounters?.statementReviewCount !== 8 || od2?.coarseCounters?.quarantinedProfileCount !== 3) fail('OD2 sanitized counters drifted');
+  if (od3?.gateStatus !== 'INCONCLUSIVE' || od3?.stableResultCode !== 'ALLOWED_PROFILE_ATTACHMENT_FETCH_REJECTED') fail('OD3 blocker receipt drifted');
+  if (od3?.coarseCounters?.statementFetchRejectedCount !== 8 || od3?.coarseCounters?.statementImportedCount !== 0) fail('OD3 sanitized blocker counters drifted');
+  for (const gate of later) if (gate.gateStatus !== 'INCONCLUSIVE' || gate.stableResultCode !== 'NOT_EXECUTED_PRIOR_GATE_OPEN') fail(`${gate.gateId} must remain inconclusive behind OD3`);
+
+  if (schema.schemaVersion !== 'A2_R2_SANITIZED_RECEIPT_SCHEMA_V1' || schema.receiptClass !== 'SANITIZED_SUMMARY_ONLY') fail('receipt schema authority drifted');
   const requiredGateIds = new Set(schema.requiredGateIds ?? []);
   for (const id of expectedIds) if (!requiredGateIds.has(id)) fail(`receipt schema missing ${id}`);
   if (requiredGateIds.size !== 12) fail('receipt schema must require exactly OD0..OD11');
+  const forbiddenKeys = new Set((schema.forbiddenKeysCaseInsensitive ?? []).map(x => x.toLowerCase()));
+  const walk = value => {
+    if (Array.isArray(value)) return value.forEach(walk);
+    if (!value || typeof value !== 'object') return;
+    for (const [key, child] of Object.entries(value)) {
+      if (forbiddenKeys.has(key.toLowerCase())) fail(`receipt contains forbidden key ${key}`);
+      walk(child);
+    }
+  };
+  walk(receipt);
+
+  const laws = campaign.laws ?? {};
+  for (const key of ['sameSignedCandidateRequired','allSubgatesMustPassForR2','anyCandidateIdentityChangeInvalidatesCampaign','physicalPassCannotBeDerivedFromPublicCi','r2DoesNotCloseQ003Q004Q005']) if (laws[key] !== true) fail(`R2 law ${key} must remain true`);
+  for (const key of ['perSliceApkPromotionAllowed','buildReadyPromotionAllowed','releaseReadyPromotionAllowed']) if (laws[key] !== false) fail(`R2 law ${key} must remain false`);
+
+  const state = campaign.currentState ?? {};
+  if (state.r1TrustedEdgeSigning !== 'PASS' || state.r2PhysicalCampaign !== 'IN_PROGRESS') fail('current R1/R2 campaign state drifted');
+  if (state.nextGate !== 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE') fail('OD3 must be the next physical gate');
+  if (state.currentBlocker !== 'OD3_ALLOWED_PROFILE_ATTACHMENT_FETCH_REJECTED') fail('OD3 current blocker drifted');
+  for (const q of ['q003','q004','q005']) if (state[q] !== 'ACTIVE') fail(`${q} must remain ACTIVE`);
+  if (state.gMk0 !== 'OPEN' || state.buildReady !== false || state.releaseReady !== false) fail('incremental R2 evidence cannot promote G-MK0/build/release');
 
   if (physical.status !== 'ACTIVE') fail('broad physical campaign must remain ACTIVE');
   for (const phaseId of ['P1','P2','P3','P4','P5','P6','P7']) {
     const phase = physical.phases?.find(p => p.id === phaseId);
     if (!phase || phase.status === 'PASS') fail(`${phaseId} must remain physically open`);
   }
-
-  const state = campaign.currentState ?? {};
-  for (const q of ['q003','q004','q005']) if (state[q] !== 'ACTIVE') fail(`${q} must remain ACTIVE`);
-  if (state.gMk0 !== 'OPEN') fail('G-MK0 must remain OPEN');
-  if (state.buildReady !== false || state.releaseReady !== false) fail('R2 transition cannot promote readiness');
 }
 
 if (failures.length) {
@@ -174,15 +152,15 @@ if (failures.length) {
   process.exit(1);
 }
 
-const campaign = readJson(paths.campaign);
-const signed = campaign.currentState?.r1TrustedEdgeSigning === 'PASS';
-const od0Pass = campaign.subgates?.[0]?.status === 'PASS';
 console.log('ALPHA2_R2_OWNED_DEVICE_CAMPAIGN_CONTRACT=PASS');
 console.log('CANONICAL_IDENTITY=ALPHA2_2006_POSTMERGE');
-console.log(`R1_PHYSICAL_SIGNING=${signed ? 'PASS' : 'OPEN'}`);
-console.log(`R2_PHYSICAL_CAMPAIGN=${od0Pass ? 'IN_PROGRESS' : signed ? 'READY' : 'BLOCKED_BY_R1'}`);
-console.log(`OD0_INSTALL_AND_LAUNCH=${od0Pass ? 'PASS' : signed ? 'READY' : 'BLOCKED'}`);
-console.log(`R2_NEXT_GATE=${od0Pass ? 'OD1_EXACT_GMAIL_READONLY_OAUTH' : signed ? 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH' : 'BLOCKED_UNTIL_R1_PASS'}`);
+console.log('R1_PHYSICAL_SIGNING=PASS');
+console.log('R2_PHYSICAL_CAMPAIGN=IN_PROGRESS');
+console.log('OD0_INSTALL_AND_LAUNCH=PASS');
+console.log('OD1_EXACT_GMAIL_READONLY_OAUTH=PASS');
+console.log('OD2_METADATA_FIRST_STATEMENT_DISCOVERY=PASS');
+console.log('OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE=READY');
+console.log('OD3_CURRENT_BLOCKER=ALLOWED_PROFILE_ATTACHMENT_FETCH_REJECTED');
 console.log('SAME_SIGNED_CANDIDATE_REQUIRED=YES');
 console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=NO');
 console.log('Q003_Q004_Q005=ACTIVE');

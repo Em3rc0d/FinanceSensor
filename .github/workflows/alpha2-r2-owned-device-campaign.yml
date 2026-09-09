@@ -24,7 +24,7 @@ on:
       - 'tools/validate-ci-runner-policy.mjs'
       - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD0-INSTALL-LAUNCH-2026-09-09.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD*-2026-09-09.md'
       - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
   push:
@@ -49,7 +49,7 @@ on:
       - 'tools/validate-ci-runner-policy.mjs'
       - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD0-INSTALL-LAUNCH-2026-09-09.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD*-2026-09-09.md'
       - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
 
@@ -106,14 +106,17 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve post-OD0 physical boundary
+      - name: Preserve post-OD2 physical boundary
         run: |
           set -euo pipefail
           echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
           echo 'OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'R2_NEXT_GATE=OD1_EXACT_GMAIL_READONLY_OAUTH'
+          echo 'OD1_EXACT_GMAIL_READONLY_OAUTH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
+          echo 'OD2_METADATA_FIRST_STATEMENT_DISCOVERY=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
+          echo 'R2_NEXT_GATE=OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE'
+          echo 'OD3_CURRENT_BLOCKER=ALLOWED_PROFILE_ATTACHMENT_FETCH_REJECTED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
