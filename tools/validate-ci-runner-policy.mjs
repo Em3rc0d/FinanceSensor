@@ -65,7 +65,7 @@ const contracts = {
     forbidden: [/REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES|REAL_FINANCIAL_DATA_IN_CI=YES|PHYSICAL_SQLCIPHER_PASS=YES|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i],
   },
   'alpha2-r1-trusted-edge-signing.yml': {
-    markers: ['node tools/validate-alpha2-canonical-candidate.mjs','node tools/validate-alpha2-r1-signing-handoff.mjs','node tools/validate-alpha2-r1-ci-routing-receipt.mjs','Download exact canonical +2006 artifact','Reproduce deterministic public-safe v8 handoff bundle','R1_TRUSTED_EDGE_SIGNING=OPEN','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],
+    markers: ['node tools/validate-alpha2-canonical-candidate.mjs','node tools/validate-alpha2-r1-signing-handoff.mjs','node tools/validate-alpha2-r1-ci-routing-receipt.mjs','node tools/validate-alpha2-r1-physical-signing-receipt.mjs','Download exact canonical +2006 artifact','Reproduce deterministic public-safe v8 handoff bundle','R1_TRUSTED_EDGE_SIGNING=OPEN','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],
     forbidden: [/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT|R2_OWNED_DEVICE_CAMPAIGN=READY|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i],
   },
   'alpha2-r2-owned-device-campaign.yml': {
@@ -105,6 +105,7 @@ console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
 console.log('ALPHA2_R1_WORKFLOW_REGISTERED=1');
 console.log('ALPHA2_R2_WORKFLOW_REGISTERED=1');
+console.log('R1_PHYSICAL_RECEIPT_STATE_VALIDATOR=ROUTED');
 console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0');
 console.log('PUBLIC_CI_BUILD_READY_PROMOTION=0');
 console.log('PUBLIC_CI_RELEASE_READY_PROMOTION=0');
