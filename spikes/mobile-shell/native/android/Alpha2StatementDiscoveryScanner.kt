@@ -3,7 +3,9 @@ package com.financesensor.lab.financesensor_mobile_shell
 import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URLEncoder
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -26,8 +28,13 @@ class Alpha2StatementDiscoveryScanner {
         private const val MAX_ATTACHMENT_BYTES = 20_971_520
         private const val CONNECT_TIMEOUT_MS = 12_000
         private const val READ_TIMEOUT_MS = 12_000
+        private const val ATTACHMENT_READ_TIMEOUT_MS = 30_000
+        private const val ATTACHMENT_MAX_ATTEMPTS = 3
+        private const val PDF_HEADER_SCAN_BYTES = 1_024
         private const val PDF_MIME = "application/pdf"
         private const val BCP_SAVINGS_PROFILE = "PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1"
+        private val TRANSIENT_ATTACHMENT_HTTP = setOf(408, 429, 500, 502, 503, 504)
+        private val ATTACHMENT_RETRY_DELAYS_MS = longArrayOf(250L, 750L)
     }
 
     private data class Profile(
@@ -55,6 +62,8 @@ class Alpha2StatementDiscoveryScanner {
         val profile: Profile,
         val byteLength: Int,
     )
+
+    private class RetryableAttachmentException(val safeCode: String) : IOException(safeCode)
 
     private val profiles = listOf(
         Profile(
@@ -214,14 +223,18 @@ class Alpha2StatementDiscoveryScanner {
         if (!candidate.profile.runtimeFetchEnabled) {
             throw StatementException("ALPHA2_STATEMENT_PROFILE_QUARANTINED")
         }
-        val payload = getJson(
-            "$GMAIL_MESSAGES/${encode(candidate.messageId)}/attachments/${encode(candidate.attachmentId)}",
+        val payload = getAttachmentJson(
+            "$GMAIL_MESSAGES/${encode(candidate.messageId)}/attachments/${encode(candidate.attachmentId)}?fields=data,size",
             token,
         )
         val encoded = payload.optString("data")
         if (encoded.isBlank()) throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_EMPTY")
+        val declaredSize = payload.optInt("size", -1)
+        if (declaredSize == 0 || declaredSize > MAX_ATTACHMENT_BYTES) {
+            throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_SIZE_INVALID")
+        }
         val bytes = try {
-            Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP)
         } catch (_: IllegalArgumentException) {
             throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_INVALID_BASE64")
         }
@@ -229,11 +242,11 @@ class Alpha2StatementDiscoveryScanner {
             bytes.fill(0)
             throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_SIZE_INVALID")
         }
-        val pdf = bytes.size >= 5 &&
-            bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() &&
-            bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte() &&
-            bytes[4] == '-'.code.toByte()
-        if (!pdf) {
+        if (declaredSize > 0 && bytes.size != declaredSize) {
+            bytes.fill(0)
+            throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_SIZE_MISMATCH")
+        }
+        if (!hasPdfSignature(bytes)) {
             bytes.fill(0)
             throw StatementException("ALPHA2_STATEMENT_PDF_SIGNATURE_INVALID")
         }
@@ -306,6 +319,88 @@ class Alpha2StatementDiscoveryScanner {
         .lowercase(Locale.ROOT)
         .replace(Regex("\\s+"), " ")
         .trim()
+
+    private fun hasPdfSignature(bytes: ByteArray): Boolean {
+        if (bytes.size < 5) return false
+        val maximumOffset = minOf(PDF_HEADER_SCAN_BYTES, bytes.size - 5)
+        for (offset in 0..maximumOffset) {
+            if (bytes[offset] == '%'.code.toByte() &&
+                bytes[offset + 1] == 'P'.code.toByte() &&
+                bytes[offset + 2] == 'D'.code.toByte() &&
+                bytes[offset + 3] == 'F'.code.toByte() &&
+                bytes[offset + 4] == '-'.code.toByte()
+            ) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun getAttachmentJson(url: String, token: String): JSONObject {
+        for (attempt in 1..ATTACHMENT_MAX_ATTEMPTS) {
+            try {
+                return getAttachmentJsonOnce(url, token)
+            } catch (error: RetryableAttachmentException) {
+                if (attempt == ATTACHMENT_MAX_ATTEMPTS) {
+                    throw StatementException(error.safeCode)
+                }
+                attachmentRetryDelay(attempt)
+            } catch (_: SocketTimeoutException) {
+                if (attempt == ATTACHMENT_MAX_ATTEMPTS) {
+                    throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT")
+                }
+                attachmentRetryDelay(attempt)
+            } catch (_: IOException) {
+                if (attempt == ATTACHMENT_MAX_ATTEMPTS) {
+                    throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_IO_RETRY_EXHAUSTED")
+                }
+                attachmentRetryDelay(attempt)
+            }
+        }
+        throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_IO_RETRY_EXHAUSTED")
+    }
+
+    @Throws(IOException::class)
+    private fun getAttachmentJsonOnce(url: String, token: String): JSONObject {
+        var connection: HttpURLConnection? = null
+        try {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = ATTACHMENT_READ_TIMEOUT_MS
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
+            }
+            val status = connection.responseCode
+            if (status == 401) throw StatementException("REAUTH_REQUIRED")
+            if (status !in 200..299) {
+                if (status in TRANSIENT_ATTACHMENT_HTTP) {
+                    throw RetryableAttachmentException("ALPHA2_STATEMENT_GMAIL_HTTP_$status")
+                }
+                throw StatementException("ALPHA2_STATEMENT_GMAIL_HTTP_$status")
+            }
+            val responseBytes = connection.inputStream.use { it.readBytes() }
+            return try {
+                JSONObject(responseBytes.toString(Charsets.UTF_8))
+            } catch (_: Exception) {
+                throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_RESPONSE_INVALID")
+            }
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    private fun attachmentRetryDelay(attempt: Int) {
+        val delay = ATTACHMENT_RETRY_DELAYS_MS.getOrElse(attempt - 1) {
+            ATTACHMENT_RETRY_DELAYS_MS.last()
+        }
+        try {
+            Thread.sleep(delay)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw StatementException("ALPHA2_STATEMENT_ATTACHMENT_IO_RETRY_EXHAUSTED")
+        }
+    }
 
     private fun getJson(url: String, token: String): JSONObject {
         var connection: HttpURLConnection? = null
