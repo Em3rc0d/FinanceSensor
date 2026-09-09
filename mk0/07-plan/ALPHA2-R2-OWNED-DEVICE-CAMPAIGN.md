@@ -1,15 +1,15 @@
 # Alpha.2 R2 — Single Owned-Device Campaign
 
-Status: **DESIGN FROZEN / R1 OPEN / R2 BLOCKED**
+Status: **DESIGN FROZEN / R1 PASS / R2 READY / OD0 READY**
 
 ## Purpose
 
 R2 is one controlled owned-Android campaign over exactly one stable-signed Alpha.2 APK. It is not a sequence of per-slice APK promotions and it is not a substitute for the later Q-003/Q-004/Q-005 closure phases.
 
 ```text
-R1 trusted-edge signing — OPEN
-        ↓ sanitized current-candidate receipt required
-OD0 install + launch — BLOCKED
+R1 trusted-edge signing — PASS
+        ↓ sanitized +2006 receipt bound
+OD0 install + launch — READY
         ↓
 OD1 exact gmail.readonly OAuth
         ↓
@@ -38,7 +38,7 @@ R2 sanitized receipt
 
 ## Current identity law
 
-R1 is reopened on the post-merge `+2006` authority. Once trusted-edge signing passes, every OD0..OD11 observation MUST bind the same signed APK produced from this canonical input:
+R1 is closed on the post-merge `+2006` authority. Every OD0..OD11 observation MUST bind the same stable signed APK produced from this canonical input:
 
 - candidate: `0.2.0-alpha.2+2006`
 - source: `e26bab7cd87c5e686898998e867d8fb25c99db27`
@@ -48,18 +48,19 @@ R1 is reopened on the post-merge `+2006` authority. Once trusted-edge signing pa
 - canonical artifact ZIP SHA256: `f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309`
 - canonical input APK SHA256: `11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179`
 - canonical input APK bytes: `182102047`
+- stable signed APK SHA256: `36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0`
+- stable signed APK bytes: `182125094`
 - package: `com.financesensor.lab.gmailconnection.r2`
 - scope: `gmail.readonly`
 - stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
 - R1 handoff bundle: `FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip`
-- stable signed APK SHA256: **OPEN / must come from the +2006 trusted-edge receipt**
-- R1 physical receipt: **OPEN / must bind +2006**
+- R1 physical receipt: `graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json`
 
 The historical `+2001` design snapshot remains immutable in the prebuild design. The source/APK reopen law moves execution authority without rewriting that historical snapshot. All `+2005` signing/physical observations are historical only after the `+2006` source/APK identity change.
 
 The prior `+2005` stable-signed APK (`530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85`) MUST NOT donate OD evidence to `+2006`.
 
-If the future stable-signed `+2006` APK hash changes after R2 starts, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
+If the stable-signed `+2006` APK hash changes after R2 starts, the entire R2 campaign is invalidated and must restart from OD0. Evidence from two APK hashes must never be combined.
 
 ## Campaign rules
 
@@ -77,7 +78,7 @@ If the future stable-signed `+2006` APK hash changes after R2 starts, the entire
 ## OD gates
 
 ### OD0 — Stable signed APK install and launch
-After R1 PASS, install the exact `+2006` stable APK hash from the sanitized signing receipt. Prove signer identity, APK hash match, successful install and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
+Install exactly the stable `+2006` APK with SHA256 `36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0`. Prove signer identity, APK hash match, successful install and successful launch. Do not record device identifiers beyond a coarse device class/API level in the sanitized receipt.
 
 ### OD1 — Exact Gmail readonly OAuth
 Prove the package is the frozen R2 package and requested authority is exactly `gmail.readonly`. R2 does not request offline access.
@@ -139,9 +140,11 @@ financial authority changed         → reopen affected OD6..OD11
 Current execution state:
 
 ```text
-R1_TRUSTED_EDGE_SIGNING = OPEN
-R2_PHYSICAL_CAMPAIGN    = BLOCKED_BY_R1
-R2_NEXT_GATE            = BLOCKED_UNTIL_R1_PASS
+R1_TRUSTED_EDGE_SIGNING = PASS
+R2_PHYSICAL_CAMPAIGN    = READY
+R2_NEXT_GATE            = OD0_SIGNED_APK_INSTALL_AND_LAUNCH
+OD0                     = READY_FOR_PHYSICAL
+OD1..OD11               = BLOCKED_BY_PRIOR_GATE
 PHYSICAL_ALPHA2_PASS    = NO
 Q003_Q004_Q005          = ACTIVE
 G_MK0                   = OPEN
