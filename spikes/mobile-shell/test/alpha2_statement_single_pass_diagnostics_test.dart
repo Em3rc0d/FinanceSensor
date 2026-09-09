@@ -20,7 +20,13 @@ void main() {
         profileId: 'BCP_SAVINGS',
         status: 'FETCH_REJECTED',
         evidenceCount: 0,
-        reviewCodes: <String>['ALPHA2_STATEMENT_FETCH_FAILED'],
+        reviewCodes: <String>['ALPHA2_STATEMENT_GMAIL_HTTP_429'],
+      ),
+      Alpha2StatementImportOutcome(
+        profileId: 'BCP_SAVINGS',
+        status: 'FETCH_REJECTED',
+        evidenceCount: 0,
+        reviewCodes: <String>['ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT'],
       ),
       Alpha2StatementImportOutcome(
         profileId: 'BCP_SAVINGS',
@@ -56,11 +62,19 @@ void main() {
 
     final counts = alpha2StatementOutcomeCounts(outcomes);
     expect(counts['IMPORTED'], 1);
-    expect(counts['FETCH_REJECTED'], 1);
+    expect(counts['FETCH_REJECTED'], 2);
     expect(counts['PDF_REJECTED'], 2);
     expect(counts['REVIEW_REQUIRED'], 1);
     expect(counts['PASSWORD_REQUIRED'], 1);
     expect(counts['PERSISTENCE_REJECTED'], 1);
+    expect(
+      counts['${alpha2FetchDiagnosticCountPrefix}ALPHA2_STATEMENT_GMAIL_HTTP_429'],
+      1,
+    );
+    expect(
+      counts['${alpha2FetchDiagnosticCountPrefix}ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT'],
+      1,
+    );
 
     final projection = buildAlpha2PublicProjection(
       canonicalTransactions: const <Alpha2CanonicalTransaction>[],
@@ -70,7 +84,9 @@ void main() {
     final gaps = summarizeAlpha2KnowledgeGaps(projection);
     final byReason = <String, int>{for (final gap in gaps) gap.reason: gap.count};
 
-    expect(byReason['STATEMENT_FETCH_REJECTED'], 1);
+    expect(byReason['STATEMENT_FETCH_RATE_LIMITED'], 1);
+    expect(byReason['STATEMENT_FETCH_NETWORK_RETRY_EXHAUSTED'], 1);
+    expect(byReason['STATEMENT_FETCH_REJECTED'], isNull);
     expect(byReason['STATEMENT_PDF_REJECTED'], 2);
     expect(byReason['STATEMENT_STRICT_REVIEW_REQUIRED'], 1);
     expect(byReason['STATEMENT_PASSWORD_REQUIRED'], 1);
@@ -86,7 +102,15 @@ void main() {
       ),
     );
 
-    expect(find.text('No se pudo descargar un EECC desde Gmail'), findsOneWidget);
+    expect(
+      find.text('Gmail limitó temporalmente la descarga del EECC'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('La descarga del EECC agotó los reintentos de red'),
+      findsOneWidget,
+    );
+    expect(find.text('No se pudo descargar un EECC desde Gmail'), findsNothing);
     expect(
       find.text('El PDF o su clave no pudieron abrirse localmente'),
       findsOneWidget,
