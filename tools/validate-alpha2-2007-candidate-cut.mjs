@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import './validate-ci-runner-policy.mjs';
+import './validate-alpha2-od3-mobile-fetch-remediation.mjs';
 
 const workflowPath = '.github/workflows/alpha2-integrated-runtime.yml';
 const scannerPath = 'spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt';
@@ -38,6 +40,8 @@ if (campaign.laws?.anyCandidateIdentityChangeInvalidatesCampaign !== true) fail(
 if (campaign.currentState?.buildReady !== false || campaign.currentState?.releaseReady !== false) fail('PREMATURE_READY_PROMOTION');
 
 console.log('ALPHA2_2007_CANDIDATE_CUT=PASS');
+console.log('CI_RUNNER_POLICY=GATED');
+console.log('OD3_REMEDIATION=GATED');
 console.log('SOURCE_BASE=LATEST_OD3_REMEDIATION');
 console.log('CANDIDATE_ID=0.2.0-alpha.2+2007');
 console.log('CANONICAL_PROMOTION_PENDING=YES');
