@@ -52,6 +52,8 @@ const List<String> alpha2SafeStatementOutcomeStatuses = <String>[
   'QUARANTINED_PROFILE',
 ];
 
+const String alpha2FetchDiagnosticCountPrefix = 'FETCH_DIAGNOSTIC:';
+
 Map<String, int> alpha2StatementOutcomeCounts(
   Iterable<Alpha2StatementImportOutcome> outcomes,
 ) {
@@ -62,6 +64,11 @@ Map<String, int> alpha2StatementOutcomeCounts(
     final status = outcome.status.trim().toUpperCase();
     if (!counts.containsKey(status)) continue;
     counts[status] = counts[status]! + 1;
+    if (status == 'FETCH_REJECTED' && outcome.reviewCodes.isNotEmpty) {
+      final safeCode = _safeStatementFetchCode(outcome.reviewCodes.first);
+      final diagnosticKey = '$alpha2FetchDiagnosticCountPrefix$safeCode';
+      counts[diagnosticKey] = (counts[diagnosticKey] ?? 0) + 1;
+    }
   }
   return Map<String, int>.unmodifiable(counts);
 }
