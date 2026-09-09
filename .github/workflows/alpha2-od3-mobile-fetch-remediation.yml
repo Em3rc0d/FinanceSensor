@@ -1,0 +1,41 @@
+name: Alpha.2 OD3 Mobile Fetch Remediation
+
+on:
+  push:
+    paths:
+      - 'spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_projection.dart'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_dashboard_sections.dart'
+      - 'spikes/mobile-shell/test/alpha2_statement_single_pass_diagnostics_test.dart'
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'tools/validate-alpha2-od3-mobile-fetch-remediation.mjs'
+      - '.github/workflows/alpha2-od3-mobile-fetch-remediation.yml'
+  pull_request:
+    paths:
+      - 'spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_projection.dart'
+      - 'spikes/mobile-shell/lib/alpha2/alpha2_dashboard_sections.dart'
+      - 'spikes/mobile-shell/test/alpha2_statement_single_pass_diagnostics_test.dart'
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'tools/validate-alpha2-od3-mobile-fetch-remediation.mjs'
+      - '.github/workflows/alpha2-od3-mobile-fetch-remediation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-od3-mobile-fetch-remediation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate bounded attachment fetch remediation
+        run: node tools/validate-alpha2-od3-mobile-fetch-remediation.mjs
