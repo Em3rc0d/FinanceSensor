@@ -79,6 +79,9 @@ jobs:
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
+      - name: R1 physical receipt state boundary
+        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
+
       - name: Download exact canonical +2006 artifact
         uses: actions/download-artifact@v4
         with:
