@@ -19,6 +19,7 @@ on:
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-V8-REFREEZE-2026-09-08.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches:
@@ -37,6 +38,7 @@ on:
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
       - 'mk0/10-evidence/EV-ALPHA2-2006-R1-V8-REFREEZE-2026-09-08.md'
+      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions:
@@ -79,7 +81,7 @@ jobs:
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
-      - name: R1 physical receipt state boundary
+      - name: R1 sanitized physical signing receipt boundary
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
       - name: Download exact canonical +2006 artifact
@@ -207,8 +209,8 @@ jobs:
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
           R1_V8_FROZEN_BYTES=PASS
-          R1_TRUSTED_EDGE_SIGNING=OPEN
-          R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1
+          R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT
+          R2_OWNED_DEVICE_CAMPAIGN=READY
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
@@ -225,13 +227,13 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Preserve pre-signing boundary
+      - name: Preserve post-receipt trust boundary
         run: |
           set -euo pipefail
           echo 'R1_V8_FROZEN_BYTES=PASS'
-          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1'
+          echo 'R2_OWNED_DEVICE_CAMPAIGN=READY'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'
