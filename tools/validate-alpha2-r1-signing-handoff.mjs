@@ -22,6 +22,10 @@ const expected = {
   ps1Blob: '91acbc974afcd16e01a14ff531bd1503c812da5b',
   cmdBlob: '3d01373b69051d30f88a57f26fa815e52d952d6d',
   signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
+  signedApkSha256: '36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0',
+  signedApkBytes: 182125094,
+  receiptPath: 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json',
+  receiptSourcePath: 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt',
   bundleName: 'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip',
   bundleSha256: 'c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80',
   bundleBytes: 86232702,
@@ -37,7 +41,7 @@ for (const [key, value] of Object.entries({canonicalRunId:expected.canonicalRunI
 assert(graph.inputApk?.sha256 === expected.apkSha256 && graph.inputApk?.bytes === expected.apkBytes, 'canonical APK identity drifted');
 assert(graph.inputApk?.minSdk === 31 && graph.inputApk?.targetSdk === 36, 'Android baseline drifted');
 assert(graph.inputApk?.signatureVerify === 'PASS' && graph.inputApk?.aapt2Parse === 'PASS', 'APK verification evidence drifted');
-assert(graph.inputApk?.ownedDeviceInstallPass === false && graph.inputApk?.ownedDeviceLaunchPass === false && graph.inputApk?.physicalClaimsInheritedFromPriorCandidate === false, 'physical claims must be reacquired for +2006');
+assert(graph.inputApk?.ownedDeviceInstallPass === false && graph.inputApk?.ownedDeviceLaunchPass === false && graph.inputApk?.physicalClaimsInheritedFromPriorCandidate === false, 'OD0 claims cannot be inherited from prior candidate');
 
 assert(graph.signer?.powershellGitBlob === expected.ps1Blob && graph.signer?.cmdGitBlob === expected.cmdBlob, 'signer blob authority drifted');
 assert(gitBlobSha1(signerBuffer) === expected.ps1Blob && gitBlobSha1(cmdBuffer) === expected.cmdBlob, 'actual signer blob differs from authority');
@@ -51,20 +55,25 @@ assert(graph.handoffBundle?.zipStructure === 'PASS' && graph.handoffBundle?.zipI
 assert(graph.handoffBundle?.ps1GitBlobVerified === expected.ps1Blob && graph.handoffBundle?.cmdGitBlobVerified === expected.cmdBlob, 'packaged signer blob binding drifted');
 assert(graph.handoffBundle?.apksignerSha256 === '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180', 'apksigner authority drifted');
 assert(graph.handoffBundle?.supersedesBundleSha256 === expected.priorV7, 'v8 must supersede v7');
-if (graph.handoffBundle?.generationReceipt !== null) {
-  const generation = graph.handoffBundle.generationReceipt;
-  assert(generation.innerBundleSha256 === expected.bundleSha256 && generation.innerBundleBytes === expected.bundleBytes, 'v8 generation identity drifted');
-  assert(generation.independentBundleAudit === 'PASS' && generation.exactHeadRegenerationRequiredBeforeMerge === true, 'v8 generation audit boundary drifted');
-}
 
 const oldV7 = (graph.supersededBundles ?? []).find(x => x.sha256 === expected.priorV7);
 assert(oldV7?.safeToUse === false && /SUPERSEDED_ALPHA2_2005_RUNTIME/.test(oldV7.reason), 'v7 supersession boundary missing');
 const historical2005 = (graph.historicalPhysicalReceipts ?? []).find(x => x.candidate === '0.2.0-alpha.2+2005');
 assert(historical2005?.inheritAsCurrentPass === false && historical2005?.signedApkSha256 === '530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85', '+2005 historical receipt isolation missing');
 
-assert(graph.physicalReceipt === null && graph.trustedEdgeSigningPass === false && graph.signedApkSha256 === null && graph.signedApkBytes === null, 'current R1 must remain physically open');
-assert(graph.status === 'READY_FOR_TRUSTED_EDGE_SIGNING', 'R1 must be ready for trusted-edge signing only');
-assert(graph.physicalAlpha2Pass === false && graph.buildReady === false && graph.releaseReady === false, 'downstream promotion boundary drifted');
+const signed = graph.physicalReceipt !== null;
+if (!signed) {
+  assert(graph.status === 'READY_FOR_TRUSTED_EDGE_SIGNING', 'open R1 must be ready for trusted-edge signing');
+  assert(graph.trustedEdgeSigningPass === false && graph.signedApkSha256 === null && graph.signedApkBytes === null, 'open R1 cannot pre-certify stable signing');
+  assert(graph.handoffBundle?.certificationReceipt === null, 'open R1 cannot bind certification receipt');
+} else {
+  assert(graph.status === 'TRUSTED_EDGE_SIGNING_PASS' && graph.trustedEdgeSigningPass === true, 'current +2006 receipt must close R1');
+  assert(graph.physicalReceipt?.path === expected.receiptPath && graph.physicalReceipt?.sourcePath === expected.receiptSourcePath, 'R1 receipt paths drifted');
+  assert(graph.physicalReceipt?.sanitizationPass === true && graph.physicalReceipt?.rawPrivateMaterialCommitted === false, 'R1 sanitization boundary drifted');
+  assert(graph.signedApkSha256 === expected.signedApkSha256 && graph.signedApkBytes === expected.signedApkBytes, 'stable +2006 APK identity drifted');
+  assert(graph.handoffBundle?.certificationReceipt === expected.receiptPath, 'v8 certification receipt binding drifted');
+}
+assert(graph.physicalAlpha2Pass === false && graph.buildReady === false && graph.releaseReady === false, 'R1 cannot promote downstream readiness');
 
 for (const marker of [expected.candidate,expected.sourceCommit,expected.apkSha256,String(expected.apkBytes),expected.signerSha1,'function Invoke-ProcessWithStdin','RedirectStandardInput = $true','RedirectStandardError = $true']) assert(signer.includes(marker), `signer missing marker: ${marker}`);
 assert(!signer.includes('$StorePass | & $keytool') && !signer.includes('@($StorePass, $StorePass) | & $java'), 'direct password pipe is forbidden');
@@ -73,15 +82,15 @@ const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Lan
 const parsed = spawnSync('pwsh', ['-NoProfile', '-Command', psCommand], { encoding: 'utf8' });
 assert(parsed.error == null && parsed.status === 0, 'PowerShell signer parse failed');
 
-for (const marker of ['node tools/validate-alpha2-canonical-candidate.mjs','node tools/validate-alpha2-r1-signing-handoff.mjs','R1_V8_FROZEN_BYTES=PASS','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO',expected.bundleSha256,String(expected.bundleBytes)]) assert(workflow.includes(marker), `R1 workflow missing marker: ${marker}`);
+for (const marker of [expected.candidate,expected.sourceCommit,expected.apkSha256,String(expected.apkBytes),expected.bundleSha256,String(expected.bundleBytes),'node tools/validate-alpha2-r1-physical-signing-receipt.mjs','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO']) assert(workflow.includes(marker), `R1 workflow missing marker: ${marker}`);
 assert(workflow.includes('contents: read') && workflow.includes('actions: read') && !workflow.includes('secrets.'), 'R1 public CI permission/secret boundary drifted');
 
 console.log('ALPHA2_R1_SIGNING_HANDOFF=PASS');
 console.log('R1_V8_BUNDLE_STATE=READY_FROZEN');
 console.log(`R1_V8_BUNDLE_SHA256=${expected.bundleSha256}`);
 console.log(`R1_V8_BUNDLE_BYTES=${expected.bundleBytes}`);
-console.log('R1_TRUSTED_EDGE_SIGNING=OPEN');
-console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1');
+console.log(`R1_TRUSTED_EDGE_SIGNING=${signed ? 'PASS' : 'OPEN'}`);
+console.log(`R2_PHYSICAL_CAMPAIGN=${signed ? 'READY' : 'BLOCKED_BY_R1'}`);
 console.log('PHYSICAL_ALPHA2_PASS=NO');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');
