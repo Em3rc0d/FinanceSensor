@@ -9,7 +9,6 @@ const paths = {
   campaign: 'graph/physical-closure-campaign.json',
   canonical: 'graph/alpha2-canonical-candidate.json'
 };
-
 const failures = [];
 const fail = message => failures.push(message);
 for (const path of Object.values(paths)) if (!fs.existsSync(path)) fail(`missing ${path}`);
@@ -35,16 +34,15 @@ if (!failures.length) {
     signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
   };
   const current = {
-    schemaVersion: 'A2_CANONICAL_CANDIDATE_RECEIPT_V3',
-    candidate: '0.2.0-alpha.2+2006',
-    sourceCommit: 'e26bab7cd87c5e686898998e867d8fb25c99db27',
-    apkSha256: '11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179',
-    apkBytes: 182102047,
+    schemaVersion: 'A2_CANONICAL_CANDIDATE_RECEIPT_V4',
+    candidate: '0.2.0-alpha.2+2007',
+    sourceCommit: '8a4aa307b9b3328e67232c919a94994e80446331',
+    apkSha256: 'a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197',
+    apkBytes: 182121475,
   };
 
   if (design.schemaVersion !== frozen.schemaVersion) fail('prebuild design schema mismatch');
-  if (design.project !== 'FinanceSensor' || design.mk !== 'MK0') fail('prebuild design identity mismatch');
-  if (design.designFreeze !== 'PASS') fail('remainder design must remain frozen');
+  if (design.project !== 'FinanceSensor' || design.mk !== 'MK0' || design.designFreeze !== 'PASS') fail('prebuild design identity/freeze mismatch');
   if (design.frozenAtBaseCommit !== frozen.base) fail('design base commit drifted');
   if (design.authority?.closureLedger !== paths.ledger || design.authority?.buildReadiness !== paths.readiness || design.authority?.physicalCampaign !== paths.campaign || design.authority?.canonicalCandidate !== paths.canonical) fail('prebuild authority mapping drifted');
 
@@ -54,28 +52,25 @@ if (!failures.length) {
   }
 
   const laws = new Set(design.executionLaws ?? []);
-  if (!laws.has('SOURCE_OR_APK_IDENTITY_CHANGE_REOPENS_SIGNING_AND_OWNED_DEVICE_CAMPAIGN')) fail('source/APK reopen law missing');
+  for (const law of [
+    'DESIGN_FREEZE_PASS_DOES_NOT_EQUAL_BUILD_READY','UNMAPPED_PRODUCT_BUILD_IS_FORBIDDEN','STATIC_PASS_DOES_NOT_EQUAL_PHYSICAL_PASS',
+    'APK_BUILD_PASS_DOES_NOT_EQUAL_BUILD_READY','RAW_TRUSTED_EDGE_EVIDENCE_DOES_NOT_ENTER_GITHUB','ONLY_SANITIZED_RECEIPTS_MAY_ENTER_GITHUB',
+    'SOURCE_OR_APK_IDENTITY_CHANGE_REOPENS_SIGNING_AND_OWNED_DEVICE_CAMPAIGN','BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED'
+  ]) if (!laws.has(law)) fail(`missing execution law ${law}`);
   const reopen = (design.reopenRules ?? []).find(rule => rule.signal === 'SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED');
   if (JSON.stringify(reopen?.reopens) !== JSON.stringify(['R1','R2'])) fail('source/APK reopen mapping drifted');
 
   if (canonical.schemaVersion !== current.schemaVersion) fail('current canonical receipt schema mismatch');
-  if (canonical.candidate !== current.candidate) fail('current canonical receipt candidate mismatch');
-  if (canonical.sourceCommit !== current.sourceCommit) fail('current canonical receipt source mismatch');
-  if (canonical.authority?.apkSha256 !== current.apkSha256) fail('current canonical receipt APK digest mismatch');
-  if (canonical.authority?.apkBytes !== current.apkBytes) fail('current canonical receipt APK bytes mismatch');
-  if (canonical.authority?.minSdk !== 31 || canonical.authority?.targetSdk !== 36 || canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current API31 canonical verification incomplete');
+  if (canonical.candidate !== current.candidate || canonical.sourceCommit !== current.sourceCommit) fail('current canonical receipt identity mismatch');
+  if (canonical.authority?.apkSha256 !== current.apkSha256 || canonical.authority?.apkBytes !== current.apkBytes) fail('current canonical receipt APK identity mismatch');
+  if (canonical.authority?.minSdk !== 31 || canonical.authority?.targetSdk !== 36 || canonical.authority?.compileSdk !== 37 || canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current API31 +2007 canonical verification incomplete');
   if (canonical.signing?.androidOauthPackage !== frozen.package || canonical.signing?.exactScope !== frozen.scope || canonical.signing?.expectedSignerSha1 !== frozen.signerSha1) fail('package/scope/stable signer drifted across candidate reopen');
   if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null || canonical.boundaries?.physicalAlpha2Pass !== false) fail('physical state cannot be promoted by canonical refreeze');
-  if (canonical.boundaries?.ownedDeviceInstallPass !== false || canonical.boundaries?.ownedDeviceLaunchPass !== false) fail('current +2006 physical installability must be reacquired rather than inherited');
+  if (canonical.boundaries?.ownedDeviceInstallPass !== false || canonical.boundaries?.ownedDeviceLaunchPass !== false || canonical.boundaries?.ownedDeviceStableSignerOauthPass !== false) fail('current +2007 physical claims must be reacquired rather than inherited');
   if (canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed !== false) fail('prior-candidate physical inheritance must remain forbidden');
-  for (const id of ['0.2.0-alpha.2+2001','0.2.0-alpha.2+2002','0.2.0-alpha.2+2003','0.2.0-alpha.2+2004','0.2.0-alpha.2+2005']) {
+  for (const id of ['0.2.0-alpha.2+2001','0.2.0-alpha.2+2002','0.2.0-alpha.2+2003','0.2.0-alpha.2+2004','0.2.0-alpha.2+2005','0.2.0-alpha.2+2006']) {
     if (!(canonical.nonAuthoritativeCandidates ?? []).some(x => x.candidate === id)) fail(`current canonical receipt must record ${id} supersession`);
   }
-
-  for (const law of [
-    'DESIGN_FREEZE_PASS_DOES_NOT_EQUAL_BUILD_READY','UNMAPPED_PRODUCT_BUILD_IS_FORBIDDEN','STATIC_PASS_DOES_NOT_EQUAL_PHYSICAL_PASS',
-    'APK_BUILD_PASS_DOES_NOT_EQUAL_BUILD_READY','RAW_TRUSTED_EDGE_EVIDENCE_DOES_NOT_ENTER_GITHUB','ONLY_SANITIZED_RECEIPTS_MAY_ENTER_GITHUB','BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED'
-  ]) if (!laws.has(law)) fail(`missing execution law ${law}`);
 
   const nodes = Array.isArray(design.nodes) ? design.nodes : [];
   const byId = new Map(nodes.map(node => [node.id, node]));
@@ -87,7 +82,7 @@ if (!failures.length) {
     for (const dep of node.dependsOn ?? []) if (!byId.has(dep)) fail(`${node.id} depends on unknown ${dep}`);
   }
   if (byId.get('R0')?.status !== 'CLOSED') fail('R0 must remain CLOSED after canonical refreeze');
-  if (byId.get('R1')?.status !== 'DESIGN_FROZEN_EXECUTION_OPEN') fail('R1 must remain physical execution open');
+  if (byId.get('R1')?.status !== 'DESIGN_FROZEN_EXECUTION_OPEN') fail('R1 must remain execution open');
   if (byId.get('R2')?.status !== 'BLOCKED_BY_PRIOR_NODE') fail('R2 must remain blocked by R1');
   for (const id of ['R3','R4','R5']) if (byId.get(id)?.status !== 'PHYSICAL_OR_PROVIDER_OPEN') fail(`${id} must remain physical/provider open`);
   for (const id of ['R6','R9','R10']) if (byId.get(id)?.status !== 'BLOCKED_BY_PRIOR_NODE') fail(`${id} must remain blocked`);
@@ -115,12 +110,8 @@ if (!failures.length) {
   if (ledger.buildReady !== false || readiness.buildReady !== false) fail('BUILD_READY cannot become true from canonical refreeze');
   if (readiness.law !== 'BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED') fail('build readiness law drifted');
 
-  for (const marker of ['DESIGN_FREEZE = PASS','R1 — Trusted-edge signing','R2 — Single owned-device Alpha.2 campaign','R3 — Q-003 Gmail production / provider closure','R4 — Q-004 privacy / deletion / backup closure','R5 — Q-005 multi-device / recovery closure','R9 — G-MK0','R10 — BUILD_READY','UNMAPPED_PRODUCT_BUILD            FORBIDDEN','BUILD_READY                       NO','RELEASE_READY                     NO']) {
-    if (!doc.includes(marker)) fail(`design document missing marker: ${marker}`);
-  }
-  for (const marker of ['UNMAPPED_PRODUCT_BUILD = FORBIDDEN','ONE_CANONICAL_CANDIDATE_PER_PHYSICAL_CAMPAIGN = REQUIRED','Phase 1 — R1 trusted-edge signing','Phase 2 — R2 owned-device Alpha.2 campaign','Phase 3 — P0 quarry evidence','Phase 7 — R9 G-MK0 consensus','Phase 8 — R10 BUILD_READY transition','PR CI PASS is not inherited by the merge SHA.']) {
-    if (!plan.includes(marker)) fail(`execution plan missing marker: ${marker}`);
-  }
+  for (const marker of ['DESIGN_FREEZE = PASS','R1 — Trusted-edge signing','R2 — Single owned-device Alpha.2 campaign','R3 — Q-003 Gmail production / provider closure','R4 — Q-004 privacy / deletion / backup closure','R5 — Q-005 multi-device / recovery closure','R9 — G-MK0','R10 — BUILD_READY','UNMAPPED_PRODUCT_BUILD            FORBIDDEN','BUILD_READY                       NO','RELEASE_READY                     NO']) if (!doc.includes(marker)) fail(`design document missing marker: ${marker}`);
+  for (const marker of ['UNMAPPED_PRODUCT_BUILD = FORBIDDEN','ONE_CANONICAL_CANDIDATE_PER_PHYSICAL_CAMPAIGN = REQUIRED','Phase 1 — R1 trusted-edge signing','Phase 2 — R2 owned-device Alpha.2 campaign','Phase 3 — P0 quarry evidence','Phase 7 — R9 G-MK0 consensus','Phase 8 — R10 BUILD_READY transition','PR CI PASS is not inherited by the merge SHA.']) if (!plan.includes(marker)) fail(`execution plan missing marker: ${marker}`);
 }
 
 if (failures.length) {
@@ -132,7 +123,7 @@ if (failures.length) {
 console.log('PREBUILD_REMAINDER_DESIGN=PASS');
 console.log('REMAINDER_NODES=11');
 console.log('DESIGN_FREEZE_SNAPSHOT=IMMUTABLE');
-console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2006');
+console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2007');
 console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN_REACQUIRE');
 console.log('NEXT_EXECUTION_NODE=R1_TRUSTED_EDGE_SIGNING');
 console.log('UNMAPPED_PRODUCT_BUILD=FORBIDDEN');

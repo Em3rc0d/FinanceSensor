@@ -61,10 +61,21 @@ assert(test.includes('ALPHA2_STATEMENT_GMAIL_HTTP_429'), 'RATE_LIMIT_TEST_REQUIR
 assert(test.includes('ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT'), 'TIMEOUT_TEST_REQUIRED');
 assert(test.includes('findsNothing'), 'GENERIC_FETCH_LABEL_SUPPRESSION_TEST_REQUIRED');
 
-assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'PHYSICAL_CAMPAIGN_MUST_REMAIN_OPEN');
+const currentCandidate = campaign.candidate?.id;
+const od0 = campaign.subgates?.find(gate => gate.id === 'OD0');
 const od3 = campaign.subgates?.find(gate => gate.id === 'OD3');
-assert(od3?.status === 'READY_FOR_PHYSICAL', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
-assert(campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'NEXT_GATE_DRIFT');
+if (currentCandidate === '0.2.0-alpha.2+2007') {
+  assert(campaign.status === 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING', '2007_CAMPAIGN_MUST_BE_BLOCKED_BY_REOPENED_R1');
+  assert(od0?.status === 'BLOCKED_BY_R1', '2007_OD0_MUST_WAIT_FOR_R1');
+  assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
+  assert(campaign.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', '2007_NEXT_GATE_MUST_BE_R1');
+  assert(campaign.currentState?.r1TrustedEdgeSigning === 'OPEN', '2007_R1_MUST_REMAIN_OPEN');
+} else {
+  assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'PHYSICAL_CAMPAIGN_MUST_REMAIN_OPEN');
+  assert(od3?.status === 'READY_FOR_PHYSICAL', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
+  assert(campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'NEXT_GATE_DRIFT');
+}
+assert(od3?.status !== 'PASS', 'OD3_PHYSICAL_PASS_MUST_NOT_BE_SYNTHESIZED');
 assert(campaign.currentState?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
 assert(campaign.currentState?.releaseReady === false, 'RELEASE_READY_MUST_REMAIN_FALSE');
 
@@ -73,5 +84,6 @@ console.log('ATTACHMENT_FETCH_MAX_ATTEMPTS=3');
 console.log('ATTACHMENT_READ_TIMEOUT_MS=30000');
 console.log('SAFE_FETCH_DIAGNOSTICS=CLASSIFIED');
 console.log('RAW_GMAIL_IDENTITY_PUBLIC_CROSSING=0');
+console.log(`CURRENT_CANDIDATE=${currentCandidate}`);
 console.log('OD3_PHYSICAL_PASS=0');
 console.log('BUILD_READY=NO');

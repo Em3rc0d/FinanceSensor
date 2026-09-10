@@ -1,15 +1,15 @@
 {
-  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V8",
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V9",
   "project": "FinanceSensor",
-  "candidate": "0.2.0-alpha.2+2006",
-  "sourceCommit": "e26bab7cd87c5e686898998e867d8fb25c99db27",
-  "canonicalRunId": 34278019055,
-  "canonicalJobId": 102235745821,
-  "canonicalArtifactId": 10076715491,
-  "canonicalArtifactZipSha256": "f1d958a7134bd56595bbea8680c48099fa4169f3209d17625e1000c81cee5309",
+  "candidate": "0.2.0-alpha.2+2007",
+  "sourceCommit": "8a4aa307b9b3328e67232c919a94994e80446331",
+  "canonicalRunId": 34439978152,
+  "canonicalJobId": 102752791279,
+  "canonicalArtifactId": 10137701427,
+  "canonicalArtifactZipSha256": "ede25e4928bda319c2b335fcb5aa73b1b019af9a9e6234e5e2e5db47def2892c",
   "inputApk": {
-    "sha256": "11df4432dd167ab4fa7007283414a88ea3b72c5339946862e833d9aafec1c179",
-    "bytes": 182102047,
+    "sha256": "a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197",
+    "bytes": 182121475,
     "minSdk": 31,
     "targetSdk": 36,
     "signatureVerify": "PASS",
@@ -19,7 +19,7 @@
     "physicalClaimsInheritedFromPriorCandidate": false
   },
   "signer": {
-    "powershellGitBlob": "91acbc974afcd16e01a14ff531bd1503c812da5b",
+    "powershellGitBlob": "b6fa7da4d5f14bc7586a7634b5813b8eec0a2c93",
     "cmdGitBlob": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "windowsNativeStdin": "PROCESS_START_INFO_REDIRECTED",
     "directPasswordPipe": "FORBIDDEN",
@@ -28,107 +28,55 @@
     "exactScope": "gmail.readonly"
   },
   "handoffBundle": {
-    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip",
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip",
     "status": "READY_FROZEN",
-    "sha256": "c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80",
-    "bytes": 86232702,
+    "sha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
+    "bytes": 86238732,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
     "zipStructure": "PASS",
     "zipIntegrity": "PASS",
     "manifestIntegrity": "PASS",
-    "ps1GitBlobVerified": "91acbc974afcd16e01a14ff531bd1503c812da5b",
+    "ps1GitBlobVerified": "b6fa7da4d5f14bc7586a7634b5813b8eec0a2c93",
     "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
-    "supersedesBundleSha256": "201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1",
+    "supersedesBundleSha256": "c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80",
     "generationReceipt": null,
-    "certificationReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json"
+    "certificationReceipt": null
   },
   "supersededBundles": [
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip",
-      "sha256": "201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2005_RUNTIME_AFTER_PASSWORD_FANOUT_AND_SINGLE_PASS_DIAGNOSTIC_REPAIR",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip",
-      "sha256": "6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2004_RUNTIME_AFTER_POST_PASSWORD_SAFE_STOP_AND_FETCH_ISOLATION_REPAIR",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip",
-      "sha256": "7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33",
-      "reason": "PINNED_TO_INVALIDATED_ALPHA2_2003_RUNTIME_AFTER_PASSWORD_DIALOG_FAILURE",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip",
-      "sha256": "a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e",
-      "reason": "ABANDONED_UNMERGED_STAGING_PINNED_TO_SUPERSEDED_ALPHA2_2002_INPUT",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v3.zip",
-      "sha256": "dbb310bf1efddda91793b996543568b8fff57c4379561fdfeec98eedbe70c90d",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2001_INPUT",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip",
-      "sha256": "c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5",
-      "reason": "PACKAGED_PS1_GIT_BLOB_MISMATCH",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE.zip",
-      "sha256": "b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8",
-      "reason": "WINDOWS_POWERSHELL_NATIVE_STDERR_PIPE_FAILURE",
-      "safeToUse": false
-    }
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip","sha256":"c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2006_RUNTIME_AFTER_OD3_ATTACHMENT_FETCH_REMEDIATION","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip","sha256":"201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2005_RUNTIME","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip","sha256":"6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2004_RUNTIME","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip","sha256":"7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33","reason":"PINNED_TO_INVALIDATED_ALPHA2_2003_RUNTIME","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip","sha256":"a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e","reason":"ABANDONED_UNMERGED_STAGING_PINNED_TO_SUPERSEDED_ALPHA2_2002_INPUT","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v3.zip","sha256":"dbb310bf1efddda91793b996543568b8fff57c4379561fdfeec98eedbe70c90d","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2001_INPUT","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip","sha256":"c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5","reason":"PACKAGED_PS1_GIT_BLOB_MISMATCH","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE.zip","sha256":"b421274c669b97dd18a3c81ef278a245e646fb1a106f4023f006966a72a269a8","reason":"WINDOWS_POWERSHELL_NATIVE_STDERR_PIPE_FAILURE","safeToUse":false}
   ],
   "historicalPhysicalReceipts": [
-    {
-      "candidate": "0.2.0-alpha.2+2005",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json",
-      "signedApkSha256": "530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2003",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json",
-      "signedApkSha256": "7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"
-    }
+    {"candidate":"0.2.0-alpha.2+2006","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json","signedApkSha256":"36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0","inheritAsCurrentPass":false,"reason":"SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_AFTER_OD3_REMEDIATION"},
+    {"candidate":"0.2.0-alpha.2+2005","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json","signedApkSha256":"530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85","inheritAsCurrentPass":false,"reason":"SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"},
+    {"candidate":"0.2.0-alpha.2+2003","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json","signedApkSha256":"7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6","inheritAsCurrentPass":false,"reason":"SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"}
   ],
   "ciGate": {
     "workflow": "Alpha.2 R1 Trusted-Edge Signing",
     "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
     "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
     "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
-    "physicalReceiptValidator": "tools/validate-alpha2-r1-physical-signing-receipt.mjs",
+    "historicalPhysicalReceiptValidator": "tools/validate-alpha2-r1-physical-signing-receipt.mjs",
     "powershellParserRequired": true,
     "privateSigningMaterialAllowed": false,
     "bundleGenerationInPublicCi": true,
     "physicalSigningInPublicCi": false,
     "exactBranchHeadCheckoutRequired": true
   },
-  "physicalReceipt": {
-    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json",
-    "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt",
-    "evidenceClass": "SANITIZED_TRUSTED_EDGE_RECEIPT",
-    "receivedDate": "2026-09-08",
-    "sanitizationPass": true,
-    "rawPrivateMaterialCommitted": false
-  },
-  "status": "TRUSTED_EDGE_SIGNING_PASS",
-  "trustedEdgeSigningPass": true,
-  "signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0",
-  "signedApkBytes": 182125094,
+  "physicalReceipt": null,
+  "status": "READY_FOR_TRUSTED_EDGE_SIGNING",
+  "trustedEdgeSigningPass": false,
+  "signedApkSha256": null,
+  "signedApkBytes": null,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false

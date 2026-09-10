@@ -12,20 +12,13 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/physical-closure-campaign.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
       - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
-      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'tools/validate-build-readiness.mjs'
       - 'tools/validate-prebuild-remainder-design.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
-      - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD*-2026-09-09.md'
-      - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
   push:
     branches:
@@ -37,20 +30,13 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/physical-closure-campaign.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json'
       - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
-      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'tools/validate-build-readiness.mjs'
       - 'tools/validate-prebuild-remainder-design.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
-      - 'mk0/07-plan/ALPHA2-R2-OWNED-DEVICE-CAMPAIGN.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R1-PHYSICAL-SIGNING-2026-09-08.md'
-      - 'mk0/10-evidence/EV-ALPHA2-2006-R2-OD*-2026-09-09.md'
-      - 'mk0/10-evidence/EV-ALPHA2-R2-CAMPAIGN-DESIGN-FREEZE-2026-09-07.md'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
 
 permissions:
@@ -82,41 +68,35 @@ jobs:
         with:
           node-version: '22'
 
-      - name: R1 sanitized signing receipt boundary
-        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
-
-      - name: R2 owned-device campaign incremental contract
+      - name: R2 owned-device campaign reset contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
-      - name: R2 prebuild blockchain chain
+      - name: R2 prebuild chain
         run: node tools/validate-alpha2-r2-chain.mjs
 
-      - name: R1 +2006 signing receipt reducer regression
+      - name: Historical +2006 signing reducer regression
         run: |
           set -euo pipefail
           node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt > /tmp/alpha2-r1-2006-reduced.txt
           grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2006-reduced.txt
           grep -q '"candidate": "0.2.0-alpha.2+2006"' /tmp/alpha2-r1-2006-reduced.txt
           grep -q '"signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0"' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"signedApkBytes": 182125094' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"r2OwnedDeviceCampaignUnblocked": true' /tmp/alpha2-r1-2006-reduced.txt
           grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"buildReady": false' /tmp/alpha2-r1-2006-reduced.txt
+          echo 'ALPHA2_2006_SIGNING_RECEIPT=HISTORICAL_ONLY'
 
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve post-OD2 physical boundary
+      - name: Preserve pre-R1 physical boundary
         run: |
           set -euo pipefail
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
-          echo 'OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'OD1_EXACT_GMAIL_READONLY_OAUTH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'OD2_METADATA_FIRST_STATEMENT_DISCOVERY=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'R2_NEXT_GATE=OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE'
-          echo 'OD3_CURRENT_BLOCKER=ALLOWED_PROFILE_ATTACHMENT_FETCH_REJECTED'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
+          echo 'CURRENT_OD0_OD11_PASS=NONE'
+          echo 'ALPHA2_2006_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
+          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_CURRENT_BLOCKER=CURRENT_2007_STABLE_SIGNED_APK_NOT_YET_CERTIFIED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
