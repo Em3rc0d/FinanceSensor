@@ -23,6 +23,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
+      - 'tools/validate-alpha2-2007-candidate-cut.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
   push:
     branches:
@@ -45,6 +46,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
+      - 'tools/validate-alpha2-2007-candidate-cut.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
 
 permissions:
@@ -77,6 +79,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: +2007 candidate cut boundary
+        run: node tools/validate-alpha2-2007-candidate-cut.mjs
 
       - name: Integrated architecture boundary
         run: node tools/validate-alpha2-integrated-runtime.mjs
@@ -262,7 +267,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2006
+            --build-number 2007
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -275,7 +280,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2006'" <<< "$BADGING"
+          grep -q "versionCode='2007'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -292,7 +297,7 @@ jobs:
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2006
+          CANDIDATE_ID=0.2.0-alpha.2+2007
           SOURCE_COMMIT=${SOURCE_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
@@ -322,6 +327,8 @@ jobs:
           INTERNAL_APK_BYTES=${APK_BYTES}
           PUBLIC_CI_SIGNER=EPHEMERAL_DEBUG
           TRUSTED_EDGE_RESIGN_REQUIRED=YES
+          CANONICAL_PROMOTION_PENDING=YES
+          R1_TRUSTED_EDGE_RESIGN_REQUIRED=YES
           REAL_OAUTH_EXECUTED_BY_CI=NO
           REAL_GMAIL_EXECUTED_BY_CI=NO
           REAL_FINANCIAL_DATA_IN_CI=NO
@@ -335,7 +342,7 @@ jobs:
       - name: Upload internal compile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-2006-candidate-${{ github.run_id }}
+          name: financesensor-alpha2-2007-candidate-${{ github.run_id }}
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/alpha2-integrated-ci-evidence.txt
