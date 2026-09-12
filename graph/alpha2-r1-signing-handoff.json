@@ -29,7 +29,7 @@
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip",
-    "status": "READY_FROZEN",
+    "status": "CERTIFIED_USED_ON_TRUSTED_EDGE",
     "sha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
     "bytes": 86238732,
     "files": 8,
@@ -42,14 +42,20 @@
     "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
     "supersedesBundleSha256": "c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80",
-    "generationReceipt": null,
-    "certificationReceipt": null
+    "generationReceipt": {
+      "foundationMergeSha": "02aa7347897475572035b7d29d05b2fed12e8def",
+      "workflowRunId": 34485571026,
+      "artifactId": 10155467626,
+      "artifactName": "financesensor-alpha2-r1-trusted-edge-bundle-v9-02aa7347897475572035b7d29d05b2fed12e8def",
+      "artifactDigest": "sha256:6e2aee9b797c435f05786a4ad1c9f1443261357f4d6cb46f67b4af3702494f9a"
+    },
+    "certificationReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json"
   },
   "supersededBundles": [
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip","sha256":"c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2006_RUNTIME_AFTER_OD3_ATTACHMENT_FETCH_REMEDIATION","safeToUse":false},
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v7.zip","sha256":"201cc603e2ce144b0848fbaaa793eaa669119bfeea8ffb027c8eec2fd24ef6b1","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2005_RUNTIME","safeToUse":false},
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v6.zip","sha256":"6c5c2baa20f7a266d5ec2b45f225124a0a15e7381776c739f091fead5023cd1d","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2004_RUNTIME","safeToUse":false},
-    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip","sha256":"7f3dbb0570db5e403bb83334cc46590dcc51c1e6d2c12e78f295959ba7f83f33","reason":"PINNED_TO_INVALIDATED_ALPHA2_2003_RUNTIME","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v5.zip","sha256":"7f3dbb0570dbd92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6","reason":"PINNED_TO_INVALIDATED_ALPHA2_2003_RUNTIME","safeToUse":false},
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v4.zip","sha256":"a801bcff3255c0e4e9c76cea1e7de1abd0277db2757eb49699cd254b8d69321e","reason":"ABANDONED_UNMERGED_STAGING_PINNED_TO_SUPERSEDED_ALPHA2_2002_INPUT","safeToUse":false},
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v3.zip","sha256":"dbb310bf1efddda91793b996543568b8fff57c4379561fdfeec98eedbe70c90d","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2001_INPUT","safeToUse":false},
     {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v2.zip","sha256":"c4b59ce33a9fc7755a14a9a320507492544b9981bdbf2fc5086b78675bc54ae5","reason":"PACKAGED_PS1_GIT_BLOB_MISMATCH","safeToUse":false},
@@ -72,11 +78,16 @@
     "physicalSigningInPublicCi": false,
     "exactBranchHeadCheckoutRequired": true
   },
-  "physicalReceipt": null,
-  "status": "READY_FOR_TRUSTED_EDGE_SIGNING",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
+  "physicalReceipt": {
+    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json",
+    "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.txt",
+    "receivedDate": "2026-09-12",
+    "sanitizationPass": true
+  },
+  "status": "TRUSTED_EDGE_SIGNING_PASS",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+  "signedApkBytes": 182145574,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
