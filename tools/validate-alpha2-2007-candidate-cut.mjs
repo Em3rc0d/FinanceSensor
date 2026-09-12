@@ -7,13 +7,16 @@ const scannerPath = 'spikes/mobile-shell/native/android/Alpha2StatementDiscovery
 const campaignPath = 'graph/alpha2-r2-owned-device-campaign.json';
 const canonicalPath = 'graph/alpha2-canonical-candidate.json';
 const r1Path = 'graph/alpha2-r1-signing-handoff.json';
+const receiptPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json';
 
 const workflow = fs.readFileSync(workflowPath, 'utf8');
 const scanner = fs.readFileSync(scannerPath, 'utf8');
 const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
 const canonical = JSON.parse(fs.readFileSync(canonicalPath, 'utf8'));
 const r1 = JSON.parse(fs.readFileSync(r1Path, 'utf8'));
+const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
 const fail = message => { throw new Error(`ALPHA2_2007_CANDIDATE_CUT_FAILED:${message}`); };
+const stableSha = '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab';
 
 for (const marker of [
   '--build-number 2007',
@@ -36,8 +39,11 @@ for (const marker of [
 
 if (canonical.candidate !== '0.2.0-alpha.2+2007' || canonical.sourceCommit !== '8a4aa307b9b3328e67232c919a94994e80446331') fail('CANONICAL_2007_PROMOTION_MISSING');
 if (canonical.authority?.apkSha256 !== 'a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197') fail('CANONICAL_2007_APK_IDENTITY_MISMATCH');
-if (r1.candidate !== canonical.candidate || r1.status !== 'READY_FOR_TRUSTED_EDGE_SIGNING' || r1.trustedEdgeSigningPass !== false) fail('R1_2007_MUST_REMAIN_OPEN');
-if (campaign.candidate?.id !== canonical.candidate || campaign.status !== 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING') fail('R2_2007_RESET_MISSING');
+if (canonical.signing?.trustedEdgeSigningPass !== true || canonical.signing?.signedApkSha256 !== stableSha) fail('CANONICAL_2007_STABLE_SIGNING_MISSING');
+if (r1.candidate !== canonical.candidate || r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true || r1.signedApkSha256 !== stableSha) fail('R1_2007_PASS_MISSING');
+if (receipt.candidate !== canonical.candidate || receipt.signedApkSha256 !== stableSha || receipt.trustedEdgeSigningPass !== true || receipt.sanitizationPass !== true) fail('R1_2007_SANITIZED_RECEIPT_MISSING');
+if (campaign.candidate?.id !== canonical.candidate || campaign.candidate?.signedApkSha256 !== stableSha || campaign.status !== 'READY_FOR_PHYSICAL') fail('R2_2007_OD0_READINESS_MISSING');
+if (campaign.subgates?.[0]?.id !== 'OD0' || campaign.subgates?.[0]?.status !== 'READY_FOR_PHYSICAL') fail('OD0_2007_NOT_READY');
 if (campaign.historicalInvalidatedCampaign?.candidate !== '0.2.0-alpha.2+2006' || campaign.historicalInvalidatedCampaign?.evidenceInheritanceAllowed !== false) fail('OLD_2006_PHYSICAL_EVIDENCE_NOT_ISOLATED');
 if (campaign.laws?.anyCandidateIdentityChangeInvalidatesCampaign !== true) fail('CANDIDATE_CHANGE_INVALIDATION_LAW_MISSING');
 if (campaign.currentState?.buildReady !== false || campaign.currentState?.releaseReady !== false) fail('PREMATURE_READY_PROMOTION');
@@ -48,8 +54,9 @@ console.log('OD3_REMEDIATION=GATED');
 console.log('SOURCE_BASE=LATEST_OD3_REMEDIATION');
 console.log('CANDIDATE_ID=0.2.0-alpha.2+2007');
 console.log('CANONICAL_PROMOTION=PASS');
-console.log('R1_TRUSTED_EDGE_SIGNING=OPEN');
-console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1');
+console.log('R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT');
+console.log('R2_PHYSICAL_CAMPAIGN=READY');
+console.log('OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL');
 console.log('R2_EVIDENCE_INHERITANCE_ALLOWED=NO');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');
