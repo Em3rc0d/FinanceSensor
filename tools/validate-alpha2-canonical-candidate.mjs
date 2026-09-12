@@ -18,6 +18,9 @@ const expected = {
   artifactZipBytes: 87263303,
   apkSha256: 'a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197',
   apkBytes: 182121475,
+  signedApkSha256: '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab',
+  signedApkBytes: 182145574,
+  receipt: 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json',
   ps1Blob: 'b6fa7da4d5f14bc7586a7634b5813b8eec0a2c93',
   signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
 };
@@ -35,18 +38,25 @@ assert(graph.authority?.signatureVerify === 'PASS' && graph.authority?.aapt2Pars
 assert(graph.authority?.publicCiSigner === 'EPHEMERAL_DEBUG' && graph.authority?.trustedEdgeResignRequired === true, 'public signer boundary drifted');
 
 const physical = graph.physicalInstallabilityObservation ?? {};
-assert(physical.status === 'OPEN_FOR_CURRENT_CANDIDATE', 'physical installability must reopen on +2007');
+assert(physical.status === 'OPEN_FOR_CURRENT_CANDIDATE', 'OD0 physical installability must remain open until observed');
 assert(physical.installPass === false && physical.launchPass === false && physical.oauthPass === false && physical.inheritanceFromPriorCandidateAllowed === false, '+2006 physical evidence cannot be inherited');
-assert(/OD3|attachment-fetch/i.test(physical.reason ?? ''), 'canonical reopen reason must identify OD3 remediation');
+assert(/stable trusted-edge|OD0/i.test(physical.reason ?? ''), 'canonical physical boundary must identify stable signing and OD0 reacquisition');
 
 assert(graph.signing?.expectedSignerSha1 === expected.signerSha1 && graph.signing?.androidOauthPackage === 'com.financesensor.lab.gmailconnection.r2' && graph.signing?.exactScope === 'gmail.readonly', 'signer/package/scope drifted');
-assert(graph.signing?.trustedEdgeSigningPass === false && graph.signing?.signedApkSha256 === null, 'trusted-edge signing must remain open before physical receipt');
+assert(graph.signing?.trustedEdgeSigningPass === true, 'trusted-edge signing PASS must be bound');
+assert(graph.signing?.signedApkSha256 === expected.signedApkSha256 && graph.signing?.signedApkBytes === expected.signedApkBytes, 'stable signed APK identity drifted');
+assert(graph.signing?.receipt === expected.receipt && fs.existsSync(expected.receipt), 'current +2007 signing receipt binding missing');
 for (const key of ['ownedDeviceInstallPass','ownedDeviceLaunchPass','ownedDeviceStableSignerOauthPass','physicalSqlcipherPass','physicalAlpha2Pass','buildReady','releaseReady']) assert(graph.boundaries?.[key] === false, `${key} must remain false`);
 
 const consensus = new Map((graph.postMergeConsensus ?? []).map(x => [x.workflow, x]));
 for (const [workflow, runId] of [['Alpha.2 Integrated Runtime',34439978152],['Alpha.2 Design Freeze',34439980772],['FinanceSensor Heartbeat',34439978151],['FinanceSensor Public Readiness',34439978414]]) {
   assert(consensus.get(workflow)?.runId === runId && consensus.get(workflow)?.conclusion === 'SUCCESS', `post-merge consensus missing: ${workflow}`);
 }
+const r1Consensus = (graph.postMergeConsensus ?? []).find(x => x.workflow === 'Alpha.2 R1 Trusted-Edge Signing' && x.runId === 34485571026);
+const r2Consensus = (graph.postMergeConsensus ?? []).find(x => x.workflow === 'Alpha.2 R2 Owned-Device Campaign Contract' && x.runId === 34485571147);
+assert(r1Consensus?.conclusion === 'SUCCESS' && r1Consensus?.mergeSha === '02aa7347897475572035b7d29d05b2fed12e8def', 'post-merge R1 v9 consensus missing');
+assert(r2Consensus?.conclusion === 'SUCCESS' && r2Consensus?.mergeSha === '02aa7347897475572035b7d29d05b2fed12e8def', 'post-merge R2 reset consensus missing');
+
 const old2006 = (graph.nonAuthoritativeCandidates ?? []).find(x => x.candidate === '0.2.0-alpha.2+2006');
 assert(old2006 && /no \+2006 R1\/R2 physical claim may be inherited by \+2007/i.test(old2006.reason), '+2006 physical supersession boundary missing');
 for (const id of ['0.2.0-alpha.2+2001','0.2.0-alpha.2+2002','0.2.0-alpha.2+2003','0.2.0-alpha.2+2004','0.2.0-alpha.2+2005','0.2.0-alpha.2+2006']) assert((graph.nonAuthoritativeCandidates ?? []).some(x => x.candidate === id), `supersession record missing: ${id}`);
@@ -62,9 +72,10 @@ assert(parsed.error == null && parsed.status === 0, 'PowerShell signer parse fai
 console.log('ALPHA2_CANONICAL_CANDIDATE_RECEIPT=PASS');
 console.log('CANDIDATE=0.2.0-alpha.2+2007');
 console.log(`SOURCE_COMMIT=${expected.sourceCommit}`);
-console.log(`APK_SHA256=${expected.apkSha256}`);
-console.log('OD3_REMEDIATION=BOUND_TO_CANONICAL');
-console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN');
-console.log('R1_TRUSTED_EDGE_SIGNING=OPEN');
+console.log(`CANONICAL_APK_SHA256=${expected.apkSha256}`);
+console.log(`SIGNED_APK_SHA256=${expected.signedApkSha256}`);
+console.log('R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT');
+console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN_OD0');
+console.log('R2_PHYSICAL_CAMPAIGN=READY');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');
