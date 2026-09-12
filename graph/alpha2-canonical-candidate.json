@@ -28,14 +28,16 @@
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "OD3 attachment-fetch remediation changed source and APK identity after the +2006 owned-device campaign. R1 and all R2 physical claims must be reacquired on one stable-signed +2007 APK.",
+    "reason": "Stable trusted-edge +2007 signing is certified, but OD0 install/launch and later physical claims must still be reacquired on the same signed APK; no +2006 physical evidence is inherited.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
     {"workflow":"Alpha.2 Integrated Runtime","runId":34439978152,"conclusion":"SUCCESS"},
     {"workflow":"Alpha.2 Design Freeze","runId":34439980772,"conclusion":"SUCCESS"},
     {"workflow":"FinanceSensor Heartbeat","runId":34439978151,"conclusion":"SUCCESS"},
-    {"workflow":"FinanceSensor Public Readiness","runId":34439978414,"conclusion":"SUCCESS"}
+    {"workflow":"FinanceSensor Public Readiness","runId":34439978414,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 R1 Trusted-Edge Signing","runId":34485571026,"conclusion":"SUCCESS","mergeSha":"02aa7347897475572035b7d29d05b2fed12e8def"},
+    {"workflow":"Alpha.2 R2 Owned-Device Campaign Contract","runId":34485571147,"conclusion":"SUCCESS","mergeSha":"02aa7347897475572035b7d29d05b2fed12e8def"}
   ],
   "nonAuthoritativeCandidates": [
     {
@@ -52,8 +54,10 @@
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "trustedEdgeSigningPass": false,
-    "signedApkSha256": null
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+    "signedApkBytes": 182145574,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json"
   },
   "boundaries": {
     "realOauthExecutedByCi": false,
