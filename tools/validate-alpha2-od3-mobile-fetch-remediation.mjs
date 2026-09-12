@@ -30,9 +30,7 @@ for (const marker of [
   'ALPHA2_STATEMENT_ATTACHMENT_SIZE_MISMATCH',
   'PDF_HEADER_SCAN_BYTES = 1_024',
   'bytes.fill(0)'
-]) {
-  assert(scanner.includes(marker), `SCANNER_MARKER:${marker}`);
-}
+]) assert(scanner.includes(marker), `SCANNER_MARKER:${marker}`);
 assert(!scanner.includes('Base64.NO_PADDING'), 'ANDROID_DECODER_MUST_ACCEPT_PADDED_OR_UNPADDED_BASE64URL');
 assert(!scanner.includes('messageId" to'), 'RAW_MESSAGE_ID_MUST_NOT_CROSS_DART_BOUNDARY');
 assert(!scanner.includes('attachmentId" to'), 'RAW_ATTACHMENT_ID_MUST_NOT_CROSS_DART_BOUNDARY');
@@ -41,9 +39,7 @@ for (const marker of [
   "alpha2FetchDiagnosticCountPrefix = 'FETCH_DIAGNOSTIC:'",
   "status == 'FETCH_REJECTED'",
   '_safeStatementFetchCode(outcome.reviewCodes.first)'
-]) {
-  assert(pipeline.includes(marker), `PIPELINE_MARKER:${marker}`);
-}
+]) assert(pipeline.includes(marker), `PIPELINE_MARKER:${marker}`);
 
 for (const marker of [
   'STATEMENT_FETCH_NETWORK_RETRY_EXHAUSTED',
@@ -63,13 +59,23 @@ assert(test.includes('findsNothing'), 'GENERIC_FETCH_LABEL_SUPPRESSION_TEST_REQU
 
 const currentCandidate = campaign.candidate?.id;
 const od0 = campaign.subgates?.find(gate => gate.id === 'OD0');
+const od1 = campaign.subgates?.find(gate => gate.id === 'OD1');
+const od2 = campaign.subgates?.find(gate => gate.id === 'OD2');
 const od3 = campaign.subgates?.find(gate => gate.id === 'OD3');
 if (currentCandidate === '0.2.0-alpha.2+2007') {
-  assert(campaign.status === 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING', '2007_CAMPAIGN_MUST_BE_BLOCKED_BY_REOPENED_R1');
-  assert(od0?.status === 'BLOCKED_BY_R1', '2007_OD0_MUST_WAIT_FOR_R1');
-  assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
-  assert(campaign.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', '2007_NEXT_GATE_MUST_BE_R1');
-  assert(campaign.currentState?.r1TrustedEdgeSigning === 'OPEN', '2007_R1_MUST_REMAIN_OPEN');
+  const r1State = campaign.currentState?.r1TrustedEdgeSigning;
+  if (r1State === 'OPEN') {
+    assert(campaign.status === 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING', '2007_CAMPAIGN_MUST_BE_BLOCKED_WHILE_R1_OPEN');
+    assert(od0?.status === 'BLOCKED_BY_R1', '2007_OD0_MUST_WAIT_FOR_R1');
+    assert(campaign.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', '2007_NEXT_GATE_MUST_BE_R1_WHILE_OPEN');
+  } else {
+    assert(r1State === 'PASS', '2007_R1_STATE_MUST_BE_OPEN_OR_PASS');
+    assert(campaign.status === 'READY_FOR_PHYSICAL', '2007_CAMPAIGN_MUST_OPEN_AT_OD0_AFTER_R1_PASS');
+    assert(od0?.status === 'READY_FOR_PHYSICAL', '2007_OD0_MUST_BE_READY_AFTER_R1_PASS');
+    assert(od1?.status === 'BLOCKED_BY_PRIOR_GATE' && od2?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD1_OD2_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
+    assert(campaign.currentState?.nextGate === 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH', '2007_NEXT_GATE_MUST_BE_OD0_AFTER_R1_PASS');
+  }
+  assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_OD0_OD1_OD2');
 } else {
   assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'PHYSICAL_CAMPAIGN_MUST_REMAIN_OPEN');
   assert(od3?.status === 'READY_FOR_PHYSICAL', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
@@ -85,5 +91,7 @@ console.log('ATTACHMENT_READ_TIMEOUT_MS=30000');
 console.log('SAFE_FETCH_DIAGNOSTICS=CLASSIFIED');
 console.log('RAW_GMAIL_IDENTITY_PUBLIC_CROSSING=0');
 console.log(`CURRENT_CANDIDATE=${currentCandidate}`);
+console.log(`R1_STATE=${campaign.currentState?.r1TrustedEdgeSigning}`);
+console.log(`R2_NEXT_GATE=${campaign.currentState?.nextGate}`);
 console.log('OD3_PHYSICAL_PASS=0');
 console.log('BUILD_READY=NO');
