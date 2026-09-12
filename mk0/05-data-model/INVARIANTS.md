@@ -17,7 +17,7 @@ A `User` can theoretically belong to more than one Tenant; schema must not equat
 A Tenant can contain more than one `FinancialIdentity` even if MK0 exposes one-person UX.
 
 ### INV-TEN-005
-Every financial-domain entity that requires isolation has an unambiguous tenant ownership path.
+Every financial-domain or authorization entity that requires isolation has an unambiguous tenant ownership path. Device authorization is tenant-scoped; a device identity or public key record from another tenant cannot authorize an envelope or receive tenant key material merely because the device identifier matches.
 
 ## Evidence
 
@@ -65,6 +65,12 @@ Every canonical amount retains original currency.
 ### INV-FIN-009
 Forecast/expected events never mutate observed historical totals as if they already occurred.
 
+### INV-FIN-010
+An external transfer or otherwise unresolved movement does not derive income, expense or neutrality from movement mechanism/direction alone. Until explicit evidence resolves the economic effect, it remains reviewable and contributes neither income nor expense to authoritative totals.
+
+### INV-FIN-011
+The cumulative automatic refund/reversal offset applied to an original event cannot exceed the original economic contribution. An over-offset, incompatible amount or ambiguous relationship requires review rather than automatic projection.
+
 ## Corrections
 
 ### INV-COR-001
@@ -96,13 +102,55 @@ Per-device event sequences are monotonic.
 Duplicate delivery of the same encrypted sync event is idempotent.
 
 ### INV-SYNC-003
-A revoked device cannot obtain new tenant key material or new sync payload authorization.
+A revoked device cannot obtain new tenant key material or new sync payload authorization. Device-key distribution is tenant-and-epoch scoped: both authorizer and recipient identities must match their authorization records and be authorized for the same tenant and key epoch when a key wrap is created or consumed.
 
 ### INV-SYNC-004
 Two authorized devices replaying the same complete event set converge to equivalent materialized financial state.
 
 ### INV-SYNC-005
 Processing leases are optimization/coordination primitives, never the sole correctness mechanism.
+
+### INV-SYNC-006
+When connectivity or an OS background execution window is unavailable, pending sync work remains durably resumable without a busy-poll retry loop.
+
+### INV-SYNC-007
+Battery/storage/resource constraints may defer noncritical heavy work but must never silently relax financial-correctness, provenance, encryption or idempotency rules.
+
+### INV-SYNC-008
+The cloud control/relay plane cannot recover a retained tenant root-key epoch from recovery metadata and recovery-wrap ciphertext alone; the Recovery Private Key is never cloud plaintext and is never synchronized as ordinary tenant state.
+
+### INV-SYNC-009
+Every tenant key epoch declared recoverable after all authorized devices are lost must have exactly one distinct authenticated recovery-wrap authority for that recovery generation before the epoch can be considered recovery-covered. The accepted wrap must be bound to the same tenant, key epoch and Recovery Key identity, its signed authorizer identity must match the supplied authorization record, that authorizer must have been authorized for the same tenant and epoch, tampered/invalid wraps cannot count as coverage, and multiple distinct authentic wraps for one declared epoch fail closed until explicitly reconciled. Exact duplicate delivery of the same authenticated wrap remains idempotent.
+
+### INV-SYNC-010
+Successful all-devices-lost recovery must establish and verify a newly authorized device state, revoke the lost devices for the next epoch, rotate the tenant to a fresh key epoch, rotate the Recovery Key, and establish recovery coverage for that next epoch **before normal future synchronization can resume**. A recovery plan alone is insufficient; the hardening state must be applied and verified. Recovery is not permission to silently reactivate lost devices.
+
+### INV-SYNC-011
+After Recovery Key rotation, the retired Recovery Private Key cannot decrypt tenant epochs that were created and wrapped only to the new Recovery Public Key.
+
+### INV-SYNC-012
+Future-access revocation must prevent a revoked device from creating **newly admissible history under an old key epoch** after cutover. Before old-epoch envelopes from that origin are treated as immutable historical replay, a still-authorized authority must commit the exact accepted historical origin stream (or an equivalent reviewed append-only commitment). Post-cutover extension, substitution, sequence forks and unresolved gaps fail closed. Exact duplicate relay delivery and transport reordering of the already committed historical set remain harmless.
+
+### INV-SYNC-013
+Sync replay identity is immutable. Inside one tenant, one `event_id` can bind only one immutable decoded header/action, and one `(tenant_id, origin_device_id, origin_device_sequence)` slot can bind only one event identity. Exact delivery of the same event remains idempotent; divergent reuse of either identity fails closed rather than becoming last-write-wins.
+
+### INV-SYNC-014
+A materialized financial/sync state is tenant-isolated. One materialization pass cannot combine decoded domain actions from different tenants; cross-tenant input fails closed before canonical or correction state is projected.
+
+### INV-SYNC-015
+Conflict resolution is itself conflict-safe. Concurrent incompatible resolution actions over the same target/base revision produce a deterministic explicit meta-conflict rather than a hidden winner; a resolution that selects outside the known candidate set fails closed; equivalent concurrent resolutions selecting the same candidate converge idempotently.
+
+### INV-SYNC-016
+An independently retained `TrustedCheckpointAnchor` defines the minimum accepted checkpoint state for one tenant. A relay view that falls behind that anchor, equivocates at an already anchored/checkpointed sequence, skips an intermediate checkpoint, crosses tenants, or breaks the authenticated `previous_checkpoint_hash` chain fails closed. Exact delivery of the same checkpoint remains retry-equivalent.
+
+### INV-SYNC-017
+Checkpoint authenticity and append-only consistency must never be represented as proof of globally latest state. Without an independent trusted checkpoint anchor or separately reviewed witness, the result is `INDETERMINATE_FRESHNESS`; even a valid chain extending an anchor may establish `CONSISTENT_FROM_ANCHOR` while `latestGlobalFreshness` remains `UNPROVEN` because an unseen later tail may have been withheld.
+
+### INV-SYNC-018
+An independent witness may advance a pseudonymous checkpoint stream only through authenticated monotonic continuity: first sequence `1` with no parent, then exactly `N+1` with `previous_checkpoint_hash` equal to the witness's remembered head. Rollback, same-sequence hash equivocation, sequence gaps, parent mismatch and witness/log binding confusion fail closed; exact retry of the same semantic checkpoint remains idempotent.
+
+### INV-SYNC-019
+Witness evidence must never be represented as stronger than the evidence actually observed. A valid witness ahead of the relay yields `RELAY_BEHIND_WITNESS`; same-sequence valid witness disagreement yields `WITNESS_DIVERGENCE`; unavailable or insufficient independent evidence yields an explicit unconfirmed state and must never silently fall back to trusting the relay. Any quorum threshold used by a spike is not automatically a production truth rule, and witness participation requires per-witness opaque identifiers rather than a stable real tenant identifier.
 
 ## Security
 

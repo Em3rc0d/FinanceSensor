@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "scope": "STATEMENT_PROFILE_RECONCILIATION",
+  "profileId": "PE-BCP-SAVINGS-REQUESTED",
+  "status": "PARTIAL_PASS_WITH_EXPLICIT_OPEN_VARIANTS",
+  "governingPromotionState": "OPEN_BY_CONTRACT",
+  "observedAtDay": "2026-09-04",
+  "sourceBaselineCommit": "d22103b0654f8354d2c69abfe1df58a7d852d5ec",
+  "evidenceMode": "OWNED_WINDOWS_LOCAL_EDGE_SANITIZED_AGGREGATE",
+  "receipt": {
+    "path": "mk0/10-evidence/EV-STATEMENT-BCP-SAVINGS-BALANCE-AUDIT-PHYSICAL-2026-09-04.md"
+  },
+  "observedAggregates": {
+    "statementsSelected": 9,
+    "statementsAudited": 9,
+    "pagesAudited": 16,
+    "movementsAudited": 359,
+    "parserFailures": 0,
+    "balanceEquationPass": 6,
+    "reconciliationOpen": 2,
+    "discrepancies": 1,
+    "printedDebitTotalExact": 9,
+    "printedCreditTotalExact": 9,
+    "openingBalanceBound": 9,
+    "closingBalanceBound": 7,
+    "datesWithinDeclaredPeriod": 8,
+    "multiPageStatements": 7,
+    "onePageStatements": 2
+  },
+  "verifiedRepair": {
+    "codeChange": "PR_53_RIGHTMOST_MONETARY_FRAGMENT_CLUSTER",
+    "previousObservedMovementCount": 368,
+    "currentObservedMovementCount": 359,
+    "previousDebitControlRelation": "PARSED_GREATER_9_OF_9",
+    "currentDebitControlRelation": "EXACT_9_OF_9",
+    "currentCreditControlRelation": "EXACT_9_OF_9",
+    "claim": "SYSTEMATIC_DEBIT_FRAGMENT_SPILL_REMOVED"
+  },
+  "openVariants": [
+    {
+      "code": "BCP_SAVINGS_ONE_PAGE_CLOSING_BALANCE_OPEN",
+      "count": 2,
+      "layout": "ONE_PAGE",
+      "finalBalanceLabelPresent": true,
+      "finalBalanceValueBound": false,
+      "movementTotalsExact": true,
+      "policy": "FAIL_CLOSED_NO_INFERRED_CLOSING_BALANCE"
+    },
+    {
+      "code": "BCP_SAVINGS_PRE_PERIOD_DATE_EDGE_OPEN",
+      "count": 1,
+      "layout": "MULTI_PAGE",
+      "dateDiagnostic": "PROCESS_BEFORE_VALUE_BEFORE_PERIOD",
+      "policy": "FAIL_CLOSED_PERIOD_RULE_NOT_RELAXED"
+    }
+  ],
+  "assertions": {
+    "oauthScopeReadonly": true,
+    "passwordPersisted": false,
+    "decryptedPdfPersisted": false,
+    "decryptedTextPersisted": false,
+    "layoutGeometryPersisted": false,
+    "rawPrivateStatementCommitted": false,
+    "realFinancialValuesCommitted": false,
+    "realAccountIdentifiersCommitted": false,
+    "realGmailIdentifiersCommitted": false
+  },
+  "campaignPolicy": {
+    "additionalDiagnosticRerunRequiredNow": false,
+    "openVariantsAreWaived": false,
+    "openVariantsArePassed": false,
+    "resumeOnlyOnNewEvidenceOrAcceptanceNeed": true
+  },
+  "doesNotProve": [
+    "ALL_BCP_SAVINGS_FORMAT_VARIANTS",
+    "ONE_PAGE_CLOSING_BALANCE_SUPPORT",
+    "PRE_PERIOD_MOVEMENT_SEMANTICS",
+    "INDEPENDENT_EXTERNAL_ROW_BY_ROW_RECONCILIATION",
+    "CROSS_ACCOUNT_OR_CROSS_USER_DIVERSITY",
+    "BCP_CREDIT_PHYSICAL_PARSE",
+    "RIPLEY_CREDIT_PHYSICAL_PARSE",
+    "INTERBANK_LOCAL_FILE_IMPORT",
+    "ANDROID_PRODUCT_STATEMENT_PARSE",
+    "IOS_PRODUCT_STATEMENT_PARSE",
+    "Q003_CLOSED",
+    "Q004_CLOSED",
+    "BUILD_READY"
+  ],
+  "iosTouched": false,
+  "buildReady": false
+}

@@ -1,0 +1,255 @@
+{
+  "schemaVersion": "MK0_PREBUILD_REMAINDER_DESIGN_V1",
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "designFreeze": "PASS",
+  "authority": {
+    "closureLedger": "graph/closure-ledger.json",
+    "buildReadiness": "graph/build-readiness.json",
+    "physicalCampaign": "graph/physical-closure-campaign.json",
+    "canonicalCandidate": "graph/alpha2-canonical-candidate.json"
+  },
+  "frozenAtBaseCommit": "ac195baebc2966521b2dcc73dfa3376ae09e6b4d",
+  "canonicalAlpha2": {
+    "candidate": "0.2.0-alpha.2+2001",
+    "sourceCommit": "f658363772b8d3652a81a8a4275a571f2f409ed8",
+    "apkSha256": "7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f",
+    "apkBytes": 182053563,
+    "package": "com.financesensor.lab.gmailconnection.r2",
+    "scope": "gmail.readonly",
+    "stableSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0"
+  },
+  "executionLaws": [
+    "DESIGN_FREEZE_PASS_DOES_NOT_EQUAL_BUILD_READY",
+    "UNMAPPED_PRODUCT_BUILD_IS_FORBIDDEN",
+    "STATIC_PASS_DOES_NOT_EQUAL_PHYSICAL_PASS",
+    "APK_BUILD_PASS_DOES_NOT_EQUAL_BUILD_READY",
+    "PHYSICAL_PASS_DOES_NOT_EQUAL_RELEASE_READY",
+    "RAW_TRUSTED_EDGE_EVIDENCE_DOES_NOT_ENTER_GITHUB",
+    "ONLY_SANITIZED_RECEIPTS_MAY_ENTER_GITHUB",
+    "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENS_SIGNING_AND_OWNED_DEVICE_CAMPAIGN",
+    "BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED"
+  ],
+  "allowedNodeStates": [
+    "CLOSED",
+    "DESIGN_FROZEN_EXECUTION_OPEN",
+    "BLOCKED_BY_PRIOR_NODE",
+    "PHYSICAL_OR_PROVIDER_OPEN",
+    "AUDIT_OPEN"
+  ],
+  "nodes": [
+    {
+      "id": "R0",
+      "title": "Canonical Alpha.2 candidate chain",
+      "status": "CLOSED",
+      "dependsOn": [],
+      "executionClass": "CERTIFIED_CI_RECEIPT",
+      "exitGate": "ONE_CANONICAL_APK_IDENTITY_FROZEN",
+      "evidence": [
+        "graph/alpha2-canonical-candidate.json",
+        "mk0/10-evidence/EV-ALPHA2-CANONICAL-CANDIDATE-2026-09-07.md"
+      ]
+    },
+    {
+      "id": "R1",
+      "title": "Trusted-edge Alpha.2 signing",
+      "status": "CLOSED",
+      "dependsOn": ["R0"],
+      "executionClass": "OWNED_COMPUTER_PRIVATE_KEY_REQUIRED",
+      "inputIdentity": "CANONICAL_ALPHA2_ONLY",
+      "requiredClaims": [
+        "INPUT_SHA256_AND_BYTES_MATCH_CANONICAL_RECEIPT",
+        "STABLE_R2_SIGNER_FINGERPRINT_MATCHES",
+        "SIGNED_APK_APKSIGNER_VERIFY_PASS",
+        "SANITIZED_SIGNING_RECEIPT_CREATED",
+        "NO_PRIVATE_KEY_OR_PASSWORD_IN_GITHUB"
+      ],
+      "failureLaw": "ANY_FAILURE_DELETES_UNTRUSTED_OUTPUT_AND_BLOCKS_R2"
+    },
+    {
+      "id": "R2",
+      "title": "Single owned-device Alpha.2 product campaign",
+      "status": "DESIGN_FROZEN_EXECUTION_OPEN",
+      "dependsOn": ["R1"],
+      "executionClass": "OWNED_ANDROID_DEVICE_PHYSICAL",
+      "subgates": [
+        "SIGNED_APK_INSTALL_AND_LAUNCH",
+        "EXACT_GMAIL_READONLY_OAUTH",
+        "METADATA_FIRST_STATEMENT_DISCOVERY",
+        "BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE",
+        "BCP_SAVINGS_STRICT_PARSE_OR_FAIL_CLOSED",
+        "SQLCIPHER_PERSISTENCE_AND_REOPEN",
+        "RECONCILIATION_NO_FALSE_AUTO_CONFIRM",
+        "ACCOUNT_GRAPH_NO_BANK_CURRENCY_ONLY_CONFIRM",
+        "MONTHLY_COVERAGE_NO_FALSE_COMPLETE",
+        "SENSOR_PROJECTION_NO_NUMERIC_CONFIDENCE_OR_ADVICE",
+        "DISCONNECT_AND_LOCAL_SECRET_CUSTODY_CHECK"
+      ],
+      "passLaw": "ALL_SUBGATES_PASS_ON_SAME_SIGNED_CANDIDATE_OR_R2_REMAINS_OPEN",
+      "receiptPolicy": "SANITIZED_SUMMARY_ONLY"
+    },
+    {
+      "id": "R3",
+      "title": "Q-003 Gmail production and provider closure",
+      "status": "PHYSICAL_OR_PROVIDER_OPEN",
+      "dependsOn": ["R2"],
+      "executionClass": "PHYSICAL_AND_PROVIDER",
+      "campaignPhases": ["P1", "P7"],
+      "requiredClaims": [
+        "REFRESH_BEFORE_REVOKE_PASS",
+        "MINIMUM_SCOPE_ONLY",
+        "REQUEST_RESPONSE_BYTES_AND_ENDPOINT_LATENCY_ACCOUNTED",
+        "PROVIDER_REVOKE_INVALIDATES_OLD_AUTHORITY",
+        "GOOGLE_RESTRICTED_SCOPE_VERIFICATION_RECORDED",
+        "SECURITY_ASSESSMENT_APPLICABILITY_DETERMINED_BY_PROVIDER",
+        "CONSENT_DISCLOSURE_MATCHES_REAL_DATA_PATH"
+      ],
+      "closes": ["Q-003"]
+    },
+    {
+      "id": "R4",
+      "title": "Q-004 privacy, deletion and backup closure",
+      "status": "PHYSICAL_OR_PROVIDER_OPEN",
+      "dependsOn": ["R2"],
+      "executionClass": "PHYSICAL_PRIVACY_INSPECTION",
+      "campaignPhases": ["P2", "P3"],
+      "requiredClaims": [
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+        "NO_GMAIL_OR_FINANCIAL_PLAINTEXT_IN_LOGS",
+        "RAW_GMAIL_CONTENT_NOT_DURABLE",
+        "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL",
+        "DELETION_RESURRECTION_BARRIER_ACTIVE",
+        "PRE_DELETE_BACKUP_CANNOT_RESTORE_AUTHORITY",
+        "BACKUP_RETENTION_WITHIN_35_DAY_CEILING"
+      ],
+      "closes": ["Q-004"]
+    },
+    {
+      "id": "R5",
+      "title": "Q-005 multi-device crypto, witness and recovery closure",
+      "status": "PHYSICAL_OR_PROVIDER_OPEN",
+      "dependsOn": ["R2"],
+      "executionClass": "CROSS_DEVICE_PHYSICAL",
+      "campaignPhases": ["P4", "P5", "P6"],
+      "requiredClaims": [
+        "ANDROID_IOS_WRAP_UNWRAP_BIDIRECTIONAL",
+        "ANDROID_IOS_SIGN_VERIFY_BIDIRECTIONAL",
+        "NEGATIVE_CRYPTO_MATRIX_FAILS_CLOSED",
+        "NO_EXPORTABLE_KEY_FALLBACK",
+        "TWO_OF_THREE_WITNESS_QUORUM_ACROSS_TWO_FAILURE_DOMAINS",
+        "CONTRADICTION_CANNOT_BE_VOTED_AWAY",
+        "PARTITION_REJOIN_HAS_NO_FALSE_LATEST",
+        "ALL_DEVICES_LOST_RECOVERY_SUCCEEDS",
+        "TENANT_AND_RECOVERY_KEYS_ROTATE",
+        "OLD_DEVICE_AND_OLD_KIT_CANNOT_AUTHORIZE_NEW_EPOCH"
+      ],
+      "closes": ["Q-005"]
+    },
+    {
+      "id": "R6",
+      "title": "P0 quarry closure receipts",
+      "status": "BLOCKED_BY_PRIOR_NODE",
+      "dependsOn": ["R3", "R4", "R5"],
+      "executionClass": "CLOSURE_RECEIPT_AUDIT",
+      "campaignPhases": ["P8"],
+      "requiredOutputs": [
+        "mk0/11-decisions/closure-receipts/Q-003.md",
+        "mk0/11-decisions/closure-receipts/Q-004.md",
+        "mk0/11-decisions/closure-receipts/Q-005.md"
+      ],
+      "passLaw": "Q003_Q004_Q005_MUST_BE_CLOSED_IN_LEDGER_WITH_RESIDUAL_RISKS_RECORDED"
+    },
+    {
+      "id": "R7",
+      "title": "Architecture and security closure audit",
+      "status": "AUDIT_OPEN",
+      "dependsOn": ["R6"],
+      "executionClass": "DOCUMENTARY_RECONCILIATION_BOUND_TO_PHYSICAL_EVIDENCE",
+      "closes": ["A-001", "SEC-001"],
+      "requiredClaims": [
+        "CORE_ARCHITECTURE_MATCHES_OBSERVED_PHYSICAL_BOUNDARIES",
+        "SECURITY_PRIVACY_DOCS_MATCH_OBSERVED_CUSTODY_AND_DELETION",
+        "EDGE_CLOUD_BOUNDARY_RECONCILED",
+        "NO_DRAFT_SECURITY_CLAIM_EXCEEDS_PHYSICAL_EVIDENCE"
+      ]
+    },
+    {
+      "id": "R8",
+      "title": "Data model, workflow and operations closure audit",
+      "status": "AUDIT_OPEN",
+      "dependsOn": ["R7"],
+      "executionClass": "MODEL_WORKFLOW_OPERATIONS_AUDIT",
+      "closes": ["DM-001", "WF-001", "OPS-001"],
+      "requiredClaims": [
+        "DATA_MODEL_MATCHES_CANONICAL_RUNTIME_AND_SYNC_KEYS",
+        "WORKFLOWS_MATCH_SIGNATURE_UX_AND_REVIEW_STATES",
+        "OPERATIONS_MATCH_RECOVERY_DELETION_REVOCATION_AND_PROVIDER_BOUNDARIES",
+        "NO_UNRESOLVED_P0_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "R9",
+      "title": "G-MK0 closure",
+      "status": "BLOCKED_BY_PRIOR_NODE",
+      "dependsOn": ["R8"],
+      "executionClass": "FINAL_GRAPH_CONSENSUS",
+      "requiredClaims": [
+        "ALL_G_MK0_DEPENDENCIES_CLOSED_OR_PASS_AS_CONTRACTED",
+        "CLOSURE_LEDGER_REVALIDATED",
+        "BUILD_READINESS_REVALIDATED",
+        "RELEASE_READY_REMAINS_INDEPENDENT"
+      ],
+      "closes": ["G-MK0"]
+    },
+    {
+      "id": "R10",
+      "title": "BUILD_READY transition",
+      "status": "BLOCKED_BY_PRIOR_NODE",
+      "dependsOn": ["R9"],
+      "executionClass": "STATE_TRANSITION_ONLY",
+      "requiredClaims": [
+        "G_MK0_STATUS_CLOSED",
+        "BUILD_READY_TRUE_IS_LEDGER_DERIVED",
+        "RELEASE_READY_NOT_IMPLIED"
+      ]
+    }
+  ],
+  "reopenRules": [
+    {
+      "signal": "SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED",
+      "reopens": ["R1", "R2"]
+    },
+    {
+      "signal": "OAUTH_PACKAGE_SCOPE_OR_DATA_PATH_CHANGED",
+      "reopens": ["R2", "R3", "R4", "R7"]
+    },
+    {
+      "signal": "CRYPTO_PROFILE_SYNC_PROTOCOL_WITNESS_OR_RECOVERY_CHANGED",
+      "reopens": ["R5", "R7", "R8"]
+    },
+    {
+      "signal": "DELETION_BACKUP_OR_RETENTION_SEMANTICS_CHANGED",
+      "reopens": ["R4", "R5", "R7", "R8"]
+    },
+    {
+      "signal": "GOOGLE_PROVIDER_POLICY_OR_ASSESSMENT_REQUIREMENT_CHANGED",
+      "reopens": ["R3", "R7"]
+    }
+  ],
+  "currentState": {
+    "R0": "CLOSED",
+    "R1": "CLOSED",
+    "R2": "DESIGN_FROZEN_EXECUTION_OPEN",
+    "R3": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R4": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R5": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R6": "BLOCKED_BY_PRIOR_NODE",
+    "R7": "AUDIT_OPEN",
+    "R8": "AUDIT_OPEN",
+    "R9": "BLOCKED_BY_PRIOR_NODE",
+    "R10": "BLOCKED_BY_PRIOR_NODE",
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

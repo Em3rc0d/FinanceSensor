@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "status": "ACTIVE",
+  "trustBoundary": "CONTROLLED_LOCAL_EDGE_AND_OWNED_PHYSICAL_DEVICES",
+  "rawEvidenceInGitHub": "FORBIDDEN",
+  "sanitizedReceiptsInGitHub": "ALLOWED",
+  "boundNodes": {
+    "Q-003": "ACTIVE",
+    "Q-004": "ACTIVE",
+    "Q-005": "ACTIVE"
+  },
+  "allowedPhaseStates": [
+    "STATIC_READY_PHYSICAL_OPEN",
+    "PHYSICAL_EVIDENCE_REQUIRED",
+    "BLOCKED_BY_PRIOR_PHASES",
+    "PASS",
+    "FAIL"
+  ],
+  "phases": [
+    {
+      "id": "P0",
+      "title": "Harness integrity",
+      "status": "PASS",
+      "dependsOn": [],
+      "binds": ["Q-003", "Q-004", "Q-005"],
+      "receiptPattern": "EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "passReceipt": {
+        "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+        "binding": "graph/physical-receipts/P0-2026-09-03.json",
+        "evidenceOrigin": "BOUND_EXISTING_PHYSICAL_RECEIPTS"
+      },
+      "requiredClaims": [
+        "OUTPUT_ALLOWLIST_ACTIVE",
+        "SECRET_VALUE_PRINTING_DISABLED",
+        "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT",
+        "PRIVATE_KEY_BYTES_ABSENT",
+        "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY",
+        "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED"
+      ]
+    },
+    {
+      "id": "P1",
+      "title": "Q-003 Gmail production lifecycle",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0"],
+      "binds": ["Q-003"],
+      "receiptPattern": "EV-Q003-PRODUCTION-LIFECYCLE-PHYSICAL-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "SUCCESSFUL_REFRESH_BEFORE_REVOKE",
+        "MINIMUM_SCOPE_REFRESH",
+        "REQUEST_BYTES_ACCOUNTED",
+        "RESPONSE_BYTES_ACCOUNTED",
+        "PER_ENDPOINT_LATENCY_RECORDED",
+        "PROVIDER_REVOKE_ACCEPTED",
+        "OLD_REFRESH_AUTHORITY_DENIED",
+        "NO_REAL_GMAIL_CONTENT_IN_RESULT"
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Mobile OAuth custody and local privacy",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0"],
+      "binds": ["Q-003", "Q-004"],
+      "receiptPattern": "EV-Q003-Q004-<ANDROID|IOS>-CREDENTIAL-CUSTODY-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "ANDROID_PROTECTED_OAUTH_CUSTODY",
+        "IOS_PROTECTED_OAUTH_CUSTODY",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL",
+        "RESTORE_BEHAVIOR_DOCUMENTED"
+      ],
+      "passedClaims": [
+        "ANDROID_PROTECTED_OAUTH_CUSTODY",
+        "RESTORE_BEHAVIOR_DOCUMENTED"
+      ],
+      "openClaims": [
+        "IOS_PROTECTED_OAUTH_CUSTODY",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL"
+      ],
+      "claimStates": {
+        "ANDROID_PROTECTED_OAUTH_CUSTODY": "PASS_BOUND_PHYSICAL_RECEIPT",
+        "IOS_PROTECTED_OAUTH_CUSTODY": "STATIC_READY_PHYSICAL_OPEN",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL": "CROSS_PLATFORM_PHYSICAL_OPEN",
+        "RESTORE_BEHAVIOR_DOCUMENTED": "CONTRACT_PASS"
+      },
+      "subBoundaries": {
+        "android": {
+          "status": "PASS",
+          "claim": "ANDROID_PROTECTED_OAUTH_CUSTODY",
+          "receipt": "mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md",
+          "binding": "graph/physical-receipts/P2-ANDROID-2026-09-03.json",
+          "evidenceOrigin": "BOUND_EXISTING_OWNED_ANDROID_DEVICE_RECEIPTS"
+        },
+        "ios": {
+          "status": "STATIC_READY_PHYSICAL_OPEN",
+          "claim": "IOS_PROTECTED_OAUTH_CUSTODY",
+          "bridge": "spikes/mobile-shell/native/ios/GmailCredentialBroker.swift",
+          "staticValidator": "tools/validate-ios-gmail-custody.mjs",
+          "physicalReceiptRequired": true
+        }
+      }
+    },
+    {
+      "id": "P3",
+      "title": "Transport storage deletion and backup inspection",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0", "P2"],
+      "binds": ["Q-004", "Q-005"],
+      "receiptPattern": "EV-Q004-REAL-PRIVACY-DELETION-PHYSICAL-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+        "RAW_GMAIL_CONTENT_NOT_DURABLE",
+        "CLOUD_ENVELOPES_DELETED",
+        "CONTROL_METADATA_DELETED",
+        "WITNESS_NAMESPACE_RETIRED_OR_DELETED",
+        "DELETION_RESURRECTION_BARRIER_ACTIVE",
+        "PRE_DELETE_BACKUP_CANNOT_RESURRECT_AUTHORITY",
+        "BACKUP_RETENTION_WITHIN_35_DAY_CEILING"
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "Mobile production crypto interoperability",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0"],
+      "binds": ["Q-005"],
+      "receiptPattern": "EV-Q005-MOBILE-CRYPTO-INTEROP-PHYSICAL-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "ANDROID_WRAP_IOS_UNWRAP",
+        "IOS_WRAP_ANDROID_UNWRAP",
+        "ANDROID_SIGN_IOS_VERIFY",
+        "IOS_SIGN_ANDROID_VERIFY",
+        "NEGATIVE_MATRIX_FAILS_CLOSED",
+        "PROTECTED_KEY_USE_PROVEN",
+        "NO_SILENT_EXPORTABLE_KEY_FALLBACK"
+      ]
+    },
+    {
+      "id": "P5",
+      "title": "Witness crash and partition campaign",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0", "P4"],
+      "binds": ["Q-005"],
+      "receiptPattern": "EV-Q005-WITNESS-CRASH-PARTITION-PHYSICAL-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "THREE_WITNESSES_TWO_OF_THREE_QUORUM",
+        "TWO_FAILURE_DOMAINS_MINIMUM",
+        "ONE_RELAY_INDEPENDENT_WITNESS_MINIMUM",
+        "CONTRADICTION_CANNOT_BE_VOTED_AWAY",
+        "CRASH_RESTART_FAILS_CLOSED",
+        "PARTITION_REJOIN_CONVERGES_WITHOUT_FALSE_LATEST"
+      ]
+    },
+    {
+      "id": "P6",
+      "title": "All-devices-lost recovery",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P0", "P4", "P5"],
+      "binds": ["Q-005"],
+      "receiptPattern": "EV-Q005-ALL-DEVICES-LOST-RECOVERY-PHYSICAL-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "ALL_DEVICES_LOST_RECOVERY_SUCCEEDS",
+        "LOST_DEVICE_INVENTORY_COMPLETE",
+        "REVOCATION_BARRIERS_BOUND_TO_RECOVERED_HISTORY",
+        "TENANT_ROOT_KEY_ROTATED",
+        "RECOVERY_KEY_ROTATED",
+        "N_PLUS_1_RECOVERY_COVERAGE_CREATED",
+        "NEW_RECOVERY_KIT_EXPORTED_AND_CUSTODY_CONFIRMED",
+        "OLD_DEVICE_AND_OLD_KIT_CANNOT_AUTHORIZE_FUTURE_EPOCH"
+      ]
+    },
+    {
+      "id": "P7",
+      "title": "Provider and policy closure",
+      "status": "PHYSICAL_EVIDENCE_REQUIRED",
+      "dependsOn": ["P1", "P2"],
+      "binds": ["Q-003"],
+      "receiptPattern": "EV-Q003-GOOGLE-PRODUCTION-VERIFICATION-<date>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "PUBLIC_RESTRICTED_SCOPE_VERIFICATION_RECORDED",
+        "SECURITY_ASSESSMENT_APPLICABILITY_PROVIDER_DETERMINED",
+        "REQUIRED_ASSESSMENT_COMPLETED_IF_APPLICABLE",
+        "CONSENT_DISCLOSURE_PACKAGE_MATCHES_ACTUAL_DATA_PATH"
+      ]
+    },
+    {
+      "id": "P8",
+      "title": "Closure receipts",
+      "status": "BLOCKED_BY_PRIOR_PHASES",
+      "dependsOn": ["P1", "P2", "P3", "P4", "P5", "P6", "P7"],
+      "binds": ["Q-003", "Q-004", "Q-005"],
+      "receiptPattern": "mk0/11-decisions/closure-receipts/Q-00<3|4|5>.md",
+      "physicalReceiptRequiredForPass": true,
+      "requiredClaims": [
+        "Q003_RECEIPT_BINDS_PHYSICAL_AND_PROVIDER_EVIDENCE",
+        "Q004_RECEIPT_BINDS_TRANSPORT_STORAGE_DELETION_BACKUP_EVIDENCE",
+        "Q005_RECEIPT_BINDS_CRYPTO_WITNESS_RECOVERY_EVIDENCE",
+        "RESIDUAL_RISKS_RECORDED",
+        "CLOSURE_GRAPH_REVALIDATED"
+      ]
+    }
+  ]
+}

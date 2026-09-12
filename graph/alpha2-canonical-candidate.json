@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V4",
+  "candidate": "0.2.0-alpha.2+2007",
+  "certifiedPrHead": "237803e2c1eceb4b4b6b4af2390ec88ce9032a96",
+  "sourceCommit": "8a4aa307b9b3328e67232c919a94994e80446331",
+  "authority": {
+    "workflow": "Alpha.2 Integrated Runtime",
+    "runId": 34439978152,
+    "jobId": 102752791279,
+    "artifactId": 10137701427,
+    "artifactName": "financesensor-alpha2-2007-candidate-34439978152",
+    "artifactZipSha256": "ede25e4928bda319c2b335fcb5aa73b1b019af9a9e6234e5e2e5db47def2892c",
+    "artifactZipBytes": 87263303,
+    "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
+    "apkSha256": "a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197",
+    "apkBytes": 182121475,
+    "minSdk": 31,
+    "targetSdk": 36,
+    "compileSdk": 37,
+    "signatureVerify": "PASS",
+    "aapt2Parse": "PASS",
+    "publicCiSigner": "EPHEMERAL_DEBUG",
+    "trustedEdgeResignRequired": true
+  },
+  "physicalInstallabilityObservation": {
+    "status": "OPEN_FOR_CURRENT_CANDIDATE",
+    "installPass": false,
+    "launchPass": false,
+    "oauthPass": false,
+    "inheritanceFromPriorCandidateAllowed": false,
+    "reason": "Stable trusted-edge +2007 signing is certified, but OD0 install/launch and later physical claims must still be reacquired on the same signed APK; no +2006 physical evidence is inherited.",
+    "rawScreenshotInGitHub": false
+  },
+  "postMergeConsensus": [
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34439978152,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 Design Freeze","runId":34439980772,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34439978151,"conclusion":"SUCCESS"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34439978414,"conclusion":"SUCCESS"},
+    {"workflow":"Alpha.2 R1 Trusted-Edge Signing","runId":34485571026,"conclusion":"SUCCESS","mergeSha":"02aa7347897475572035b7d29d05b2fed12e8def"},
+    {"workflow":"Alpha.2 R2 Owned-Device Campaign Contract","runId":34485571147,"conclusion":"SUCCESS","mergeSha":"02aa7347897475572035b7d29d05b2fed12e8def"}
+  ],
+  "nonAuthoritativeCandidates": [
+    {
+      "candidate": "0.2.0-alpha.2+2006",
+      "reason": "Superseded by the OD3 attachment-fetch remediation merged in PR #118 and the +2007 cut merged in PR #119. Its stable-signing receipt and OD0/OD1/OD2 observations remain historical only; no +2006 R1/R2 physical claim may be inherited by +2007."
+    },
+    {"candidate":"0.2.0-alpha.2+2005","reason":"Superseded after password-prompt fan-out and single-pass diagnostic repairs changed source/APK identity."},
+    {"candidate":"0.2.0-alpha.2+2004","reason":"Superseded after post-password safe-stop and fetch-isolation repairs changed source/APK identity."},
+    {"candidate":"0.2.0-alpha.2+2003","reason":"Superseded after a stable-signed owned-device password-dialog lifecycle failure."},
+    {"candidate":"0.2.0-alpha.2+2002","reason":"Diagnostic installability candidate only; lowering minSdk contradicted ADR-013 and was superseded."},
+    {"candidate":"0.2.0-alpha.2+2001","reason":"Superseded by the installability repair sequence."}
+  ],
+  "signing": {
+    "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+    "signedApkBytes": 182145574,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json"
+  },
+  "boundaries": {
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "ownedDeviceInstallPass": false,
+    "ownedDeviceLaunchPass": false,
+    "ownedDeviceStableSignerOauthPass": false,
+    "physicalSqlcipherPass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "A2_R2_SANITIZED_RECEIPT_V1",
+  "candidateId": "0.2.0-alpha.2+2006",
+  "sourceCommit": "e26bab7cd87c5e686898998e867d8fb25c99db27",
+  "signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0",
+  "signedApkBytes": 182125094,
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+  "gmailScope": "gmail.readonly",
+  "deviceClass": "OWNED_ANDROID_PHONE",
+  "androidApiLevel": 35,
+  "gateResults": [
+    {
+      "gateId": "OD0",
+      "gateStatus": "PASS",
+      "stableResultCode": "R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS",
+      "coarseCounters": {
+        "physicalLaunchObservations": 1
+      }
+    },
+    {
+      "gateId": "OD1",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_FRESH_OAUTH_REQUIRED",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD2",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD3",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD4",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD5",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD6",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD7",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD8",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD9",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD10",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD11",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    }
+  ],
+  "sanitizationPass": true
+}

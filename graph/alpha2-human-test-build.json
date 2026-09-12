@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "candidate": "0.1.0-alpha.1+1001",
+  "surface": "ANDROID_HUMAN_TEST_ALPHA",
+  "status": "CI_BUILD_PASS_TRUSTED_EDGE_SIGNING_REQUIRED",
+  "asOf": "2026-09-05",
+  "source": {
+    "branch": "jett/mk0-foundation",
+    "commit": "9d990fc579429cc0bc8e5c02306d8ebe4622e145",
+    "workflow": "FinanceSensor Android Human Test Alpha",
+    "runId": 33999717749,
+    "runNumber": 4,
+    "jobId": 101396281087,
+    "conclusion": "success"
+  },
+  "artifact": {
+    "id": 9979184888,
+    "name": "financesensor-android-human-test-alpha-0.1.0",
+    "archiveBytes": 81786483,
+    "archiveSha256": "dac3afc3f816321fee3a9a0655bd70a34a037860897a5d1c684695ba3ae9966c",
+    "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
+    "apkBytes": 172884802,
+    "apkSha256": "c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d",
+    "publicCiSigner": "COMPILE_ONLY_EPHEMERAL",
+    "trustedEdgeResignRequired": true
+  },
+  "contract": {
+    "staticAlpha2SlicesCertified": "7/7",
+    "prePhysicalBuildEntry": "PASS",
+    "humanTestReady": true,
+    "alpha2MobileIntegration": "OPEN",
+    "alpha2PhysicalProductPass": false,
+    "buildReady": false,
+    "releaseReady": false,
+    "iosTouched": false,
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "sessionOnlyFinancialState": true,
+    "rawFinancialContentPersistence": false,
+    "dartBearerCustody": false,
+    "appRefreshTokenCustody": false,
+    "offlineAccessRequested": false,
+    "exactGmailScope": "gmail.readonly",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2"
+  },
+  "nextGate": {
+    "id": "TRUSTED_EDGE_STABLE_LAB_SIGNING",
+    "requiredSigner": "FINANCESENSOR_R2_LAB",
+    "physicalOwnedDeviceExecutionRequired": true,
+    "publicCiMayHoldPrivateKey": false
+  },
+  "laws": [
+    "CI_BUILD_PASS!=TRUSTED_EDGE_SIGNED_APK",
+    "HUMAN_TEST_READY!=BUILD_READY",
+    "STATIC_A_G_CERTIFIED!=ALPHA2_MOBILE_INTEGRATED",
+    "APK_BUILD_PASS!=RELEASE_READY"
+  ]
+}

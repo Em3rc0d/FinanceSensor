@@ -1,0 +1,126 @@
+name: Alpha.2 R2 Owned-Device Campaign Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/prebuild-remainder-design.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/physical-closure-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-prebuild-remainder-design.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/prebuild-remainder-design.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/physical-closure-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-prebuild-remainder-design.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-alpha2-r2-campaign-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-r2-campaign-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify checked-out SHA
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "CHECKED_OUT_SHA=$EXPECTED_SHA"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Current +2007 R1 physical signing receipt
+        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
+
+      - name: R2 owned-device OD0 readiness contract
+        run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
+
+      - name: R2 prebuild chain
+        run: node tools/validate-alpha2-r2-chain.mjs
+
+      - name: Historical +2006 signing reducer regression
+        run: |
+          set -euo pipefail
+          node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt > /tmp/alpha2-r1-2006-reduced.txt
+          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2006-reduced.txt
+          grep -q '"candidate": "0.2.0-alpha.2+2006"' /tmp/alpha2-r1-2006-reduced.txt
+          grep -q '"signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0"' /tmp/alpha2-r1-2006-reduced.txt
+          grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-2006-reduced.txt
+          echo 'ALPHA2_2006_SIGNING_RECEIPT=HISTORICAL_ONLY'
+
+      - name: Current +2007 signing reducer regression
+        run: |
+          set -euo pipefail
+          node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.txt > /tmp/alpha2-r1-2007-reduced.txt
+          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2007-reduced.txt
+          grep -q '"candidate": "0.2.0-alpha.2+2007"' /tmp/alpha2-r1-2007-reduced.txt
+          grep -q '"signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab"' /tmp/alpha2-r1-2007-reduced.txt
+          grep -q '"signedApkBytes": 182145574' /tmp/alpha2-r1-2007-reduced.txt
+          echo 'ALPHA2_2007_SIGNING_RECEIPT=CURRENT_PASS'
+
+      - name: CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+
+      - name: Preserve post-R1 physical boundary
+        run: |
+          set -euo pipefail
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
+          echo 'R2_PHYSICAL_CAMPAIGN=READY'
+          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
+          echo 'CURRENT_OD0_OD11_PASS=NONE'
+          echo 'ALPHA2_2006_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
+          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
+          echo 'R2_CURRENT_BLOCKER=OD0_INSTALL_AND_LAUNCH_NOT_YET_OBSERVED'
+          echo 'REAL_OAUTH_IN_CI=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'REAL_FINANCIAL_DATA_IN_CI=0'
+          echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
+          echo 'PHYSICAL_ALPHA2_PASS=NO'
+          echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'

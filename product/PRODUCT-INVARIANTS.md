@@ -28,6 +28,12 @@ Re-reading the same source evidence must not create an additional economic trans
 ### FIN-008 — Financial truth beats feature count
 No new insight layer may compensate for unresolved correctness defects in the canonical ledger.
 
+### FIN-009 — Movement mechanism is not economic meaning
+An external transfer, debit or credit direction alone cannot silently determine income, expense or neutrality. When ownership/purpose evidence is insufficient, the economic effect remains unresolved and the movement does not mutate user-facing income/expense totals as if its meaning were known.
+
+### FIN-010 — Offsets cannot erase more economic value than exists
+Refunds, reversals and other linked offsets must be bounded by the economic contribution they offset. Ambiguous, duplicate or over-sized cumulative offsets route to review instead of silently producing impossible negative consumption/income.
+
 ## Privacy and security
 
 ### PRIV-001 — Financial content stays local by default

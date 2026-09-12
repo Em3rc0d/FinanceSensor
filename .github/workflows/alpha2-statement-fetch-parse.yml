@@ -1,0 +1,70 @@
+name: Alpha.2 Statement Fetch and Parse
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-b-statement-fetch-parse.json'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/statement-format-registry.json'
+      - 'graph/statement-profile-specs-v1.json'
+      - 'spikes/physical-ingress/src/gmail-statement-attachment.js'
+      - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-discovery.js'
+      - 'spikes/physical-ingress/src/statement-fetch-parse.js'
+      - 'spikes/physical-ingress/src/statement-import-session.js'
+      - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
+      - 'spikes/physical-ingress/test/statement-fetch-parse.test.js'
+      - 'spikes/physical-ingress/test/statement-import-session.test.js'
+      - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
+      - 'tools/validate-alpha2-b-statement-fetch-parse.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-statement-fetch-parse.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate public CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+      - name: Validate frozen Alpha.2 authority
+        run: node tools/validate-alpha2-design-freeze.mjs
+      - name: Validate certified Alpha.2-A upstream
+        run: node tools/validate-alpha2-a-statement-discovery.mjs
+      - name: Validate Alpha.2-B exact-SHA receipt and fail-closed graph
+        run: node tools/validate-alpha2-b-statement-fetch-parse.mjs
+      - name: Syntax-check Alpha.2-B execution surface
+        run: |
+          node --check spikes/physical-ingress/src/statement-fetch-parse.js
+          node --check spikes/physical-ingress/test/statement-fetch-parse.test.js
+      - name: Run Alpha.2-B and parser boundary tests
+        run: |
+          node --test \
+            spikes/physical-ingress/test/statement-fetch-parse.test.js \
+            spikes/physical-ingress/test/statement-import-session.test.js \
+            spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
+            spikes/physical-ingress/test/gmail-statement-attachment.test.js
+      - name: Assert static-only promotion boundary
+        run: |
+          grep -Eq '"staticImplementationPass"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
+          ! grep -E '"physicalProductPass"[[:space:]]*:[[:space:]]*true|"buildReady"[[:space:]]*:[[:space:]]*true' graph/alpha2-b-statement-fetch-parse.json
+          ! grep -E "console\.log\(|writeFile\(|writeFileSync\(|localStorage|sessionStorage" spikes/physical-ingress/src/statement-fetch-parse.js
+          echo 'STATIC_IMPLEMENTATION_PASS=1'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
+          echo 'PASSWORD_DURABLE_STORAGE=0'
+          echo 'RAW_PDF_DURABLE_WRITES=0'
+          echo 'FORMAT_OBSERVED_PROFILE_FETCH=0'
+          echo 'INTERBANK_GMAIL_IDENTITY=PENDING'
+          echo 'PHYSICAL_PROFILE_PASS=0'
+          echo 'BUILD_READY=NO'

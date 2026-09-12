@@ -7,14 +7,6 @@ on:
     branches:
       - main
       - jett/mk0-foundation
-    paths:
-      - '.github/workflows/**'
-      - '.gitignore'
-      - 'SECURITY.md'
-      - 'tools/audit-public-history.mjs'
-      - 'tools/validate-ci-runner-policy.mjs'
-      - 'spikes/physical-ingress/live/**'
-      - 'ops/**'
 
 permissions:
   contents: read
@@ -98,6 +90,7 @@ jobs:
       - name: Public readiness summary
         run: |
           echo 'FINANCESENSOR_PUBLIC_READINESS=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Every push to the governed public branches is snapshot-certified; no path filter may silently skip a changed public surface.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Current tree, all current branch-head CI definitions and complete reachable Git history passed the sanitized exposure audit.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No current branch routes CI to self-hosted runners, references repository secrets, or uses pull_request_target.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail/OAuth authority remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"

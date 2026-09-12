@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "phase": "P1",
+  "status": "HARNESS_READY_PHYSICAL_OPEN",
+  "trustBoundary": "CONTROLLED_LOCAL_EDGE_ONLY",
+  "runner": "spikes/physical-ingress/live/owned-oauth-p1-production-lifecycle.mjs",
+  "resultArtifact": {
+    "path": "financesensor-p1-production-lifecycle-result.json",
+    "location": "CONTROLLED_LOCAL_EDGE_ONLY",
+    "rawUploadToGitHub": "FORBIDDEN",
+    "sanitizedReceiptAfterValidation": "ALLOWED"
+  },
+  "requiredClaims": [
+    "SUCCESSFUL_REFRESH_BEFORE_REVOKE",
+    "MINIMUM_SCOPE_REFRESH",
+    "REQUEST_BYTES_ACCOUNTED",
+    "RESPONSE_BYTES_ACCOUNTED",
+    "PER_ENDPOINT_LATENCY_RECORDED",
+    "PROVIDER_REVOKE_ACCEPTED",
+    "OLD_REFRESH_AUTHORITY_DENIED",
+    "NO_REAL_GMAIL_CONTENT_IN_RESULT"
+  ],
+  "oauthContract": {
+    "requestedScope": "https://www.googleapis.com/auth/gmail.readonly",
+    "grantedScopeMustBeExact": true,
+    "refreshScopeMustBeExact": true,
+    "tokenType": "Bearer",
+    "pkce": "S256",
+    "offlineAccess": true,
+    "realConsentRequired": true
+  },
+  "revocationContract": {
+    "providerRevokeRequiredHttpStatus": 200,
+    "postRevokeAcceptedDenial": {
+      "httpStatus": 400,
+      "oauthError": "invalid_grant"
+    },
+    "boundedDelayScheduleMs": [0, 1000, 3000, 7000],
+    "ambiguousOutcomesThatMustNotPass": [
+      "NETWORK_ERROR",
+      "TIMEOUT",
+      "HTTP_5XX",
+      "NON_INVALID_GRANT_4XX",
+      "REFRESH_STILL_SUCCEEDS_WITHIN_BOUND"
+    ]
+  },
+  "gmailEndpointClassesRequired": [
+    "profile",
+    "list",
+    "metadata",
+    "full",
+    "history"
+  ],
+  "oauthEndpointClassesRequired": [
+    "tokenExchange",
+    "tokenRefresh",
+    "revoke"
+  ],
+  "networkEvidence": {
+    "requestBytes": "HTTP_REQUEST_BODY_BYTES",
+    "responseBytes": "COMPLETE_HTTP_RESPONSE_BODY_BYTES",
+    "latency": "FETCH_START_THROUGH_COMPLETE_CLONED_RESPONSE_BODY_READ",
+    "getRequestBodyBytes": 0,
+    "rawPayloadRetention": false,
+    "rawUrlRetention": false
+  },
+  "mailboxBounds": {
+    "historicalSweep": false,
+    "gmailSearchQueryUsed": false,
+    "maxAnchorAttempts": 2,
+    "maxAnchorWindowMessages": 5,
+    "maxHistoryMessages": 5,
+    "maxFullMessages": 1,
+    "fullRetrievalMustTargetSyntheticMarker": true
+  },
+  "privacyZeroFields": [
+    "rawGmailContentWrittenToResult",
+    "financialPlaintextWrittenToResult",
+    "gmailAddressWrittenToResult",
+    "messageIdWrittenToResult",
+    "historyIdWrittenToResult",
+    "oauthSecretWrittenToResult",
+    "rawHttpPayloadWrittenToResult",
+    "requestUrlWrittenToResult",
+    "syntheticMarkerWrittenToResult"
+  ],
+  "passPromotion": {
+    "requiresControlledEdgeExecution": true,
+    "requiresAllEightClaimsPass": true,
+    "requiresSanitizedReceipt": true,
+    "requiresImmutableReceiptBinding": true,
+    "currentPhysicalPass": false
+  },
+  "forbiddenPromotions": [
+    "HARNESS_READY=>P1_PASS",
+    "STATIC_VALIDATOR_PASS=>P1_PASS",
+    "REVOKE_HTTP_200=>OLD_REFRESH_AUTHORITY_DENIED",
+    "ANY_NON_2XX_REFRESH=>OLD_REFRESH_AUTHORITY_DENIED",
+    "NETWORK_FAILURE=>OLD_REFRESH_AUTHORITY_DENIED",
+    "REQUESTED_SCOPE=>GRANTED_SCOPE_PROVEN",
+    "P1_PASS=>Q003_CLOSED"
+  ]
+}

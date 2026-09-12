@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "phase": "P3",
+  "status": "STATIC_READY_PHYSICAL_OPEN",
+  "provider": "SUPABASE",
+  "environmentClass": "MK0_CLOSURE_LAB",
+  "provisioningState": "NOT_PROVISIONED",
+  "buildReadyAuthority": false,
+  "dataPolicy": {
+    "syntheticOnly": true,
+    "realUserDataAllowed": false,
+    "realGmailAllowed": false,
+    "realFinancialPlaintextAllowed": false,
+    "productionKeysAllowed": false,
+    "customerTrafficAllowed": false
+  },
+  "restoreDomains": {
+    "primaryControlPlane": "SUPABASE_PRIMARY_CLOSURE_LAB",
+    "deletionBarrierRegistry": "INDEPENDENT_RESTORE_DOMAIN_REQUIRED",
+    "sameDatabaseTombstoneSufficient": false
+  },
+  "backupContract": {
+    "maxApplicableRetentionDays": 35,
+    "exactEnvironmentRetentionPhysicalEvidenceRequired": true,
+    "providerDocumentationAloneIsPass": false,
+    "preDeleteRestoreMustNotAuthorizeTenant": true
+  },
+  "deletionBarrierContract": {
+    "opaqueBarrierIdRequired": true,
+    "realTenantIdForbiddenInRegistry": true,
+    "gmailIdentityForbiddenInRegistry": true,
+    "financialContentForbiddenInRegistry": true,
+    "oauthAuthorityForbiddenInRegistry": true,
+    "tenantKeysForbiddenInRegistry": true,
+    "registryUnavailableDecision": "DENY_RESTORE_INDETERMINATE",
+    "deletedMarkerDecision": "DENY_AND_REDELETE_OR_QUARANTINE",
+    "successfulNoMarkerDecision": "ELIGIBLE_FOR_NORMAL_AUTHORIZATION_CHECKS",
+    "restoreQuarantineRequired": true
+  },
+  "requiredClaims": [
+    "FORBIDDEN_PLAINTEXT_ABSENT_FROM_NORMAL_CLOUD_PATH",
+    "RAW_GMAIL_CONTENT_NOT_DURABLE",
+    "CLOUD_ENVELOPES_DELETED",
+    "CONTROL_METADATA_DELETED",
+    "WITNESS_NAMESPACE_RETIRED_OR_DELETED",
+    "DELETION_RESURRECTION_BARRIER_ACTIVE",
+    "PRE_DELETE_BACKUP_CANNOT_RESURRECT_AUTHORITY",
+    "BACKUP_RETENTION_WITHIN_35_DAY_CEILING"
+  ],
+  "staticPreparation": {
+    "closureLabPolicy": "READY",
+    "resurrectionBarrierModel": "READY",
+    "negativeMatrix": "READY",
+    "providerEnvironment": "OPEN",
+    "providerRestoreExecution": "OPEN",
+    "physicalReceipt": "ABSENT"
+  },
+  "forbiddenPromotions": [
+    "STATIC_READY=>P3_PASS",
+    "PROVIDER_DOCS=>BACKUP_RETENTION_PHYSICAL_PASS",
+    "SAME_DB_TOMBSTONE=>RESURRECTION_BARRIER_PASS",
+    "REGISTRY_UNAVAILABLE=>TENANT_ACTIVE",
+    "RESTORE_SUCCESS=>TENANT_ACTIVE",
+    "CLOSURE_LAB_PASS=>PRODUCTION_PASS",
+    "P3_PASS=>Q004_Q005_CLOSED"
+  ]
+}

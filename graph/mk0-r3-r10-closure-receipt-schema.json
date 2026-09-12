@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://financesensor.local/schema/mk0-r3-r10-closure-receipt-v1.json",
+  "title": "FinanceSensor MK0 R3-R10 closure receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "project",
+    "mk",
+    "nodeId",
+    "repoSha",
+    "status",
+    "parentReceipts",
+    "evidence",
+    "nonClaims",
+    "contradictionAudit",
+    "residualRisks",
+    "reopenTriggers",
+    "sanitizationPass",
+    "buildReady",
+    "releaseReady"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "MK0_R3_R10_CLOSURE_RECEIPT_V1"
+    },
+    "project": {
+      "const": "FinanceSensor"
+    },
+    "mk": {
+      "const": "MK0"
+    },
+    "nodeId": {
+      "enum": ["R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"]
+    },
+    "repoSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "status": {
+      "const": "CLOSED"
+    },
+    "parentReceipts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["nodeId", "immutableRef"],
+        "properties": {
+          "nodeId": {"type": "string", "minLength": 2},
+          "immutableRef": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim", "immutableRef", "evidenceClass"],
+        "properties": {
+          "claim": {"type": "string", "minLength": 3},
+          "immutableRef": {"type": "string", "minLength": 1},
+          "evidenceClass": {
+            "enum": [
+              "SANITIZED_PHYSICAL_RECEIPT",
+              "PROVIDER_RECORD",
+              "IMMUTABLE_REPO_ARTIFACT",
+              "CLOSURE_RECEIPT",
+              "AUDIT_RECEIPT",
+              "STATE_TRANSITION_RECEIPT"
+            ]
+          }
+        }
+      }
+    },
+    "nonClaims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 3}
+    },
+    "contradictionAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "conflicts"],
+      "properties": {
+        "status": {"enum": ["PASS", "CONFLICT"]},
+        "conflicts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "residualRisks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "rationale"],
+        "properties": {
+          "id": {"type": "string", "minLength": 2},
+          "description": {"type": "string", "minLength": 3},
+          "rationale": {"type": "string", "minLength": 3}
+        }
+      }
+    },
+    "reopenTriggers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 3}
+    },
+    "sanitizationPass": {
+      "const": true
+    },
+    "buildReady": {
+      "type": "boolean"
+    },
+    "releaseReady": {
+      "type": "boolean"
+    }
+  }
+}
