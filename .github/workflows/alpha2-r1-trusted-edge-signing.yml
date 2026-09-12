@@ -11,9 +11,13 @@ on:
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches:
@@ -24,9 +28,13 @@ on:
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
+      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions:
@@ -68,6 +76,9 @@ jobs:
 
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
+
+      - name: Current sanitized physical signing receipt
+        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
       - name: Download exact canonical +2007 artifact
         uses: actions/download-artifact@v4
@@ -196,8 +207,9 @@ jobs:
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
           R1_V9_FROZEN_BYTES=PASS
-          R1_TRUSTED_EDGE_SIGNING=OPEN
-          R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1
+          R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT
+          R2_OWNED_DEVICE_CAMPAIGN=READY
+          OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
@@ -214,13 +226,14 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Preserve pre-signing trust boundary
+      - name: Preserve post-signing trust boundary
         run: |
           set -euo pipefail
           echo 'R1_V9_FROZEN_BYTES=PASS'
-          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_OWNED_DEVICE_CAMPAIGN=BLOCKED_BY_R1'
+          echo 'R2_OWNED_DEVICE_CAMPAIGN=READY'
+          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

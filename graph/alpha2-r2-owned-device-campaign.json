@@ -3,22 +3,22 @@
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
+  "status": "READY_FOR_PHYSICAL",
   "candidate": {
     "id": "0.2.0-alpha.2+2007",
     "sourceCommit": "8a4aa307b9b3328e67232c919a94994e80446331",
     "canonicalInputApkSha256": "a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197",
     "canonicalInputApkBytes": 182121475,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
+    "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+    "signedApkBytes": 182145574,
     "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
-    "installabilityObservation": "OPEN_FOR_CURRENT_CANDIDATE",
-    "stableSignedInstallability": null
+    "installabilityObservation": "READY_FOR_OD0",
+    "stableSignedInstallability": "OPEN"
   },
-  "r1PhysicalReceipt": null,
+  "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json",
   "historicalInvalidatedCampaign": {
     "candidate": "0.2.0-alpha.2+2006",
     "signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0",
@@ -54,7 +54,7 @@
     ]
   },
   "subgates": [
-    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"BLOCKED_BY_R1","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
+    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"READY_FOR_PHYSICAL","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
     {"id":"OD1","contract":"EXACT_GMAIL_READONLY_OAUTH","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD0"],"physicalClaims":["ANDROID_PACKAGE_MATCH","EXACT_SCOPE_GMAIL_READONLY","REAL_OAUTH_PASS","NO_OFFLINE_ACCESS_REQUEST"]},
     {"id":"OD2","contract":"METADATA_FIRST_STATEMENT_DISCOVERY","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD1"],"physicalClaims":["METADATA_FIRST_PASS","ATTACHMENT_BYTES_NOT_FETCHED_BEFORE_STRONG_CANDIDATE","RAW_GMAIL_IDENTITY_REMAINS_NATIVE_ONLY"]},
     {"id":"OD3","contract":"BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD2"],"physicalClaims":["BCP_SAVINGS_FETCH_ALLOWED","BCP_CREDIT_FETCH_BLOCKED","RIPLEY_CREDIT_FETCH_BLOCKED","GENERIC_FALLBACK_ABSENT"]},
@@ -79,10 +79,10 @@
     "current": null
   },
   "currentState": {
-    "r1TrustedEdgeSigning": "OPEN",
-    "r2PhysicalCampaign": "BLOCKED_BY_R1",
-    "nextGate": "R1_TRUSTED_EDGE_SIGNING",
-    "currentBlocker": "CURRENT_2007_STABLE_SIGNED_APK_NOT_YET_CERTIFIED",
+    "r1TrustedEdgeSigning": "PASS",
+    "r2PhysicalCampaign": "READY",
+    "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
+    "currentBlocker": "OD0_INSTALL_AND_LAUNCH_NOT_YET_OBSERVED",
     "q003": "ACTIVE",
     "q004": "ACTIVE",
     "q005": "ACTIVE",

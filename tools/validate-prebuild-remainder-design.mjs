@@ -39,6 +39,8 @@ if (!failures.length) {
     sourceCommit: '8a4aa307b9b3328e67232c919a94994e80446331',
     apkSha256: 'a84f0d047366d08c0d3e4850919c73b3aa79a290e9c878315434cebf81775197',
     apkBytes: 182121475,
+    signedApkSha256: '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab',
+    signedApkBytes: 182145574,
   };
 
   if (design.schemaVersion !== frozen.schemaVersion) fail('prebuild design schema mismatch');
@@ -65,8 +67,9 @@ if (!failures.length) {
   if (canonical.authority?.apkSha256 !== current.apkSha256 || canonical.authority?.apkBytes !== current.apkBytes) fail('current canonical receipt APK identity mismatch');
   if (canonical.authority?.minSdk !== 31 || canonical.authority?.targetSdk !== 36 || canonical.authority?.compileSdk !== 37 || canonical.authority?.signatureVerify !== 'PASS' || canonical.authority?.aapt2Parse !== 'PASS') fail('current API31 +2007 canonical verification incomplete');
   if (canonical.signing?.androidOauthPackage !== frozen.package || canonical.signing?.exactScope !== frozen.scope || canonical.signing?.expectedSignerSha1 !== frozen.signerSha1) fail('package/scope/stable signer drifted across candidate reopen');
-  if (canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null || canonical.boundaries?.physicalAlpha2Pass !== false) fail('physical state cannot be promoted by canonical refreeze');
-  if (canonical.boundaries?.ownedDeviceInstallPass !== false || canonical.boundaries?.ownedDeviceLaunchPass !== false || canonical.boundaries?.ownedDeviceStableSignerOauthPass !== false) fail('current +2007 physical claims must be reacquired rather than inherited');
+  if (canonical.signing?.trustedEdgeSigningPass !== true || canonical.signing?.signedApkSha256 !== current.signedApkSha256 || canonical.signing?.signedApkBytes !== current.signedApkBytes) fail('current +2007 stable signing receipt is not bound');
+  if (canonical.boundaries?.physicalAlpha2Pass !== false || canonical.boundaries?.buildReady !== false || canonical.boundaries?.releaseReady !== false) fail('R1 signing cannot promote physical/build/release readiness');
+  if (canonical.boundaries?.ownedDeviceInstallPass !== false || canonical.boundaries?.ownedDeviceLaunchPass !== false || canonical.boundaries?.ownedDeviceStableSignerOauthPass !== false) fail('current +2007 OD0/OD1 claims must remain open after signing');
   if (canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed !== false) fail('prior-candidate physical inheritance must remain forbidden');
   for (const id of ['0.2.0-alpha.2+2001','0.2.0-alpha.2+2002','0.2.0-alpha.2+2003','0.2.0-alpha.2+2004','0.2.0-alpha.2+2005','0.2.0-alpha.2+2006']) {
     if (!(canonical.nonAuthoritativeCandidates ?? []).some(x => x.candidate === id)) fail(`current canonical receipt must record ${id} supersession`);
@@ -81,12 +84,16 @@ if (!failures.length) {
     if (!allowedStates.has(node.status)) fail(`${node.id} has unsupported status ${node.status}`);
     for (const dep of node.dependsOn ?? []) if (!byId.has(dep)) fail(`${node.id} depends on unknown ${dep}`);
   }
-  if (byId.get('R0')?.status !== 'CLOSED') fail('R0 must remain CLOSED after canonical refreeze');
-  if (byId.get('R1')?.status !== 'DESIGN_FROZEN_EXECUTION_OPEN') fail('R1 must remain execution open');
-  if (byId.get('R2')?.status !== 'BLOCKED_BY_PRIOR_NODE') fail('R2 must remain blocked by R1');
+  if (byId.get('R0')?.status !== 'CLOSED') fail('R0 must remain CLOSED');
+  if (byId.get('R1')?.status !== 'CLOSED') fail('R1 must close after certified +2007 trusted-edge signing');
+  if (byId.get('R2')?.status !== 'DESIGN_FROZEN_EXECUTION_OPEN') fail('R2 must open after R1 PASS');
   for (const id of ['R3','R4','R5']) if (byId.get(id)?.status !== 'PHYSICAL_OR_PROVIDER_OPEN') fail(`${id} must remain physical/provider open`);
   for (const id of ['R6','R9','R10']) if (byId.get(id)?.status !== 'BLOCKED_BY_PRIOR_NODE') fail(`${id} must remain blocked`);
   for (const id of ['R7','R8']) if (byId.get(id)?.status !== 'AUDIT_OPEN') fail(`${id} must remain audit-open`);
+
+  const state = design.currentState ?? {};
+  if (state.R0 !== 'CLOSED' || state.R1 !== 'CLOSED' || state.R2 !== 'DESIGN_FROZEN_EXECUTION_OPEN') fail('current R0/R1/R2 execution state drifted');
+  if (state.buildReady !== false || state.releaseReady !== false) fail('current remainder state cannot promote readiness');
 
   const expectedDeps = new Map([
     ['R1',['R0']],['R2',['R1']],['R3',['R2']],['R4',['R2']],['R5',['R2']],['R6',['R3','R4','R5']],['R7',['R6']],['R8',['R7']],['R9',['R8']],['R10',['R9']]
@@ -107,7 +114,7 @@ if (!failures.length) {
   for (const id of ['A-001','SEC-001','DM-001']) if (ledger.nodes?.find(n => n.id === id)?.status !== 'DRAFTED') fail(`${id} must remain DRAFTED`);
   const gmk0 = ledger.nodes?.find(n => n.id === 'G-MK0');
   if (!gmk0 || gmk0.status === 'CLOSED') fail('G-MK0 must remain open');
-  if (ledger.buildReady !== false || readiness.buildReady !== false) fail('BUILD_READY cannot become true from canonical refreeze');
+  if (ledger.buildReady !== false || readiness.buildReady !== false) fail('BUILD_READY cannot become true from R1 signing');
   if (readiness.law !== 'BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED') fail('build readiness law drifted');
 
   for (const marker of ['DESIGN_FREEZE = PASS','R1 — Trusted-edge signing','R2 — Single owned-device Alpha.2 campaign','R3 — Q-003 Gmail production / provider closure','R4 — Q-004 privacy / deletion / backup closure','R5 — Q-005 multi-device / recovery closure','R9 — G-MK0','R10 — BUILD_READY','UNMAPPED_PRODUCT_BUILD            FORBIDDEN','BUILD_READY                       NO','RELEASE_READY                     NO']) if (!doc.includes(marker)) fail(`design document missing marker: ${marker}`);
@@ -124,8 +131,9 @@ console.log('PREBUILD_REMAINDER_DESIGN=PASS');
 console.log('REMAINDER_NODES=11');
 console.log('DESIGN_FREEZE_SNAPSHOT=IMMUTABLE');
 console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2007');
-console.log('CURRENT_PHYSICAL_INSTALLABILITY=OPEN_REACQUIRE');
-console.log('NEXT_EXECUTION_NODE=R1_TRUSTED_EDGE_SIGNING');
+console.log('R1_TRUSTED_EDGE_SIGNING=PASS');
+console.log('R2_PHYSICAL_CAMPAIGN=READY');
+console.log('NEXT_EXECUTION_NODE=R2_OD0_SIGNED_APK_INSTALL_AND_LAUNCH');
 console.log('UNMAPPED_PRODUCT_BUILD=FORBIDDEN');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=OPEN');
