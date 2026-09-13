@@ -77,7 +77,7 @@ jobs:
       - name: Current +2007 R1 physical signing receipt
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
-      - name: R2 owned-device OD0 readiness contract
+      - name: R2 owned-device OD0 physical receipt contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild chain
@@ -106,17 +106,18 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve post-R1 physical boundary
+      - name: Preserve post-OD0 physical boundary
         run: |
           set -euo pipefail
           echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=READY'
-          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
-          echo 'CURRENT_OD0_OD11_PASS=NONE'
+          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
+          echo 'OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
+          echo 'OD1_EXACT_GMAIL_READONLY_OAUTH=READY_FOR_PHYSICAL'
+          echo 'CURRENT_OD0_OD11_PASS=OD0_ONLY'
           echo 'ALPHA2_2006_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
-          echo 'R2_CURRENT_BLOCKER=OD0_INSTALL_AND_LAUNCH_NOT_YET_OBSERVED'
+          echo 'R2_NEXT_GATE=OD1_EXACT_GMAIL_READONLY_OAUTH'
+          echo 'R2_CURRENT_BLOCKER=OD1_FRESH_OAUTH_NOT_YET_OBSERVED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
