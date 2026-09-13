@@ -5,6 +5,7 @@ const r1 = JSON.parse(fs.readFileSync('graph/alpha2-r1-signing-handoff.json', 'u
 const r2 = JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json', 'utf8'));
 const canonical = JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json', 'utf8'));
 const currentR1Receipt = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json';
+const currentOd0Receipt = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD0-2026-09-12.json';
 const historicalR2 = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD2-2026-09-09.json';
 const stableSha = '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab';
 const stableBytes = 182145574;
@@ -15,33 +16,40 @@ if (r2.candidate?.id !== r1.candidate || r2.candidate?.sourceCommit !== r1.sourc
 if (canonical.signing?.trustedEdgeSigningPass !== true || canonical.signing?.signedApkSha256 !== stableSha || canonical.signing?.signedApkBytes !== stableBytes) throw new Error('canonical stable signing identity drifted');
 if (r1.status !== 'TRUSTED_EDGE_SIGNING_PASS' || r1.trustedEdgeSigningPass !== true || r1.physicalReceipt?.path !== currentR1Receipt) throw new Error('R1 +2007 must be closed by current sanitized receipt');
 if (r1.signedApkSha256 !== stableSha || r1.signedApkBytes !== stableBytes || r2.candidate?.signedApkSha256 !== stableSha || r2.candidate?.signedApkBytes !== stableBytes) throw new Error('stable +2007 APK identity chain drifted');
-if (r2.r1PhysicalReceipt !== currentR1Receipt || r2.receipt?.current !== null) throw new Error('R2 must bind R1 receipt without pre-OD0 receipt');
+if (r2.r1PhysicalReceipt !== currentR1Receipt || r2.receipt?.current !== currentOd0Receipt) throw new Error('R2 current R1/OD0 receipt chain drifted');
+if (!fs.existsSync(currentOd0Receipt)) throw new Error('current +2007 OD0 sanitized receipt missing');
 
-if (r2.status !== 'READY_FOR_PHYSICAL' || r2.currentState?.r2PhysicalCampaign !== 'READY') throw new Error('R2 must be ready for physical OD0');
-const expectedStatuses = ['READY_FOR_PHYSICAL', ...Array(11).fill('BLOCKED_BY_PRIOR_GATE')];
+if (r2.status !== 'PHYSICAL_CAMPAIGN_IN_PROGRESS' || r2.currentState?.r2PhysicalCampaign !== 'IN_PROGRESS') throw new Error('R2 must be in progress after OD0 PASS');
+const expectedStatuses = ['PASS', 'READY_FOR_PHYSICAL', ...Array(10).fill('BLOCKED_BY_PRIOR_GATE')];
 for (let i = 0; i < expectedStatuses.length; i += 1) {
   const gate = r2.subgates?.[i];
   if (gate?.id !== `OD${i}` || gate?.status !== expectedStatuses[i]) throw new Error(`OD${i} current chain state drifted`);
 }
-if (r2.currentState?.nextGate !== 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH' || r2.currentState?.currentBlocker !== 'OD0_INSTALL_AND_LAUNCH_NOT_YET_OBSERVED') throw new Error('current next gate/blocker drifted');
+if (r2.currentState?.nextGate !== 'OD1_EXACT_GMAIL_READONLY_OAUTH' || r2.currentState?.currentBlocker !== 'OD1_FRESH_OAUTH_NOT_YET_OBSERVED') throw new Error('current next gate/blocker drifted');
+
+const od0 = JSON.parse(fs.readFileSync(currentOd0Receipt, 'utf8'));
+if (od0.candidateId !== canonical.candidate || od0.sourceCommit !== canonical.sourceCommit || od0.signedApkSha256 !== stableSha || od0.signedApkBytes !== stableBytes) throw new Error('OD0 receipt stable candidate binding drifted');
+if (od0.gateResults?.[0]?.gateId !== 'OD0' || od0.gateResults?.[0]?.gateStatus !== 'PASS') throw new Error('OD0 receipt does not close OD0');
+if (od0.gateResults?.[1]?.gateId !== 'OD1' || od0.gateResults?.[1]?.gateStatus !== 'INCONCLUSIVE') throw new Error('OD1 must remain inconclusive in current incremental receipt');
 
 const historical = r2.historicalInvalidatedCampaign ?? {};
 if (historical.candidate !== '0.2.0-alpha.2+2006' || historical.lastSanitizedReceipt !== historicalR2 || historical.evidenceInheritanceAllowed !== false || historical.continuationAllowed !== false) throw new Error('+2006 campaign must remain historical and non-inheritable');
 if (!fs.existsSync(historicalR2)) throw new Error('historical +2006 R2 receipt missing');
 
 if (r2.currentState?.buildReady !== false || r2.currentState?.releaseReady !== false) throw new Error('R1/R2 transition cannot promote readiness');
-if (r2.currentState?.q003 !== 'ACTIVE' || r2.currentState?.q004 !== 'ACTIVE' || r2.currentState?.q005 !== 'ACTIVE') throw new Error('R1/R2 evidence cannot close Q003/Q004/Q005');
+if (r2.currentState?.q003 !== 'ACTIVE' || r2.currentState?.q004 !== 'ACTIVE' || r2.currentState?.q005 !== 'ACTIVE') throw new Error('R1/OD0 evidence cannot close Q003/Q004/Q005');
 if (r2.currentState?.gMk0 !== 'OPEN') throw new Error('G-MK0 must remain OPEN');
 
 console.log('ALPHA2_R2_PREBUILD_CHAIN=PASS');
 console.log('CANONICAL_IDENTITY=ALPHA2_2007_STABLE_SIGNED');
 console.log('PREBUILD_DESIGN_AND_BUILD_READINESS=BOUND');
 console.log('R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT');
-console.log('R2_PHYSICAL_CAMPAIGN=READY');
-console.log('OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL');
-console.log('CURRENT_OD0_OD11_PASS=NONE');
+console.log('R2_PHYSICAL_CAMPAIGN=IN_PROGRESS');
+console.log('OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT');
+console.log('OD1_EXACT_GMAIL_READONLY_OAUTH=READY_FOR_PHYSICAL');
+console.log('CURRENT_OD0_OD11_PASS=OD0_ONLY');
 console.log('ALPHA2_2006_R2_RECEIPT=HISTORICAL_ONLY');
-console.log('NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH');
-console.log('CURRENT_BLOCKER=OD0_INSTALL_AND_LAUNCH_NOT_YET_OBSERVED');
+console.log('NEXT_GATE=OD1_EXACT_GMAIL_READONLY_OAUTH');
+console.log('CURRENT_BLOCKER=OD1_FRESH_OAUTH_NOT_YET_OBSERVED');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');
