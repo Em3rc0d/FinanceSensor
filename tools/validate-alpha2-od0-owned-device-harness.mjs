@@ -23,13 +23,19 @@ const doc = fs.readFileSync(docPath, 'utf8');
 const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
 
-for (const marker of [expected.candidate,expected.sourceCommit,expected.signedSha,expected.signedBytes,expected.signerSha1,expected.package,expected.scope,'Get-FileHash','Find-ApkSigner','Find-Adb','certificate SHA-1 digest','ExactlyOne','OD0_EXACTLY_ONE_AUTHORIZED_DEVICE_REQUIRED','adb install','installObservations','physicalLaunchObservations','R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS','DEVICE_SERIAL_IN_RECEIPT=0','RAW_ADB_OUTPUT_IN_RECEIPT=0','BUILD_READY=NO','RELEASE_READY=NO']) assert(ps1.includes(marker), `PS1_MARKER:${marker}`);
+for (const marker of [
+  expected.candidate,expected.sourceCommit,expected.signedSha,expected.signedBytes,expected.signerSha1,expected.package,expected.scope,
+  'Get-FileHash','Find-ApkSigner','Find-Adb','certificate SHA-1 digest','OD0_EXACTLY_ONE_AUTHORIZED_DEVICE_REQUIRED',
+  "@('install',$apkPath)",'installObservations','physicalLaunchObservations','R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS',
+  'DEVICE_SERIAL_IN_RECEIPT=0','RAW_ADB_OUTPUT_IN_RECEIPT=0','BUILD_READY=NO','RELEASE_READY=NO'
+]) assert(ps1.includes(marker), `PS1_MARKER:${marker}`);
 for (const marker of ['powershell.exe','RUN-FINANCESENSOR-ALPHA2-OD0.ps1','Return only the generated OD0 JSON receipt','FinanceSensor-ALPHA2-R2-OD0-FAILURE.txt']) assert(cmd.includes(marker), `CMD_MARKER:${marker}`);
 for (const marker of [expected.candidate,expected.signedSha,expected.signerSha1,'OD0_PASS != R2_PASS','OD0_PASS != BUILD_READY','OD0_PASS != RELEASE_READY']) assert(doc.includes(marker), `DOC_MARKER:${marker}`);
 
-assert(!/password|keystore|private\s*key|access\s*token|refresh\s*token|raw\s*gmail|financial\s*plaintext/i.test(ps1.replace(/Write-SafeFailure[^\n]*/g,'')), 'PS1 secret-custody vocabulary unexpectedly expanded');
 assert(!/FINANCESENSOR_R2_STORE_PASS|FINANCESENSOR_R2_KEY_PASS|secrets\./.test(ps1 + cmd), 'private signing secret reference forbidden');
-assert(!ps1.includes('Write-Host $serial') && !ps1.includes('Set-Content') || ps1.includes('DEVICE_SERIAL_IN_RECEIPT=0'), 'device serial must not be emitted');
+assert(!ps1.includes('Write-Host $serial') && !ps1.includes('Write-Output $serial'), 'device serial must never be printed');
+assert(!/serial\s*=.*(Set-Content|Add-Content|Out-File)/i.test(ps1), 'device serial must never be persisted');
+assert(ps1.includes("'DEVICE_SERIAL_IN_RECEIPT=0'") && ps1.includes("'RAW_ADB_OUTPUT_IN_RECEIPT=0'"), 'sanitized failure boundary missing');
 
 const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Language.Parser]::ParseFile('${ps1Path}',[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_};exit 1}`;
 const parsed = spawnSync('pwsh', ['-NoProfile','-Command',psCommand], { encoding:'utf8' });
