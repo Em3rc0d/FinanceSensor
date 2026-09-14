@@ -8,6 +8,7 @@ const ACTIVE_WORKFLOWS = new Set([
   'statement-etl-contract.yml','alpha2-design-freeze.yml','alpha2-statement-discovery.yml',
   'alpha2-statement-fetch-parse.yml','alpha2-financial-vault.yml','alpha2-consolidated-contract.yml',
   'alpha2-integrated-runtime.yml','alpha2-r1-trusted-edge-signing.yml','alpha2-r2-owned-device-campaign.yml',
+  'alpha2-od0-owned-device-harness.yml',
 ]);
 const RETIRED_WORKFLOWS = new Set(['gmail-live-spike.yml']);
 const failures = [];
@@ -42,6 +43,7 @@ const contracts = {
   'alpha2-integrated-runtime.yml': {markers:['node tools/validate-alpha2-integrated-runtime.mjs','--target lib/main_alpha2.dart','--build-number 2008','CANDIDATE_ID=0.2.0-alpha.2+2008','POST_PASSWORD_SAFE_STOP_DIAGNOSTICS=YES','ANDROID_COMPILE_SDK=37','ANDROID_MIN_SDK=31','ANDROID_TARGET_SDK=36','SQLCIPHER_VERSION=4.18.0','REAL_OAUTH_EXECUTED_BY_CI=NO','REAL_GMAIL_EXECUTED_BY_CI=NO','REAL_FINANCIAL_DATA_IN_CI=NO','PHYSICAL_SQLCIPHER_PASS=NO','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES|REAL_FINANCIAL_DATA_IN_CI=YES|PHYSICAL_SQLCIPHER_PASS=YES|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]},
   'alpha2-r1-trusted-edge-signing.yml': {markers:['node tools/validate-alpha2-canonical-candidate.mjs','node tools/validate-alpha2-r1-signing-handoff.mjs','node tools/validate-alpha2-r1-ci-routing-receipt.mjs','node tools/validate-alpha2-r1-physical-signing-receipt.mjs','Download exact canonical +2008 artifact','Generate deterministic public-safe v10 handoff bundle','FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip','R1_V10_GENERATION=PASS','R1_V10_FROZEN_BYTES=PASS','R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_PHYSICAL_CAMPAIGN=IN_PROGRESS','OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|R2_PHYSICAL_CAMPAIGN=PASS|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i]},
   'alpha2-r2-owned-device-campaign.yml': {markers:['node tools/validate-alpha2-r1-physical-signing-receipt.mjs','node tools/validate-alpha2-r2-owned-device-campaign.mjs','node tools/validate-alpha2-r2-chain.mjs','node tools/validate-ci-runner-policy.mjs','R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_PHYSICAL_CAMPAIGN=IN_PROGRESS','OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL','CURRENT_OD0_OD11_PASS=NONE','ALPHA2_2007_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE','R2_NEXT_GATE=OD0','R2_CURRENT_BLOCKER=OWNED_ANDROID_OD0_INSTALL_AND_LAUNCH_REQUIRED','REAL_OAUTH_IN_CI=0','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_DATA_IN_CI=0','PRIVATE_SIGNING_MATERIAL_IN_CI=0','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|R2_PHYSICAL_CAMPAIGN=PASS|REAL_OAUTH_IN_CI=1|REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_DATA_IN_CI=1|PRIVATE_SIGNING_MATERIAL_IN_CI=1|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]},
+  'alpha2-od0-owned-device-harness.yml': {markers:['node tools/validate-alpha2-od0-owned-device-harness.mjs','node tools/validate-ci-runner-policy.mjs','FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF.zip','STABLE_SIGNED_APK_SHA256=a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277','PRIVATE_SIGNING_MATERIAL_IN_HANDOFF=0','STABLE_SIGNED_APK_IN_HANDOFF=0','DEVICE_SERIAL_IN_RECEIPT=0','RAW_ADB_OUTPUT_IN_RECEIPT=0','PUBLIC_CI_ORIGINATED_OD0_PASS=0','R2_NEXT_GATE=OD0','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_OD0_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|\$\{\{\s*secrets\./i]},
 };
 
 for (const [file, contract] of Object.entries(contracts)) {
@@ -72,10 +74,12 @@ console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
 console.log('ALPHA2_R1_WORKFLOW_REGISTERED=1');
 console.log('ALPHA2_R2_WORKFLOW_REGISTERED=1');
+console.log('ALPHA2_OD0_HANDOFF_WORKFLOW_REGISTERED=1');
 console.log('R1_CURRENT_PHYSICAL_RECEIPT=PASS_SANITIZED_USER_ORIGIN');
 console.log('R1_V10_PUBLIC_BUNDLE_GENERATION=ROUTED');
 console.log('R2_CURRENT_PHYSICAL_CAMPAIGN=IN_PROGRESS_OD0_READY');
 console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0');
+console.log('PUBLIC_CI_ORIGINATED_OD0_PASS=0');
 console.log('PUBLIC_CI_BUILD_READY_PROMOTION=0');
 console.log('PUBLIC_CI_RELEASE_READY_PROMOTION=0');
 console.log('GITHUB_HOSTED_CI!=FINANCESENSOR_TRUSTED_EDGE');
