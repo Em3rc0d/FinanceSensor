@@ -52,7 +52,17 @@
       "innerBundleSha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
       "innerBundleBytes": 86635935
     },
-    "certificationReceipt": null
+    "certificationReceipt": {
+      "receiptPath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
+      "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt",
+      "receivedDate": "2026-09-14",
+      "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
+      "signedApkBytes": 182538790,
+      "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+      "sanitizationPass": true,
+      "userOriginated": true,
+      "publicCiOriginated": false
+    }
   },
   "supersededBundles": [
     {
@@ -111,15 +121,15 @@
     "exactBranchHeadCheckoutRequired": true
   },
   "physicalReceipt": {
-    "path": null,
-    "sourcePath": null,
-    "receivedDate": null,
-    "sanitizationPass": false
+    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
+    "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt",
+    "receivedDate": "2026-09-14",
+    "sanitizationPass": true
   },
-  "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
+  "status": "TRUSTED_EDGE_SIGNING_PASS",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
+  "signedApkBytes": 182538790,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
