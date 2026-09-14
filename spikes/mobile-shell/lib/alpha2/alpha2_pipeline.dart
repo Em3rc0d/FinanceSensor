@@ -16,6 +16,15 @@ typedef Alpha2StatementPasswordProvider = Future<String?> Function(
   Alpha2StatementCandidateHandle candidate,
 );
 
+class Alpha2PipelineFailure implements Exception {
+  const Alpha2PipelineFailure(this.code);
+
+  final String code;
+
+  @override
+  String toString() => code;
+}
+
 class Alpha2StatementImportOutcome {
   const Alpha2StatementImportOutcome({
     required this.profileId,
@@ -115,18 +124,28 @@ class Alpha2Pipeline {
     if (tenantId.trim().isEmpty) {
       throw ArgumentError('ALPHA2_PIPELINE_TENANT_REQUIRED');
     }
-    await vault.initialize();
-    final batch = await ingress.scan();
+
+    await _guardAsync(
+      'ALPHA2_REFRESH_VAULT_INIT_FAILED',
+      vault.initialize,
+    );
+    final batch = await _guardAsync(
+      'ALPHA2_REFRESH_INGRESS_SCAN_FAILED',
+      ingress.scan,
+    );
 
     // Gmail-derived observations already cross the platform boundary as minimized,
     // opaque receipts. Persist each independently so replay cannot turn a repeated
     // scan into duplicate financial evidence.
     for (final evidence in batch.gmailEvidence) {
       final normalized = evidence.normalized();
-      await vault.commitEvidenceBatch(
-        sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),
-        evidence: <Alpha2Evidence>[normalized],
-        terminalState: 'IMPORTED',
+      await _guardAsync<void>(
+        'ALPHA2_REFRESH_GMAIL_PERSIST_FAILED',
+        () => vault.commitEvidenceBatch(
+          sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),
+          evidence: <Alpha2Evidence>[normalized],
+          terminalState: 'IMPORTED',
+        ),
       );
     }
 
@@ -150,10 +169,13 @@ class Alpha2Pipeline {
     try {
       for (final candidate in batch.statementCandidates) {
         statementOutcomes.add(
-          await _importStatementCandidate(
-            tenantId: tenantId,
-            candidate: candidate,
-            passwordProvider: sessionPasswordProvider,
+          await _guardAsync<Alpha2StatementImportOutcome>(
+            'ALPHA2_REFRESH_STATEMENT_IMPORT_FAILED',
+            () => _importStatementCandidate(
+              tenantId: tenantId,
+              candidate: candidate,
+              passwordProvider: sessionPasswordProvider,
+            ),
           ),
         );
       }
@@ -163,19 +185,34 @@ class Alpha2Pipeline {
       sessionPasswords.clear();
     }
 
-    final persisted = await vault.readSafeEvidence();
-    final evidence = persisted.map(alpha2EvidenceFromSafeVaultRow).toList();
-    final runtime = runAlpha2CanonicalRuntime(evidence: evidence);
-    final productGate = evaluateAlpha2ProductGate(
-      tenantId: tenantId,
-      evidence: evidence,
-      runtime: runtime,
-      context: productGateContext,
+    final persisted = await _guardAsync<List<Map<String, Object?>>>(
+      'ALPHA2_REFRESH_VAULT_READ_FAILED',
+      vault.readSafeEvidence,
     );
-    final projection = buildAlpha2PublicProjection(
-      canonicalTransactions: runtime.canonicalTransactions,
-      monthlyClose: productGate.monthlyClose,
-      statementStatusCounts: alpha2StatementOutcomeCounts(statementOutcomes),
+    final evidence = _guardSync<List<Alpha2Evidence>>(
+      'ALPHA2_REFRESH_VAULT_ROW_DECODE_FAILED',
+      () => persisted.map(alpha2EvidenceFromSafeVaultRow).toList(),
+    );
+    final runtime = _guardSync<Alpha2RuntimeResult>(
+      'ALPHA2_REFRESH_CANONICAL_RUNTIME_FAILED',
+      () => runAlpha2CanonicalRuntime(evidence: evidence),
+    );
+    final productGate = _guardSync<Alpha2ProductGateResult>(
+      'ALPHA2_REFRESH_PRODUCT_GATE_FAILED',
+      () => evaluateAlpha2ProductGate(
+        tenantId: tenantId,
+        evidence: evidence,
+        runtime: runtime,
+        context: productGateContext,
+      ),
+    );
+    final projection = _guardSync<Alpha2PublicDashboardProjection>(
+      'ALPHA2_REFRESH_PROJECTION_FAILED',
+      () => buildAlpha2PublicProjection(
+        canonicalTransactions: runtime.canonicalTransactions,
+        monthlyClose: productGate.monthlyClose,
+        statementStatusCounts: alpha2StatementOutcomeCounts(statementOutcomes),
+      ),
     );
     return Alpha2PipelineResult(
       ingressCoverage: batch.coverage,
@@ -336,6 +373,26 @@ class Alpha2Pipeline {
       await ingress.releaseStatementHandle(candidate.handle);
       // password is a Dart String. We deliberately make no zeroization claim.
     }
+  }
+}
+
+Future<T> _guardAsync<T>(String code, Future<T> Function() action) async {
+  try {
+    return await action();
+  } on Alpha2PipelineFailure {
+    rethrow;
+  } catch (_) {
+    throw Alpha2PipelineFailure(code);
+  }
+}
+
+T _guardSync<T>(String code, T Function() action) {
+  try {
+    return action();
+  } on Alpha2PipelineFailure {
+    rethrow;
+  } catch (_) {
+    throw Alpha2PipelineFailure(code);
   }
 }
 
