@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:financesensor_mobile_shell/alpha2/alpha2_ingress.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_models.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_pipeline.dart';
