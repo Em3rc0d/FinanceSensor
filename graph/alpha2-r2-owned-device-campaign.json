@@ -3,22 +3,22 @@
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
+  "status": "IN_PROGRESS",
   "candidate": {
     "id": "0.2.0-alpha.2+2008",
     "sourceCommit": "45b605d29fe0b90f528e4f0f952ab878080b2f0b",
     "canonicalInputApkSha256": "eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238",
     "canonicalInputApkBytes": 182515867,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
+    "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
+    "signedApkBytes": 182538790,
     "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
-    "installabilityObservation": "NOT_EXECUTED_CURRENT_CANDIDATE",
-    "stableSignedInstallability": "BLOCKED_BY_R1"
+    "installabilityObservation": "NOT_EXECUTED_STABLE_SIGNED_CURRENT_CANDIDATE",
+    "stableSignedInstallability": "READY_FOR_OD0"
   },
-  "r1PhysicalReceipt": null,
+  "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
   "historicalInvalidatedCampaign": {
     "candidate": "0.2.0-alpha.2+2007",
     "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
@@ -84,7 +84,7 @@
     {
       "id": "OD0",
       "contract": "SIGNED_APK_INSTALL_AND_LAUNCH",
-      "status": "BLOCKED_BY_R1",
+      "status": "READY_FOR_PHYSICAL",
       "requires": [
         "R1_TRUSTED_EDGE_SIGNING_PASS"
       ],
@@ -275,10 +275,10 @@
     "current": null
   },
   "currentState": {
-    "r1TrustedEdgeSigning": "PENDING",
-    "r2PhysicalCampaign": "BLOCKED_BY_R1",
-    "nextGate": "R1_TRUSTED_EDGE_SIGNING",
-    "currentBlocker": "CURRENT_CANDIDATE_REQUIRES_STABLE_TRUSTED_EDGE_SIGNING",
+    "r1TrustedEdgeSigning": "PASS",
+    "r2PhysicalCampaign": "IN_PROGRESS",
+    "nextGate": "OD0",
+    "currentBlocker": "OWNED_ANDROID_OD0_INSTALL_AND_LAUNCH_REQUIRED",
     "q003": "ACTIVE",
     "q004": "ACTIVE",
     "q005": "ACTIVE",
