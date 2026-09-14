@@ -9,6 +9,7 @@ import 'alpha2_product_gate.dart';
 import 'alpha2_projection.dart';
 import 'alpha2_runtime.dart';
 import 'alpha2_statement_geometry.dart';
+import 'alpha2_statement_pdf_reader.dart';
 import 'alpha2_statement_strict_adapter.dart';
 import 'alpha2_vault.dart';
 
@@ -49,13 +50,32 @@ class Alpha2StatementImportOutcome {
 }
 
 const List<String> alpha2SafeStatementOutcomeStatuses = <String>[
-  'IMPORTED','REVIEW_REQUIRED','PDF_REJECTED','FETCH_REJECTED',
-  'PASSWORD_REQUIRED','PERSISTENCE_REJECTED','QUARANTINED_PROFILE',
+  'IMPORTED',
+  'REVIEW_REQUIRED',
+  'PDF_REJECTED',
+  'FETCH_REJECTED',
+  'PASSWORD_REQUIRED',
+  'PERSISTENCE_REJECTED',
+  'QUARANTINED_PROFILE',
 ];
 const String alpha2FetchDiagnosticCountPrefix = 'FETCH_DIAGNOSTIC:';
+const String alpha2StatementImportRuntimeRejected =
+    'STATEMENT_IMPORT_RUNTIME_REJECTED';
+const String alpha2StatementPasswordProviderRejected =
+    'STATEMENT_PASSWORD_PROVIDER_REJECTED';
+const String alpha2StatementSourceReceiptRejected =
+    'STATEMENT_SOURCE_RECEIPT_REJECTED';
+const String alpha2StatementPdfRuntimeRejected =
+    'STATEMENT_PDF_RUNTIME_REJECTED';
+const String alpha2StatementPersistenceRejected =
+    'STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED';
 
-Map<String, int> alpha2StatementOutcomeCounts(Iterable<Alpha2StatementImportOutcome> outcomes) {
-  final counts = <String, int>{for (final status in alpha2SafeStatementOutcomeStatuses) status: 0};
+Map<String, int> alpha2StatementOutcomeCounts(
+  Iterable<Alpha2StatementImportOutcome> outcomes,
+) {
+  final counts = <String, int>{
+    for (final status in alpha2SafeStatementOutcomeStatuses) status: 0,
+  };
   for (final outcome in outcomes) {
     final status = outcome.status.trim().toUpperCase();
     if (!counts.containsKey(status)) continue;
@@ -70,7 +90,14 @@ Map<String, int> alpha2StatementOutcomeCounts(Iterable<Alpha2StatementImportOutc
 }
 
 class Alpha2PipelineResult {
-  const Alpha2PipelineResult({required this.ingressCoverage,required this.gmailEvidenceCount,required this.statementOutcomes,required this.runtime,required this.productGate,required this.projection});
+  const Alpha2PipelineResult({
+    required this.ingressCoverage,
+    required this.gmailEvidenceCount,
+    required this.statementOutcomes,
+    required this.runtime,
+    required this.productGate,
+    required this.projection,
+  });
   final String ingressCoverage;
   final int gmailEvidenceCount;
   final List<Alpha2StatementImportOutcome> statementOutcomes;
@@ -80,30 +107,64 @@ class Alpha2PipelineResult {
 }
 
 class Alpha2Pipeline {
-  const Alpha2Pipeline({required this.ingress,required this.vault,this.pdfReader = const Alpha2StructuredPdfReader(),this.bcpSavingsParser = const Alpha2StrictBcpSavingsAdapter(geometryParser: Alpha2BcpSavingsGeometryParser())});
+  const Alpha2Pipeline({
+    required this.ingress,
+    required this.vault,
+    this.pdfReader = const Alpha2SafeStructuredPdfReader(),
+    this.bcpSavingsParser = const Alpha2StrictBcpSavingsAdapter(
+      geometryParser: Alpha2BcpSavingsGeometryParser(),
+    ),
+  });
+
   final Alpha2IngressSource ingress;
   final Alpha2Vault vault;
-  final Alpha2StructuredPdfReader pdfReader;
+  final Alpha2StatementLayoutReader pdfReader;
   final Alpha2StrictBcpSavingsAdapter bcpSavingsParser;
 
-  Future<Alpha2PipelineResult> refresh({required String tenantId,required Alpha2StatementPasswordProvider passwordProvider,Alpha2ProductGateContext productGateContext = const Alpha2ProductGateContext()}) async {
-    if (tenantId.trim().isEmpty) throw ArgumentError('ALPHA2_PIPELINE_TENANT_REQUIRED');
+  Future<Alpha2PipelineResult> refresh({
+    required String tenantId,
+    required Alpha2StatementPasswordProvider passwordProvider,
+    Alpha2ProductGateContext productGateContext =
+        const Alpha2ProductGateContext(),
+  }) async {
+    if (tenantId.trim().isEmpty) {
+      throw ArgumentError('ALPHA2_PIPELINE_TENANT_REQUIRED');
+    }
 
-    try { await vault.initialize(); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_VAULT_INIT_FAILED'); }
+    try {
+      await vault.initialize();
+    } catch (_) {
+      throw const Alpha2PipelineStageException(
+        'ALPHA2_REFRESH_VAULT_INIT_FAILED',
+      );
+    }
+
     Alpha2IngressBatch batch;
-    try { batch = await ingress.scan(); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_SCAN_FAILED'); }
+    try {
+      batch = await ingress.scan();
+    } catch (_) {
+      throw const Alpha2PipelineStageException('ALPHA2_REFRESH_SCAN_FAILED');
+    }
 
     for (final evidence in batch.gmailEvidence) {
       try {
         final normalized = evidence.normalized();
-        await vault.commitEvidenceBatch(sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),evidence: <Alpha2Evidence>[normalized],terminalState: 'IMPORTED');
+        await vault.commitEvidenceBatch(
+          sourceReceiptId: _gmailSourceReceipt(normalized.evidenceId),
+          evidence: <Alpha2Evidence>[normalized],
+          terminalState: 'IMPORTED',
+        );
       } catch (_) {
-        throw const Alpha2PipelineStageException('ALPHA2_REFRESH_GMAIL_PERSIST_FAILED');
+        throw const Alpha2PipelineStageException(
+          'ALPHA2_REFRESH_GMAIL_PERSIST_FAILED',
+        );
       }
     }
 
     final sessionPasswords = <String, String?>{};
-    Future<String?> sessionPasswordProvider(Alpha2StatementCandidateHandle candidate) async {
+    Future<String?> sessionPasswordProvider(
+      Alpha2StatementCandidateHandle candidate,
+    ) async {
       final key = candidate.profileId;
       if (sessionPasswords.containsKey(key)) return sessionPasswords[key];
       final password = await passwordProvider(candidate);
@@ -115,75 +176,286 @@ class Alpha2Pipeline {
     try {
       for (final candidate in batch.statementCandidates) {
         try {
-          statementOutcomes.add(await _importStatementCandidate(tenantId: tenantId,candidate: candidate,passwordProvider: sessionPasswordProvider));
-        } on Alpha2PipelineStageException { rethrow; }
-        catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_STATEMENT_IMPORT_FAILED'); }
+          statementOutcomes.add(
+            await _importStatementCandidate(
+              tenantId: tenantId,
+              candidate: candidate,
+              passwordProvider: sessionPasswordProvider,
+            ),
+          );
+        } catch (_) {
+          // A statement is optional enrichment. An unexpected candidate-local
+          // runtime error must be represented as a sanitized knowledge gap and
+          // must not prevent already-safe Gmail/vault evidence from reaching
+          // the canonical runtime and dashboard projection.
+          await _safeRelease(candidate.handle);
+          statementOutcomes.add(
+            Alpha2StatementImportOutcome(
+              profileId: candidate.profileId,
+              status: 'REVIEW_REQUIRED',
+              evidenceCount: 0,
+              reviewCodes: const <String>[
+                alpha2StatementImportRuntimeRejected,
+              ],
+            ),
+          );
+        }
       }
     } finally {
       sessionPasswords.clear();
     }
 
     List<Map<String, Object?>> persisted;
-    try { persisted = await vault.readSafeEvidence(); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_VAULT_READ_FAILED'); }
+    try {
+      persisted = await vault.readSafeEvidence();
+    } catch (_) {
+      throw const Alpha2PipelineStageException(
+        'ALPHA2_REFRESH_VAULT_READ_FAILED',
+      );
+    }
+
     List<Alpha2Evidence> evidence;
-    try { evidence = persisted.map(alpha2EvidenceFromSafeVaultRow).toList(); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_VAULT_DECODE_FAILED'); }
+    try {
+      evidence = persisted.map(alpha2EvidenceFromSafeVaultRow).toList();
+    } catch (_) {
+      throw const Alpha2PipelineStageException(
+        'ALPHA2_REFRESH_VAULT_DECODE_FAILED',
+      );
+    }
+
     Alpha2RuntimeResult runtime;
-    try { runtime = runAlpha2CanonicalRuntime(evidence: evidence); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_RUNTIME_FAILED'); }
+    try {
+      runtime = runAlpha2CanonicalRuntime(evidence: evidence);
+    } catch (_) {
+      throw const Alpha2PipelineStageException('ALPHA2_REFRESH_RUNTIME_FAILED');
+    }
+
     Alpha2ProductGateResult productGate;
-    try { productGate = evaluateAlpha2ProductGate(tenantId: tenantId,evidence: evidence,runtime: runtime,context: productGateContext); } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_PRODUCT_GATE_FAILED'); }
+    try {
+      productGate = evaluateAlpha2ProductGate(
+        tenantId: tenantId,
+        evidence: evidence,
+        runtime: runtime,
+        context: productGateContext,
+      );
+    } catch (_) {
+      throw const Alpha2PipelineStageException(
+        'ALPHA2_REFRESH_PRODUCT_GATE_FAILED',
+      );
+    }
+
     Alpha2PublicDashboardProjection projection;
     try {
-      projection = buildAlpha2PublicProjection(canonicalTransactions: runtime.canonicalTransactions,monthlyClose: productGate.monthlyClose,statementStatusCounts: alpha2StatementOutcomeCounts(statementOutcomes));
-    } catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_PROJECTION_FAILED'); }
+      projection = buildAlpha2PublicProjection(
+        canonicalTransactions: runtime.canonicalTransactions,
+        monthlyClose: productGate.monthlyClose,
+        statementStatusCounts: alpha2StatementOutcomeCounts(statementOutcomes),
+      );
+    } catch (_) {
+      throw const Alpha2PipelineStageException(
+        'ALPHA2_REFRESH_PROJECTION_FAILED',
+      );
+    }
 
-    return Alpha2PipelineResult(ingressCoverage: batch.coverage,gmailEvidenceCount: batch.gmailEvidence.length,statementOutcomes: List<Alpha2StatementImportOutcome>.unmodifiable(statementOutcomes),runtime: runtime,productGate: productGate,projection: projection);
+    return Alpha2PipelineResult(
+      ingressCoverage: batch.coverage,
+      gmailEvidenceCount: batch.gmailEvidence.length,
+      statementOutcomes:
+          List<Alpha2StatementImportOutcome>.unmodifiable(statementOutcomes),
+      runtime: runtime,
+      productGate: productGate,
+      projection: projection,
+    );
   }
 
   Future<void> _safeRelease(String handle) async {
-    try { await ingress.releaseStatementHandle(handle); } catch (_) {
-      // Handle cleanup must never erase a safe per-candidate outcome. Native scanner
-      // lifetime and disconnect/onDestroy remain secondary cleanup boundaries.
+    try {
+      await ingress.releaseStatementHandle(handle);
+    } catch (_) {
+      // Handle cleanup must never erase a safe per-candidate outcome. Native
+      // scanner lifetime and disconnect/onDestroy remain secondary cleanup
+      // boundaries.
     }
   }
 
-  Future<Alpha2StatementImportOutcome> _importStatementCandidate({required String tenantId,required Alpha2StatementCandidateHandle candidate,required Alpha2StatementPasswordProvider passwordProvider}) async {
-    if (!candidate.fetchEligible || candidate.state != 'STRONG' || candidate.profileId != alpha2BcpSavingsProfileId) {
+  Future<Alpha2StatementImportOutcome> _importStatementCandidate({
+    required String tenantId,
+    required Alpha2StatementCandidateHandle candidate,
+    required Alpha2StatementPasswordProvider passwordProvider,
+  }) async {
+    if (!candidate.fetchEligible ||
+        candidate.state != 'STRONG' ||
+        candidate.profileId != alpha2BcpSavingsProfileId) {
       await _safeRelease(candidate.handle);
-      return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'QUARANTINED_PROFILE',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_PROFILE_ADAPTER_NOT_READY']);
-    }
-    final password = await passwordProvider(candidate);
-    if (password == null || password.isEmpty) {
-      await _safeRelease(candidate.handle);
-      return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PASSWORD_REQUIRED',evidenceCount: 0,reviewCodes: const <String>[]);
+      return Alpha2StatementImportOutcome(
+        profileId: candidate.profileId,
+        status: 'QUARANTINED_PROFILE',
+        evidenceCount: 0,
+        reviewCodes: const <String>['STATEMENT_PROFILE_ADAPTER_NOT_READY'],
+      );
     }
 
     Uint8List? bytes;
     try {
-      try { bytes = await ingress.fetchStatementBytes(candidate.handle); }
-      on PlatformException catch (error) { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'FETCH_REJECTED',evidenceCount: 0,reviewCodes: <String>[_safeStatementFetchCode(error.code)]); }
-      on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'FETCH_REJECTED',evidenceCount: 0,reviewCodes: const <String>['ALPHA2_STATEMENT_BYTES_EMPTY']); }
-
-      final sourceReceiptId = _statementSourceReceipt(candidate.profileId, bytes);
-      final layout = await pdfReader.extractLayout(encryptedPdfBytes: bytes,password: password);
-      Alpha2StatementParseResult parsed;
-      try { parsed = bcpSavingsParser.parse(layout: layout,sourceReceiptId: sourceReceiptId,tenantId: tenantId); }
-      catch (_) { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'REVIEW_REQUIRED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_STRICT_PARSE_RUNTIME_REJECTED']); }
-
-      if (!parsed.importable) {
-        try { await vault.commitEvidenceBatch(sourceReceiptId: sourceReceiptId,evidence: const <Alpha2Evidence>[],terminalState: 'QUARANTINED'); }
-        on PlatformException { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-        on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-        return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'REVIEW_REQUIRED',evidenceCount: 0,reviewCodes: parsed.reviewCodes,statementPeriodId: parsed.statementPeriodId);
+      String? password;
+      try {
+        password = await passwordProvider(candidate);
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'REVIEW_REQUIRED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[
+            alpha2StatementPasswordProviderRejected,
+          ],
+        );
       }
 
-      try { await vault.commitEvidenceBatch(sourceReceiptId: sourceReceiptId,evidence: parsed.evidence,terminalState: 'IMPORTED'); }
-      on PlatformException { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-      on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-      return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'IMPORTED',evidenceCount: parsed.evidence.length,reviewCodes: const <String>[],statementPeriodId: parsed.statementPeriodId);
-    } on Alpha2StatementPdfException catch (error) {
-      return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PDF_REJECTED',evidenceCount: 0,reviewCodes: <String>[error.code]);
+      if (password == null || password.isEmpty) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'PASSWORD_REQUIRED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[],
+        );
+      }
+
+      try {
+        bytes = await ingress.fetchStatementBytes(candidate.handle);
+      } on PlatformException catch (error) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: <String>[_safeStatementFetchCode(error.code)],
+        );
+      } on StateError {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>['ALPHA2_STATEMENT_BYTES_EMPTY'],
+        );
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'FETCH_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>['ALPHA2_STATEMENT_FETCH_FAILED'],
+        );
+      }
+
+      String sourceReceiptId;
+      try {
+        sourceReceiptId = _statementSourceReceipt(candidate.profileId, bytes);
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'REVIEW_REQUIRED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[
+            alpha2StatementSourceReceiptRejected,
+          ],
+        );
+      }
+
+      Alpha2StatementLayout layout;
+      try {
+        layout = await pdfReader.extractLayout(
+          encryptedPdfBytes: bytes,
+          password: password,
+        );
+      } on Alpha2StatementPdfException catch (error) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'PDF_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: <String>[error.code],
+        );
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'PDF_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[alpha2StatementPdfRuntimeRejected],
+        );
+      }
+
+      Alpha2StatementParseResult parsed;
+      try {
+        parsed = bcpSavingsParser.parse(
+          layout: layout,
+          sourceReceiptId: sourceReceiptId,
+          tenantId: tenantId,
+        );
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'REVIEW_REQUIRED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[
+            'STATEMENT_STRICT_PARSE_RUNTIME_REJECTED',
+          ],
+        );
+      }
+
+      if (!parsed.importable) {
+        try {
+          await vault.commitEvidenceBatch(
+            sourceReceiptId: sourceReceiptId,
+            evidence: const <Alpha2Evidence>[],
+            terminalState: 'QUARANTINED',
+          );
+        } catch (_) {
+          return Alpha2StatementImportOutcome(
+            profileId: candidate.profileId,
+            status: 'PERSISTENCE_REJECTED',
+            evidenceCount: 0,
+            reviewCodes: const <String>[alpha2StatementPersistenceRejected],
+            statementPeriodId: parsed.statementPeriodId,
+          );
+        }
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'REVIEW_REQUIRED',
+          evidenceCount: 0,
+          reviewCodes: parsed.reviewCodes,
+          statementPeriodId: parsed.statementPeriodId,
+        );
+      }
+
+      try {
+        await vault.commitEvidenceBatch(
+          sourceReceiptId: sourceReceiptId,
+          evidence: parsed.evidence,
+          terminalState: 'IMPORTED',
+        );
+      } catch (_) {
+        return Alpha2StatementImportOutcome(
+          profileId: candidate.profileId,
+          status: 'PERSISTENCE_REJECTED',
+          evidenceCount: 0,
+          reviewCodes: const <String>[alpha2StatementPersistenceRejected],
+          statementPeriodId: parsed.statementPeriodId,
+        );
+      }
+
+      return Alpha2StatementImportOutcome(
+        profileId: candidate.profileId,
+        status: 'IMPORTED',
+        evidenceCount: parsed.evidence.length,
+        reviewCodes: const <String>[],
+        statementPeriodId: parsed.statementPeriodId,
+      );
     } finally {
-      if (bytes != null) bytes.fillRange(0, bytes.length, 0);
+      if (bytes != null) {
+        try {
+          bytes.fillRange(0, bytes.length, 0);
+        } catch (_) {
+          // Zeroization is attempted unconditionally, but cleanup failure must
+          // not replace a sanitized candidate outcome.
+        }
+      }
       await _safeRelease(candidate.handle);
     }
   }
@@ -197,25 +469,44 @@ String _safeStatementFetchCode(String rawCode) {
 }
 
 String _gmailSourceReceipt(String evidenceId) {
-  final value = evidenceId.startsWith('gmail:') ? evidenceId.substring('gmail:'.length) : evidenceId;
-  if (value.isEmpty) throw StateError('ALPHA2_GMAIL_SOURCE_RECEIPT_INVALID');
+  final value = evidenceId.startsWith('gmail:')
+      ? evidenceId.substring('gmail:'.length)
+      : evidenceId;
+  if (value.isEmpty) {
+    throw StateError('ALPHA2_GMAIL_SOURCE_RECEIPT_INVALID');
+  }
   return 'gmail-src:$value';
 }
 
 class _DigestCapture implements Sink<Digest> {
   Digest? value;
-  @override void add(Digest data) { if (value != null) throw StateError('ALPHA2_DIGEST_MULTIPLE_VALUES'); value = data; }
-  @override void close() {}
+  @override
+  void add(Digest data) {
+    if (value != null) {
+      throw StateError('ALPHA2_DIGEST_MULTIPLE_VALUES');
+    }
+    value = data;
+  }
+
+  @override
+  void close() {}
 }
 
-String _statementSourceReceipt(String profileId, Uint8List encryptedPdfBytes) {
+String _statementSourceReceipt(
+  String profileId,
+  Uint8List encryptedPdfBytes,
+) {
   final capture = _DigestCapture();
   final input = sha256.startChunkedConversion(capture);
-  input.add(utf8.encode('FINANCESENSOR_ALPHA2_STATEMENT_SOURCE_V1|$profileId|'));
+  input.add(
+    utf8.encode('FINANCESENSOR_ALPHA2_STATEMENT_SOURCE_V1|$profileId|'),
+  );
   input.add(encryptedPdfBytes);
   input.close();
   final digest = capture.value;
-  if (digest == null) throw StateError('ALPHA2_STATEMENT_DIGEST_MISSING');
+  if (digest == null) {
+    throw StateError('ALPHA2_STATEMENT_DIGEST_MISSING');
+  }
   return 'stmt-src:${digest.toString().substring(0, 48)}';
 }
 
@@ -224,12 +515,79 @@ Alpha2Evidence alpha2EvidenceFromSafeVaultRow(Map<String, Object?> row) {
   final tenantId = row['tenantId'] as String? ?? '';
   final occurredAt = DateTime.tryParse(row['occurredAt'] as String? ?? '');
   final currency = row['currency'] as String? ?? '';
-  final amount = row['amount'] is num ? (row['amount'] as num).toDouble() : row['amountMinor'] is num ? (row['amountMinor'] as num).toDouble() / 100.0 : double.nan;
-  if (evidenceId.isEmpty || tenantId.isEmpty || occurredAt == null || !amount.isFinite || amount <= 0) throw const FormatException('ALPHA2_VAULT_SAFE_ROW_INVALID');
-  return Alpha2Evidence(evidenceId: evidenceId,tenantId: tenantId,amount: amount,currency: currency,occurredAt: occurredAt,semanticType: _semantic(row['semanticType'] as String?),channel: _channel(row['channel'] as String?),truthState: _truth(row['truthState'] as String?),institutionCode: row['institutionCode'] as String?,accountId: row['accountId'] as String?,instrumentId: row['instrumentId'] as String?,merchantCanonical: row['merchantCanonical'] as String?,statementPeriodId: row['statementPeriodId'] as String?,categoryName: row['categoryName'] as String?,flowDirection: _direction(row['flowDirection'] as String?)).normalized();
+  final amount = row['amount'] is num
+      ? (row['amount'] as num).toDouble()
+      : row['amountMinor'] is num
+          ? (row['amountMinor'] as num).toDouble() / 100.0
+          : double.nan;
+  if (evidenceId.isEmpty ||
+      tenantId.isEmpty ||
+      occurredAt == null ||
+      !amount.isFinite ||
+      amount <= 0) {
+    throw const FormatException('ALPHA2_VAULT_SAFE_ROW_INVALID');
+  }
+  return Alpha2Evidence(
+    evidenceId: evidenceId,
+    tenantId: tenantId,
+    amount: amount,
+    currency: currency,
+    occurredAt: occurredAt,
+    semanticType: _semantic(row['semanticType'] as String?),
+    channel: _channel(row['channel'] as String?),
+    truthState: _truth(row['truthState'] as String?),
+    institutionCode: row['institutionCode'] as String?,
+    accountId: row['accountId'] as String?,
+    instrumentId: row['instrumentId'] as String?,
+    merchantCanonical: row['merchantCanonical'] as String?,
+    statementPeriodId: row['statementPeriodId'] as String?,
+    categoryName: row['categoryName'] as String?,
+    flowDirection: _direction(row['flowDirection'] as String?),
+  ).normalized();
 }
 
-Alpha2SemanticType _semantic(String? raw) => switch ((raw ?? '').toUpperCase()) {'EXPENSE'||'PURCHASE'=>Alpha2SemanticType.expense,'INCOME'||'DEPOSIT'||'SALARY'=>Alpha2SemanticType.income,'FEE'=>Alpha2SemanticType.fee,'CASHWITHDRAWAL'||'CASH_WITHDRAWAL'=>Alpha2SemanticType.cashWithdrawal,'SERVICEPAYMENT'||'SERVICE_PAYMENT'=>Alpha2SemanticType.servicePayment,'CARDPAYMENT'||'CARD_PAYMENT'=>Alpha2SemanticType.cardPayment,'INTERNALTRANSFER'||'INTERNAL_TRANSFER'=>Alpha2SemanticType.internalTransfer,'EXTERNALTRANSFER'||'EXTERNAL_TRANSFER'=>Alpha2SemanticType.externalTransfer,'REFUND'=>Alpha2SemanticType.refund,'REVERSAL'=>Alpha2SemanticType.reversal,_=>Alpha2SemanticType.unknown};
-Alpha2EvidenceChannel _channel(String? raw) => switch ((raw ?? '').toUpperCase()) {'GMAILTRANSACTION'||'GMAIL_TRANSACTION'=>Alpha2EvidenceChannel.gmailTransaction,'STATEMENTLEDGER'||'STATEMENT_LEDGER'=>Alpha2EvidenceChannel.statementLedger,'MERCHANTRECEIPT'||'MERCHANT_RECEIPT'=>Alpha2EvidenceChannel.merchantReceipt,'USERCONFIRMATION'||'USER_CONFIRMATION'=>Alpha2EvidenceChannel.userConfirmation,_=>Alpha2EvidenceChannel.other};
-Alpha2TruthState _truth(String? raw) => switch ((raw ?? '').toUpperCase()) {'OBSERVED'=>Alpha2TruthState.observed,'POSTED'=>Alpha2TruthState.posted,'RECONCILED'=>Alpha2TruthState.reconciled,'PARTIAL'=>Alpha2TruthState.partial,_=>Alpha2TruthState.unknown};
-Alpha2FlowDirection _direction(String? raw) => switch ((raw ?? '').toUpperCase()) {'INFLOW'||'IN'=>Alpha2FlowDirection.inflow,'OUTFLOW'||'OUT'=>Alpha2FlowDirection.outflow,_=>Alpha2FlowDirection.unknown};
+Alpha2SemanticType _semantic(String? raw) => switch ((raw ?? '').toUpperCase()) {
+      'EXPENSE' || 'PURCHASE' => Alpha2SemanticType.expense,
+      'INCOME' || 'DEPOSIT' || 'SALARY' => Alpha2SemanticType.income,
+      'FEE' => Alpha2SemanticType.fee,
+      'CASHWITHDRAWAL' || 'CASH_WITHDRAWAL' =>
+        Alpha2SemanticType.cashWithdrawal,
+      'SERVICEPAYMENT' || 'SERVICE_PAYMENT' =>
+        Alpha2SemanticType.servicePayment,
+      'CARDPAYMENT' || 'CARD_PAYMENT' => Alpha2SemanticType.cardPayment,
+      'INTERNALTRANSFER' || 'INTERNAL_TRANSFER' =>
+        Alpha2SemanticType.internalTransfer,
+      'EXTERNALTRANSFER' || 'EXTERNAL_TRANSFER' =>
+        Alpha2SemanticType.externalTransfer,
+      'REFUND' => Alpha2SemanticType.refund,
+      'REVERSAL' => Alpha2SemanticType.reversal,
+      _ => Alpha2SemanticType.unknown,
+    };
+
+Alpha2EvidenceChannel _channel(String? raw) =>
+    switch ((raw ?? '').toUpperCase()) {
+      'GMAILTRANSACTION' || 'GMAIL_TRANSACTION' =>
+        Alpha2EvidenceChannel.gmailTransaction,
+      'STATEMENTLEDGER' || 'STATEMENT_LEDGER' =>
+        Alpha2EvidenceChannel.statementLedger,
+      'MERCHANTRECEIPT' || 'MERCHANT_RECEIPT' =>
+        Alpha2EvidenceChannel.merchantReceipt,
+      'USERCONFIRMATION' || 'USER_CONFIRMATION' =>
+        Alpha2EvidenceChannel.userConfirmation,
+      _ => Alpha2EvidenceChannel.other,
+    };
+
+Alpha2TruthState _truth(String? raw) => switch ((raw ?? '').toUpperCase()) {
+      'OBSERVED' => Alpha2TruthState.observed,
+      'POSTED' => Alpha2TruthState.posted,
+      'RECONCILED' => Alpha2TruthState.reconciled,
+      'PARTIAL' => Alpha2TruthState.partial,
+      _ => Alpha2TruthState.unknown,
+    };
+
+Alpha2FlowDirection _direction(String? raw) =>
+    switch ((raw ?? '').toUpperCase()) {
+      'INFLOW' || 'IN' => Alpha2FlowDirection.inflow,
+      'OUTFLOW' || 'OUT' => Alpha2FlowDirection.outflow,
+      _ => Alpha2FlowDirection.unknown,
+    };
