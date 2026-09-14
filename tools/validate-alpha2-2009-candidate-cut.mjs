@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import './validate-ci-runner-policy.mjs';
 import './validate-alpha2-od3-mobile-fetch-remediation.mjs';
+import './validate-alpha2-human-intervention-gate.mjs';
 
 const workflow = fs.readFileSync('.github/workflows/alpha2-integrated-runtime.yml', 'utf8');
 const pipeline = fs.readFileSync('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart', 'utf8');
@@ -74,6 +75,10 @@ console.log('ALPHA2_2009_CANDIDATE_CUT=PASS');
 console.log('SOURCE_BASE=ALPHA2_2008_POSTPASSWORD_IMPORT_FAILURE');
 console.log('POST_PASSWORD_IMPORT_ISOLATION=GATED');
 console.log('STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO');
+console.log('HUMAN_INTERVENTION_POLICY=EXCEPTION_ONLY_CERTIFICATION');
+console.log('HUMAN_DISCOVERY_TESTING=FORBIDDEN');
+console.log('SIGNING_REQUEST_ALLOWED=NO_UNTIL_EXPLICIT_GATE_PASS');
+console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO_UNTIL_EXPLICIT_GATE_PASS');
 console.log('CANDIDATE_ID=0.2.0-alpha.2+2009');
 console.log('CANONICAL_PROMOTION_PENDING=YES');
 console.log('R1_TRUSTED_EDGE_RESIGN_REQUIRED=YES');
