@@ -53,7 +53,7 @@
     {
       "id": "R1",
       "title": "Trusted-edge Alpha.2 signing",
-      "status": "CLOSED",
+      "status": "DESIGN_FROZEN_EXECUTION_OPEN",
       "dependsOn": ["R0"],
       "executionClass": "OWNED_COMPUTER_PRIVATE_KEY_REQUIRED",
       "inputIdentity": "CANONICAL_ALPHA2_ONLY",
@@ -69,7 +69,7 @@
     {
       "id": "R2",
       "title": "Single owned-device Alpha.2 product campaign",
-      "status": "DESIGN_FROZEN_EXECUTION_OPEN",
+      "status": "BLOCKED_BY_PRIOR_NODE",
       "dependsOn": ["R1"],
       "executionClass": "OWNED_ANDROID_DEVICE_PHYSICAL",
       "subgates": [
@@ -216,31 +216,16 @@
     }
   ],
   "reopenRules": [
-    {
-      "signal": "SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED",
-      "reopens": ["R1", "R2"]
-    },
-    {
-      "signal": "OAUTH_PACKAGE_SCOPE_OR_DATA_PATH_CHANGED",
-      "reopens": ["R2", "R3", "R4", "R7"]
-    },
-    {
-      "signal": "CRYPTO_PROFILE_SYNC_PROTOCOL_WITNESS_OR_RECOVERY_CHANGED",
-      "reopens": ["R5", "R7", "R8"]
-    },
-    {
-      "signal": "DELETION_BACKUP_OR_RETENTION_SEMANTICS_CHANGED",
-      "reopens": ["R4", "R5", "R7", "R8"]
-    },
-    {
-      "signal": "GOOGLE_PROVIDER_POLICY_OR_ASSESSMENT_REQUIREMENT_CHANGED",
-      "reopens": ["R3", "R7"]
-    }
+    {"signal":"SOURCE_COMMIT_OR_CANONICAL_APK_SHA_CHANGED","reopens":["R1","R2"]},
+    {"signal":"OAUTH_PACKAGE_SCOPE_OR_DATA_PATH_CHANGED","reopens":["R2","R3","R4","R7"]},
+    {"signal":"CRYPTO_PROFILE_SYNC_PROTOCOL_WITNESS_OR_RECOVERY_CHANGED","reopens":["R5","R7","R8"]},
+    {"signal":"DELETION_BACKUP_OR_RETENTION_SEMANTICS_CHANGED","reopens":["R4","R5","R7","R8"]},
+    {"signal":"GOOGLE_PROVIDER_POLICY_OR_ASSESSMENT_REQUIREMENT_CHANGED","reopens":["R3","R7"]}
   ],
   "currentState": {
     "R0": "CLOSED",
-    "R1": "CLOSED",
-    "R2": "DESIGN_FROZEN_EXECUTION_OPEN",
+    "R1": "DESIGN_FROZEN_EXECUTION_OPEN",
+    "R2": "BLOCKED_BY_PRIOR_NODE",
     "R3": "PHYSICAL_OR_PROVIDER_OPEN",
     "R4": "PHYSICAL_OR_PROVIDER_OPEN",
     "R5": "PHYSICAL_OR_PROVIDER_OPEN",
