@@ -16,6 +16,7 @@ const projection = readText('spikes/mobile-shell/lib/alpha2/alpha2_projection.da
 const dashboard = readText('spikes/mobile-shell/lib/alpha2/alpha2_dashboard_sections.dart');
 const test = readText('spikes/mobile-shell/test/alpha2_statement_single_pass_diagnostics_test.dart');
 const campaign = readJson('graph/alpha2-r2-owned-device-campaign.json');
+const od3Failure = readJson('graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD3-2026-09-14.json');
 
 for (const marker of [
   'ATTACHMENT_READ_TIMEOUT_MS = 30_000',
@@ -62,26 +63,20 @@ const od0 = campaign.subgates?.find(gate => gate.id === 'OD0');
 const od1 = campaign.subgates?.find(gate => gate.id === 'OD1');
 const od2 = campaign.subgates?.find(gate => gate.id === 'OD2');
 const od3 = campaign.subgates?.find(gate => gate.id === 'OD3');
-if (currentCandidate === '0.2.0-alpha.2+2007') {
-  const r1State = campaign.currentState?.r1TrustedEdgeSigning;
-  if (r1State === 'OPEN') {
-    assert(campaign.status === 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING', '2007_CAMPAIGN_MUST_BE_BLOCKED_WHILE_R1_OPEN');
-    assert(od0?.status === 'BLOCKED_BY_R1', '2007_OD0_MUST_WAIT_FOR_R1');
-    assert(campaign.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', '2007_NEXT_GATE_MUST_BE_R1_WHILE_OPEN');
-  } else {
-    assert(r1State === 'PASS', '2007_R1_STATE_MUST_BE_OPEN_OR_PASS');
-    assert(campaign.status === 'READY_FOR_PHYSICAL', '2007_CAMPAIGN_MUST_OPEN_AT_OD0_AFTER_R1_PASS');
-    assert(od0?.status === 'READY_FOR_PHYSICAL', '2007_OD0_MUST_BE_READY_AFTER_R1_PASS');
-    assert(od1?.status === 'BLOCKED_BY_PRIOR_GATE' && od2?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD1_OD2_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
-    assert(campaign.currentState?.nextGate === 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH', '2007_NEXT_GATE_MUST_BE_OD0_AFTER_R1_PASS');
-  }
-  assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_OD0_OD1_OD2');
-} else {
-  assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'PHYSICAL_CAMPAIGN_MUST_REMAIN_OPEN');
-  assert(od3?.status === 'READY_FOR_PHYSICAL', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
-  assert(campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'NEXT_GATE_DRIFT');
-}
+assert(currentCandidate === '0.2.0-alpha.2+2007', 'PREPROMOTION_CAMPAIGN_MUST_REMAIN_2007');
+assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', '2007_PHYSICAL_CAMPAIGN_HISTORY_DRIFTED');
+assert(campaign.currentState?.r1TrustedEdgeSigning === 'PASS', '2007_R1_HISTORY_MUST_REMAIN_PASS');
+assert(od0?.status === 'PASS' && od1?.status === 'PASS' && od2?.status === 'PASS', '2007_OD0_OD1_OD2_HISTORY_MUST_REMAIN_PASS');
+assert(od3?.status === 'READY_FOR_PHYSICAL', 'VERSIONED_CAMPAIGN_HAS_NOT_YET_BEEN_RESET_FOR_2008');
+assert(campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'PREPROMOTION_NEXT_GATE_DRIFT');
 assert(od3?.status !== 'PASS', 'OD3_PHYSICAL_PASS_MUST_NOT_BE_SYNTHESIZED');
+
+const failedOd3 = od3Failure.gateResults?.find(gate => gate.gateId === 'OD3');
+assert(od3Failure.candidateId === '0.2.0-alpha.2+2007', 'OD3_FAILURE_RECEIPT_CANDIDATE_DRIFTED');
+assert(od3Failure.sanitizationPass === true, 'OD3_FAILURE_RECEIPT_MUST_BE_SANITIZED');
+assert(failedOd3?.gateStatus === 'FAIL', 'OD3_FAILURE_RECEIPT_MUST_RECORD_FAIL');
+assert(failedOd3?.stableResultCode === 'POST_PASSWORD_REFRESH_SAFE_STOP_FETCH_RESULT_NOT_OBSERVABLE', 'OD3_FAILURE_RESULT_CODE_DRIFTED');
+
 assert(campaign.currentState?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
 assert(campaign.currentState?.releaseReady === false, 'RELEASE_READY_MUST_REMAIN_FALSE');
 
@@ -91,7 +86,8 @@ console.log('ATTACHMENT_READ_TIMEOUT_MS=30000');
 console.log('SAFE_FETCH_DIAGNOSTICS=CLASSIFIED');
 console.log('RAW_GMAIL_IDENTITY_PUBLIC_CROSSING=0');
 console.log(`CURRENT_CANDIDATE=${currentCandidate}`);
-console.log(`R1_STATE=${campaign.currentState?.r1TrustedEdgeSigning}`);
-console.log(`R2_NEXT_GATE=${campaign.currentState?.nextGate}`);
+console.log('OD0_OD1_OD2_2007_HISTORY=PASS');
+console.log('OD3_2007_PHYSICAL_RESULT=FAIL_POST_PASSWORD_SAFE_STOP');
 console.log('OD3_PHYSICAL_PASS=0');
 console.log('BUILD_READY=NO');
+console.log('RELEASE_READY=NO');
