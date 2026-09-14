@@ -9,6 +9,8 @@ const signerBuffer = fs.readFileSync(signerPath);
 const cmdBuffer = fs.readFileSync(cmdPath);
 const signer = signerBuffer.toString('utf8');
 const workflow = fs.readFileSync('.github/workflows/alpha2-r1-trusted-edge-signing.yml', 'utf8');
+const receiptPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json';
+const sourceReceiptPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt';
 const expected = {
   candidate: '0.2.0-alpha.2+2008',
   sourceCommit: '45b605d29fe0b90f528e4f0f952ab878080b2f0b',
@@ -18,6 +20,8 @@ const expected = {
   canonicalArtifactZipSha256: 'f517fac8277bfdfe589758712cb30d3199e8a9415d6a5ea08b4903cee8e03cca',
   apkSha256: 'eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238',
   apkBytes: 182515867,
+  signedApkSha256: 'a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277',
+  signedApkBytes: 182538790,
   ps1Blob: 'd782f03bb97ca0910436500080bcaf10efc00161',
   cmdBlob: '3d01373b69051d30f88a57f26fa815e52d952d6d',
   signerSha1: '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0',
@@ -47,7 +51,7 @@ assert(graph.signer?.windowsNativeStdin === 'PROCESS_START_INFO_REDIRECTED' && g
 assert(graph.signer?.expectedSignerSha1 === expected.signerSha1 && graph.signer?.androidOauthPackage === 'com.financesensor.lab.gmailconnection.r2' && graph.signer?.exactScope === 'gmail.readonly', 'signer/package/scope drifted');
 
 const bundle = graph.handoffBundle ?? {};
-assert(bundle.name === expected.bundleName && bundle.status === 'READY_FROZEN', 'v10 bundle must be frozen before trusted-edge handoff');
+assert(bundle.name === expected.bundleName && bundle.status === 'READY_FROZEN', 'v10 bundle must remain frozen');
 assert(bundle.sha256 === expected.bundleSha256 && bundle.bytes === expected.bundleBytes, 'v10 frozen inner bundle identity drifted');
 assert(bundle.files === 8 && bundle.privateKeyFiles === 0 && bundle.secretLikeValueMatches === 0, 'v10 safe bundle boundary drifted');
 assert(bundle.zipStructure === 'PASS' && bundle.zipIntegrity === 'PASS' && bundle.manifestIntegrity === 'PASS', 'v10 integrity proof missing');
@@ -55,19 +59,21 @@ assert(bundle.ps1GitBlobVerified === expected.ps1Blob && bundle.cmdGitBlobVerifi
 assert(bundle.apksignerSha256 === '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180', 'apksigner authority drifted');
 assert(bundle.supersedesBundleSha256 === expected.priorV9, 'v10 supersession drifted');
 const generation = bundle.generationReceipt ?? {};
-assert(generation.foundationMergeSha === expected.foundationMergeSha, 'post-merge handoff generation SHA drifted');
-assert(generation.workflowRunId === expected.postMergeRunId && generation.artifactId === expected.postMergeArtifactId, 'post-merge R1 generation authority drifted');
+assert(generation.foundationMergeSha === expected.foundationMergeSha && generation.workflowRunId === expected.postMergeRunId && generation.artifactId === expected.postMergeArtifactId, 'post-merge R1 generation authority drifted');
 assert(generation.artifactDigest === expected.postMergeArtifactDigest && generation.artifactBytes === expected.postMergeArtifactBytes, 'post-merge wrapper artifact identity drifted');
 assert(generation.innerBundleSha256 === expected.bundleSha256 && generation.innerBundleBytes === expected.bundleBytes, 'post-merge inner bundle receipt drifted');
-assert(bundle.certificationReceipt === null, 'trusted-edge certification receipt must remain absent before user signing');
+const certification = bundle.certificationReceipt ?? {};
+assert(certification.receiptPath === receiptPath && certification.sourcePath === sourceReceiptPath && certification.receivedDate === '2026-09-14', 'trusted-edge certification receipt binding drifted');
+assert(certification.signedApkSha256 === expected.signedApkSha256 && certification.signedApkBytes === expected.signedApkBytes && certification.signerSha1 === expected.signerSha1, 'trusted-edge certification identity drifted');
+assert(certification.sanitizationPass === true && certification.userOriginated === true && certification.publicCiOriginated === false, 'trusted-edge certification provenance drifted');
 const oldV9 = (graph.supersededBundles ?? []).find(x => x.sha256 === expected.priorV9);
 assert(oldV9?.safeToUse === false && /2007|safe-stop|diagnostic/i.test(oldV9.reason), 'v9 supersession boundary missing');
 const historical2007 = (graph.historicalPhysicalReceipts ?? []).find(x => x.candidate === '0.2.0-alpha.2+2007');
 assert(historical2007?.inheritAsCurrentPass === false && historical2007?.signedApkSha256 === '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab', '+2007 historical receipt isolation missing');
 
-assert(graph.physicalReceipt?.path === null && graph.physicalReceipt?.sourcePath === null && graph.physicalReceipt?.receivedDate === null, 'no +2008 physical receipt may exist before trusted-edge signing');
-assert(graph.status === 'TRUSTED_EDGE_SIGNING_REQUIRED' && graph.trustedEdgeSigningPass === false, 'R1 must remain physically open for +2008');
-assert(graph.signedApkSha256 === null && graph.signedApkBytes === null, 'no +2008 signed APK identity may be claimed yet');
+assert(graph.physicalReceipt?.path === receiptPath && graph.physicalReceipt?.sourcePath === sourceReceiptPath && graph.physicalReceipt?.receivedDate === '2026-09-14' && graph.physicalReceipt?.sanitizationPass === true, '+2008 physical receipt binding drifted');
+assert(graph.status === 'TRUSTED_EDGE_SIGNING_PASS' && graph.trustedEdgeSigningPass === true, 'R1 +2008 PASS missing');
+assert(graph.signedApkSha256 === expected.signedApkSha256 && graph.signedApkBytes === expected.signedApkBytes, '+2008 stable signed APK identity drifted');
 assert(graph.physicalAlpha2Pass === false && graph.buildReady === false && graph.releaseReady === false, 'R1 cannot promote downstream readiness');
 
 for (const marker of [expected.candidate,expected.sourceCommit,expected.apkSha256,String(expected.apkBytes),expected.signerSha1,'function Invoke-ProcessWithStdin','RedirectStandardInput = $true','RedirectStandardError = $true']) assert(signer.includes(marker), `signer missing marker: ${marker}`);
@@ -76,16 +82,7 @@ const psCommand = `$errors=$null;$tokens=$null;[System.Management.Automation.Lan
 const parsed = spawnSync('pwsh', ['-NoProfile', '-Command', psCommand], { encoding: 'utf8' });
 assert(parsed.error == null && parsed.status === 0, 'PowerShell signer parse failed');
 
-for (const marker of [
-  'Download exact canonical +2008 artifact',
-  'Generate deterministic public-safe v10 handoff bundle',
-  expected.bundleName, expected.bundleSha256, String(expected.bundleBytes),
-  expected.candidate, expected.sourceCommit, expected.apkSha256, String(expected.apkBytes),
-  'R1_V10_GENERATION=PASS','R1_V10_FROZEN_BYTES=PASS',
-  'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE',
-  'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0',
-  'PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'
-]) assert(workflow.includes(marker), `R1 workflow missing marker: ${marker}`);
+for (const marker of ['Download exact canonical +2008 artifact','Generate deterministic public-safe v10 handoff bundle',expected.bundleName,expected.bundleSha256,String(expected.bundleBytes),expected.candidate,expected.sourceCommit,expected.apkSha256,String(expected.apkBytes),'R1_V10_GENERATION=PASS','R1_V10_FROZEN_BYTES=PASS','R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT','R2_PHYSICAL_CAMPAIGN=IN_PROGRESS','OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO']) assert(workflow.includes(marker), `R1 workflow missing marker: ${marker}`);
 assert(workflow.includes('contents: read') && workflow.includes('actions: read') && !workflow.includes('secrets.'), 'R1 public CI permission/secret boundary drifted');
 
 console.log('ALPHA2_R1_SIGNING_HANDOFF=PASS');
@@ -93,9 +90,10 @@ console.log('R1_V10_BUNDLE_STATE=READY_FROZEN');
 console.log(`R1_V10_BUNDLE_SHA256=${expected.bundleSha256}`);
 console.log(`R1_V10_BUNDLE_BYTES=${expected.bundleBytes}`);
 console.log(`R1_V10_POSTMERGE_RUN_ID=${expected.postMergeRunId}`);
-console.log('R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE');
-console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1');
-console.log('OD0_INSTALL_AND_LAUNCH=BLOCKED_BY_R1');
+console.log(`STABLE_SIGNED_APK_SHA256=${expected.signedApkSha256}`);
+console.log('R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT');
+console.log('R2_PHYSICAL_CAMPAIGN=IN_PROGRESS');
+console.log('OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL');
 console.log('PHYSICAL_ALPHA2_PASS=NO');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');

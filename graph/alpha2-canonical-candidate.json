@@ -24,12 +24,12 @@
     "postPasswordSafeStopDiagnostics": true
   },
   "physicalInstallabilityObservation": {
-    "status": "BLOCKED_BY_R1_CURRENT_CANDIDATE",
+    "status": "READY_FOR_OD0_CURRENT_CANDIDATE",
     "installPass": false,
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "Source/APK identity changed to +2008. Stable trusted-edge signing and the owned-device OD0..OD11 campaign must be reacquired on this exact signed candidate; +2007 physical evidence remains historical only.",
+    "reason": "Stable trusted-edge signing is certified for +2008. Owned-device install and launch must now be reacquired at OD0 on the exact signed APK; no prior-candidate physical evidence is inherited.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
@@ -98,11 +98,11 @@
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "status": "PENDING_CURRENT_CANDIDATE",
-    "trustedEdgeSigningPass": false,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
-    "receipt": null
+    "status": "TRUSTED_EDGE_SIGNING_PASS",
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
+    "signedApkBytes": 182538790,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json"
   },
   "boundaries": {
     "realOauthExecutedByCi": false,

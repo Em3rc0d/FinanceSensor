@@ -79,7 +79,7 @@ jobs:
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
-      - name: Current +2008 physical signing receipt must remain absent
+      - name: Current +2008 physical signing receipt PASS
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
       - name: Download exact canonical +2008 artifact
@@ -216,9 +216,9 @@ jobs:
           APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
-          R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE
-          R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1
-          OD0_INSTALL_AND_LAUNCH=BLOCKED_BY_R1
+          R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT
+          R2_PHYSICAL_CAMPAIGN=IN_PROGRESS
+          OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
@@ -235,15 +235,15 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Preserve pre-signing trust boundary
+      - name: Preserve post-signing trust boundary
         run: |
           set -euo pipefail
           echo 'R1_V10_GENERATION=PASS'
           echo 'R1_V10_FROZEN_BYTES=PASS'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
-          echo 'OD0_INSTALL_AND_LAUNCH=BLOCKED_BY_R1'
+          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
+          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

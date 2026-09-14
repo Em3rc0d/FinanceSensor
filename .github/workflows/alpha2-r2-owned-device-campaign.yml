@@ -74,14 +74,24 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Current +2008 R1 physical receipt boundary
+      - name: Current +2008 R1 physical receipt PASS
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
-      - name: R2 +2008 blocked campaign contract
+      - name: R2 +2008 OD0-ready campaign contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild chain
         run: node tools/validate-alpha2-r2-chain.mjs
+
+      - name: Current +2008 signing reducer regression
+        run: |
+          set -euo pipefail
+          node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt > /tmp/alpha2-r1-2008-reduced.txt
+          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2008-reduced.txt
+          grep -q '"candidate": "0.2.0-alpha.2+2008"' /tmp/alpha2-r1-2008-reduced.txt
+          grep -q '"signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277"' /tmp/alpha2-r1-2008-reduced.txt
+          grep -q '"signedApkBytes": 182538790' /tmp/alpha2-r1-2008-reduced.txt
+          echo 'ALPHA2_2008_SIGNING_RECEIPT=PASS_SANITIZED'
 
       - name: Historical +2007 signing reducer regression
         run: |
@@ -96,17 +106,17 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve +2008 pre-R1 physical boundary
+      - name: Preserve +2008 post-R1 physical boundary
         run: |
           set -euo pipefail
-          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
-          echo 'OD0_INSTALL_AND_LAUNCH=BLOCKED_BY_R1'
+          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
+          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
           echo 'CURRENT_OD0_OD11_PASS=NONE'
           echo 'ALPHA2_2007_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
-          echo 'R2_CURRENT_BLOCKER=CURRENT_CANDIDATE_REQUIRES_STABLE_TRUSTED_EDGE_SIGNING'
+          echo 'R2_NEXT_GATE=OD0'
+          echo 'R2_CURRENT_BLOCKER=OWNED_ANDROID_OD0_INSTALL_AND_LAUNCH_REQUIRED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
