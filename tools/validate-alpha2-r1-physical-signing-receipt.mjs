@@ -10,12 +10,12 @@ const r2Path = 'graph/alpha2-r2-owned-device-campaign.json';
 const reducerPath = 'tools/reduce-alpha2-r1-signing-receipt.mjs';
 const currentJsonPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json';
 const currentTxtPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.txt';
-const currentOd1Path = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD1-2026-09-13.json';
+const currentOd2Path = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD2-2026-09-14.json';
 const historicalJsonPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json';
 const historicalTxtPath = 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt';
 
 function assert(cond, message) { if (!cond) throw new Error(message); }
-for (const requiredPath of [receiptDir, r1Path, r2Path, reducerPath, currentJsonPath, currentTxtPath, currentOd1Path, historicalJsonPath, historicalTxtPath]) assert(fs.existsSync(requiredPath), `missing ${requiredPath}`);
+for (const requiredPath of [receiptDir, r1Path, r2Path, reducerPath, currentJsonPath, currentTxtPath, currentOd2Path, historicalJsonPath, historicalTxtPath]) assert(fs.existsSync(requiredPath), `missing ${requiredPath}`);
 
 const r1 = JSON.parse(fs.readFileSync(r1Path, 'utf8'));
 const r2 = JSON.parse(fs.readFileSync(r2Path, 'utf8'));
@@ -53,9 +53,7 @@ assert(!source.includes('Keystore password (trusted-edge session only)'), 'inter
 assert(!source.includes('Presione una tecla'), 'interactive console text must not enter sanitized receipt');
 
 const run = spawnSync(process.execPath, [reducerPath, currentTxtPath], { encoding: 'utf8' });
-assert(run.error == null, `R1 reducer failed to start: ${run.error?.message ?? ''}`);
-assert(run.status === 0, `R1 reducer rejected +2007 physical receipt:\n${run.stdout}\n${run.stderr}`);
-assert(run.stdout.includes('ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS'), 'R1 reducer PASS marker missing');
+assert(run.error == null && run.status === 0 && run.stdout.includes('ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS'), 'R1 reducer rejected +2007 receipt');
 const jsonStart = run.stdout.indexOf('{');
 assert(jsonStart >= 0, 'R1 reducer JSON output missing');
 const observed = JSON.parse(run.stdout.slice(jsonStart));
@@ -80,15 +78,15 @@ assert(r1.physicalAlpha2Pass === false && r1.buildReady === false && r1.releaseR
 assert(r2.r1PhysicalReceipt === currentJsonPath, 'R2 must bind exact current +2007 R1 receipt');
 assert(r2.candidate?.id === expected.candidate && r2.candidate?.sourceCommit === expected.sourceCommit, 'R2 current authority drifted');
 assert(r2.candidate?.signedApkSha256 === expected.signedApkSha256 && r2.candidate?.signedApkBytes === expected.signedApkBytes, 'R2 signed candidate drifted');
-assert(r2.receipt?.current === currentOd1Path, 'R2 must bind current OD1 sanitized receipt after fresh OAuth');
-assert(r2.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'R2 must remain in progress after OD1 PASS');
+assert(r2.receipt?.current === currentOd2Path, 'R2 must bind current OD2 sanitized receipt');
+assert(r2.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'R2 must remain in progress after OD2 PASS');
 assert(r2.currentState?.r1TrustedEdgeSigning === 'PASS' && r2.currentState?.r2PhysicalCampaign === 'IN_PROGRESS', 'R2 must preserve R1 PASS and in-progress campaign');
-assert(r2.currentState?.nextGate === 'OD2_METADATA_FIRST_STATEMENT_DISCOVERY', 'OD2 must be next physical gate after OD1 PASS');
-assert(r2.currentState?.currentBlocker === 'OD2_METADATA_FIRST_ORDERING_NOT_YET_PROVEN', 'OD2 blocker drifted');
-const expectedStatuses = ['PASS', 'PASS', 'READY_FOR_PHYSICAL', ...Array(9).fill('BLOCKED_BY_PRIOR_GATE')];
+assert(r2.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'OD3 must be next physical gate after OD2 PASS');
+assert(r2.currentState?.currentBlocker === 'OD3_ALLOWED_PROFILE_ATTACHMENT_FETCH_NOT_YET_OBSERVED', 'OD3 blocker drifted');
+const expectedStatuses = ['PASS', 'PASS', 'PASS', 'READY_FOR_PHYSICAL', ...Array(8).fill('BLOCKED_BY_PRIOR_GATE')];
 for (let i = 0; i < expectedStatuses.length; i += 1) assert(r2.subgates?.[i]?.id === `OD${i}` && r2.subgates?.[i]?.status === expectedStatuses[i], `OD${i} R2 state drifted`);
-assert(r2.currentState?.q003 === 'ACTIVE' && r2.currentState?.q004 === 'ACTIVE' && r2.currentState?.q005 === 'ACTIVE', 'Q003/Q004/Q005 cannot close from R1/OD0/OD1 evidence');
-assert(r2.currentState?.gMk0 === 'OPEN' && r2.currentState?.buildReady === false && r2.currentState?.releaseReady === false, 'R1/OD0/OD1 evidence cannot promote G-MK0/build/release');
+assert(r2.currentState?.q003 === 'ACTIVE' && r2.currentState?.q004 === 'ACTIVE' && r2.currentState?.q005 === 'ACTIVE', 'Q003/Q004/Q005 cannot close from R1/OD0/OD1/OD2 evidence');
+assert(r2.currentState?.gMk0 === 'OPEN' && r2.currentState?.buildReady === false && r2.currentState?.releaseReady === false, 'current evidence cannot promote G-MK0/build/release');
 
 console.log('ALPHA2_R1_PHYSICAL_SIGNING_RECEIPT_BOUNDARY=PASS');
 console.log('CURRENT_2007_RECEIPT=PASS');
@@ -97,11 +95,8 @@ console.log(`SIGNED_APK_BYTES=${expected.signedApkBytes}`);
 console.log(`SIGNER_SHA1=${expected.signerSha1}`);
 console.log('R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT');
 console.log('R2_PHYSICAL_CAMPAIGN=IN_PROGRESS');
-console.log('OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT');
-console.log('OD1_EXACT_GMAIL_READONLY_OAUTH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT');
-console.log('R2_NEXT_GATE=OD2_METADATA_FIRST_STATEMENT_DISCOVERY');
-console.log('OD2_METADATA_FIRST_STATEMENT_DISCOVERY=READY_FOR_PHYSICAL');
-console.log('ALPHA2_2006_PHYSICAL_EVIDENCE=HISTORICAL_NON_INHERITABLE');
+console.log('CURRENT_R2_FRONTIER=OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE');
+console.log('OD0_OD1_OD2=PASS');
 console.log('PHYSICAL_ALPHA2_PASS=NO');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=OPEN');
