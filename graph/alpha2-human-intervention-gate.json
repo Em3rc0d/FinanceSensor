@@ -1,6 +1,6 @@
 {
   "schemaVersion": "A2_HUMAN_INTERVENTION_GATE_V1",
-  "policyAdr": "ADR-040",
+  "policyId": "POLICY-ALPHA2-HUMAN-INTERVENTION-CERTIFICATION-ONLY",
   "mode": "EXCEPTION_ONLY_CERTIFICATION",
   "currentCandidate": "0.2.0-alpha.2+2009",
   "candidateSourceCommit": "9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f",
