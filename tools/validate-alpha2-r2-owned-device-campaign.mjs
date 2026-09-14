@@ -130,13 +130,16 @@ if (!failures.length) {
   if (nativeScanner.indexOf('?format=metadata') > nativeScanner.indexOf('format=full&fields=')) fail('metadata gate must precede MIME descriptor projection');
 
   for (const marker of [
-    'final batch = await ingress.scan();',
+    'Alpha2IngressBatch batch;',
+    'batch = await ingress.scan();',
+    'ALPHA2_REFRESH_SCAN_FAILED',
     "candidate.state != 'STRONG'",
     'candidate.fetchEligible',
     'candidate.profileId != alpha2BcpSavingsProfileId',
     'final password = await passwordProvider(candidate);',
     'bytes = await ingress.fetchStatementBytes(candidate.handle);'
   ]) if (!pipeline.includes(marker)) fail(`pipeline ordering contract missing marker: ${marker}`);
+  if (pipeline.indexOf('batch = await ingress.scan();') > pipeline.indexOf('final password = await passwordProvider(candidate);')) fail('metadata discovery must precede local opening handoff');
   if (pipeline.indexOf('final password = await passwordProvider(candidate);') > pipeline.indexOf('bytes = await ingress.fetchStatementBytes(candidate.handle);')) fail('local opening handoff must precede attachment fetch');
 
   for (const marker of [
