@@ -74,26 +74,16 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Current +2007 R1 physical signing receipt
+      - name: Current +2008 R1 physical receipt boundary
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
-      - name: R2 owned-device OD2 compound receipt contract
+      - name: R2 +2008 blocked campaign contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild chain
         run: node tools/validate-alpha2-r2-chain.mjs
 
-      - name: Historical +2006 signing reducer regression
-        run: |
-          set -euo pipefail
-          node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.txt > /tmp/alpha2-r1-2006-reduced.txt
-          grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"candidate": "0.2.0-alpha.2+2006"' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0"' /tmp/alpha2-r1-2006-reduced.txt
-          grep -q '"physicalAlpha2Pass": false' /tmp/alpha2-r1-2006-reduced.txt
-          echo 'ALPHA2_2006_SIGNING_RECEIPT=HISTORICAL_ONLY'
-
-      - name: Current +2007 signing reducer regression
+      - name: Historical +2007 signing reducer regression
         run: |
           set -euo pipefail
           node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.txt > /tmp/alpha2-r1-2007-reduced.txt
@@ -101,25 +91,22 @@ jobs:
           grep -q '"candidate": "0.2.0-alpha.2+2007"' /tmp/alpha2-r1-2007-reduced.txt
           grep -q '"signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab"' /tmp/alpha2-r1-2007-reduced.txt
           grep -q '"signedApkBytes": 182145574' /tmp/alpha2-r1-2007-reduced.txt
-          echo 'ALPHA2_2007_SIGNING_RECEIPT=CURRENT_PASS'
+          echo 'ALPHA2_2007_SIGNING_RECEIPT=HISTORICAL_NON_INHERITABLE'
 
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve post-OD2 physical boundary
+      - name: Preserve +2008 pre-R1 physical boundary
         run: |
           set -euo pipefail
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
-          echo 'OD0_INSTALL_AND_LAUNCH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'OD1_EXACT_GMAIL_READONLY_OAUTH=PASS_FROM_SANITIZED_PHYSICAL_RECEIPT'
-          echo 'OD2_METADATA_FIRST_STATEMENT_DISCOVERY=PASS_FROM_COMPOUND_PHYSICAL_AND_FROZEN_SOURCE_PROOF'
-          echo 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE=READY_FOR_PHYSICAL'
-          echo 'CURRENT_OD0_OD11_PASS=OD0_OD1_OD2'
-          echo 'ALPHA2_2006_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE'
-          echo 'R2_CURRENT_BLOCKER=OD3_ALLOWED_PROFILE_ATTACHMENT_FETCH_NOT_YET_OBSERVED'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
+          echo 'OD0_INSTALL_AND_LAUNCH=BLOCKED_BY_R1'
+          echo 'CURRENT_OD0_OD11_PASS=NONE'
+          echo 'ALPHA2_2007_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
+          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_CURRENT_BLOCKER=CURRENT_CANDIDATE_REQUIRES_STABLE_TRUSTED_EDGE_SIGNING'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
