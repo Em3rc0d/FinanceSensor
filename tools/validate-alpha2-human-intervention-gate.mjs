@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 
 const gatePath = 'graph/alpha2-human-intervention-gate.json';
+const policyPath = 'mk0/11-decisions/POLICY-ALPHA2-HUMAN-INTERVENTION-CERTIFICATION-ONLY.md';
 const gate = JSON.parse(fs.readFileSync(gatePath, 'utf8'));
+const policy = fs.readFileSync(policyPath, 'utf8');
 const fail = message => { throw new Error(`ALPHA2_HUMAN_INTERVENTION_GATE_FAILED:${message}`); };
 const assert = (condition, message) => { if (!condition) fail(message); };
 
 assert(gate.schemaVersion === 'A2_HUMAN_INTERVENTION_GATE_V1', 'SCHEMA_MISMATCH');
-assert(gate.policyAdr === 'ADR-040', 'ADR_040_REQUIRED');
+assert(gate.policyId === 'POLICY-ALPHA2-HUMAN-INTERVENTION-CERTIFICATION-ONLY', 'POLICY_ID_REQUIRED');
 assert(gate.mode === 'EXCEPTION_ONLY_CERTIFICATION', 'MODE_MUST_BE_EXCEPTION_ONLY_CERTIFICATION');
 assert(gate.currentCandidate === '0.2.0-alpha.2+2009', 'CURRENT_CANDIDATE_MUST_BE_2009');
 assert(gate.candidateSourceCommit === '9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f', 'CURRENT_SOURCE_COMMIT_MISMATCH');
@@ -15,6 +17,17 @@ assert(gate.candidateGenerationNoiseEscalatesToHuman === false, 'CANDIDATE_NOISE
 assert(gate.candidateMutationResetsEligibility === true, 'MUTATION_RESET_LAW_REQUIRED');
 assert(gate.priorCandidatePhysicalEvidenceInheritable === false, 'PRIOR_PHYSICAL_EVIDENCE_INHERITANCE_FORBIDDEN');
 assert(gate.sameCandidateRerunPolicy === 'AMBIGUOUS_OR_ENVIRONMENTAL_ONLY', 'SAME_CANDIDATE_RERUN_POLICY_MISMATCH');
+
+for (const marker of [
+  'Human intervention is exception-only and certification-only',
+  'The owner MUST NOT be asked to install or test each candidate merely because an APK exists.',
+  'TRUSTED_EDGE_SIGNING',
+  'CONSOLIDATED_OWNED_DEVICE_UAT',
+  'SIGNING_REQUEST_ALLOWED=NO',
+  'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO',
+  'HUMAN_UAT_ELIGIBLE=NO',
+  'ambiguous or failed for a demonstrably environmental reason'
+]) assert(policy.includes(marker), `POLICY_MARKER_MISSING:${marker}`);
 
 const pre = gate.preSigning ?? {};
 const uat = gate.ownedDeviceUat ?? {};
