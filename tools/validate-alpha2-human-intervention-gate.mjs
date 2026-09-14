@@ -19,7 +19,7 @@ assert(gate.priorCandidatePhysicalEvidenceInheritable === false, 'PRIOR_PHYSICAL
 assert(gate.sameCandidateRerunPolicy === 'AMBIGUOUS_OR_ENVIRONMENTAL_ONLY', 'SAME_CANDIDATE_RERUN_POLICY_MISMATCH');
 
 for (const marker of [
-  'Human intervention is exception-only and certification-only',
+  'human intervention is exception-only and certification-only',
   'The owner MUST NOT be asked to install or test each candidate merely because an APK exists.',
   'TRUSTED_EDGE_SIGNING',
   'CONSOLIDATED_OWNED_DEVICE_UAT',
