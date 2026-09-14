@@ -116,8 +116,21 @@ class Alpha2Pipeline {
       for (final candidate in batch.statementCandidates) {
         try {
           statementOutcomes.add(await _importStatementCandidate(tenantId: tenantId,candidate: candidate,passwordProvider: sessionPasswordProvider));
-        } on Alpha2PipelineStageException { rethrow; }
-        catch (_) { throw const Alpha2PipelineStageException('ALPHA2_REFRESH_STATEMENT_IMPORT_FAILED'); }
+        } catch (_) {
+          // A single physical EECC must never erase already-observed Gmail evidence or
+          // prevent the local dashboard from materializing. Unknown candidate-local
+          // failures degrade to a sanitized review outcome; they are not promoted to
+          // successful statement evidence.
+          await _safeRelease(candidate.handle);
+          statementOutcomes.add(
+            Alpha2StatementImportOutcome(
+              profileId: candidate.profileId,
+              status: 'REVIEW_REQUIRED',
+              evidenceCount: 0,
+              reviewCodes: const <String>['STATEMENT_IMPORT_RUNTIME_REJECTED'],
+            ),
+          );
+        }
       }
     } finally {
       sessionPasswords.clear();
@@ -159,7 +172,13 @@ class Alpha2Pipeline {
 
     Uint8List? bytes;
     try {
-      try { bytes = await ingress.fetchStatementBytes(candidate.handle); }
+      try {
+        final fetchedBytes = await ingress.fetchStatementBytes(candidate.handle);
+        // Platform-channel typed data is borrowed transport memory. Own a mutable
+        // session copy so deterministic zeroization cannot fail in the finally block
+        // and mask the real EECC outcome.
+        bytes = Uint8List.fromList(fetchedBytes);
+      }
       on PlatformException catch (error) { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'FETCH_REJECTED',evidenceCount: 0,reviewCodes: <String>[_safeStatementFetchCode(error.code)]); }
       on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'FETCH_REJECTED',evidenceCount: 0,reviewCodes: const <String>['ALPHA2_STATEMENT_BYTES_EMPTY']); }
 
@@ -171,14 +190,12 @@ class Alpha2Pipeline {
 
       if (!parsed.importable) {
         try { await vault.commitEvidenceBatch(sourceReceiptId: sourceReceiptId,evidence: const <Alpha2Evidence>[],terminalState: 'QUARANTINED'); }
-        on PlatformException { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-        on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
+        catch (_) { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
         return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'REVIEW_REQUIRED',evidenceCount: 0,reviewCodes: parsed.reviewCodes,statementPeriodId: parsed.statementPeriodId);
       }
 
       try { await vault.commitEvidenceBatch(sourceReceiptId: sourceReceiptId,evidence: parsed.evidence,terminalState: 'IMPORTED'); }
-      on PlatformException { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
-      on StateError { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
+      catch (_) { return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PERSISTENCE_REJECTED',evidenceCount: 0,reviewCodes: const <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],statementPeriodId: parsed.statementPeriodId); }
       return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'IMPORTED',evidenceCount: parsed.evidence.length,reviewCodes: const <String>[],statementPeriodId: parsed.statementPeriodId);
     } on Alpha2StatementPdfException catch (error) {
       return Alpha2StatementImportOutcome(profileId: candidate.profileId,status: 'PDF_REJECTED',evidenceCount: 0,reviewCodes: <String>[error.code]);
