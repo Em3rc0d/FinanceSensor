@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "A2_HUMAN_INTERVENTION_GATE_V1",
+  "policyAdr": "ADR-040",
+  "mode": "EXCEPTION_ONLY_CERTIFICATION",
+  "currentCandidate": "0.2.0-alpha.2+2009",
+  "candidateSourceCommit": "9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f",
+  "candidateState": "AUTOMATION_IN_PROGRESS",
+  "humanDiscoveryTestingForbidden": true,
+  "candidateGenerationNoiseEscalatesToHuman": false,
+  "candidateMutationResetsEligibility": true,
+  "priorCandidatePhysicalEvidenceInheritable": false,
+  "sameCandidateRerunPolicy": "AMBIGUOUS_OR_ENVIRONMENTAL_ONLY",
+  "preSigning": {
+    "requestAllowed": false,
+    "canonicalSourceIdentityFrozen": true,
+    "canonicalApkIdentityFrozen": false,
+    "requiredCiConsensusComplete": false,
+    "requiredCiConsensusGreen": false,
+    "staticAnalysisPass": false,
+    "unitIntegrationPass": false,
+    "exactPhysicalFailureRegressionPass": false,
+    "syntheticEndToEndDashboardProjectionPass": false,
+    "statementFailureIsolationPass": false,
+    "encryptedPersistenceAutomatedContractPass": false,
+    "replayIdempotencyAutomatedContractPass": false,
+    "knownCandidateBlockingDefects": null,
+    "noNewerProductSourceMutation": true
+  },
+  "ownedDeviceUat": {
+    "requestAllowed": false,
+    "humanUatEligible": false,
+    "trustedEdgeSigningPass": false,
+    "stableSignedArtifactIdentityFrozen": false,
+    "packageFrozen": "com.financesensor.lab.gmailconnection.r2",
+    "exactOauthScopeFrozen": "gmail.readonly",
+    "finiteCampaignContractFrozen": false,
+    "consolidatedCampaignPreferred": true,
+    "sameCandidateRepeatRequested": false,
+    "purposeWhenEligible": "CERTIFICATION_ONLY"
+  },
+  "blockers": [
+    "POST_MERGE_2009_AUTOMATION_NOT_YET_FULLY_CLOSED",
+    "CANONICAL_2009_APK_NOT_YET_FROZEN",
+    "PRE_SIGNING_ELIGIBILITY_NOT_PROVEN",
+    "TRUSTED_EDGE_SIGNING_2009_NOT_EXECUTED",
+    "OWNED_DEVICE_UAT_ELIGIBILITY_NOT_PROVEN"
+  ],
+  "claims": {
+    "signingRequestAllowed": false,
+    "ownedDeviceUatRequestAllowed": false,
+    "humanUatEligible": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
