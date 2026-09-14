@@ -1,0 +1,107 @@
+import fs from 'node:fs';
+import './validate-ci-runner-policy.mjs';
+import './validate-alpha2-od3-mobile-fetch-remediation.mjs';
+
+const workflowPath = '.github/workflows/alpha2-integrated-runtime.yml';
+const pipelinePath = 'spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart';
+const mainPath = 'spikes/mobile-shell/lib/main_alpha2.dart';
+const scannerPath = 'spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt';
+const canonicalPath = 'graph/alpha2-canonical-candidate.json';
+const campaignPath = 'graph/alpha2-r2-owned-device-campaign.json';
+const receiptPath = 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD3-2026-09-14.json';
+
+const workflow = fs.readFileSync(workflowPath, 'utf8');
+const pipeline = fs.readFileSync(pipelinePath, 'utf8');
+const main = fs.readFileSync(mainPath, 'utf8');
+const scanner = fs.readFileSync(scannerPath, 'utf8');
+const canonical = JSON.parse(fs.readFileSync(canonicalPath, 'utf8'));
+const campaign = JSON.parse(fs.readFileSync(campaignPath, 'utf8'));
+const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+const fail = message => { throw new Error(`ALPHA2_2008_CANDIDATE_CUT_FAILED:${message}`); };
+
+for (const marker of [
+  '--build-number 2008',
+  "versionCode='2008'",
+  'CANDIDATE_ID=0.2.0-alpha.2+2008',
+  'financesensor-alpha2-2008-candidate-${{ github.run_id }}',
+  'CANONICAL_PROMOTION_PENDING=YES',
+  'R1_TRUSTED_EDGE_RESIGN_REQUIRED=YES'
+]) {
+  if (!workflow.includes(marker)) fail(`WORKFLOW_MARKER_MISSING:${marker}`);
+}
+for (const stale of [
+  '--build-number 2007',
+  "versionCode='2007'",
+  'CANDIDATE_ID=0.2.0-alpha.2+2007',
+  'financesensor-alpha2-2007-candidate-${{ github.run_id }}'
+]) {
+  if (workflow.includes(stale)) fail(`OLD_ACTIVE_CANDIDATE_MARKER:${stale}`);
+}
+
+for (const marker of [
+  'ATTACHMENT_READ_TIMEOUT_MS = 30_000',
+  'ATTACHMENT_MAX_ATTEMPTS = 3',
+  'Base64.URL_SAFE or Base64.NO_WRAP',
+  'ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT',
+  'ALPHA2_STATEMENT_ATTACHMENT_SIZE_MISMATCH'
+]) {
+  if (!scanner.includes(marker)) fail(`OD3_FETCH_REMEDIATION_NOT_PRESERVED:${marker}`);
+}
+
+for (const marker of [
+  'class Alpha2PipelineFailure implements Exception',
+  'ALPHA2_REFRESH_VAULT_INIT_FAILED',
+  'ALPHA2_REFRESH_INGRESS_SCAN_FAILED',
+  'ALPHA2_REFRESH_GMAIL_PERSIST_FAILED',
+  'ALPHA2_REFRESH_STATEMENT_IMPORT_FAILED',
+  'ALPHA2_REFRESH_VAULT_READ_FAILED',
+  'ALPHA2_REFRESH_VAULT_ROW_DECODE_FAILED',
+  'ALPHA2_REFRESH_CANONICAL_RUNTIME_FAILED',
+  'ALPHA2_REFRESH_PRODUCT_GATE_FAILED',
+  'ALPHA2_REFRESH_PROJECTION_FAILED'
+]) {
+  if (!pipeline.includes(marker)) fail(`SAFE_STAGE_DIAGNOSTIC_MISSING:${marker}`);
+}
+for (const marker of [
+  'alpha2SafeRefreshFailureMessage(error)',
+  'Código seguro:',
+  "RegExp(r'\\b(ALPHA2_[A-Z0-9_]+|REAUTH_REQUIRED)\\b')"
+]) {
+  if (!main.includes(marker)) fail(`SAFE_UI_DIAGNOSTIC_MISSING:${marker}`);
+}
+if (main.includes("_safeError = error.toString()") || main.includes("_safeError = error.message")) {
+  fail('RAW_EXCEPTION_RENDERING_FORBIDDEN');
+}
+
+if (canonical.candidate !== '0.2.0-alpha.2+2007') fail('PREPROMOTION_CANONICAL_MUST_REMAIN_2007');
+if (canonical.sourceCommit !== '8a4aa307b9b3328e67232c919a94994e80446331') fail('PREPROMOTION_CANONICAL_SOURCE_DRIFTED');
+if (campaign.laws?.anyCandidateIdentityChangeInvalidatesCampaign !== true) fail('CANDIDATE_CHANGE_INVALIDATION_LAW_MISSING');
+if (campaign.currentState?.buildReady !== false || campaign.currentState?.releaseReady !== false) fail('PREMATURE_READY_PROMOTION');
+
+if (receipt.schemaVersion !== 'A2_R2_SANITIZED_RECEIPT_V1') fail('OD3_RECEIPT_SCHEMA_DRIFTED');
+if (receipt.candidateId !== '0.2.0-alpha.2+2007') fail('OD3_FAILURE_MUST_BIND_TO_2007');
+if (receipt.signedApkSha256 !== '40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab') fail('OD3_FAILURE_SIGNED_APK_DRIFTED');
+if (receipt.sanitizationPass !== true) fail('OD3_FAILURE_RECEIPT_NOT_SANITIZED');
+const od3 = receipt.gateResults?.find(item => item.gateId === 'OD3');
+if (od3?.gateStatus !== 'FAIL') fail('OD3_PHYSICAL_FAILURE_NOT_RECORDED');
+if (od3?.stableResultCode !== 'POST_PASSWORD_REFRESH_SAFE_STOP_FETCH_RESULT_NOT_OBSERVABLE') fail('OD3_FAILURE_CODE_DRIFTED');
+if (od3?.coarseCounters?.passwordPromptObservations !== 1 ||
+    od3?.coarseCounters?.passwordSubmissionObservations !== 1 ||
+    od3?.coarseCounters?.safeStopSurfaceObservations !== 1 ||
+    od3?.coarseCounters?.safeDiagnosticCodeObservations !== 0 ||
+    od3?.coarseCounters?.financialProjectionObservations !== 0) {
+  fail('OD3_COARSE_PHYSICAL_COUNTERS_DRIFTED');
+}
+
+console.log('ALPHA2_2008_CANDIDATE_CUT=PASS');
+console.log('SOURCE_BASE=ALPHA2_2007_OD3_PHYSICAL_FAILURE');
+console.log('OD3_2007_PHYSICAL_RESULT=FAIL_POST_PASSWORD_SAFE_STOP');
+console.log('OD3_RAW_PHYSICAL_EVIDENCE_IN_GITHUB=NO');
+console.log('SAFE_REFRESH_STAGE_DIAGNOSTICS=GATED');
+console.log('RAW_EXCEPTION_RENDERING=FORBIDDEN');
+console.log('CANDIDATE_ID=0.2.0-alpha.2+2008');
+console.log('CANONICAL_PROMOTION_PENDING=YES');
+console.log('R1_TRUSTED_EDGE_RESIGN_REQUIRED=YES');
+console.log('R2_EVIDENCE_INHERITANCE_ALLOWED=NO');
+console.log('BUILD_READY=NO');
+console.log('RELEASE_READY=NO');

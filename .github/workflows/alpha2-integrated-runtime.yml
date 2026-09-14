@@ -13,6 +13,7 @@ on:
       - 'spikes/mobile-shell/test/alpha2_*_test.dart'
       - 'graph/alpha2-mobile-golden-vectors-v1.json'
       - 'graph/alpha2-mobile-runtime-authority.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD3-*.json'
       - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
       - 'mk0/11-decisions/ADR-038-ALPHA2-MOBILE-RUNTIME-AUTHORITY-AND-PARITY.md'
       - 'mk0/11-decisions/ADR-039-ALPHA2-INSTALLABILITY-INCIDENT-AND-ANDROID-BASELINE-RETENTION.md'
@@ -23,7 +24,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
-      - 'tools/validate-alpha2-2007-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2008-candidate-cut.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
   push:
     branches:
@@ -36,6 +37,7 @@ on:
       - 'spikes/mobile-shell/test/alpha2_*_test.dart'
       - 'graph/alpha2-mobile-golden-vectors-v1.json'
       - 'graph/alpha2-mobile-runtime-authority.json'
+      - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-OD3-*.json'
       - 'mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md'
       - 'mk0/11-decisions/ADR-038-ALPHA2-MOBILE-RUNTIME-AUTHORITY-AND-PARITY.md'
       - 'mk0/11-decisions/ADR-039-ALPHA2-INSTALLABILITY-INCIDENT-AND-ANDROID-BASELINE-RETENTION.md'
@@ -46,7 +48,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
-      - 'tools/validate-alpha2-2007-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2008-candidate-cut.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
 
 permissions:
@@ -80,8 +82,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: +2007 candidate cut boundary
-        run: node tools/validate-alpha2-2007-candidate-cut.mjs
+      - name: +2008 candidate cut boundary
+        run: node tools/validate-alpha2-2008-candidate-cut.mjs
 
       - name: Integrated architecture boundary
         run: node tools/validate-alpha2-integrated-runtime.mjs
@@ -267,7 +269,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2007
+            --build-number 2008
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -280,7 +282,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2007'" <<< "$BADGING"
+          grep -q "versionCode='2008'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -297,7 +299,7 @@ jobs:
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2007
+          CANDIDATE_ID=0.2.0-alpha.2+2008
           SOURCE_COMMIT=${SOURCE_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
@@ -321,6 +323,7 @@ jobs:
           E2EE_EXISTING_PROTOCOL_REUSED=YES
           WEB_PUBLIC_PROJECTION_SCHEMA=ALPHA2_PUBLIC_DASHBOARD_V1
           SINGLE_PASS_EECC_DIAGNOSTICS=YES
+          SAFE_REFRESH_STAGE_DIAGNOSTICS=YES
           APK_SIGNATURE_VERIFY=PASS
           APK_AAPT2_PARSE=PASS
           INTERNAL_APK_SHA256=${APK_SHA256}
@@ -342,7 +345,7 @@ jobs:
       - name: Upload internal compile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-2007-candidate-${{ github.run_id }}
+          name: financesensor-alpha2-2008-candidate-${{ github.run_id }}
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/alpha2-integrated-ci-evidence.txt

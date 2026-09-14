@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "A2_R2_SANITIZED_RECEIPT_V1",
+  "candidateId": "0.2.0-alpha.2+2007",
+  "sourceCommit": "8a4aa307b9b3328e67232c919a94994e80446331",
+  "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+  "signedApkBytes": 182145574,
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+  "gmailScope": "gmail.readonly",
+  "deviceClass": "OWNED_ANDROID_PHONE",
+  "androidApiLevel": 35,
+  "gateResults": [
+    {
+      "gateId": "OD0",
+      "gateStatus": "PASS",
+      "stableResultCode": "R1_BOUND_SIGNED_APK_INSTALL_AND_LAUNCH_PASS",
+      "coarseCounters": {"physicalLaunchObservations": 1, "interactiveUiObservations": 1}
+    },
+    {
+      "gateId": "OD1",
+      "gateStatus": "PASS",
+      "stableResultCode": "FRESH_GOOGLE_OAUTH_RETURNED_CONNECTED_EXACT_READONLY_CONTRACT",
+      "coarseCounters": {"freshOauthReturnObservations": 1, "connectedStateObservations": 1}
+    },
+    {
+      "gateId": "OD2",
+      "gateStatus": "PASS",
+      "stableResultCode": "PHYSICAL_STRONG_CANDIDATE_HANDOFF_PLUS_FROZEN_METADATA_FIRST_NATIVE_CONTRACT",
+      "coarseCounters": {"strongCandidateHandoffObservations": 1, "preFetchHandoffObservations": 1}
+    },
+    {
+      "gateId": "OD3",
+      "gateStatus": "FAIL",
+      "stableResultCode": "POST_PASSWORD_REFRESH_SAFE_STOP_FETCH_RESULT_NOT_OBSERVABLE",
+      "coarseCounters": {
+        "passwordPromptObservations": 1,
+        "passwordSubmissionObservations": 1,
+        "postSubmissionBusyObservations": 1,
+        "safeStopSurfaceObservations": 1,
+        "safeDiagnosticCodeObservations": 0,
+        "financialProjectionObservations": 0
+      }
+    },
+    {
+      "gateId": "OD4",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_OD3_FAILED",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD5",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD6",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD7",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD8",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD9",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD10",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    },
+    {
+      "gateId": "OD11",
+      "gateStatus": "INCONCLUSIVE",
+      "stableResultCode": "NOT_EXECUTED_PRIOR_GATE_OPEN",
+      "coarseCounters": {}
+    }
+  ],
+  "sanitizationPass": true
+}

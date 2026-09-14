@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'alpha2/alpha2_dashboard_sections.dart';
 import 'alpha2/alpha2_ingress.dart';
@@ -109,9 +110,9 @@ class _Alpha2HomeState extends State<Alpha2Home> {
       );
       if (!mounted) return;
       setState(() => _result = result);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _safeError = 'La actualización financiera se detuvo de forma segura.');
+      setState(() => _safeError = alpha2SafeRefreshFailureMessage(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -584,6 +585,25 @@ class _Disconnected extends StatelessWidget {
           child: Text('Sin conexión activa. Ningún dato financiero sale de tu dispositivo para construir esta pantalla.'),
         ),
       );
+}
+
+String alpha2SafeRefreshFailureMessage(Object error) {
+  const prefix = 'La actualización financiera se detuvo de forma segura.';
+  final safeCode = switch (error) {
+    Alpha2PipelineFailure() => error.code,
+    PlatformException() => _extractSafeRefreshCode(error.code),
+    StateError() => _extractSafeRefreshCode(error.message.toString()),
+    FormatException() => _extractSafeRefreshCode(error.message.toString()),
+    ArgumentError() => _extractSafeRefreshCode(error.message.toString()),
+    _ => null,
+  };
+  return safeCode == null ? prefix : '$prefix Código seguro: $safeCode';
+}
+
+String? _extractSafeRefreshCode(String raw) {
+  final normalized = raw.toUpperCase();
+  final match = RegExp(r'\b(ALPHA2_[A-Z0-9_]+|REAUTH_REQUIRED)\b').firstMatch(normalized);
+  return match?.group(1);
 }
 
 String _truthLabel(String state) => switch (state) {
