@@ -53,8 +53,8 @@ for (const marker of [
 for (const marker of [
   'unexpected PDF runtime failure is candidate-local and Gmail evidence still reaches runtime',
   'password-provider runtime failure is sanitized and cannot abort refresh',
-  'STATEMENT_PDF_RUNTIME_REJECTED',
-  'STATEMENT_PASSWORD_PROVIDER_REJECTED',
+  'alpha2StatementPdfRuntimeRejected',
+  'alpha2StatementPasswordProviderRejected',
 ]) if (!regression.includes(marker)) fail(`REGRESSION_TEST_MISSING:${marker}`);
 
 if (canonical.candidate !== '0.2.0-alpha.2+2008') fail('PREPROMOTION_CANONICAL_MUST_REMAIN_2008');
