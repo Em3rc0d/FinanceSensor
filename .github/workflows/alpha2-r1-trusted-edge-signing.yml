@@ -200,8 +200,12 @@ jobs:
 
           BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = '598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213'
+          test "$BUNDLE_BYTES" = '86635935'
+          echo 'R1_V10_FROZEN_BYTES=PASS'
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v10-AUDIT.txt" <<AUDIT
           R1_V10_GENERATION=PASS
+          R1_V10_FROZEN_BYTES=PASS
           BUNDLE_SHA256=${BUNDLE_SHA256}
           BUNDLE_BYTES=${BUNDLE_BYTES}
           BUNDLE_FILES=8
@@ -235,6 +239,7 @@ jobs:
         run: |
           set -euo pipefail
           echo 'R1_V10_GENERATION=PASS'
+          echo 'R1_V10_FROZEN_BYTES=PASS'
           echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
