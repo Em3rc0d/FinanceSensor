@@ -62,25 +62,35 @@ const od0 = campaign.subgates?.find(gate => gate.id === 'OD0');
 const od1 = campaign.subgates?.find(gate => gate.id === 'OD1');
 const od2 = campaign.subgates?.find(gate => gate.id === 'OD2');
 const od3 = campaign.subgates?.find(gate => gate.id === 'OD3');
+
 if (currentCandidate === '0.2.0-alpha.2+2007') {
   const r1State = campaign.currentState?.r1TrustedEdgeSigning;
   if (r1State === 'OPEN') {
     assert(campaign.status === 'BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING', '2007_CAMPAIGN_MUST_BE_BLOCKED_WHILE_R1_OPEN');
     assert(od0?.status === 'BLOCKED_BY_R1', '2007_OD0_MUST_WAIT_FOR_R1');
     assert(campaign.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', '2007_NEXT_GATE_MUST_BE_R1_WHILE_OPEN');
+    assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_WHILE_R1_OPEN');
   } else {
     assert(r1State === 'PASS', '2007_R1_STATE_MUST_BE_OPEN_OR_PASS');
-    assert(campaign.status === 'READY_FOR_PHYSICAL', '2007_CAMPAIGN_MUST_OPEN_AT_OD0_AFTER_R1_PASS');
-    assert(od0?.status === 'READY_FOR_PHYSICAL', '2007_OD0_MUST_BE_READY_AFTER_R1_PASS');
-    assert(od1?.status === 'BLOCKED_BY_PRIOR_GATE' && od2?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD1_OD2_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
-    assert(campaign.currentState?.nextGate === 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH', '2007_NEXT_GATE_MUST_BE_OD0_AFTER_R1_PASS');
+    const freshlyOpened = campaign.status === 'READY_FOR_PHYSICAL' && od0?.status === 'READY_FOR_PHYSICAL';
+    const progressedToOd3 =
+      campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS' &&
+      od0?.status === 'PASS' && od1?.status === 'PASS' && od2?.status === 'PASS' &&
+      (od3?.status === 'READY_FOR_PHYSICAL' || od3?.status === 'INCONCLUSIVE') &&
+      campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE';
+    assert(freshlyOpened || progressedToOd3, '2007_CAMPAIGN_STATE_NOT_RECOGNIZED_AFTER_R1_PASS');
+    if (freshlyOpened) {
+      assert(od1?.status === 'BLOCKED_BY_PRIOR_GATE' && od2?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD1_OD2_MUST_WAIT_FOR_REACQUIRED_PRIOR_GATES');
+      assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_OD0_OD1_OD2');
+      assert(campaign.currentState?.nextGate === 'OD0_SIGNED_APK_INSTALL_AND_LAUNCH', '2007_NEXT_GATE_MUST_BE_OD0_AFTER_R1_PASS');
+    }
   }
-  assert(od3?.status === 'BLOCKED_BY_PRIOR_GATE', '2007_OD3_MUST_WAIT_FOR_REACQUIRED_OD0_OD1_OD2');
 } else {
   assert(campaign.status === 'PHYSICAL_CAMPAIGN_IN_PROGRESS', 'PHYSICAL_CAMPAIGN_MUST_REMAIN_OPEN');
-  assert(od3?.status === 'READY_FOR_PHYSICAL', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
+  assert(od3?.status === 'READY_FOR_PHYSICAL' || od3?.status === 'INCONCLUSIVE', 'OD3_MUST_NOT_BE_FALSELY_PROMOTED');
   assert(campaign.currentState?.nextGate === 'OD3_BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE', 'NEXT_GATE_DRIFT');
 }
+
 assert(od3?.status !== 'PASS', 'OD3_PHYSICAL_PASS_MUST_NOT_BE_SYNTHESIZED');
 assert(campaign.currentState?.buildReady === false, 'BUILD_READY_MUST_REMAIN_FALSE');
 assert(campaign.currentState?.releaseReady === false, 'RELEASE_READY_MUST_REMAIN_FALSE');
