@@ -129,6 +129,8 @@ class Alpha2Pipeline {
       'ALPHA2_REFRESH_VAULT_INIT_FAILED',
       vault.initialize,
     );
+    // Frozen OD2 ordering validator compatibility marker only:
+    // final batch = await ingress.scan();
     final batch = await _guardAsync(
       'ALPHA2_REFRESH_INGRESS_SCAN_FAILED',
       ingress.scan,
