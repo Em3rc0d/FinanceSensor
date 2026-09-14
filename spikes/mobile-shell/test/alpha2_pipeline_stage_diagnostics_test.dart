@@ -16,7 +16,7 @@ void main() {
     );
 
     await expectLater(
-      () => pipeline.refresh(
+      pipeline.refresh(
         tenantId: 'LOCAL_PRIMARY',
         passwordProvider: (_) async => 'never-used',
       ),
@@ -37,7 +37,7 @@ void main() {
     );
 
     await expectLater(
-      () => pipeline.refresh(
+      pipeline.refresh(
         tenantId: 'LOCAL_PRIMARY',
         passwordProvider: (_) async => 'never-used',
       ),
