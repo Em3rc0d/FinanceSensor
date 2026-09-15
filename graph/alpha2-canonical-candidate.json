@@ -27,83 +27,39 @@
     "statementFailureBlocksSafeProjection": false
   },
   "physicalInstallabilityObservation": {
-    "status": "BLOCKED_UNTIL_TRUSTED_EDGE_SIGNING",
+    "status": "SIGNED_NOT_YET_PHYSICALLY_OBSERVED",
     "installPass": false,
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "+2009 is the frozen canonical APK, but owned-device evidence is forbidden until the exact APK is re-signed by the stable trusted-edge identity and that signed identity is frozen.",
+    "reason": "+2009 is now bound to the stable trusted-edge signer; owned-device install, launch, OAuth and dashboard visibility still require one consolidated physical certification run.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
-    {
-      "workflow": "Alpha.2 Integrated Runtime",
-      "runId": 34913707304,
-      "conclusion": "SUCCESS",
-      "mergeSha": "e19bcccee13e326bbc08012533ddaeba026c633a"
-    },
-    {
-      "workflow": "FinanceSensor Heartbeat",
-      "runId": 34913707411,
-      "conclusion": "SUCCESS",
-      "mergeSha": "e19bcccee13e326bbc08012533ddaeba026c633a"
-    },
-    {
-      "workflow": "FinanceSensor Public Readiness",
-      "runId": 34913707293,
-      "conclusion": "SUCCESS",
-      "mergeSha": "e19bcccee13e326bbc08012533ddaeba026c633a"
-    },
-    {
-      "workflow": "FinanceSensor Mobile Shell",
-      "runId": 34913707651,
-      "conclusion": "SUCCESS",
-      "mergeSha": "e19bcccee13e326bbc08012533ddaeba026c633a"
-    }
+    {"workflow":"Alpha.2 Integrated Runtime","runId":34913707304,"conclusion":"SUCCESS","mergeSha":"e19bcccee13e326bbc08012533ddaeba026c633a"},
+    {"workflow":"FinanceSensor Heartbeat","runId":34913707411,"conclusion":"SUCCESS","mergeSha":"e19bcccee13e326bbc08012533ddaeba026c633a"},
+    {"workflow":"FinanceSensor Public Readiness","runId":34913707293,"conclusion":"SUCCESS","mergeSha":"e19bcccee13e326bbc08012533ddaeba026c633a"},
+    {"workflow":"FinanceSensor Mobile Shell","runId":34913707651,"conclusion":"SUCCESS","mergeSha":"e19bcccee13e326bbc08012533ddaeba026c633a"}
   ],
   "nonAuthoritativeCandidates": [
-    {
-      "candidate": "0.2.0-alpha.2+2008",
-      "reason": "Superseded by +2009 after the deterministic physical post-password statement-import failure required product-source remediation. Its trusted-edge signing and physical observation are historical and cannot be inherited."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2007",
-      "reason": "Superseded after the post-password safe-stop diagnostic repair changed source/APK identity. Its physical evidence remains historical and cannot be inherited."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2006",
-      "reason": "Superseded by the OD3 attachment-fetch remediation and later candidate cuts. Historical evidence is non-inheritable."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2005",
-      "reason": "Superseded after password-prompt fan-out and single-pass diagnostic repairs changed source/APK identity."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2004",
-      "reason": "Superseded after post-password safe-stop and fetch-isolation repairs changed source/APK identity."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2003",
-      "reason": "Superseded after a stable-signed owned-device password-dialog lifecycle failure."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2002",
-      "reason": "Diagnostic installability candidate only; lowering minSdk contradicted ADR-013 and was superseded."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2001",
-      "reason": "Superseded by the installability and Alpha.2 repair sequence."
-    }
+    {"candidate":"0.2.0-alpha.2+2008","reason":"Superseded by +2009 after the deterministic physical post-password statement-import failure required product-source remediation. Its trusted-edge signing and physical observation are historical and cannot be inherited."},
+    {"candidate":"0.2.0-alpha.2+2007","reason":"Superseded after the post-password safe-stop diagnostic repair changed source/APK identity. Its physical evidence remains historical and cannot be inherited."},
+    {"candidate":"0.2.0-alpha.2+2006","reason":"Superseded by the OD3 attachment-fetch remediation and later candidate cuts. Historical evidence is non-inheritable."},
+    {"candidate":"0.2.0-alpha.2+2005","reason":"Superseded after password-prompt fan-out and single-pass diagnostic repairs changed source/APK identity."},
+    {"candidate":"0.2.0-alpha.2+2004","reason":"Superseded after post-password safe-stop and fetch-isolation repairs changed source/APK identity."},
+    {"candidate":"0.2.0-alpha.2+2003","reason":"Superseded after a stable-signed owned-device password-dialog lifecycle failure."},
+    {"candidate":"0.2.0-alpha.2+2002","reason":"Diagnostic installability candidate only; lowering minSdk contradicted ADR-013 and was superseded."},
+    {"candidate":"0.2.0-alpha.2+2001","reason":"Superseded by the installability and Alpha.2 repair sequence."}
   ],
   "signing": {
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
-    "trustedEdgeSigningPass": false,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
-    "receipt": null
+    "status": "TRUSTED_EDGE_SIGNING_PASS",
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
+    "signedApkBytes": 182538790,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json"
   },
   "boundaries": {
     "realOauthExecutedByCi": false,
