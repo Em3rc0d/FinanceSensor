@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import path from 'node:path';
 const dir='.github/workflows'; const files=fs.readdirSync(dir).filter(x=>x.endsWith('.yml')||x.endsWith('.yaml')); const fail=[];
-for(const f of files){const t=fs.readFileSync(path.join(dir,f),'utf8'); if(/runs-on:\s*\[?[^\n]*self-hosted/i.test(t)||/runs-on:\s*self-hosted/i.test(t))fail.push(`${f}: self-hosted forbidden`); if(/\$\{\{\s*secrets\./.test(t)&&['alpha2-r1-trusted-edge-signing.yml','alpha2-r2-owned-device-campaign.yml','alpha2-od0-owned-device-harness.yml'].includes(f))fail.push(`${f}: secrets forbidden`);}
+for(const f of files){const t=fs.readFileSync(path.join(dir,f),'utf8'); if(/^[ \t]*runs-on:[ \t]*(?:self-hosted|\[[^\n\]]*self-hosted)/im.test(t))fail.push(`${f}: self-hosted forbidden`); if(/\$\{\{\s*secrets\./.test(t)&&['alpha2-r1-trusted-edge-signing.yml','alpha2-r2-owned-device-campaign.yml','alpha2-od0-owned-device-harness.yml'].includes(f))fail.push(`${f}: secrets forbidden`);}
 const req={
 'alpha2-r1-trusted-edge-signing.yml':['0.2.0-alpha.2+2012','FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v12.zip','R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE','OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'],
 'alpha2-r2-owned-device-campaign.yml':['0.2.0-alpha.2+2012','R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING','OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO','REAL_GMAIL_IN_CI=0','PHYSICAL_ALPHA2_PASS=NO'],
