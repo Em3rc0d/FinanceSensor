@@ -3,13 +3,13 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [jett/mk0-foundation]
-    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
   push:
     branches: [jett/mk0-foundation]
-    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
 permissions: {contents: read}
 jobs:
-  validate-blocked-boundary:
+  validate-ready-boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -17,20 +17,77 @@ jobs:
         with: {ref: "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - name: Validate fail-closed OD0 boundary
+      - name: Validate signed OD0 boundary
         run: node tools/validate-alpha2-od0-owned-device-harness.mjs
       - name: Validate CI runner policy
         run: node tools/validate-ci-runner-policy.mjs
-      - name: Preserve pre-signing physical boundary
+      - name: Build deterministic public-safe OD0 handoff
+        shell: bash
         run: |
-          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=BLOCKED'
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/financesensor-od0"
+          DIR="$ROOT/FinanceSensor-ALPHA2-R2-OD0-HANDOFF"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R2-OD0-HANDOFF.zip"
+          rm -rf "$ROOT" "$OUT"
+          mkdir -p "$DIR"
+          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1 "$DIR/"
+          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd "$DIR/"
+          cat > "$DIR/README-OD0.txt" <<'README'
+          FinanceSensor Alpha.2 +2012 — OD0 owned-device handoff
+
+          Preconditions:
+          - Trusted-edge signing already passed.
+          - Use only FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2012.apk.
+          - Expected signed APK SHA-256: 05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000
+          - Expected signed APK bytes: 182563366
+          - Expected signer SHA1: 63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
+
+          How to run:
+          1. Extract these three files into the same local folder that contains:
+             FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2012.apk
+             FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2012.apk.receipt.txt
+          2. Connect and unlock exactly one owned Android device with USB debugging authorized.
+          3. Double-click RUN-FINANCESENSOR-ALPHA2-OD0.cmd.
+          4. The harness verifies APK hash/bytes, receipt, signer, API level and package identity before installation.
+          5. Installation uses only adb install -r. It never uninstalls and never clears app data.
+          6. Return only FinanceSensor-ALPHA2-R2-OD0-0.2.0-alpha.2+2012.receipt.txt after PASS.
+
+          Never upload device serials, OAuth tokens, Gmail content, statement PDFs, PDF passwords, account numbers or financial plaintext.
+          README
+          python3 - "$DIR" "$OUT" <<'PY'
+          import pathlib,sys,zipfile
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as zf:
+              for path in sorted(root.iterdir()):
+                  if not path.is_file(): continue
+                  info=zipfile.ZipInfo(path.name,date_time=(2020,1,1,0,0,0))
+                  info.compress_type=zipfile.ZIP_DEFLATED
+                  info.external_attr=0o100644<<16
+                  zf.writestr(info,path.read_bytes(),compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)
+          PY
+          unzip -t "$OUT" >/dev/null
+          test "$(zipinfo -1 "$OUT"|wc -l)" = '3'
+          echo "OD0_HANDOFF_SHA256=$(sha256sum "$OUT"|awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "OD0_HANDOFF_BYTES=$(stat -c '%s' "$OUT")" >> "$GITHUB_ENV"
+      - name: Upload OD0 handoff bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-alpha2-r2-od0-handoff-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: FinanceSensor-ALPHA2-R2-OD0-HANDOFF.zip
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve physical execution boundary
+        run: |
+          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=READY'
           echo 'CANDIDATE=0.2.0-alpha.2+2012'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'TRUSTED_EDGE_SIGNING_PASS=NO'
-          echo 'OD0_EXECUTION_ALLOWED=NO'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'TRUSTED_EDGE_SIGNING_PASS=YES'
+          echo 'OD0_EXECUTION_ALLOWED=YES'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
+          echo "OD0_HANDOFF_SHA256=${OD0_HANDOFF_SHA256}"
+          echo "OD0_HANDOFF_BYTES=${OD0_HANDOFF_BYTES}"
+          echo 'OD0_HANDOFF_FILES=3'
           echo 'PUBLIC_CI_ORIGINATED_OD0_PASS=0'
-          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'ADB_EXECUTED_BY_CI=0'
           echo 'DEVICE_TOUCHED_BY_CI=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
