@@ -47,41 +47,22 @@
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
     "supersedesBundleSha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
     "generationReceipt": {
-      "status": "PENDING_POST_MERGE_CI_RECEIPT",
+      "status": "POST_MERGE_CI_PASS",
+      "runId": 34921437444,
+      "artifactId": 10378575848,
+      "mergeSha": "184333d3f2946a1d20953c31d9239010253a7837",
       "expectedInnerBundleSha256": "d2bc450d0ecac4ac8aff9e462ba0c9ccaf323d622e997180328aa38d877d545d",
       "expectedInnerBundleBytes": 86635677
     },
-    "certificationReceipt": null
+    "certificationReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json"
   },
   "supersededBundles": [
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip",
-      "sha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2008_RUNTIME_AFTER_POST_PASSWORD_IMPORT_REMEDIATION",
-      "safeToUse": false
-    },
-    {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip",
-      "sha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2007_RUNTIME",
-      "safeToUse": false
-    }
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip","sha256":"598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2008_RUNTIME_AFTER_POST_PASSWORD_IMPORT_REMEDIATION","safeToUse":false},
+    {"name":"FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip","sha256":"ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8","reason":"PINNED_TO_SUPERSEDED_ALPHA2_2007_RUNTIME","safeToUse":false}
   ],
   "historicalPhysicalReceipts": [
-    {
-      "candidate": "0.2.0-alpha.2+2008",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
-      "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_FOR_2009"
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2007",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json",
-      "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
-      "inheritAsCurrentPass": false,
-      "reason": "HISTORICAL_NON_INHERITABLE"
-    }
+    {"candidate":"0.2.0-alpha.2+2008","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json","signedApkSha256":"a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277","inheritAsCurrentPass":false,"reason":"SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_FOR_2009"},
+    {"candidate":"0.2.0-alpha.2+2007","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json","signedApkSha256":"40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab","inheritAsCurrentPass":false,"reason":"HISTORICAL_NON_INHERITABLE"}
   ],
   "ciGate": {
     "workflow": "Alpha.2 R1 Trusted-Edge Signing",
@@ -94,11 +75,11 @@
     "physicalSigningInPublicCi": false,
     "exactCanonicalArtifactRequired": true
   },
-  "physicalReceipt": null,
-  "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
+  "physicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json",
+  "status": "TRUSTED_EDGE_SIGNING_PASS",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
+  "signedApkBytes": 182538790,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
