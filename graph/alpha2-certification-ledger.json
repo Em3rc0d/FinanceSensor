@@ -1,14 +1,14 @@
 {
   "schemaVersion": "A2_CERTIFICATION_LEDGER_V1",
-  "chainId": "FINANCESENSOR_ALPHA2_2012_PRE_SIGNING",
+  "chainId": "FINANCESENSOR_ALPHA2_2012_CERTIFICATION",
   "candidate": "0.2.0-alpha.2+2012",
   "hashAlgorithm": "SHA-256",
   "canonicalization": "RECURSIVE_KEY_SORTED_JSON_UTF8_V1",
   "blockHashDomain": "FINANCESENSOR_ALPHA2_CERT_BLOCK_V1",
   "genesisBlockHash": "5753f562ee49c5b964010b541510c25e06b4d068055501227f0aa42328523893",
-  "headBlockHash": "4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5",
-  "state": "PRE_SIGNING_CONSENSUS_FROZEN",
-  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "headBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
+  "state": "STABLE_SIGNED_FRONTIER",
+  "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
   "blocks": [
     {
       "height": 0,
@@ -124,6 +124,31 @@
         "releaseReady": false
       },
       "blockHash": "4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5"
+    },
+    {
+      "height": 6,
+      "kind": "STABLE_SIGNED_APK_FREEZE",
+      "parentBlockHash": "4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2012",
+        "productSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
+        "canonicalSourceCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
+        "canonicalRunId": 34983489697,
+        "canonicalArtifactId": 10402582806,
+        "inputApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+        "inputApkBytes": 182538547,
+        "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+        "signedApkBytes": 182563366,
+        "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+        "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+        "exactScope": "gmail.readonly",
+        "trustedEdgeSigningPass": true,
+        "privateSigningMaterialInGitHub": false,
+        "physicalAlpha2Pass": false,
+        "buildReady": false,
+        "releaseReady": false
+      },
+      "blockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e"
     }
   ]
 }
