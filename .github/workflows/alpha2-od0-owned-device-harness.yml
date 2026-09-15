@@ -3,13 +3,13 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [jett/mk0-foundation]
-    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
   push:
     branches: [jett/mk0-foundation]
-    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+    paths: ['tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1','tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd','tools/validate-alpha2-od0-owned-device-harness.mjs','mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
 permissions: {contents: read}
 jobs:
-  validate-blocked-boundary:
+  validate-ready-boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -17,20 +17,19 @@ jobs:
         with: {ref: "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - name: Validate fail-closed OD0 boundary
+      - name: Validate signed OD0 boundary
         run: node tools/validate-alpha2-od0-owned-device-harness.mjs
       - name: Validate CI runner policy
         run: node tools/validate-ci-runner-policy.mjs
-      - name: Preserve pre-signing physical boundary
+      - name: Preserve physical execution boundary
         run: |
-          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=BLOCKED'
+          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=READY'
           echo 'CANDIDATE=0.2.0-alpha.2+2012'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'TRUSTED_EDGE_SIGNING_PASS=NO'
-          echo 'OD0_EXECUTION_ALLOWED=NO'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'TRUSTED_EDGE_SIGNING_PASS=YES'
+          echo 'OD0_EXECUTION_ALLOWED=YES'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
           echo 'PUBLIC_CI_ORIGINATED_OD0_PASS=0'
-          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'ADB_EXECUTED_BY_CI=0'
           echo 'DEVICE_TOUCHED_BY_CI=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
