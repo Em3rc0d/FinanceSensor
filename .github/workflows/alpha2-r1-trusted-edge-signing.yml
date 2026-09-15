@@ -15,6 +15,7 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches: [jett/mk0-foundation]
@@ -29,6 +30,7 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 permissions: {contents: read, actions: read}
 concurrency:
@@ -89,7 +91,7 @@ jobs:
           grep -q '^POST_PASSWORD_IMPORT_ISOLATION=YES$' "$EVIDENCE"
           grep -q '^STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO$' "$EVIDENCE"
           echo 'CANONICAL_2012_INPUT=PASS'
-      - name: Generate deterministic public-safe v12 handoff bundle
+      - name: Regenerate deterministic public-safe v12 bundle for reproducibility
         shell: bash
         run: |
           set -euo pipefail
@@ -112,15 +114,8 @@ jobs:
           cat > "$BUNDLE_DIR/BUNDLE-README.txt" <<'README'
           FinanceSensor Alpha.2 +2012 — R1 trusted-edge signing bundle v12
 
-          This is the frozen +2012 candidate containing BCP Savings V2, strict Banco Ripley credit parsing, and privacy-safe BCP credit structural probing.
+          Frozen deterministic signing input for reproducibility. Stable signing has already passed on the trusted edge; public CI never receives signing secrets and never signs the APK.
 
-          1. Extract this ZIP on the owned Windows trusted edge.
-          2. Double-click SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
-          3. Select the private FINANCESENSOR_R2_LAB keystore locally.
-          4. Enter the password only in the local prompt.
-          5. Return only the generated .receipt.txt after PASS.
-
-          Never upload the keystore, password, private key, OAuth token, Gmail content or financial plaintext.
           Expected package: com.financesensor.lab.gmailconnection.r2
           Expected scope: gmail.readonly
           Expected stable signer SHA1: 63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
@@ -165,14 +160,14 @@ jobs:
           SECRET_LIKE_VALUE_MATCHES=0
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
-          SIGNING_REQUEST_ALLOWED=YES
-          R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE
-          OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO
+          SIGNING_REQUEST_ALLOWED=NO
+          R1_TRUSTED_EDGE_SIGNING=PASS
+          OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
           AUDIT
-      - name: Upload v12 trusted-edge handoff bundle
+      - name: Upload v12 reproducibility artifact
         uses: actions/upload-artifact@v4
         with:
           name: financesensor-alpha2-r1-trusted-edge-bundle-v12-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -181,12 +176,13 @@ jobs:
             FinanceSensor-ALPHA2-R1-BUNDLE-v12-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
-      - name: Preserve pre-signing trust boundary
+      - name: Preserve post-signing physical boundary
         run: |
           echo 'R1_V12_GENERATION=PASS'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'SIGNING_REQUEST_ALLOWED=NO'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
+          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
