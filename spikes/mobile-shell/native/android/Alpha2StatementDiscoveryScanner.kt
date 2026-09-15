@@ -102,7 +102,7 @@ class Alpha2StatementDiscoveryScanner {
             filenameRegex = Regex("\\.pdf$", RegexOption.IGNORE_CASE),
             requiresLocalPassword = true,
             // +2012 has a profile-specific strict Dart adapter derived from the
-            // bank's public statement template. There is still no generic fetch.
+            // bank's public statement template. There is still no fallback fetch.
             runtimeFetchEnabled = true,
         ),
     )
