@@ -52,9 +52,19 @@
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
     "supersedesBundleSha256": "d2bc450d0ecac4ac8aff9e462ba0c9ccaf323d622e997180328aa38d877d545d",
     "generationReceipt": {
-      "status": "PENDING_POST_MERGE_CI_RECEIPT",
+      "status": "POST_MERGE_CI_PASS",
+      "governanceMergeSha": "c9ca769a86de58a77121b42d4b3520c7420441ae",
+      "runId": 34995877974,
+      "jobId": 104471846160,
+      "artifactId": 10407169614,
+      "artifactName": "financesensor-alpha2-r1-trusted-edge-bundle-v12-c9ca769a86de58a77121b42d4b3520c7420441ae",
+      "wrapperArtifactSha256": "6af9f1e66315d77a22db5ccd8a7fcb559a84b4fe0b1518b59347256b6e449606",
+      "wrapperArtifactBytes": 86289159,
       "expectedInnerBundleSha256": "d6c9538b0c84d0bdabc966847cd7f6d340bd17eea68bf69e65d3d2a852585642",
-      "expectedInnerBundleBytes": 86659710
+      "expectedInnerBundleBytes": 86659710,
+      "observedInnerBundleSha256": "d6c9538b0c84d0bdabc966847cd7f6d340bd17eea68bf69e65d3d2a852585642",
+      "observedInnerBundleBytes": 86659710,
+      "manifestIntegrity": "PASS"
     },
     "certificationReceipt": null
   },
