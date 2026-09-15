@@ -74,7 +74,7 @@ if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
 if (!runtime.includes('blockedFromMaterialization')) throw new Error('ALPHA2_AMBIGUOUS_DOUBLE_COUNT_GUARD_MISSING');
 for (const marker of [
-  'A2_BCP_SAVINGS_COMPLETENESS_V1',
+  'A2_BCP_SAVINGS_COMPLETENESS_V2',
   'STATEMENT_MONETARY_ROW_UNEXPLAINED',
   'audit.monetaryRows > audit.explainedMonetaryRows',
   'review.add(alpha2UnexplainedMonetaryRowCode)'
