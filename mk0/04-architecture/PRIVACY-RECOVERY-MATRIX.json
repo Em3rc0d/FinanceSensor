@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "status": "DRAFT",
+  "extends": "PRIVACY-DATA-MATRIX.json",
+  "classes": [
+    {
+      "id": "RECOVERY-PRIVATE-KEY",
+      "name": "User-held Recovery Private Key / Recovery Kit authority",
+      "sensitivity": "CRITICAL",
+      "purpose": "Restore tenant key epochs locally after all authorized devices are unavailable",
+      "source": "Locally generated during tenant recovery setup or post-recovery rotation",
+      "localRetention": "TRANSIENT_IN_APP_MEMORY_DURING_SETUP_OR_RECOVERY_USER_HELD_OFFLINE_AFTER_EXPORT",
+      "localProtection": "USER_HELD_OFFLINE_RECOVERY_KIT_OPTIONALLY_LOCALLY_PROTECTED_DURING_IMPORT",
+      "cloudPlaintext": "FORBIDDEN",
+      "e2eeSync": "FORBIDDEN",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "REMOVE_FROM_APP_MEMORY_AFTER_CONFIRMED_EXPORT_OR_RECOVERY_AND_RETIRE_OLD_KIT_AFTER_ROTATION",
+      "humanAccess": "USER_ONLY",
+      "logging": "FORBIDDEN"
+    },
+    {
+      "id": "RECOVERY-PUBLIC-KEY",
+      "name": "Tenant Recovery Public Key metadata",
+      "sensitivity": "MEDIUM",
+      "purpose": "Allow authorized devices to create recovery wraps for future tenant key epochs without recovery decryption authority",
+      "source": "Derived from user-held Recovery Keypair",
+      "localRetention": "PERSIST_WHILE_RECOVERY_KEY_ID_ACTIVE_OR_HISTORICALLY_REFERENCED",
+      "localProtection": "STANDARD_SECURE_METADATA_STORAGE",
+      "cloudPlaintext": "ALLOWED_MINIMIZED",
+      "e2eeSync": "NOT_REQUIRED",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_RECOVERY_KEY_RETENTION_POLICY_AFTER_ROTATION",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED"
+    },
+    {
+      "id": "RECOVERY-EPOCH-WRAP",
+      "name": "Tenant key epoch wrapped to Recovery Public Key",
+      "sensitivity": "HIGH",
+      "purpose": "Provide zero-knowledge all-devices-lost restoration for retained tenant key epochs",
+      "source": "Trusted authorized FinanceSensor device",
+      "localRetention": "PERSIST_AS_RECOVERY_AUTHORIZATION_ARTIFACT",
+      "localProtection": "CIPHERTEXT_AUTHENTICATED_CONTEXT",
+      "cloudPlaintext": "WRAPPED_KEY_CIPHERTEXT_AND_MINIMUM_CONTEXT_ONLY",
+      "e2eeSync": "REQUIRED",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_KEY_EPOCH_RECOVERY_RETENTION_POLICY",
+      "humanAccess": "CIPHERTEXT_AND_ROUTING_METADATA_ONLY",
+      "logging": "NO_KEY_MATERIAL"
+    },
+    {
+      "id": "REVOCATION-CUTOVER-BARRIER",
+      "name": "Signed revoked-device historical cutover commitment",
+      "sensitivity": "HIGH",
+      "purpose": "Freeze the exact accepted historical origin stream for a revoked device so retained old keys cannot create newly admissible history after cutover",
+      "source": "Still-authorized device or newly recovered device after validating the accepted historical origin stream",
+      "localRetention": "PERSIST_WHILE_HISTORICAL_EPOCHS_OR_REVOKED_DEVICE_HISTORY_REMAIN_REPLAYABLE",
+      "localProtection": "SIGNED_AUTHORIZATION_METADATA_WITH_TENANT_DEVICE_EPOCH_AND_HISTORY_COMMITMENT_BINDING",
+      "cloudPlaintext": "ALLOWED_MINIMIZED_SIGNED_METADATA_ONLY",
+      "e2eeSync": "NOT_REQUIRED_CONTROL_PLANE_AUTHORIZATION_METADATA",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_REVOKED_DEVICE_HISTORY_RETENTION_POLICY",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED_NO_FINANCIAL_CONTENT"
+    },
+    {
+      "id": "TRUSTED-CHECKPOINT-METADATA",
+      "name": "Signed tenant checkpoint metadata and independently retained checkpoint anchor",
+      "sensitivity": "HIGH",
+      "purpose": "Detect rollback, fork and append-only continuity violations relative to an independently trusted tenant checkpoint without exposing financial payload plaintext",
+      "source": "Authorized device checkpoint signer; independent anchor retained by a continuity device or user-held Recovery Kit",
+      "localRetention": "PERSIST_LATEST_TRUSTED_ANCHOR_AND_REQUIRED_CHECKPOINT_CHAIN_WINDOW",
+      "localProtection": "SIGNED_CHECKPOINT_METADATA; AUTHORITATIVE_ANCHOR_STORED_OUTSIDE_RELAY_ONLY_TRUST_DOMAIN",
+      "cloudPlaintext": "ALLOWED_MINIMIZED_SIGNED_SECURITY_METADATA_ONLY; CLOUD_COPY_IS_NOT_SOLE_TRUSTED_ANCHOR",
+      "e2eeSync": "NOT_REQUIRED_FOR_SIGNED_CHECKPOINT_ROUTING_METADATA; FINANCIAL_STATE_COMMITMENT_ONLY",
+      "rawRetention": "NOT_APPLICABLE",
+      "deletionTrigger": "TENANT_DELETE_OR_CHECKPOINT_RETENTION_POLICY; RECOVERY_KIT_COPY_FOLLOWS_USER_HELD_RECOVERY_RETIREMENT",
+      "humanAccess": "ROLE_RESTRICTED_METADATA_ONLY",
+      "logging": "MINIMIZED_NO_FINANCIAL_CONTENT_NO_FULL_ORIGIN_HEAD_DUMP"
+    }
+  ]
+}

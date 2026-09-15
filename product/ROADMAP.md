@@ -2,9 +2,27 @@
 
 The roadmap is capability-driven. MK boundaries exist to close uncertainty and produce evidence, not to maximize feature count.
 
+## Product surface direction
+
+FinanceSensor is a **mobile-first personal finance application**.
+
+```text
+PRIMARY
+Android — first physical product target
+iOS     — required production target
+
+FUTURE / OPTIONAL
+Web     — companion / richer analytical exploration
+Desktop — no first-class product commitment
+```
+
+This direction is governed by `mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md`.
+
+Mobile-first does not mean visually simplistic. FinanceSensor should deliver BI-grade understanding through mobile-native information hierarchy, progressive disclosure and explainable drill-down.
+
 ## MK0 — Financial Sensing Foundation
 
-**Goal:** prove that the product can connect to an email source, reconstruct trustworthy financial events locally, remain useful on ordinary smartphones, and present a simple financial state.
+**Goal:** prove that the product can connect to an email source, reconstruct trustworthy financial events locally, remain useful on ordinary smartphones, and present a simple but analytically meaningful financial state.
 
 Scope:
 
@@ -22,10 +40,13 @@ Scope:
 - basic recurring detection;
 - encrypted local ledger;
 - E2EE multi-device synchronization foundation;
+- Android-first mobile product surface;
 - no-scroll Home;
+- compact cash-flow / period context where viewport evidence permits;
 - movement timeline;
 - Needs Review;
-- evidence/provenance detail.
+- evidence/provenance detail;
+- Financial Sensor summary.
 
 Explicitly out of MK0:
 
@@ -35,7 +56,20 @@ Explicitly out of MK0:
 - advanced forecasting;
 - large conversational AI;
 - autonomous payments;
-- broad direct-bank coverage.
+- broad direct-bank coverage;
+- desktop BI as a primary product;
+- production web parity.
+
+## Alpha milestones inside the sensing foundation
+
+```text
+ALPHA.1  SENSE               bounded recent Gmail signals; session-only surface
+ALPHA.2  REMEMBER + VERIFY   targeted Gmail statements; encrypted derived memory; reconciliation
+ALPHA.3  UNDERSTAND          richer deterministic patterns over reconciled history
+ALPHA.4  ANTICIPATE          evidence-bounded trends and anomaly candidates
+```
+
+Alpha.2 is design-frozen by ADR-036 and `graph/alpha2-design-freeze.json`. It does not move statement ingestion or reconciliation into MK2: those capabilities are now planned inside the financial-sensing foundation and remain implementation/physical-proof open. MK2 retains broader providers, document families and OCR/ML expansion.
 
 ## MK1 — Personal Financial Understanding
 
@@ -51,7 +85,8 @@ Potential scope after MK0 evidence passes:
 - monthly summary;
 - opportunity engine v1;
 - lightweight limits/budgets;
-- richer Financial Sensor status.
+- richer Financial Sensor status;
+- richer mobile analytical drill-down.
 
 ## MK2 — Multi-source Finance
 
@@ -59,9 +94,9 @@ Potential scope:
 
 - Outlook / Microsoft provider adapter;
 - generic IMAP where policy and UX permit;
-- PDF/receipt ingestion;
-- statement import;
-- on-device OCR;
+- broader PDF/receipt families beyond Alpha.2 statement profiles;
+- additional statement providers and delivery paths;
+- on-device OCR expansion after native-text profiles stabilize;
 - local ML fallback;
 - improved source correlation;
 - regional connector exploration.
@@ -76,7 +111,8 @@ Potential scope:
 - upcoming recurring obligations;
 - cash availability projections;
 - anomaly engine;
-- savings intelligence v2.
+- savings intelligence v2;
+- optional richer companion analysis surface if mobile evidence justifies it.
 
 ## Future domains — not commitments
 

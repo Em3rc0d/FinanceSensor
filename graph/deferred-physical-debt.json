@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "status": "ACTIVE",
+  "policy": {
+    "deferredIsNotWaived": true,
+    "deferredIsNotPassed": true,
+    "deferredDoesNotChangeClosureGraph": true,
+    "buildReadyWhileDebtBlocksClosure": false,
+    "physicalClaimsRequireOwnedDeviceEvidence": true
+  },
+  "returnSweep": {
+    "id": "IOS-PHYSICAL-SWEEP-01",
+    "trigger": "OWNED_IPHONE_AVAILABLE_AND_STATIC_PREREQUISITES_GREEN",
+    "goal": "Close all iPhone-dependent MK0 physical claims in one bounded device campaign instead of repeatedly interrupting the main closure sequence.",
+    "requiredBeforeStart": [
+      "IOS_GMAIL_CUSTODY_BRIDGE_COMPILES_AGAINST_PINNED_SDK",
+      "IOS_P2_HARNESS_STATIC_GREEN",
+      "IOS_P4_CRYPTO_HARNESS_STATIC_GREEN",
+      "SANITIZED_RECEIPT_PIPELINE_GREEN"
+    ],
+    "mustNotClaimBeforeSweep": [
+      "P2_PASS",
+      "P4_PASS",
+      "Q003_CLOSED",
+      "Q004_CLOSED",
+      "Q005_CLOSED",
+      "BUILD_READY"
+    ]
+  },
+  "items": [
+    {
+      "id": "TD-IOS-P2-001",
+      "kind": "PHYSICAL_DEVICE_DEPENDENCY",
+      "status": "DEFERRED_UNTIL_OWNED_IPHONE_AVAILABLE",
+      "phase": "P2",
+      "title": "iOS OAuth custody and local privacy physical proof",
+      "reason": "An owned iPhone is not currently practical to exercise. Static architecture may advance, but physical promotion is forbidden without the device run.",
+      "openClaims": [
+        "IOS_PROTECTED_OAUTH_CUSTODY",
+        "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+        "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+        "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL"
+      ],
+      "blocks": [
+        "P2_PASS",
+        "P3_PHYSICAL_PROMOTION",
+        "P7_PASS",
+        "Q003_CLOSED",
+        "Q004_CLOSED",
+        "P8_PASS",
+        "BUILD_READY"
+      ],
+      "allowedWhileDeferred": [
+        "STATIC_BRIDGE_REPAIR",
+        "HOSTED_MACOS_COMPILE_PROOF",
+        "HARNESS_AUTHORING",
+        "SANITIZER_VALIDATION",
+        "ANDROID_AND_CONTROL_EDGE_WORK",
+        "NON_PROMOTIONAL_DOWNSTREAM_PREPARATION"
+      ],
+      "closureEvidence": "EV-Q003-Q004-IOS-CREDENTIAL-CUSTODY-<date>.md",
+      "returnSweep": "IOS-PHYSICAL-SWEEP-01"
+    },
+    {
+      "id": "TD-IOS-P4-001",
+      "kind": "PHYSICAL_DEVICE_DEPENDENCY",
+      "status": "DEFERRED_UNTIL_OWNED_IPHONE_AVAILABLE",
+      "phase": "P4",
+      "title": "iOS side of mobile production crypto interoperability",
+      "reason": "P4 requires Android↔iOS interoperability and Apple protected-key evidence. Those claims cannot be promoted from simulators or hosted macOS CI.",
+      "openClaims": [
+        "ANDROID_WRAP_IOS_UNWRAP",
+        "IOS_WRAP_ANDROID_UNWRAP",
+        "ANDROID_SIGN_IOS_VERIFY",
+        "IOS_SIGN_ANDROID_VERIFY",
+        "NEGATIVE_MATRIX_FAILS_CLOSED",
+        "PROTECTED_KEY_USE_PROVEN",
+        "NO_SILENT_EXPORTABLE_KEY_FALLBACK"
+      ],
+      "blocks": [
+        "P4_PASS",
+        "P5_PASS",
+        "P6_PASS",
+        "Q005_CLOSED",
+        "P8_PASS",
+        "BUILD_READY"
+      ],
+      "allowedWhileDeferred": [
+        "REFERENCE_IMPLEMENTATION",
+        "CROSS_PLATFORM_TEST_VECTOR_AUTHORING",
+        "HOSTED_COMPILE_PROOF",
+        "NEGATIVE_FIXTURE_TESTS",
+        "WITNESS_HARNESS_PREPARATION",
+        "RECOVERY_HARNESS_PREPARATION"
+      ],
+      "closureEvidence": "EV-Q005-MOBILE-CRYPTO-INTEROP-PHYSICAL-<date>.md",
+      "returnSweep": "IOS-PHYSICAL-SWEEP-01"
+    },
+    {
+      "id": "TD-IOS-COMPILE-001",
+      "kind": "STATIC_PREREQUISITE",
+      "status": "ACTIVE_NOW",
+      "phase": "P2",
+      "title": "iOS Gmail custody reference bridge must compile against pinned Google Sign-In SDK",
+      "reason": "The first hosted macOS compile reached xcodebuild and failed. This is not physical evidence and must be repaired before asking for an iPhone session.",
+      "blocks": [
+        "IOS-PHYSICAL-SWEEP-01"
+      ],
+      "allowedWhileDeferred": [
+        "FIX_NOW"
+      ],
+      "closureCondition": "HOSTED_MACOS_IOS_GMAIL_CUSTODY_COMPILE_PASS",
+      "returnSweep": "IOS-PHYSICAL-SWEEP-01"
+    }
+  ],
+  "nextExecutionFrontier": {
+    "phase": "P1",
+    "title": "Q-003 Gmail production lifecycle",
+    "why": "P1 depends only on P0, does not require iOS, and can advance provider revoke, refresh, endpoint byte accounting and latency evidence on the controlled Android/local edge.",
+    "afterP1": [
+      "P3_STATIC_AND_ANDROID_PRIVACY_HARNESS_PREPARATION",
+      "P4_STATIC_CRYPTO_INTEROP_PREPARATION",
+      "P5_WITNESS_TOPOLOGY_AND_FAILURE_HARNESS_PREPARATION",
+      "P6_RECOVERY_HARNESS_PREPARATION"
+    ]
+  }
+}

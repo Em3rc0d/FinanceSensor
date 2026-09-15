@@ -1,0 +1,241 @@
+name: FinanceSensor Statement ETL Contract
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/statement-etl-reconciliation.json'
+      - 'graph/statement-format-registry.json'
+      - 'graph/statement-profile-specs-v1.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
+      - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/03-design/PRODUCT-DESIGN.md'
+      - 'mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md'
+      - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md'
+      - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/05-data-model/CORE-DATA-MODEL.md'
+      - 'mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md'
+      - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
+      - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
+      - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'mk0/11-decisions/ADR-INDEX.md'
+      - 'spikes/physical-ingress/src/account-graph.js'
+      - 'spikes/physical-ingress/src/monthly-coverage.js'
+      - 'spikes/physical-ingress/src/sensor-v1.js'
+      - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-import-session.js'
+      - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-page-classifier.js'
+      - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
+      - 'spikes/physical-ingress/src/statement-row-parser.js'
+      - 'spikes/physical-ingress/src/statement-source-adapters.js'
+      - 'spikes/physical-ingress/test/account-graph.test.js'
+      - 'spikes/physical-ingress/test/monthly-coverage.test.js'
+      - 'spikes/physical-ingress/test/sensor-v1.test.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-import-session.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
+      - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
+      - 'spikes/physical-ingress/test/statement-row-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
+      - 'tools/validate-alpha2-d-reconciliation.mjs'
+      - 'tools/validate-alpha2-e-account-graph.mjs'
+      - 'tools/validate-alpha2-f-monthly-coverage.mjs'
+      - 'tools/validate-alpha2-g-sensor-v1.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - 'tools/validate-statement-etl-reconciliation.mjs'
+      - '.github/workflows/statement-etl-contract.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/statement-etl-reconciliation.json'
+      - 'graph/statement-format-registry.json'
+      - 'graph/statement-profile-specs-v1.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md'
+      - 'mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md'
+      - 'mk0/03-design/PRODUCT-DESIGN.md'
+      - 'mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md'
+      - 'mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md'
+      - 'mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md'
+      - 'mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md'
+      - 'mk0/05-data-model/CORE-DATA-MODEL.md'
+      - 'mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md'
+      - 'mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md'
+      - 'mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md'
+      - 'mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md'
+      - 'mk0/11-decisions/ADR-INDEX.md'
+      - 'spikes/physical-ingress/src/account-graph.js'
+      - 'spikes/physical-ingress/src/monthly-coverage.js'
+      - 'spikes/physical-ingress/src/sensor-v1.js'
+      - 'spikes/physical-ingress/src/pdfjs-statement-parser.js'
+      - 'spikes/physical-ingress/src/statement-import-session.js'
+      - 'spikes/physical-ingress/src/statement-layout-control-audit.js'
+      - 'spikes/physical-ingress/src/statement-layout-geometry.js'
+      - 'spikes/physical-ingress/src/statement-layout-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-reconciliation.js'
+      - 'spikes/physical-ingress/src/statement-page-classifier.js'
+      - 'spikes/physical-ingress/src/statement-profile-row-adapters.js'
+      - 'spikes/physical-ingress/src/statement-row-parser.js'
+      - 'spikes/physical-ingress/src/statement-source-adapters.js'
+      - 'spikes/physical-ingress/test/account-graph.test.js'
+      - 'spikes/physical-ingress/test/monthly-coverage.test.js'
+      - 'spikes/physical-ingress/test/sensor-v1.test.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js'
+      - 'spikes/physical-ingress/test/pdfjs-statement-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-import-session.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-control-audit.test.js'
+      - 'spikes/physical-ingress/test/statement-layout-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-reconciliation.test.js'
+      - 'spikes/physical-ingress/test/statement-page-classifier.test.js'
+      - 'spikes/physical-ingress/test/statement-profile-row-adapters.test.js'
+      - 'spikes/physical-ingress/test/statement-row-parser.test.js'
+      - 'spikes/physical-ingress/test/statement-source-adapters.test.js'
+      - 'tools/validate-alpha2-d-reconciliation.mjs'
+      - 'tools/validate-alpha2-e-account-graph.mjs'
+      - 'tools/validate-alpha2-f-monthly-coverage.mjs'
+      - 'tools/validate-alpha2-g-sensor-v1.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - 'tools/validate-statement-etl-reconciliation.mjs'
+      - '.github/workflows/statement-etl-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate public CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+
+      - name: Validate statement ETL architecture
+        run: node tools/validate-statement-etl-reconciliation.mjs
+
+      - name: Validate Alpha.2-D reconciliation boundary
+        run: node tools/validate-alpha2-d-reconciliation.mjs
+
+      - name: Validate Alpha.2-E account graph boundary
+        run: node tools/validate-alpha2-e-account-graph.mjs
+
+      - name: Validate Alpha.2-F monthly coverage boundary
+        run: node tools/validate-alpha2-f-monthly-coverage.mjs
+
+      - name: Validate Alpha.2-G Sensor V1 boundary
+        run: node tools/validate-alpha2-g-sensor-v1.mjs
+
+      - name: Statement structural regression
+        run: |
+          node --check spikes/physical-ingress/src/account-graph.js
+          node --check spikes/physical-ingress/src/monthly-coverage.js
+          node --check spikes/physical-ingress/src/sensor-v1.js
+          node --check spikes/physical-ingress/src/pdfjs-statement-parser.js
+          node --check spikes/physical-ingress/src/statement-import-session.js
+          node --check spikes/physical-ingress/src/statement-layout-control-audit.js
+          node --check spikes/physical-ingress/src/statement-layout-geometry.js
+          node --check spikes/physical-ingress/src/statement-layout-reconciliation.js
+          node --check spikes/physical-ingress/src/statement-reconciliation.js
+          node --check spikes/physical-ingress/src/statement-page-classifier.js
+          node --check spikes/physical-ingress/src/statement-profile-row-adapters.js
+          node --check spikes/physical-ingress/src/statement-row-parser.js
+          node --check spikes/physical-ingress/src/statement-source-adapters.js
+          node --test \
+            spikes/physical-ingress/test/account-graph.test.js \
+            spikes/physical-ingress/test/monthly-coverage.test.js \
+            spikes/physical-ingress/test/sensor-v1.test.js \
+            spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
+            spikes/physical-ingress/test/statement-import-session.test.js \
+            spikes/physical-ingress/test/statement-layout-control-audit.test.js \
+            spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-page-classifier.test.js \
+            spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
+            spikes/physical-ingress/test/statement-row-parser.test.js \
+            spikes/physical-ingress/test/statement-source-adapters.test.js
+
+      - name: Public trust boundary
+        run: |
+          ! grep -R -E -i "(password[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|dni[[:space:]]*[:=][[:space:]]*[0-9]{6,}|account(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,}|card(number)?[[:space:]]*[:=][[:space:]]*[0-9]{8,})" \
+            graph/statement-etl-reconciliation.json \
+            graph/statement-format-registry.json \
+            graph/statement-profile-specs-v1.json \
+            graph/alpha2-d-reconciliation.json \
+            graph/alpha2-e-account-graph.json \
+            graph/alpha2-f-monthly-coverage.json \
+            graph/alpha2-g-sensor-v1.json \
+            mk0/01-mining-site/STATEMENT-REAL-FORMAT-DISCOVERY-2026-09-03.md \
+            mk0/03-design/MONTHLY-CLOSE-EXPERIENCE.md \
+            mk0/03-design/PRODUCT-DESIGN.md \
+            mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md \
+            mk0/04-architecture/STATEMENT-ETL-RECONCILIATION.md \
+            mk0/04-architecture/STATEMENT-GEOMETRIC-LAYOUT-CONTRACT.md \
+            mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md \
+            mk0/05-data-model/CORE-DATA-MODEL.md \
+            mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md \
+            mk0/07-plan/STATEMENT-ADAPTER-ROLLOUT.md \
+            mk0/09-test/STATEMENT-ETL-TEST-MATRIX.md \
+            mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md \
+            mk0/11-decisions/ADR-INDEX.md \
+            spikes/physical-ingress/src/account-graph.js \
+            spikes/physical-ingress/src/monthly-coverage.js \
+            spikes/physical-ingress/src/sensor-v1.js \
+            spikes/physical-ingress/src/pdfjs-statement-parser.js \
+            spikes/physical-ingress/src/statement-import-session.js \
+            spikes/physical-ingress/src/statement-layout-control-audit.js \
+            spikes/physical-ingress/src/statement-layout-geometry.js \
+            spikes/physical-ingress/src/statement-layout-reconciliation.js \
+            spikes/physical-ingress/src/statement-reconciliation.js \
+            spikes/physical-ingress/src/statement-page-classifier.js \
+            spikes/physical-ingress/src/statement-profile-row-adapters.js \
+            spikes/physical-ingress/src/statement-row-parser.js \
+            spikes/physical-ingress/src/statement-source-adapters.js \
+            spikes/physical-ingress/test/account-graph.test.js \
+            spikes/physical-ingress/test/monthly-coverage.test.js \
+            spikes/physical-ingress/test/sensor-v1.test.js \
+            spikes/physical-ingress/test/fixtures/statements/bcp-savings-layout-v1.js \
+            spikes/physical-ingress/test/fixtures/statements/interbank-savings-layout-v1.js \
+            spikes/physical-ingress/test/pdfjs-statement-parser.test.js \
+            spikes/physical-ingress/test/statement-import-session.test.js \
+            spikes/physical-ingress/test/statement-layout-control-audit.test.js \
+            spikes/physical-ingress/test/statement-layout-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-reconciliation.test.js \
+            spikes/physical-ingress/test/statement-page-classifier.test.js \
+            spikes/physical-ingress/test/statement-profile-row-adapters.test.js \
+            spikes/physical-ingress/test/statement-row-parser.test.js \
+            spikes/physical-ingress/test/statement-source-adapters.test.js
+          echo 'ALPHA2_D_STATIC_IMPLEMENTATION_PASS=1'
+          echo 'ALPHA2_E_STATIC_IMPLEMENTATION_PASS=1'
+          echo 'ALPHA2_F_STATIC_IMPLEMENTATION_PASS=1'
+          echo 'ALPHA2_G_STATIC_IMPLEMENTATION_PASS=1'
+          echo 'ALPHA2_G_LLM_ENABLED=0'
+          echo 'ALPHA2_G_AUTOMATED_FINANCIAL_ADVICE=0'
+          echo 'ALPHA2_G_RECOMMENDATIONS=0'
+          echo 'ALPHA2_G_CROSS_CURRENCY_AGGREGATION=0'
+          echo 'ALPHA2_G_PHYSICAL_SENSOR_PASS=0'
+          echo 'REAL_STATEMENT_DATA_IN_CI=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'IOS_TOUCHED=0'
+          echo 'BUILD_READY=false'

@@ -1,0 +1,61 @@
+name: Alpha.2 Financial Vault
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-c-financial-vault.json'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/alpha2-design-freeze.json'
+      - 'mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md'
+      - 'mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md'
+      - 'mk0/11-decisions/ADR-030-DELETION-RESURRECTION-BARRIER.md'
+      - 'spikes/physical-ingress/src/financial-vault.js'
+      - 'spikes/physical-ingress/test/financial-vault.test.js'
+      - 'tools/validate-alpha2-c-financial-vault.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-financial-vault.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate public CI runner governance
+        run: node tools/validate-ci-runner-policy.mjs
+      - name: Validate frozen Alpha.2 authority
+        run: node tools/validate-alpha2-design-freeze.mjs
+      - name: Validate certified Alpha.2-A dependency
+        run: node tools/validate-alpha2-a-statement-discovery.mjs
+      - name: Validate Alpha.2-C exact-SHA receipt and financial vault boundary
+        run: node tools/validate-alpha2-c-financial-vault.mjs
+      - name: Syntax-check Alpha.2-C execution surface
+        run: |
+          node --check spikes/physical-ingress/src/financial-vault.js
+          node --check spikes/physical-ingress/test/financial-vault.test.js
+      - name: Run Alpha.2-C synthetic vault campaign
+        run: node --test spikes/physical-ingress/test/financial-vault.test.js
+      - name: Assert static-only encrypted-storage boundary
+        run: |
+          grep -Eq '"staticImplementationPass"[[:space:]]*:[[:space:]]*true' graph/alpha2-c-financial-vault.json
+          ! grep -E '"physicalVaultPass"[[:space:]]*:[[:space:]]*true|"p3PhysicalPass"[[:space:]]*:[[:space:]]*true|"alpha2ProductPass"[[:space:]]*:[[:space:]]*true|"buildReady"[[:space:]]*:[[:space:]]*true' graph/alpha2-c-financial-vault.json
+          ! grep -E "console\.log\(|localStorage|sessionStorage|openPlaintext|fallbackToPlaintext" spikes/physical-ingress/src/financial-vault.js
+          echo 'STATIC_IMPLEMENTATION_PASS=1'
+          echo 'SQLCIPHER_VERSION=4.18.0'
+          echo 'REAL_FINANCIAL_PLAINTEXT_IN_CI=0'
+          echo 'REAL_PLATFORM_KEYSTORE_IN_CI=0'
+          echo 'PLAINTEXT_SQLITE_FALLBACK=0'
+          echo 'DURABLE_APP_DEK=0'
+          echo 'RAW_FINANCIAL_PLAINTEXT_COLUMNS=0'
+          echo 'PHYSICAL_SQLCIPHER_INSPECTION=0'
+          echo 'P3_PHYSICAL_PASS=0'
+          echo 'BUILD_READY=NO'

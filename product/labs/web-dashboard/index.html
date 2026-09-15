@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>PocketFinances · FinanceSensor</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FinanceSensor · PocketFinances</p>
+        <h1>Tu dinero, sin ruido.</h1>
+        <p class="lede">Ingresos desde estados de cuenta, egresos observados desde correo y una sola vista canónica.</p>
+      </div>
+      <div class="status-pill" id="month-status">Cargando…</div>
+    </header>
+
+    <section aria-labelledby="cashflow-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Este periodo</p>
+          <h2 id="cashflow-title">Flujo por moneda</h2>
+        </div>
+        <p class="subtle">Nunca mezclamos PEN y USD en un total ficticio.</p>
+      </div>
+      <div id="cashflow-grid" class="cashflow-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="split-grid">
+      <article class="panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Actividad</p>
+            <h2>Movimientos</h2>
+          </div>
+          <span class="count" id="transaction-count">0</span>
+        </div>
+        <div id="transactions" class="transaction-list"></div>
+      </article>
+
+      <aside class="stack">
+        <article class="panel">
+          <p class="eyebrow">Cobertura</p>
+          <h2>Qué sabemos</h2>
+          <div id="coverage" class="coverage"></div>
+        </article>
+
+        <article class="panel">
+          <p class="eyebrow">Patrones</p>
+          <h2>Recurrentes observados</h2>
+          <div id="recurring" class="compact-list"></div>
+        </article>
+
+        <article class="panel">
+          <p class="eyebrow">Pendientes</p>
+          <h2>Vacíos de conocimiento</h2>
+          <div id="gaps" class="compact-list"></div>
+        </article>
+      </aside>
+    </section>
+
+    <footer>
+      <span>Datos financieros: proyección minimizada del dispositivo.</span>
+      <span>No se muestran porcentajes de “evidencia”.</span>
+    </footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

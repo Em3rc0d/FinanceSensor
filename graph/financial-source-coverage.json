@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "status": "DESIGN_FROZEN_STATEMENT_PIPELINE_STATIC_OPEN",
+  "asOf": "2026-09-03",
+  "laws": {
+    "noGmailIncomeEvidenceIsNotZeroIncome": true,
+    "outflowCoverageIsNotInflowCoverage": true,
+    "gmailBootstrapCompleteIsNotCashflowComplete": true,
+    "cashflowCompleteRequiresBothDirections": true,
+    "creditStatementAutoIsNotDebitStatementAuto": true,
+    "debitStatementManualRequestIsNotManualTransactionEntry": true,
+    "cardStatementDoesNotProveSavingsInflows": true,
+    "windowsStatementRunnerIsEvidenceHarnessOnly": true,
+    "desktopHarnessPassIsNotMobileProductPass": true,
+    "productStatementRuntimeIsMobile": true
+  },
+  "sources": {
+    "GMAIL_TRANSACTIONAL_EMAIL": {
+      "outflow": "PHYSICALLY_USEFUL_PARTIAL_BY_PROVIDER",
+      "inflow": "NOT_A_COMPLETE_SOURCE",
+      "latencyClass": "NEAR_REAL_TIME_WHERE_NOTIFIED",
+      "rawContentDurable": false
+    },
+    "CREDIT_STATEMENT_GMAIL_AUTO": {
+      "role": "PERIODIC_RECONCILIATION",
+      "availability": "OBSERVED_IN_OWNED_MAILBOX_FOR_SOME_PROVIDERS",
+      "physicalParsing": "OPEN",
+      "mayCreateStatementOnlyEvents": true,
+      "mayCorroborateGmailEvents": true
+    },
+    "DEBIT_STATEMENT_GMAIL_MANUAL_REQUEST": {
+      "role": "PERIODIC_INFLOW_AND_OUTFLOW_RECONCILIATION",
+      "availability": "OBSERVED_IN_OWNED_MAILBOX_AFTER_USER_REQUEST_FOR_SOME_PROVIDERS",
+      "physicalParsing": "OPEN",
+      "userRequestRequiredByProvider": true,
+      "manualTransactionEntry": false
+    }
+  },
+  "providerCoverage": {
+    "BCP_CREDIT_STATEMENT_AUTO": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
+    "RIPLEY_CREDIT_STATEMENT_AUTO": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
+    "BCP_SAVINGS_STATEMENT_ON_REQUEST": "OBSERVED_PRIVATE_CORPUS_PARSE_OPEN",
+    "INTERBANK_STATEMENT_COVERAGE": "UNPROVEN"
+  },
+  "statementPasswordBoundary": {
+    "inputLabel": "Clave del PDF",
+    "semanticOriginAssumed": false,
+    "localMemoryOnly": true,
+    "persist": false,
+    "log": false,
+    "cloud": false,
+    "github": false,
+    "chat": false
+  },
+  "rawStatementBoundary": {
+    "encryptedPdfDurableCloudNormalPath": false,
+    "decryptedPdfDurable": false,
+    "decryptedTextDurable": false,
+    "derivedEvidenceLocalAllowed": true
+  },
+  "productRuntimeBoundary": {
+    "productSurface": "FLUTTER_MOBILE_APP",
+    "primaryPhysicalTarget": "ANDROID",
+    "requiredProductionTargets": ["ANDROID", "IOS"],
+    "productStatementIngress": "MOBILE_DEVICE_LOCAL",
+    "flutterRole": "UI_AND_DETERMINISTIC_APPLICATION_LOGIC",
+    "nativeSecurityBridge": {
+      "android": "KOTLIN",
+      "ios": "SWIFT"
+    },
+    "windowsStatementRunner": "MK0_EVIDENCE_HARNESS_ONLY",
+    "windowsRunnerShipsInProduct": false,
+    "desktopProductClaimAllowed": false,
+    "desktopHarnessCanPromoteMobilePass": false
+  },
+  "uiTruth": {
+    "showOutflowCoverageSeparately": true,
+    "showInflowCoverageSeparately": true,
+    "allowNetCashflowCompleteWhenInflowUnknown": false,
+    "gmailCompleteLabelScope": "MAILBOX_ENUMERATION_ONLY"
+  },
+  "references": [
+    "mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md",
+    "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
+    "graph/gmail-historical-onboarding.json",
+    "mk0/05-data-model/CORE-DATA-MODEL.md",
+    "spikes/mobile-shell/README.md"
+  ],
+  "iosTouched": false,
+  "buildReady": false
+}

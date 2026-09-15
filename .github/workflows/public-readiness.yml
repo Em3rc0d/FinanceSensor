@@ -3,18 +3,14 @@ name: FinanceSensor Public Readiness
 on:
   workflow_dispatch:
   public:
+  pull_request:
+    branches:
+      - main
+      - jett/mk0-foundation
   push:
     branches:
       - main
       - jett/mk0-foundation
-    paths:
-      - '.github/workflows/**'
-      - '.gitignore'
-      - 'SECURITY.md'
-      - 'tools/audit-public-history.mjs'
-      - 'tools/validate-ci-runner-policy.mjs'
-      - 'spikes/physical-ingress/live/**'
-      - 'ops/**'
 
 permissions:
   contents: read
@@ -67,7 +63,7 @@ jobs:
               [ -n "$workflow" ] || continue
               text="$(git show "$ref:$workflow")"
 
-              if printf '%s\n' "$text" | grep -Eqi 'runs-on:[^#]*(self-hosted|\[[^]]*self-hosted)'; then
+              if printf '%s\n' "$text" | grep -Eqi '^[[:space:]]*runs-on:[^#]*(self-hosted|\[[^]]*self-hosted)'; then
                 echo "FORBIDDEN_SELF_HOSTED ref=$ref workflow=$workflow" >&2
                 failure=1
               fi
@@ -82,9 +78,17 @@ jobs:
                 failure=1
               fi
 
-              if printf '%s\n' "$text" | grep -q 'runs-on:' && ! printf '%s\n' "$text" | grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$'; then
-                echo "MISSING_CONTENTS_READ ref=$ref workflow=$workflow" >&2
-                failure=1
+              if printf '%s\n' "$text" | grep -Eq '^[[:space:]]*runs-on[[:space:]]*:'; then
+                has_contents_read=0
+                if printf '%s\n' "$text" | grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$'; then
+                  has_contents_read=1
+                elif printf '%s\n' "$text" | grep -Eq '^[[:space:]]*permissions:[[:space:]]*\{[^}]*contents:[[:space:]]*read([[:space:]]*,|[[:space:]]*\})'; then
+                  has_contents_read=1
+                fi
+                if [ "$has_contents_read" -ne 1 ]; then
+                  echo "MISSING_CONTENTS_READ ref=$ref workflow=$workflow" >&2
+                  failure=1
+                fi
               fi
             done < <(git ls-tree -r --name-only "$ref" -- .github/workflows | grep -E '\.ya?ml$' || true)
           done < <(git for-each-ref --format='%(refname)' refs/remotes/origin)
@@ -98,6 +102,7 @@ jobs:
       - name: Public readiness summary
         run: |
           echo 'FINANCESENSOR_PUBLIC_READINESS=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Every pull request and push to the governed branches is snapshot-certified; no path filter may silently skip a changed public surface.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Current tree, all current branch-head CI definitions and complete reachable Git history passed the sanitized exposure audit.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No current branch routes CI to self-hosted runners, references repository secrets, or uses pull_request_target.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Real Gmail/OAuth authority remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"

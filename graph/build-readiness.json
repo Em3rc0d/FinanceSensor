@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "buildReady": false,
+  "authority": "graph/closure-ledger.json",
+  "implementationBaseline": "FROZEN",
+  "states": [
+    "PASS",
+    "DECISION_FROZEN_CLOSURE_OPEN",
+    "ACTIVE",
+    "DRAFTED",
+    "BLOCKED"
+  ],
+  "gates": [
+    {
+      "id": "PRODUCT_DEFINITION",
+      "state": "PASS",
+      "class": "DOCUMENTARY",
+      "evidence": ["product/PRODUCT-THESIS.md", "product/PRODUCT-INVARIANTS.md"]
+    },
+    {
+      "id": "MK0_SCOPE",
+      "state": "PASS",
+      "class": "DOCUMENTARY",
+      "evidence": ["product/MK0-SCOPE-FREEZE.md", "product/ROADMAP.md", "mk0/11-decisions/ADR-025-MOBILE-FIRST-PRODUCT-SURFACE.md"]
+    },
+    {
+      "id": "P0_QUARRIES",
+      "state": "ACTIVE",
+      "class": "PHYSICAL_AND_PROVIDER",
+      "blockingNodes": ["Q-003", "Q-004", "Q-005"]
+    },
+    {
+      "id": "TENANCY_MODEL",
+      "state": "PASS",
+      "class": "DOCUMENTARY",
+      "evidence": ["mk0/11-decisions/ADR-001-TENANT-FINANCIAL-OWNERSHIP-BOUNDARY.md", "mk0/05-data-model/CORE-DATA-MODEL.md", "mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md"]
+    },
+    {
+      "id": "FINANCIAL_MODEL",
+      "state": "PASS",
+      "class": "EXECUTED",
+      "blockingNodes": ["Q-001", "Q-002"],
+      "evidence": ["mk0/11-decisions/closure-receipts/Q-001.md", "mk0/11-decisions/closure-receipts/Q-002.md"]
+    },
+    {
+      "id": "EVENT_INVARIANTS",
+      "state": "PASS",
+      "class": "EXECUTED",
+      "evidence": ["mk0/05-data-model/INVARIANTS.md", "spikes/canonical-resolver/test/economic-effect.test.js"]
+    },
+    {
+      "id": "EDGE_CLOUD_BOUNDARY",
+      "state": "DECISION_FROZEN_CLOSURE_OPEN",
+      "class": "DOCUMENTARY_AND_PHYSICAL",
+      "evidence": ["mk0/11-decisions/ADR-010-CONTROL-PLANE-RUNTIME-CLOUD.md", "mk0/11-decisions/ADR-020-GMAIL-RESTRICTED-DATA-SERVER-BOUNDARY.md"]
+    },
+    {
+      "id": "PRIVACY_MODEL",
+      "state": "ACTIVE",
+      "class": "PHYSICAL",
+      "blockingNodes": ["Q-004"],
+      "evidence": ["mk0/04-architecture/PRIVACY-DATA-MATRIX.json", "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json", "mk0/04-architecture/PRIVACY-DELETION-MATRIX.json"]
+    },
+    {
+      "id": "THREAT_MODEL",
+      "state": "PASS",
+      "class": "DOCUMENTARY_BUILD_ENTRY",
+      "evidence": ["mk0/04-architecture/THREAT-MODEL.md", "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md", "mk0/10-evidence/EV-MK0-PRE-PHYSICAL-BUILD-ENTRY-2026-09-02.md"]
+    },
+    {
+      "id": "GMAIL_FEASIBILITY",
+      "state": "ACTIVE",
+      "class": "PHYSICAL_AND_PROVIDER",
+      "blockingNodes": ["Q-003"],
+      "evidence": ["mk0/10-evidence/EV-Q003-OWNED-OAUTH-LEVEL-C-V7-PASS-2026-09-02.md", "mk0/11-decisions/ADR-017-GMAIL-MOBILE-OAUTH-BOUNDARY.md"]
+    },
+    {
+      "id": "ANDROID_FEASIBILITY",
+      "state": "ACTIVE",
+      "class": "PHYSICAL",
+      "blockingNodes": ["Q-003", "Q-005"],
+      "evidence": ["mk0/11-decisions/ADR-013-MINIMUM-SUPPORTED-ANDROID-BASELINE.md", "spikes/mobile-shell/README.md", "mk0/10-evidence/EV-MK0-PRE-PHYSICAL-BUILD-ENTRY-2026-09-02.md"]
+    },
+    {
+      "id": "MULTI_DEVICE_DESIGN",
+      "state": "ACTIVE",
+      "class": "PHYSICAL",
+      "blockingNodes": ["Q-005"],
+      "evidence": ["mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md", "mk0/04-architecture/PARASYMPATHETIC-SYNC.md"]
+    },
+    {
+      "id": "SIGNATURE_WIREFRAMES",
+      "state": "PASS",
+      "class": "DOCUMENTARY_AND_SYNTHETIC_USABILITY",
+      "evidence": ["mk0/03-design/PRODUCT-DESIGN.md", "mk0/06-wireframes/SIGNATURE-WIREFRAMES.md", "product/labs/mobile-bi/README.md", "mk0/10-evidence/EV-MK0-PRE-PHYSICAL-BUILD-ENTRY-2026-09-02.md"]
+    },
+    {
+      "id": "NO_SCROLL_CONTRACT",
+      "state": "PASS",
+      "class": "EXECUTED_SYNTHETIC_USABILITY",
+      "evidence": ["mk0/06-wireframes/VIEWPORT-CONTRACT.md", "spikes/mobile-shell/test/widget_test.dart", "mk0/10-evidence/EV-MK0-PRE-PHYSICAL-BUILD-ENTRY-2026-09-02.md"]
+    },
+    {
+      "id": "IMPLEMENTATION_PLAN",
+      "state": "PASS",
+      "class": "DOCUMENTARY",
+      "evidence": ["mk0/07-plan/IMPLEMENTATION-SLICES.md", "mk0/07-plan/BUILD-ENTRY-CLOSURE-PLAN.md", "product/MK0-SCOPE-FREEZE.md"]
+    }
+  ],
+  "prePhysicalClosureTargets": [],
+  "physicalClosureTargets": [
+    "P0_QUARRIES",
+    "EDGE_CLOUD_BOUNDARY",
+    "PRIVACY_MODEL",
+    "GMAIL_FEASIBILITY",
+    "ANDROID_FEASIBILITY",
+    "MULTI_DEVICE_DESIGN"
+  ],
+  "law": "BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED"
+}
