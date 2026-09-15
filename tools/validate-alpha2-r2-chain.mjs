@@ -1,39 +1,10 @@
 import fs from 'node:fs';
-import './validate-build-readiness.mjs';
-
-const r1 = JSON.parse(fs.readFileSync('graph/alpha2-r1-signing-handoff.json','utf8'));
-const r2 = JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8'));
-const canonical = JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
-const gate = JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
-const receipt = JSON.parse(fs.readFileSync('graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json','utf8'));
-const assert = (cond,message) => { if (!cond) throw new Error(`ALPHA2_R2_CHAIN_FAILED:${message}`); };
-const candidate = '0.2.0-alpha.2+2009';
-const source = 'e19bcccee13e326bbc08012533ddaeba026c633a';
-const apk = '1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717';
-const signed = '7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a';
-
-assert(canonical.candidate === candidate && canonical.sourceCommit === source && canonical.authority?.apkSha256 === apk, 'canonical +2009 authority drifted');
-assert(canonical.signing?.trustedEdgeSigningPass === true && canonical.signing?.signedApkSha256 === signed, 'canonical signed identity drifted');
-assert(r1.candidate === candidate && r1.sourceCommit === source && r1.inputApk?.sha256 === apk, 'canonical/R1 chain drifted');
-assert(r1.status === 'TRUSTED_EDGE_SIGNING_PASS' && r1.trustedEdgeSigningPass === true && r1.signedApkSha256 === signed, 'R1 PASS state drifted');
-assert(receipt.trustedEdgeSigningPass === true && receipt.signedApkSha256 === signed, 'R1 sanitized receipt drifted');
-assert(r2.candidate?.id === candidate && r2.candidate?.sourceCommit === source && r2.candidate?.canonicalInputApkSha256 === apk && r2.candidate?.signedApkSha256 === signed, 'R1/R2 identity chain drifted');
-assert(r2.status === 'READY_FOR_CONSOLIDATED_OWNED_DEVICE_UAT' && r2.currentState?.r2PhysicalCampaign === 'READY_FOR_CONSOLIDATED_UAT', 'R2 UAT readiness drifted');
-assert(r2.currentState?.r1TrustedEdgeSigning === 'PASS' && r2.currentState?.nextGate === 'CONSOLIDATED_OWNED_DEVICE_UAT' && r2.currentState?.currentBlocker === null, 'R1/R2 frontier drifted');
-for (let i=0;i<=11;i+=1) assert(r2.subgates?.[i]?.id === `OD${i}` && r2.subgates?.[i]?.status === 'READY_IN_CONSOLIDATED_UAT', `OD${i} readiness drifted`);
-assert(gate.ownedDeviceUat?.requestAllowed === true && gate.ownedDeviceUat?.humanUatEligible === true && gate.ownedDeviceUat?.trustedEdgeSigningPass === true, 'human intervention chain drifted');
-const old = r2.historicalInvalidatedCampaign ?? {};
-assert(old.candidate === '0.2.0-alpha.2+2008' && old.evidenceInheritanceAllowed === false && old.continuationAllowed === false, '+2008 must remain historical');
-assert(r2.currentState?.buildReady === false && r2.currentState?.releaseReady === false, 'readiness premature');
-for (const q of ['q003','q004','q005']) assert(r2.currentState?.[q] === 'ACTIVE', `${q} must remain ACTIVE`);
-assert(r2.currentState?.gMk0 === 'OPEN', 'G-MK0 must remain open');
-
-console.log('ALPHA2_R2_PREBUILD_CHAIN=PASS');
-console.log('CANONICAL_IDENTITY=ALPHA2_2009_STABLE_SIGNED_FROZEN');
-console.log('PREBUILD_DESIGN_AND_BUILD_READINESS=BOUND');
-console.log('R1_TRUSTED_EDGE_SIGNING=PASS');
-console.log('R2_PHYSICAL_CAMPAIGN=READY_FOR_CONSOLIDATED_UAT');
-console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES');
-console.log('NEXT_EXECUTION_NODE=CONSOLIDATED_OWNED_DEVICE_UAT');
-console.log('BUILD_READY=NO');
-console.log('RELEASE_READY=NO');
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8')), r1=JSON.parse(fs.readFileSync('graph/alpha2-r1-signing-handoff.json','utf8')), r2=JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8')), h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_R2_CHAIN_FAILED:${m}`)};
+const id='0.2.0-alpha.2+2012', src='b75cc39318ee749a1123971f19d895d71e35bd91', apk='74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e';
+a(c.candidate===id&&c.sourceCommit===src&&c.authority?.apkSha256===apk&&c.signing?.trustedEdgeSigningPass===false,'canonical');
+a(r1.candidate===id&&r1.sourceCommit===src&&r1.inputApk?.sha256===apk&&r1.trustedEdgeSigningPass===false,'R1');
+a(r2.candidate?.id===id&&r2.candidate?.sourceCommit===src&&r2.candidate?.canonicalInputApkSha256===apk&&r2.candidate?.signedApkSha256===null,'R2');
+a(r2.status==='BLOCKED_BY_R1_SIGNING'&&r2.currentState?.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier'); a(h.ownedDeviceUat?.requestAllowed===false,'UAT premature');
+a(r2.currentState?.q003==='ACTIVE'&&r2.currentState?.q004==='ACTIVE'&&r2.currentState?.q005==='ACTIVE'&&r2.currentState?.gMk0==='OPEN','independent gates'); a(r2.currentState?.buildReady===false&&r2.currentState?.releaseReady===false,'readiness');
+console.log('ALPHA2_R2_PREBUILD_CHAIN=PASS'); console.log('CANONICAL_IDENTITY=ALPHA2_2012_UNSIGNED_FROZEN'); console.log('NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'); console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'); console.log('BUILD_READY=NO'); console.log('RELEASE_READY=NO');

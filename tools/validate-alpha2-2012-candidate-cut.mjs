@@ -15,6 +15,8 @@ const fail = message => { throw new Error(`ALPHA2_2012_CANDIDATE_CUT_FAILED:${me
 const signed2009 = '7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a';
 const frozen2011Zip = '0cb4119f5ff62ddd7bf3771383ae9f81b3b3c5d3d4a52fa4f9e90591c90c2121';
 const frozen2011Apk = 'ea803fb00569b48b4cca17387aed81b93fd257fa3242bf5308d9fb9b1c71010a';
+const frozen2012Source = 'b75cc39318ee749a1123971f19d895d71e35bd91';
+const frozen2012Apk = '74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e';
 
 for (const marker of [
   '--build-number 2012',
@@ -88,11 +90,20 @@ if (authority.interbankSavings?.runtimeFetchEnabled !== false || authority.inter
 if (authority.privacy?.passwordPersisted !== false || authority.privacy?.dniDerivedOrStored !== false || authority.privacy?.crossInstitutionPasswordReuse !== false || authority.privacy?.genericParserFallback !== false) fail('PRIVACY_LAW_DRIFT');
 if (authority.claims?.physicalProfilePass !== false || authority.claims?.physicalAlpha2Pass !== false || authority.claims?.buildReady !== false || authority.claims?.releaseReady !== false) fail('PREMATURE_PROMOTION');
 
-// The previously stable-signed +2009 remains canonical until +2012 itself is
-// post-merge frozen and explicitly promoted. No physical claim is inherited.
-if (canonical.candidate !== '0.2.0-alpha.2+2009') fail('PREPROMOTION_CANONICAL_MUST_REMAIN_2009');
-if (canonical.signing?.signedApkSha256 !== signed2009 || canonical.signing?.trustedEdgeSigningPass !== true) fail('CANONICAL_2009_SIGNING_DRIFTED');
-if (campaign.candidate?.id !== '0.2.0-alpha.2+2009' || campaign.candidate?.signedApkSha256 !== signed2009) fail('R2_2009_AUTHORITY_DRIFTED');
+// The +2012 APK was compiled while canonical promotion was still pending.
+// After its successful post-merge freeze, current governance must bind that
+// exact APK as canonical but remain pre-signing. No +2009/+2011 physical or
+// stable-signing claim may be inherited.
+if (canonical.candidate !== '0.2.0-alpha.2+2012') fail('POSTPROMOTION_CANONICAL_MUST_BE_2012');
+if (canonical.sourceCommit !== frozen2012Source) fail('CANONICAL_2012_SOURCE_DRIFTED');
+if (canonical.authority?.apkSha256 !== frozen2012Apk || canonical.authority?.apkBytes !== 182538547) fail('CANONICAL_2012_APK_DRIFTED');
+if (canonical.signing?.status !== 'TRUSTED_EDGE_SIGNING_REQUIRED' || canonical.signing?.trustedEdgeSigningPass !== false || canonical.signing?.signedApkSha256 !== null || canonical.signing?.signedApkBytes !== null) fail('CANONICAL_2012_PRE_SIGNING_STATE_DRIFTED');
+if (canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed !== false) fail('CANONICAL_2012_PHYSICAL_INHERITANCE_FORBIDDEN');
+if (canonical.boundaries?.physicalAlpha2Pass !== false || canonical.boundaries?.buildReady !== false || canonical.boundaries?.releaseReady !== false) fail('CANONICAL_2012_PREMATURE_READY_PROMOTION');
+
+if (campaign.candidate?.id !== '0.2.0-alpha.2+2012' || campaign.candidate?.canonicalInputApkSha256 !== frozen2012Apk || campaign.candidate?.signedApkSha256 !== null) fail('R2_2012_AUTHORITY_DRIFTED');
+if (campaign.status !== 'BLOCKED_BY_R1_SIGNING' || campaign.currentState?.nextGate !== 'R1_TRUSTED_EDGE_SIGNING' || campaign.currentState?.currentBlocker !== 'TRUSTED_EDGE_SIGNING_2012_REQUIRED') fail('R2_2012_PRE_SIGNING_FRONTIER_DRIFTED');
+if (campaign.historicalInvalidatedCampaign?.candidate !== '0.2.0-alpha.2+2009' || campaign.historicalInvalidatedCampaign?.signedApkSha256 !== signed2009 || campaign.historicalInvalidatedCampaign?.evidenceInheritanceAllowed !== false || campaign.historicalInvalidatedCampaign?.continuationAllowed !== false) fail('R2_2009_HISTORY_DRIFTED');
 if (campaign.currentState?.buildReady !== false || campaign.currentState?.releaseReady !== false) fail('R2_PREMATURE_READY_PROMOTION');
 
 console.log('ALPHA2_2012_CANDIDATE_CUT=PASS');
@@ -111,8 +122,11 @@ console.log('DNI_DERIVATION_OR_STORAGE=NO');
 console.log('CANDIDATE_ID=0.2.0-alpha.2+2012');
 console.log('PREDECESSOR_CANONICAL=0.2.0-alpha.2+2009');
 console.log('PREDECESSOR_PHYSICAL_EVIDENCE_INHERITANCE=NO');
-console.log('CANONICAL_PROMOTION_PENDING=YES');
-console.log('R1_TRUSTED_EDGE_RESIGN_REQUIRED=YES');
+console.log('BUILD_TIME_CANONICAL_PROMOTION_PENDING=YES');
+console.log('CANONICAL_PROMOTION=FROZEN_PRE_SIGNING');
+console.log(`CANONICAL_2012_APK_SHA256=${frozen2012Apk}`);
+console.log('R1_TRUSTED_EDGE_SIGNING=PENDING');
+console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING');
 console.log('PHYSICAL_ALPHA2_PASS=NO');
 console.log('BUILD_READY=NO');
 console.log('RELEASE_READY=NO');
