@@ -1,26 +1,29 @@
 {
-  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V10",
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V11",
   "project": "FinanceSensor",
-  "candidate": "0.2.0-alpha.2+2008",
-  "sourceCommit": "45b605d29fe0b90f528e4f0f952ab878080b2f0b",
-  "canonicalRunId": 34874126273,
-  "canonicalJobId": 104076982845,
-  "canonicalArtifactId": 10360246203,
-  "canonicalArtifactZipSha256": "f517fac8277bfdfe589758712cb30d3199e8a9415d6a5ea08b4903cee8e03cca",
+  "candidate": "0.2.0-alpha.2+2009",
+  "productSourceCommit": "9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f",
+  "sourceCommit": "e19bcccee13e326bbc08012533ddaeba026c633a",
+  "canonicalRunId": 34913707304,
+  "canonicalJobId": 104206615482,
+  "canonicalArtifactId": 10375277563,
+  "canonicalArtifactZipSha256": "1dc730e9c2c0f3465149869b44ffcf27a4a18bc6f3b009e288ce85ca8e4e9ab7",
   "inputApk": {
-    "sha256": "eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238",
-    "bytes": 182515867,
+    "sha256": "1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717",
+    "bytes": 182514883,
     "minSdk": 31,
     "targetSdk": 36,
     "signatureVerify": "PASS",
     "aapt2Parse": "PASS",
     "postPasswordSafeStopDiagnostics": true,
+    "postPasswordImportIsolation": true,
+    "statementFailureBlocksSafeProjection": false,
     "ownedDeviceInstallPass": false,
     "ownedDeviceLaunchPass": false,
     "physicalClaimsInheritedFromPriorCandidate": false
   },
   "signer": {
-    "powershellGitBlob": "d782f03bb97ca0910436500080bcaf10efc00161",
+    "powershellGitBlob": "fded88d0f4113d703211eb09316e3d06f9bbf67a",
     "cmdGitBlob": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "windowsNativeStdin": "PROCESS_START_INFO_REDIRECTED",
     "directPasswordPipe": "FORBIDDEN",
@@ -29,83 +32,55 @@
     "exactScope": "gmail.readonly"
   },
   "handoffBundle": {
-    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip",
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v11.zip",
     "status": "READY_FROZEN",
-    "sha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
-    "bytes": 86635935,
+    "sha256": "d2bc450d0ecac4ac8aff9e462ba0c9ccaf323d622e997180328aa38d877d545d",
+    "bytes": 86635677,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
     "zipStructure": "PASS",
     "zipIntegrity": "PASS",
     "manifestIntegrity": "PASS",
-    "ps1GitBlobVerified": "d782f03bb97ca0910436500080bcaf10efc00161",
+    "ps1GitBlobVerified": "fded88d0f4113d703211eb09316e3d06f9bbf67a",
     "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
-    "supersedesBundleSha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
+    "supersedesBundleSha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
     "generationReceipt": {
-      "foundationMergeSha": "9e38048f88ac9b54589ab5ae7a42e64ed83f1db6",
-      "workflowRunId": 34882888075,
-      "artifactId": 10364270078,
-      "artifactDigest": "sha256:4dd8bd89cd7850e57d2abeb295fc551382a0342a36ca49698a650c983b9ca364",
-      "artifactBytes": 86267875,
-      "innerBundleSha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
-      "innerBundleBytes": 86635935
+      "status": "PENDING_POST_MERGE_CI_RECEIPT",
+      "expectedInnerBundleSha256": "d2bc450d0ecac4ac8aff9e462ba0c9ccaf323d622e997180328aa38d877d545d",
+      "expectedInnerBundleBytes": 86635677
     },
-    "certificationReceipt": {
-      "receiptPath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
-      "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt",
-      "receivedDate": "2026-09-14",
-      "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
-      "signedApkBytes": 182538790,
-      "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
-      "sanitizationPass": true,
-      "userOriginated": true,
-      "publicCiOriginated": false
-    }
+    "certificationReceipt": null
   },
   "supersededBundles": [
     {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip",
-      "sha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2007_RUNTIME_AFTER_POST_PASSWORD_SAFE_STOP_DIAGNOSTIC_REPAIR",
+      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip",
+      "sha256": "598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213",
+      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2008_RUNTIME_AFTER_POST_PASSWORD_IMPORT_REMEDIATION",
       "safeToUse": false
     },
     {
-      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v8.zip",
-      "sha256": "c0932d29235f5e213dd2e830c7641796fa9179795744bc71e4dc9dbc4e3dcb80",
-      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2006_RUNTIME_AFTER_OD3_ATTACHMENT_FETCH_REMEDIATION",
+      "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v9.zip",
+      "sha256": "ce8442047a9f5c6df0caf5bc9d0e9337e17ec57d9d600d647b8b4123323751c8",
+      "reason": "PINNED_TO_SUPERSEDED_ALPHA2_2007_RUNTIME",
       "safeToUse": false
     }
   ],
   "historicalPhysicalReceipts": [
     {
+      "candidate": "0.2.0-alpha.2+2008",
+      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
+      "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
+      "inheritAsCurrentPass": false,
+      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_FOR_2009"
+    },
+    {
       "candidate": "0.2.0-alpha.2+2007",
       "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.json",
       "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
       "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_FOR_2008"
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2006",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2006-2026-09-08.json",
-      "signedApkSha256": "36fa2f4960b9986f14037faf415906d57bac72080bbf28cec60299f85fcba7c0",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2_AFTER_OD3_REMEDIATION"
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2005",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2005-2026-09-08.json",
-      "signedApkSha256": "530ef3fa17c22f94ef0a94aaf625df2ef33022c84d16fad2604a3e0dfc5e0b85",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2003",
-      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2026-09-08.json",
-      "signedApkSha256": "7b30ff7d88d92b82729d1eac72c654884eafa4bcd0f9cbaef13a98d6fb18bbc6",
-      "inheritAsCurrentPass": false,
-      "reason": "SOURCE_OR_APK_IDENTITY_CHANGE_REOPENED_R1_R2"
+      "reason": "HISTORICAL_NON_INHERITABLE"
     }
   ],
   "ciGate": {
@@ -113,23 +88,17 @@
     "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
     "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
     "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
-    "historicalPhysicalReceiptValidator": "tools/validate-alpha2-r1-physical-signing-receipt.mjs",
     "powershellParserRequired": true,
     "privateSigningMaterialAllowed": false,
     "bundleGenerationInPublicCi": true,
     "physicalSigningInPublicCi": false,
-    "exactBranchHeadCheckoutRequired": true
+    "exactCanonicalArtifactRequired": true
   },
-  "physicalReceipt": {
-    "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.json",
-    "sourcePath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt",
-    "receivedDate": "2026-09-14",
-    "sanitizationPass": true
-  },
-  "status": "TRUSTED_EDGE_SIGNING_PASS",
-  "trustedEdgeSigningPass": true,
-  "signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277",
-  "signedApkBytes": 182538790,
+  "physicalReceipt": null,
+  "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
+  "trustedEdgeSigningPass": false,
+  "signedApkSha256": null,
+  "signedApkBytes": null,
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
