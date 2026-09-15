@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V6",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V7",
   "candidate": "0.2.0-alpha.2+2012",
   "certifiedPrHead": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
   "productSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
@@ -33,13 +33,24 @@
     "profileKeyDiskPersistence": false,
     "dniDerivationOrStorage": false
   },
+  "stableSignedAuthority": {
+    "status": "FROZEN_FROM_TRUSTED_EDGE_RECEIPT",
+    "inputApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+    "inputApkBytes": 182538547,
+    "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+    "signedApkBytes": 182563366,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "receiptPath": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json",
+    "privateSigningMaterialInGitHub": false,
+    "physicalEvidenceInherited": false
+  },
   "physicalInstallabilityObservation": {
-    "status": "BLOCKED_UNTIL_TRUSTED_EDGE_SIGNING",
+    "status": "ELIGIBLE_NOT_EXECUTED",
     "installPass": false,
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "+2012 is the frozen canonical APK. Prior +2009/+2011 physical or signing evidence cannot be inherited; owned-device execution is forbidden until the exact +2012 APK is signed by the stable trusted-edge identity.",
+    "reason": "+2012 now has a frozen stable-signed identity. OD0 must verify and install this exact signed APK with data-preserving replacement before any physical PASS is asserted.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
@@ -65,11 +76,11 @@
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
-    "trustedEdgeSigningPass": false,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
-    "receipt": null
+    "status": "TRUSTED_EDGE_SIGNING_PASS",
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+    "signedApkBytes": 182563366,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json"
   },
   "boundaries": {
     "realOauthExecutedByCi": false,
