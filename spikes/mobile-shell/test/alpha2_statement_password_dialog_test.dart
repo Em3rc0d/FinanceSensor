@@ -16,7 +16,7 @@ const _candidate = Alpha2StatementCandidateHandle(
 
 void main() {
   testWidgets(
-    'submitting a session-only PDF password tears down the dialog without framework exceptions',
+    'submitting a profile-scoped session key tears down the dialog without framework exceptions',
     (tester) async {
       String? result;
 
@@ -43,14 +43,20 @@ void main() {
 
       await tester.tap(find.text('Open test dialog'));
       await tester.pumpAndSettle();
-      expect(find.text('Abrir estado de cuenta'), findsOneWidget);
+      expect(find.text('Abrir estados de cuenta'), findsOneWidget);
+      expect(find.text('Clave del perfil BCP'), findsOneWidget);
+      expect(
+        find.textContaining('mientras Gmail siga conectado'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('no se guarda en disco'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'session-only-test');
-      await tester.tap(find.text('Abrir localmente'));
+      await tester.tap(find.text('Usar para este perfil'));
       await tester.pumpAndSettle();
 
       expect(result, 'session-only-test');
-      expect(find.text('Abrir estado de cuenta'), findsNothing);
+      expect(find.text('Abrir estados de cuenta'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
