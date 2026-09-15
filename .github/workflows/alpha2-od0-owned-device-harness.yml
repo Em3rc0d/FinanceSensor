@@ -13,6 +13,8 @@ on:
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json'
       - '.github/workflows/alpha2-od0-owned-device-harness.yml'
       - 'tools/validate-ci-runner-policy.mjs'
   push:
@@ -26,6 +28,8 @@ on:
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json'
       - '.github/workflows/alpha2-od0-owned-device-harness.yml'
       - 'tools/validate-ci-runner-policy.mjs'
 
@@ -37,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-blocked-boundary:
+  validate-and-package-uat-handoff:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -59,25 +63,64 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Validate fail-closed OD0 boundary
+      - name: Validate armed OD0 boundary
         run: node tools/validate-alpha2-od0-owned-device-harness.mjs
 
       - name: Validate CI runner policy
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve pre-signing physical boundary
+      - name: Package consolidated owned-device UAT handoff
+        shell: bash
         run: |
           set -euo pipefail
-          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=BLOCKED'
+          OUT='FinanceSensor-ALPHA2-R2-CONSOLIDATED-UAT-2009'
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1 "$OUT/"
+          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd "$OUT/"
+          cp mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md "$OUT/CERTIFICATION-HANDOFF.md"
+          cat > "$OUT/README.txt" <<'README'
+          FinanceSensor Alpha.2 +2009 — consolidated owned-device certification
+
+          Expected local APK file:
+          FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2009.apk
+
+          Expected SHA-256:
+          7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a
+
+          Put that APK in this folder and double-click RUN-FINANCESENSOR-ALPHA2-OD0.cmd.
+          The harness verifies the exact signed APK, installs it without clearing app data, launches FinanceSensor and creates a sanitized OD0 receipt.
+
+          Then use the app once: connect Gmail, enter the statement password locally if requested, refresh, and verify that the financial view materializes. Return only the sanitized receipt and the final visible result needed for certification.
+
+          Never upload passwords, keystores, OAuth tokens, raw Gmail content, PDFs, account numbers, or transaction plaintext.
+          README
+          test "$(find "$OUT" -maxdepth 1 -type f | wc -l)" = '4'
+          grep -q '7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a' "$OUT/README.txt"
+          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=READY'
+
+      - name: Upload consolidated UAT handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-alpha2-r2-consolidated-uat-2009-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: FinanceSensor-ALPHA2-R2-CONSOLIDATED-UAT-2009/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Preserve physical boundary
+        run: |
+          set -euo pipefail
+          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=READY'
           echo 'CANDIDATE=0.2.0-alpha.2+2009'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'TRUSTED_EDGE_SIGNING_PASS=NO'
-          echo 'OD0_EXECUTION_ALLOWED=NO'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'STABLE_SIGNED_APK_SHA256=7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a'
+          echo 'OD0_EXECUTION_ALLOWED=YES'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
           echo 'PUBLIC_CI_ORIGINATED_OD0_PASS=0'
-          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_NEXT_GATE=CONSOLIDATED_OWNED_DEVICE_UAT'
           echo 'ADB_EXECUTED_BY_CI=0'
           echo 'DEVICE_TOUCHED_BY_CI=0'
+          echo 'FINANCIAL_VIEW_MATERIALIZATION=PHYSICAL_CERTIFICATION_REQUIRED'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

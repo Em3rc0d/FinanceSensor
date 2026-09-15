@@ -4,7 +4,7 @@
   "mode": "EXCEPTION_ONLY_CERTIFICATION",
   "currentCandidate": "0.2.0-alpha.2+2009",
   "candidateSourceCommit": "9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f",
-  "candidateState": "PRE_SIGNING_ELIGIBLE",
+  "candidateState": "OWNED_DEVICE_UAT_ELIGIBLE",
   "humanDiscoveryTestingForbidden": true,
   "candidateGenerationNoiseEscalatesToHuman": false,
   "candidateMutationResetsEligibility": true,
@@ -27,10 +27,12 @@
     "noNewerProductSourceMutation": true
   },
   "ownedDeviceUat": {
-    "requestAllowed": false,
-    "humanUatEligible": false,
-    "trustedEdgeSigningPass": false,
-    "stableSignedArtifactIdentityFrozen": false,
+    "requestAllowed": true,
+    "humanUatEligible": true,
+    "trustedEdgeSigningPass": true,
+    "stableSignedArtifactIdentityFrozen": true,
+    "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
+    "signedApkBytes": 182538790,
     "packageFrozen": "com.financesensor.lab.gmailconnection.r2",
     "exactOauthScopeFrozen": "gmail.readonly",
     "finiteCampaignContractFrozen": true,
@@ -38,14 +40,11 @@
     "sameCandidateRepeatRequested": false,
     "purposeWhenEligible": "CERTIFICATION_ONLY"
   },
-  "blockers": [
-    "TRUSTED_EDGE_SIGNING_2009_NOT_EXECUTED",
-    "OWNED_DEVICE_UAT_ELIGIBILITY_NOT_PROVEN"
-  ],
+  "blockers": [],
   "claims": {
     "signingRequestAllowed": true,
-    "ownedDeviceUatRequestAllowed": false,
-    "humanUatEligible": false,
+    "ownedDeviceUatRequestAllowed": true,
+    "humanUatEligible": true,
     "physicalAlpha2Pass": false,
     "buildReady": false,
     "releaseReady": false

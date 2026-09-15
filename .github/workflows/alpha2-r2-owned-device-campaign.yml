@@ -81,10 +81,10 @@ jobs:
       - name: Human intervention gate
         run: node tools/validate-alpha2-human-intervention-gate.mjs
 
-      - name: Current +2009 R1 pre-signing handoff
+      - name: Current +2009 R1 signed handoff
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
 
-      - name: R2 +2009 signing-blocked campaign contract
+      - name: R2 +2009 consolidated campaign contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild chain
@@ -110,18 +110,18 @@ jobs:
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve +2009 pre-signing physical boundary
+      - name: Preserve post-signing physical boundary
         run: |
           set -euo pipefail
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'STABLE_SIGNED_APK_SHA256=7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'R2_PHYSICAL_CAMPAIGN=READY_FOR_CONSOLIDATED_UAT'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
           echo 'CURRENT_OD0_OD11_PASS=NONE'
           echo 'ALPHA2_2008_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
-          echo 'R2_CURRENT_BLOCKER=TRUSTED_EDGE_SIGNING_2009_REQUIRED'
+          echo 'R2_NEXT_GATE=CONSOLIDATED_OWNED_DEVICE_UAT'
+          echo 'FINANCIAL_VIEW_MATERIALIZATION=PHYSICAL_CERTIFICATION_REQUIRED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'

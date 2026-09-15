@@ -4,13 +4,13 @@ cd /d "%~dp0"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN-FINANCESENSOR-ALPHA2-OD0.ps1"
 set EXITCODE=%ERRORLEVEL%
 echo.
-if "%EXITCODE%"=="2" (
-  echo FinanceSensor Alpha.2 OD0 is intentionally BLOCKED until trusted-edge signing for +2009 passes.
-  echo No Android device operation was attempted. Return only FinanceSensor-ALPHA2-R2-OD0-BLOCKED.txt if requested.
-) else if not "%EXITCODE%"=="0" (
-  echo FinanceSensor Alpha.2 OD0 did not execute. No physical PASS should be inferred.
+if not "%EXITCODE%"=="0" (
+  echo FinanceSensor Alpha.2 +2009 did not complete OD0. No physical PASS should be inferred.
+  echo Do not uninstall the app automatically; preserve local data and return only the sanitized OD0 receipt if one was generated.
 ) else (
-  echo Self-test only. OD0 physical execution remains blocked.
+  echo FinanceSensor Alpha.2 +2009 installed and launched with the exact stable-signed APK.
+  echo Continue in the app: connect Gmail, unlock the BCP SAVINGS statement when requested, refresh, and verify that the financial view appears.
+  echo Return the sanitized OD0 receipt plus the final visible result; do not send passwords, tokens, PDFs, or account numbers.
 )
 pause
 exit /b %EXITCODE%

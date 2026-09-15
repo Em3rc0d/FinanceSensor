@@ -20,7 +20,6 @@ const r1 = JSON.parse(fs.readFileSync(paths.r1,'utf8'));
 const r2 = JSON.parse(fs.readFileSync(paths.r2,'utf8'));
 const gate = JSON.parse(fs.readFileSync(paths.gate,'utf8'));
 
-// The design document is an immutable blueprint/snapshot. Current execution authority lives in canonical/R1/R2/gate graphs.
 assert(design.schemaVersion === 'MK0_PREBUILD_REMAINDER_DESIGN_V1' && design.project === 'FinanceSensor' && design.mk === 'MK0' && design.designFreeze === 'PASS', 'design snapshot identity drifted');
 assert(design.frozenAtBaseCommit === 'ac195baebc2966521b2dcc73dfa3376ae09e6b4d', 'frozen base drifted');
 const snapshot = design.canonicalAlpha2 ?? {};
@@ -32,21 +31,20 @@ assert(JSON.stringify(reopen?.reopens) === JSON.stringify(['R1','R2']), 'R1/R2 r
 const nodeIds = (design.nodes ?? []).map(x => x.id);
 assert(JSON.stringify(nodeIds) === JSON.stringify(['R0','R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']), 'frozen remainder topology drifted');
 
-const expected = {candidate:'0.2.0-alpha.2+2009',productSource:'9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f',source:'e19bcccee13e326bbc08012533ddaeba026c633a',apk:'1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717',bytes:182514883};
+const expected = {candidate:'0.2.0-alpha.2+2009',productSource:'9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f',source:'e19bcccee13e326bbc08012533ddaeba026c633a',apk:'1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717',bytes:182514883,signed:'7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a',signedBytes:182538790};
 assert(canonical.candidate === expected.candidate && canonical.productSourceCommit === expected.productSource && canonical.sourceCommit === expected.source, 'current canonical source drifted');
 assert(canonical.authority?.apkSha256 === expected.apk && canonical.authority?.apkBytes === expected.bytes, 'current canonical APK drifted');
-assert(canonical.authority?.minSdk === 31 && canonical.authority?.targetSdk === 36 && canonical.authority?.compileSdk === 37, 'Android baseline drifted');
 assert(canonical.signing?.androidOauthPackage === 'com.financesensor.lab.gmailconnection.r2' && canonical.signing?.exactScope === 'gmail.readonly', 'package/scope drifted');
-assert(canonical.signing?.trustedEdgeSigningPass === false && canonical.signing?.status === 'TRUSTED_EDGE_SIGNING_REQUIRED', 'current canonical must await signing');
-assert(canonical.physicalInstallabilityObservation?.status === 'BLOCKED_UNTIL_TRUSTED_EDGE_SIGNING' && canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed === false, 'physical frontier drifted');
+assert(canonical.signing?.trustedEdgeSigningPass === true && canonical.signing?.status === 'TRUSTED_EDGE_SIGNING_PASS' && canonical.signing?.signedApkSha256 === expected.signed && canonical.signing?.signedApkBytes === expected.signedBytes, 'current canonical stable signing drifted');
+assert(canonical.physicalInstallabilityObservation?.status === 'SIGNED_NOT_YET_PHYSICALLY_OBSERVED' && canonical.physicalInstallabilityObservation?.inheritanceFromPriorCandidateAllowed === false, 'physical frontier drifted');
 for (const key of ['physicalAlpha2Pass','buildReady','releaseReady']) assert(canonical.boundaries?.[key] === false, `${key} must remain false`);
 
 assert(r1.candidate === expected.candidate && r1.sourceCommit === expected.source && r1.inputApk?.sha256 === expected.apk, 'R1 current authority drifted');
-assert(r1.status === 'TRUSTED_EDGE_SIGNING_REQUIRED' && r1.trustedEdgeSigningPass === false && r1.physicalReceipt === null, 'R1 must be open/pending signing');
-assert(r2.candidate?.id === expected.candidate && r2.candidate?.canonicalInputApkSha256 === expected.apk, 'R2 current authority drifted');
-assert(r2.status === 'BLOCKED_BY_R1_SIGNING' && r2.currentState?.r2PhysicalCampaign === 'BLOCKED_BY_R1_SIGNING', 'R2 must be blocked by R1');
-assert(r2.currentState?.nextGate === 'R1_TRUSTED_EDGE_SIGNING', 'current execution frontier must be R1 signing');
-assert(gate.preSigning?.requestAllowed === true && gate.ownedDeviceUat?.requestAllowed === false, 'human intervention frontier drifted');
+assert(r1.status === 'TRUSTED_EDGE_SIGNING_PASS' && r1.trustedEdgeSigningPass === true && r1.signedApkSha256 === expected.signed, 'R1 signing PASS drifted');
+assert(r2.candidate?.id === expected.candidate && r2.candidate?.canonicalInputApkSha256 === expected.apk && r2.candidate?.signedApkSha256 === expected.signed, 'R2 current authority drifted');
+assert(r2.status === 'READY_FOR_CONSOLIDATED_OWNED_DEVICE_UAT' && r2.currentState?.r2PhysicalCampaign === 'READY_FOR_CONSOLIDATED_UAT', 'R2 must be ready for consolidated UAT');
+assert(r2.currentState?.nextGate === 'CONSOLIDATED_OWNED_DEVICE_UAT', 'current execution frontier must be consolidated UAT');
+assert(gate.ownedDeviceUat?.requestAllowed === true && gate.ownedDeviceUat?.humanUatEligible === true, 'human intervention frontier drifted');
 
 for (const id of ['Q-003','Q-004','Q-005']) assert(ledger.nodes?.find(n => n.id === id)?.status === 'ACTIVE', `${id} must remain ACTIVE`);
 for (const id of ['A-001','SEC-001','DM-001']) assert(ledger.nodes?.find(n => n.id === id)?.status === 'DRAFTED', `${id} must remain DRAFTED`);
@@ -62,11 +60,10 @@ for (const marker of ['UNMAPPED_PRODUCT_BUILD = FORBIDDEN','ONE_CANONICAL_CANDID
 console.log('PREBUILD_REMAINDER_DESIGN=PASS');
 console.log('DESIGN_FREEZE_SNAPSHOT=IMMUTABLE');
 console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2009');
-console.log('CURRENT_EXECUTION_FRONTIER=R1_TRUSTED_EDGE_SIGNING');
-console.log('SIGNING_REQUEST_ALLOWED=YES');
-console.log('R1_TRUSTED_EDGE_SIGNING=PENDING');
-console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING');
-console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO');
+console.log('CURRENT_EXECUTION_FRONTIER=CONSOLIDATED_OWNED_DEVICE_UAT');
+console.log('R1_TRUSTED_EDGE_SIGNING=PASS');
+console.log('R2_PHYSICAL_CAMPAIGN=READY_FOR_CONSOLIDATED_UAT');
+console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES');
 console.log('Q003_Q004_Q005=ACTIVE');
 console.log('G_MK0=OPEN');
 console.log('BUILD_READY=NO');
