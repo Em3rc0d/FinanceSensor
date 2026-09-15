@@ -44,6 +44,7 @@ class _Alpha2HomeState extends State<Alpha2Home> {
     ingress: Alpha2PlatformIngressSource(),
     vault: Alpha2PlatformVault(),
   );
+  final Map<String, String> _profilePasswords = <String, String>{};
   Alpha2SessionState? _sessionState;
   Alpha2PipelineResult? _result;
   bool _busy = true;
@@ -53,6 +54,12 @@ class _Alpha2HomeState extends State<Alpha2Home> {
   void initState() {
     super.initState();
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _profilePasswords.clear();
+    super.dispose();
   }
 
   Future<void> _bootstrap() async {
@@ -89,6 +96,7 @@ class _Alpha2HomeState extends State<Alpha2Home> {
         tenantId: tenantId,
         passwordProvider: _requestStatementPassword,
       );
+      _invalidateRejectedProfilePasswords(result);
       if (!mounted) return;
       setState(() => _result = result);
     } on Alpha2PipelineStageException catch (error) {
@@ -102,7 +110,27 @@ class _Alpha2HomeState extends State<Alpha2Home> {
     }
   }
 
+  void _invalidateRejectedProfilePasswords(Alpha2PipelineResult result) {
+    final profilesWithUsablePdf = result.statementOutcomes
+        .where((item) => item.status == 'IMPORTED' || item.status == 'REVIEW_REQUIRED' || item.status == 'PERSISTENCE_REJECTED')
+        .map((item) => item.profileId)
+        .toSet();
+    final profilesWithOpenOrPasswordReject = result.statementOutcomes
+        .where(
+          (item) => item.status == 'PDF_REJECTED' &&
+              item.reviewCodes.contains('STATEMENT_PDF_OPEN_OR_PASSWORD_REJECTED'),
+        )
+        .map((item) => item.profileId)
+        .toSet();
+    for (final profileId in profilesWithOpenOrPasswordReject) {
+      if (!profilesWithUsablePdf.contains(profileId)) {
+        _profilePasswords.remove(profileId);
+      }
+    }
+  }
+
   Future<void> _disconnect() async {
+    _profilePasswords.clear();
     setState(() { _busy = true; _safeError = null; });
     try {
       final state = await _session.disconnect();
@@ -117,12 +145,18 @@ class _Alpha2HomeState extends State<Alpha2Home> {
   }
 
   Future<String?> _requestStatementPassword(Alpha2StatementCandidateHandle candidate) async {
+    final cached = _profilePasswords[candidate.profileId];
+    if (cached != null && cached.isNotEmpty) return cached;
     if (!mounted) return null;
-    return showDialog<String>(
+    final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => Alpha2StatementPasswordDialog(candidate: candidate),
     );
+    if (password != null && password.isNotEmpty) {
+      _profilePasswords[candidate.profileId] = password;
+    }
+    return password;
   }
 
   @override
@@ -213,21 +247,21 @@ class _Alpha2StatementPasswordDialogState extends State<Alpha2StatementPasswordD
   Widget build(BuildContext context) {
     final candidate = widget.candidate;
     return AlertDialog(
-      title: const Text('Abrir estado de cuenta'),
+      title: const Text('Abrir estados de cuenta'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${candidate.institutionCode} · ${candidate.productType}',style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          const Text('La clave se usa únicamente durante esta actualización local para abrir los EECC de este perfil. No se guarda ni se sincroniza.'),
+          const Text('Una sola clave se reutiliza para los EECC de este perfil mientras Gmail siga conectado. Permanece solo en memoria: no se guarda en disco ni se sincroniza.'),
           const SizedBox(height: 16),
-          TextField(controller: _controller,autofocus: true,obscureText: true,enableSuggestions: false,autocorrect: false,decoration: const InputDecoration(labelText: 'Clave del PDF',border: OutlineInputBorder()),onSubmitted: _submit),
+          TextField(controller: _controller,autofocus: true,obscureText: true,enableSuggestions: false,autocorrect: false,decoration: InputDecoration(labelText: 'Clave del perfil ${candidate.institutionCode}',border: const OutlineInputBorder()),onSubmitted: _submit),
         ],
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(),child: const Text('Ahora no')),
-        FilledButton(onPressed: () => _submit(_controller.text),child: const Text('Abrir localmente')),
+        FilledButton(onPressed: () => _submit(_controller.text),child: const Text('Usar para este perfil')),
       ],
     );
   }
