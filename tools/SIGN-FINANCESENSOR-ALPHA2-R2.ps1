@@ -1,24 +1,23 @@
-param(
-  [string]$InputApk,
-  [string]$ApkSignerJar,
-  [string]$OutputApk
-)
-
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Candidate = '0.2.0-alpha.2+2008'
-$ExpectedSourceCommit = '45b605d29fe0b90f528e4f0f952ab878080b2f0b'
-$ExpectedInputSha256 = 'eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238'
-$ExpectedInputBytes = 182515867
-$CanonicalRunId = '34874126273'
-$CanonicalArtifactId = '10360246203'
+$Candidate = '0.2.0-alpha.2+2009'
+$ProductSourceCommit = '9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f'
+$CanonicalSourceCommit = 'e19bcccee13e326bbc08012533ddaeba026c633a'
+$ExpectedInputSha256 = '1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717'
+$ExpectedInputBytes = 182514883
+$CanonicalRunId = '34913707304'
+$CanonicalArtifactId = '10375277563'
 $ExpectedSignerSha1 = '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $ExpectedPackage = 'com.financesensor.lab.gmailconnection.r2'
 $ExpectedScope = 'gmail.readonly'
-$DefaultOutputName = 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2008.apk'
 
-function Convert-SecureStringToPlain([Security.SecureString]$Secure) {
+$BaseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$InputApk = Join-Path $BaseDir 'FinanceSensor-ALPHA2-CANONICAL-INPUT.apk'
+$ApkSignerJar = Join-Path $BaseDir 'public-signing-tool\lib\apksigner.jar'
+$OutputApk = Join-Path $BaseDir 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2009.apk'
+
+function Convert-SecureToPlain([Security.SecureString]$Secure) {
   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
   try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
   finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
@@ -30,200 +29,126 @@ function Normalize-Sha1([string]$Value) {
   return (($hex -split '(.{2})' | Where-Object { $_ }) -join ':')
 }
 
-function Resolve-Java {
-  $cmd = Get-Command java -ErrorAction SilentlyContinue
+function Resolve-Exe([string]$Name) {
+  $cmd = Get-Command $Name -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
-  $candidates = @()
-  if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin\java.exe') }
+  if ($env:JAVA_HOME) {
+    $candidate = Join-Path $env:JAVA_HOME "bin\$Name.exe"
+    if (Test-Path -LiteralPath $candidate) { return $candidate }
+  }
   if ($env:ProgramFiles) {
-    $candidates += (Join-Path $env:ProgramFiles 'Android\Android Studio\jbr\bin\java.exe')
-    $candidates += (Join-Path $env:ProgramFiles 'Android\Android Studio\jre\bin\java.exe')
-  }
-  foreach ($candidate in $candidates) {
-    if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
+    $candidate = Join-Path $env:ProgramFiles "Android\Android Studio\jbr\bin\$Name.exe"
+    if (Test-Path -LiteralPath $candidate) { return $candidate }
   }
   return $null
 }
 
-function Resolve-Keytool([string]$JavaExe) {
-  $cmd = Get-Command keytool -ErrorAction SilentlyContinue
-  if ($cmd) { return $cmd.Source }
-  $candidates = @((Join-Path (Split-Path -Parent $JavaExe) 'keytool.exe'))
-  if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin\keytool.exe') }
-  if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'Android\Android Studio\jbr\bin\keytool.exe') }
-  foreach ($candidate in ($candidates | Select-Object -Unique)) {
-    if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
-  }
-  return $null
-}
-
-function Choose-File([string]$Title, [string]$Filter, [string]$FallbackPrompt) {
+function Choose-Keystore {
   try {
     Add-Type -AssemblyName System.Windows.Forms
     $dialog = New-Object System.Windows.Forms.OpenFileDialog
-    $dialog.Title = $Title
-    $dialog.Filter = $Filter
-    $dialog.Multiselect = $false
+    $dialog.Title = 'Select private FINANCESENSOR_R2_LAB keystore'
+    $dialog.Filter = 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*'
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { return $dialog.FileName }
   } catch { }
-  return (Read-Host $FallbackPrompt).Trim('"')
+  return (Read-Host 'Full path to private FINANCESENSOR_R2_LAB keystore').Trim('"')
 }
 
-function Find-BundledApkSignerJar([string]$InputPath) {
-  $cursor = Split-Path -Parent $InputPath
-  while ($cursor) {
-    $candidate = Join-Path $cursor 'public-signing-tool\lib\apksigner.jar'
-    if (Test-Path -LiteralPath $candidate) { return $candidate }
-    $parent = Split-Path -Parent $cursor
-    if (-not $parent -or $parent -eq $cursor) { break }
-    $cursor = $parent
-  }
-  return $null
-}
+function Quote-Arg([string]$Value) { return '"' + $Value.Replace('"', '\"') + '"' }
 
-function Quote-ProcessArgument([string]$Value) {
-  if ($null -eq $Value) { return '""' }
-  return '"' + $Value.Replace('"', '\"') + '"'
-}
-
-function Invoke-ProcessWithStdin([string]$FileName, [string[]]$Arguments, [string[]]$InputLines) {
+function Invoke-WithStdin([string]$FileName, [string[]]$Arguments, [string[]]$InputLines) {
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = $FileName
-  $psi.Arguments = (($Arguments | ForEach-Object { Quote-ProcessArgument $_ }) -join ' ')
+  $psi.Arguments = (($Arguments | ForEach-Object { Quote-Arg $_ }) -join ' ')
   $psi.UseShellExecute = $false
   $psi.RedirectStandardInput = $true
   $psi.RedirectStandardOutput = $true
   $psi.RedirectStandardError = $true
   $psi.CreateNoWindow = $true
-
-  $process = New-Object System.Diagnostics.Process
-  $process.StartInfo = $psi
-  if (-not $process.Start()) { throw "Could not start native process: $FileName" }
-
-  $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-  $stderrTask = $process.StandardError.ReadToEndAsync()
-  foreach ($line in $InputLines) { $process.StandardInput.WriteLine($line) }
-  $process.StandardInput.Close()
-  $process.WaitForExit()
-
-  $stdout = $stdoutTask.Result
-  $stderr = $stderrTask.Result
-  $combined = @()
-  if ($stdout) { $combined += ($stdout -split "`r?`n") }
-  if ($stderr) { $combined += ($stderr -split "`r?`n") }
-
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  if (-not $p.Start()) { throw "Could not start $FileName" }
+  $stdout = $p.StandardOutput.ReadToEndAsync()
+  $stderr = $p.StandardError.ReadToEndAsync()
+  foreach ($line in $InputLines) { $p.StandardInput.WriteLine($line) }
+  $p.StandardInput.Close()
+  $p.WaitForExit()
   return [pscustomobject]@{
-    ExitCode = $process.ExitCode
-    Lines = @($combined | Where-Object { $_ -ne '' })
+    ExitCode = $p.ExitCode
+    Lines = @(($stdout.Result + "`n" + $stderr.Result) -split "`r?`n" | Where-Object { $_ -ne '' })
   }
 }
 
-function Remove-OutputArtifacts([string]$OutputPath) {
-  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath "$OutputPath.sha256" -Force -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath "$OutputPath.receipt.txt" -Force -ErrorAction SilentlyContinue
+function Remove-Outputs {
+  Remove-Item -LiteralPath $OutputApk -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath "$OutputApk.sha256" -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath "$OutputApk.receipt.txt" -Force -ErrorAction SilentlyContinue
 }
 
-$java = Resolve-Java
-if (-not $java) { throw 'Java was not found. Install Android Studio/JDK or expose java.exe locally.' }
-$keytool = Resolve-Keytool -JavaExe $java
-if (-not $keytool) { throw 'keytool.exe could not be resolved from the installed Java runtime.' }
+$java = Resolve-Exe 'java'
+$keytool = Resolve-Exe 'keytool'
+if (-not $java -or -not $keytool) { throw 'Java/keytool not found. Install Android Studio/JDK or expose JAVA_HOME.' }
+if (-not (Test-Path -LiteralPath $InputApk)) { throw 'Frozen canonical +2009 APK is missing from this bundle.' }
+if (-not (Test-Path -LiteralPath $ApkSignerJar)) { throw 'Bundled public apksigner.jar is missing.' }
 
-if ([string]::IsNullOrWhiteSpace($InputApk)) {
-  $InputApk = Choose-File -Title 'Select canonical FinanceSensor Alpha.2 APK' -Filter 'Android package (*.apk)|*.apk|All files (*.*)|*.*' -FallbackPrompt 'Full path to canonical Alpha.2 APK'
+$inputInfo = Get-Item -LiteralPath $InputApk
+$inputHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $InputApk).Hash.ToLowerInvariant()
+if ($inputHash -ne $ExpectedInputSha256 -or $inputInfo.Length -ne $ExpectedInputBytes) {
+  throw "Canonical input mismatch. SHA256=$inputHash Bytes=$($inputInfo.Length). Nothing was signed."
 }
-if ([string]::IsNullOrWhiteSpace($InputApk) -or -not (Test-Path -LiteralPath $InputApk)) {
-  throw 'Canonical Alpha.2 input APK was not selected or does not exist.'
-}
-$InputFull = (Resolve-Path -LiteralPath $InputApk).Path
+& $java -jar $ApkSignerJar verify --print-certs $InputApk *> $null
+if ($LASTEXITCODE -ne 0) { throw 'Canonical input failed apksigner verification.' }
 
-if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) { $ApkSignerJar = Find-BundledApkSignerJar -InputPath $InputFull }
-if ([string]::IsNullOrWhiteSpace($ApkSignerJar)) {
-  $ApkSignerJar = Choose-File -Title 'Select bundled public apksigner.jar' -Filter 'Java archive (*.jar)|*.jar|All files (*.*)|*.*' -FallbackPrompt 'Full path to bundled public apksigner.jar'
-}
-if ([string]::IsNullOrWhiteSpace($ApkSignerJar) -or -not (Test-Path -LiteralPath $ApkSignerJar)) {
-  throw 'apksigner.jar was not found or selected.'
-}
-$SignerJarFull = (Resolve-Path -LiteralPath $ApkSignerJar).Path
-
-if ([string]::IsNullOrWhiteSpace($OutputApk)) {
-  $OutputFull = Join-Path (Split-Path -Parent $InputFull) $DefaultOutputName
-} elseif ([IO.Path]::IsPathRooted($OutputApk)) {
-  $OutputFull = [IO.Path]::GetFullPath($OutputApk)
-} else {
-  $OutputFull = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputApk))
-}
-if ([string]::Equals($InputFull, $OutputFull, [StringComparison]::OrdinalIgnoreCase)) {
-  throw 'Output APK must be different from the canonical input APK.'
-}
-
-$InputInfo = Get-Item -LiteralPath $InputFull
-$InputHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $InputFull).Hash.ToLowerInvariant()
-if ($InputHash -ne $ExpectedInputSha256 -or $InputInfo.Length -ne $ExpectedInputBytes) {
-  throw "Canonical input mismatch. SHA256=$InputHash Bytes=$($InputInfo.Length). Expected SHA256=$ExpectedInputSha256 Bytes=$ExpectedInputBytes. Nothing was signed."
-}
-
-& $java -jar $SignerJarFull verify --print-certs $InputFull *> $null
-if ($LASTEXITCODE -ne 0) { throw 'Canonical input failed apksigner verification. Nothing was signed.' }
-
-$Keystore = Choose-File -Title 'Select private FINANCESENSOR_R2_LAB keystore' -Filter 'Java keystore (*.jks;*.keystore)|*.jks;*.keystore|All files (*.*)|*.*' -FallbackPrompt 'Full path to private FINANCESENSOR_R2_LAB keystore'
-if ([string]::IsNullOrWhiteSpace($Keystore) -or -not (Test-Path -LiteralPath $Keystore)) { throw 'Keystore was not selected or does not exist.' }
-
+$Keystore = Choose-Keystore
+if ([string]::IsNullOrWhiteSpace($Keystore) -or -not (Test-Path -LiteralPath $Keystore)) { throw 'Keystore was not selected.' }
 $StoreSecure = Read-Host 'Keystore password (trusted-edge session only)' -AsSecureString
-$StorePass = Convert-SecureStringToPlain $StoreSecure
+$StorePass = Convert-SecureToPlain $StoreSecure
 if ([string]::IsNullOrEmpty($StorePass)) { throw 'Empty keystore password is not accepted.' }
 
 try {
   Write-Host "FINANCESENSOR_ALPHA2_CANDIDATE=$Candidate"
-  Write-Host "SOURCE_COMMIT=$ExpectedSourceCommit"
-  Write-Host "INPUT_APK_SHA256=$InputHash"
+  Write-Host "PRODUCT_SOURCE_COMMIT=$ProductSourceCommit"
+  Write-Host "CANONICAL_SOURCE_COMMIT=$CanonicalSourceCommit"
+  Write-Host "INPUT_APK_SHA256=$inputHash"
 
-  $keytoolResult = Invoke-ProcessWithStdin -FileName $keytool -Arguments @('-J-Duser.language=en', '-J-Duser.country=US', '-list', '-v', '-keystore', $Keystore) -InputLines @($StorePass)
-  if ($keytoolResult.ExitCode -ne 0) { throw 'Could not open the selected keystore with that password.' }
-  $listing = $keytoolResult.Lines
-
-  $Alias = $null
-  $CurrentAlias = $null
-  foreach ($line in $listing) {
-    $text = [string]$line
-    if ($text -match '^Alias name:\s*(.+)$') { $CurrentAlias = $Matches[1].Trim(); continue }
-    if ($CurrentAlias -and $text -match '^\s*SHA1:\s*([0-9A-Fa-f:]+)\s*$') {
-      if ((Normalize-Sha1 $Matches[1]) -eq $ExpectedSignerSha1) { $Alias = $CurrentAlias; break }
-    }
+  $listing = Invoke-WithStdin $keytool @('-J-Duser.language=en','-J-Duser.country=US','-list','-v','-keystore',$Keystore) @($StorePass)
+  if ($listing.ExitCode -ne 0) { throw 'Could not open the selected keystore with that password.' }
+  $Alias = $null; $CurrentAlias = $null
+  foreach ($line in $listing.Lines) {
+    if ($line -match '^Alias name:\s*(.+)$') { $CurrentAlias = $Matches[1].Trim(); continue }
+    if ($CurrentAlias -and $line -match '^\s*SHA1:\s*([0-9A-Fa-f:]+)\s*$' -and (Normalize-Sha1 $Matches[1]) -eq $ExpectedSignerSha1) { $Alias = $CurrentAlias; break }
   }
-  if (-not $Alias) { throw "Selected keystore does not contain frozen R2 identity $ExpectedSignerSha1. Nothing was signed." }
+  if (-not $Alias) { throw "Selected keystore does not contain frozen R2 identity $ExpectedSignerSha1." }
 
-  Remove-OutputArtifacts -OutputPath $OutputFull
-  $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $StorePass)
-  if ($signResult.ExitCode -ne 0) {
-    Remove-OutputArtifacts -OutputPath $OutputFull
+  Remove-Outputs
+  $signArgs = @('-jar',$ApkSignerJar,'sign','--ks',$Keystore,'--ks-key-alias',$Alias,'--ks-pass','stdin','--key-pass','stdin','--out',$OutputApk,$InputApk)
+  $sign = Invoke-WithStdin $java $signArgs @($StorePass,$StorePass)
+  if ($sign.ExitCode -ne 0) {
+    Remove-Outputs
     $KeySecure = Read-Host 'Private key password (only if different from keystore password)' -AsSecureString
-    $KeyPass = Convert-SecureStringToPlain $KeySecure
+    $KeyPass = Convert-SecureToPlain $KeySecure
     if ([string]::IsNullOrEmpty($KeyPass)) { throw 'Signing failed and no distinct key password was provided.' }
-    $signResult = Invoke-ProcessWithStdin -FileName $java -Arguments @('-jar', $SignerJarFull, 'sign', '--ks', $Keystore, '--ks-key-alias', $Alias, '--ks-pass', 'stdin', '--key-pass', 'stdin', '--out', $OutputFull, $InputFull) -InputLines @($StorePass, $KeyPass)
-    if ($signResult.ExitCode -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Local signing failed. No output APK or receipt was retained.' }
+    $sign = Invoke-WithStdin $java $signArgs @($StorePass,$KeyPass)
+    if ($sign.ExitCode -ne 0) { throw 'Local signing failed.' }
   }
 
-  $verify = & $java -jar $SignerJarFull verify --print-certs $OutputFull 2>&1
-  if ($LASTEXITCODE -ne 0) { Remove-OutputArtifacts -OutputPath $OutputFull; throw 'Signed APK failed apksigner verification. Output deleted.' }
-
+  $verify = & $java -jar $ApkSignerJar verify --print-certs $OutputApk 2>&1
+  if ($LASTEXITCODE -ne 0) { throw 'Signed APK failed apksigner verification.' }
   $ObservedSigner = $null
-  foreach ($line in $verify) {
-    if ([string]$line -match 'certificate SHA-1 digest:\s*([0-9A-Fa-f:]+)') { $ObservedSigner = Normalize-Sha1 $Matches[1]; break }
-  }
-  if ($ObservedSigner -ne $ExpectedSignerSha1) { Remove-OutputArtifacts -OutputPath $OutputFull; throw "Signer mismatch. Observed=$ObservedSigner Expected=$ExpectedSignerSha1. Output deleted." }
+  foreach ($line in $verify) { if ([string]$line -match 'certificate SHA-1 digest:\s*([0-9A-Fa-f:]+)') { $ObservedSigner = Normalize-Sha1 $Matches[1]; break } }
+  if ($ObservedSigner -ne $ExpectedSignerSha1) { throw "Signer mismatch. Observed=$ObservedSigner Expected=$ExpectedSignerSha1." }
 
-  $SignedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $OutputFull).Hash.ToLowerInvariant()
-  $SignedBytes = (Get-Item -LiteralPath $OutputFull).Length
-  "$SignedHash  $(Split-Path -Leaf $OutputFull)" | Set-Content -LiteralPath "$OutputFull.sha256" -Encoding ascii
-
+  $SignedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $OutputApk).Hash.ToLowerInvariant()
+  $SignedBytes = (Get-Item -LiteralPath $OutputApk).Length
+  "$SignedHash  $(Split-Path -Leaf $OutputApk)" | Set-Content -LiteralPath "$OutputApk.sha256" -Encoding ascii
   @(
     'FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS',
     "FINANCESENSOR_ALPHA2_CANDIDATE=$Candidate",
-    "SOURCE_COMMIT=$ExpectedSourceCommit",
+    "PRODUCT_SOURCE_COMMIT=$ProductSourceCommit",
+    "SOURCE_COMMIT=$CanonicalSourceCommit",
     "CANONICAL_RUN_ID=$CanonicalRunId",
     "CANONICAL_ARTIFACT_ID=$CanonicalArtifactId",
-    "INPUT_APK_SHA256=$InputHash",
+    "INPUT_APK_SHA256=$inputHash",
     "INPUT_APK_BYTES=$ExpectedInputBytes",
     "SIGNED_APK_SHA256=$SignedHash",
     "SIGNED_APK_BYTES=$SignedBytes",
@@ -233,28 +158,22 @@ try {
     'PRIVATE_SIGNING_MATERIAL_IN_GITHUB=0',
     'REAL_OAUTH_EXECUTED_BY_SIGNING_STEP=0',
     'REAL_GMAIL_EXECUTED_BY_SIGNING_STEP=0',
-    'ALPHA2_MOBILE_INTEGRATION_CI=PASS',
-    'ALPHA2_MOBILE_INTEGRATION_PHYSICAL=OPEN',
-    'PHYSICAL_SQLCIPHER_PASS=NO',
     'PHYSICAL_ALPHA2_PASS=NO',
     'BUILD_READY=NO',
     'RELEASE_READY=NO'
-  ) | Set-Content -LiteralPath "$OutputFull.receipt.txt" -Encoding ascii
+  ) | Set-Content -LiteralPath "$OutputApk.receipt.txt" -Encoding ascii
 
   Write-Host 'FINANCESENSOR_ALPHA2_R2_TRUSTED_EDGE_SIGNING=PASS'
-  Write-Host "INPUT_APK_SHA256=$InputHash"
-  Write-Host "SIGNER_SHA1=$ObservedSigner"
   Write-Host "SIGNED_APK_SHA256=$SignedHash"
   Write-Host "SIGNED_APK_BYTES=$SignedBytes"
-  Write-Host "RECEIPT=$(Split-Path -Leaf "$OutputFull.receipt.txt")"
+  Write-Host "RECEIPT=$(Split-Path -Leaf "$OutputApk.receipt.txt")"
 }
 catch {
-  Remove-OutputArtifacts -OutputPath $OutputFull
+  Remove-Outputs
   throw
 }
 finally {
-  $StorePass = $null
+  $StorePass = $null; $StoreSecure = $null
   if (Get-Variable KeyPass -ErrorAction SilentlyContinue) { $KeyPass = $null }
-  $StoreSecure = $null
   if (Get-Variable KeySecure -ErrorAction SilentlyContinue) { $KeySecure = $null }
 }
