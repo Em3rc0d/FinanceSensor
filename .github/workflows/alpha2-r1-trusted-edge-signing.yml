@@ -3,8 +3,7 @@ name: Alpha.2 R1 Trusted-Edge Signing
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - jett/mk0-foundation
+    branches: [jett/mk0-foundation]
     paths:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
@@ -13,16 +12,15 @@ on:
       - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
       - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-alpha2-2009-pre-signing-evidence.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-2009-pre-signing-evidence.json'
       - 'graph/prebuild-remainder-design.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
-    branches:
-      - jett/mk0-foundation
+    branches: [jett/mk0-foundation]
     paths:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
@@ -31,12 +29,12 @@ on:
       - 'tools/validate-alpha2-r1-ci-routing-receipt.mjs'
       - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
       - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
+      - 'tools/validate-alpha2-2009-pre-signing-evidence.mjs'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-2009-pre-signing-evidence.json'
       - 'graph/prebuild-remainder-design.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions:
@@ -70,28 +68,28 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Canonical Alpha.2 +2008 candidate boundary
+      - name: Canonical Alpha.2 +2009 candidate boundary
         run: node tools/validate-alpha2-canonical-candidate.mjs
 
-      - name: R1 v10 trusted-edge handoff boundary
+      - name: R1 v11 trusted-edge handoff boundary
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
 
       - name: R1 CI routing boundary
         run: node tools/validate-alpha2-r1-ci-routing-receipt.mjs
 
-      - name: Current +2008 physical signing receipt PASS
+      - name: Historical signing receipt isolation
         run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
 
-      - name: Download exact canonical +2008 artifact
+      - name: Download exact canonical +2009 artifact
         uses: actions/download-artifact@v4
         with:
-          name: financesensor-alpha2-2008-candidate-34874126273
+          name: financesensor-alpha2-2009-candidate-34907093765
           path: canonical-artifact
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 34874126273
+          run-id: 34907093765
 
-      - name: Verify immutable canonical +2008 input
+      - name: Verify immutable canonical +2009 input
         shell: bash
         run: |
           set -euo pipefail
@@ -99,10 +97,10 @@ jobs:
           EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
           test -f "$APK"
           test -f "$EVIDENCE"
-          test "$(sha256sum "$APK" | awk '{print $1}')" = 'eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238'
-          test "$(stat -c '%s' "$APK")" = '182515867'
-          grep -q '^SOURCE_COMMIT=45b605d29fe0b90f528e4f0f952ab878080b2f0b$' "$EVIDENCE"
-          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2008$' "$EVIDENCE"
+          test "$(sha256sum "$APK" | awk '{print $1}')" = '2a6803c9b48b1e4599c78e6424458972a4aad5fbf18f8dece74b859fbe33a1e8'
+          test "$(stat -c '%s' "$APK")" = '182514883'
+          grep -q '^SOURCE_COMMIT=9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f$' "$EVIDENCE"
+          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2009$' "$EVIDENCE"
           grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
           grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
           grep -q '^ANDROID_MIN_SDK=31$' "$EVIDENCE"
@@ -110,28 +108,28 @@ jobs:
           grep -q '^ANDROID_COMPILE_SDK=37$' "$EVIDENCE"
           grep -q '^ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2$' "$EVIDENCE"
           grep -q '^EXACT_SCOPE=gmail.readonly$' "$EVIDENCE"
-          grep -q '^SINGLE_PASS_EECC_DIAGNOSTICS=YES$' "$EVIDENCE"
           grep -q '^POST_PASSWORD_SAFE_STOP_DIAGNOSTICS=YES$' "$EVIDENCE"
+          grep -q '^POST_PASSWORD_IMPORT_ISOLATION=YES$' "$EVIDENCE"
+          grep -q '^STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO$' "$EVIDENCE"
           grep -q '^TRUSTED_EDGE_RESIGN_REQUIRED=YES$' "$EVIDENCE"
-          echo 'CANONICAL_2008_INPUT=PASS'
+          echo 'CANONICAL_2009_INPUT=PASS'
 
-      - name: Generate deterministic public-safe v10 handoff bundle
+      - name: Generate deterministic public-safe v11 handoff bundle
         shell: bash
         run: |
           set -euo pipefail
           APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
           EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
           APKSIGNER_JAR="$(find "$ANDROID_HOME/build-tools" -mindepth 3 -maxdepth 3 -type f -path '*/lib/apksigner.jar' | sort -V | tail -n 1)"
-          test -n "$APKSIGNER_JAR"
-          test -f "$APKSIGNER_JAR"
+          test -n "$APKSIGNER_JAR" && test -f "$APKSIGNER_JAR"
           java -jar "$APKSIGNER_JAR" verify --print-certs "$APK" >/dev/null
           test "$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')" = '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'
-          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = 'd782f03bb97ca0910436500080bcaf10efc00161'
+          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = '00da4d27f537390b3b88fbe2470cacbfdff638fd'
           test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd)" = '3d01373b69051d30f88a57f26fa815e52d952d6d'
 
-          ROOT="$RUNNER_TEMP/financesensor-r1-v10"
-          BUNDLE_DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10"
-          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip"
+          ROOT="$RUNNER_TEMP/financesensor-r1-v11"
+          BUNDLE_DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v11"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v11.zip"
           rm -rf "$ROOT" "$OUT"
           mkdir -p "$BUNDLE_DIR/public-signing-tool/lib"
           cp "$APK" "$BUNDLE_DIR/FinanceSensor-ALPHA2-CANONICAL-INPUT.apk"
@@ -141,109 +139,93 @@ jobs:
           cp "$EVIDENCE" "$BUNDLE_DIR/CANONICAL-CI-EVIDENCE.txt"
 
           cat > "$BUNDLE_DIR/BUNDLE-README.txt" <<'README'
-          FinanceSensor Alpha.2 +2008 — R1 trusted-edge signing bundle v10
+          FinanceSensor Alpha.2 +2009 — R1 trusted-edge signing bundle v11
 
-          1. Extract this ZIP on the owned Windows trusted edge.
-          2. Double-click SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
+          This bundle is only for the private trusted-edge signing boundary after automated eligibility is certified.
+          1. Extract on the owned Windows trusted edge.
+          2. Run SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
           3. Select FinanceSensor-ALPHA2-CANONICAL-INPUT.apk.
           4. Select the private FINANCESENSOR_R2_LAB keystore locally.
-          5. Enter the password only in the local prompt.
+          5. Enter passwords only in local prompts.
           6. Return only the generated .receipt.txt after PASS.
 
-          Never upload the keystore, password, private key, OAuth token, Gmail content or financial plaintext.
+          Never upload keystore/password/private key/OAuth token/Gmail content/statement PDF/financial plaintext.
           Expected package: com.financesensor.lab.gmailconnection.r2
           Expected scope: gmail.readonly
           Expected stable signer SHA1: 63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
           README
 
           cat > "$BUNDLE_DIR/SOURCE.txt" <<SOURCE
-          CANDIDATE=0.2.0-alpha.2+2008
-          SOURCE_COMMIT=45b605d29fe0b90f528e4f0f952ab878080b2f0b
-          CANONICAL_RUN_ID=34874126273
-          CANONICAL_JOB_ID=104076982845
-          CANONICAL_ARTIFACT_ID=10360246203
-          CANONICAL_ARTIFACT_ZIP_SHA256=f517fac8277bfdfe589758712cb30d3199e8a9415d6a5ea08b4903cee8e03cca
-          INPUT_APK_SHA256=eb4afc91357204419b3693efa973ba5bbcbd09a8037c3932269cea25363e7238
-          INPUT_APK_BYTES=182515867
-          SIGNER_PS1_GIT_BLOB=d782f03bb97ca0910436500080bcaf10efc00161
+          CANDIDATE=0.2.0-alpha.2+2009
+          SOURCE_COMMIT=9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f
+          CANONICAL_RUN_ID=34907093765
+          CANONICAL_JOB_ID=104186190632
+          CANONICAL_ARTIFACT_ID=10373012397
+          CANONICAL_ARTIFACT_ZIP_SHA256=be86fe57d919a64d09247581ba4140f06763ac24a12b9d83a13fd8ee9188b953
+          INPUT_APK_SHA256=2a6803c9b48b1e4599c78e6424458972a4aad5fbf18f8dece74b859fbe33a1e8
+          INPUT_APK_BYTES=182514883
+          SIGNER_PS1_GIT_BLOB=00da4d27f537390b3b88fbe2470cacbfdff638fd
           SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
           APKSIGNER_SHA256=$(sha256sum "$APKSIGNER_JAR" | awk '{print $1}')
           SOURCE
 
-          (
-            cd "$BUNDLE_DIR"
-            find . -type f ! -name 'BUNDLE-MANIFEST-SHA256.txt' -print0 | sort -z | xargs -0 sha256sum > BUNDLE-MANIFEST-SHA256.txt
-            sha256sum -c BUNDLE-MANIFEST-SHA256.txt
-          )
+          (cd "$BUNDLE_DIR" && find . -type f ! -name 'BUNDLE-MANIFEST-SHA256.txt' -print0 | sort -z | xargs -0 sha256sum > BUNDLE-MANIFEST-SHA256.txt && sha256sum -c BUNDLE-MANIFEST-SHA256.txt)
 
           python3 - "$BUNDLE_DIR" "$OUT" <<'PY'
           import pathlib, sys, zipfile
-          root = pathlib.Path(sys.argv[1])
-          out = pathlib.Path(sys.argv[2])
-          prefix = root.name
+          root = pathlib.Path(sys.argv[1]); out = pathlib.Path(sys.argv[2]); prefix = root.name
           with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
               for path in sorted(p for p in root.rglob('*') if p.is_file()):
                   rel = pathlib.PurePosixPath(prefix) / path.relative_to(root).as_posix()
-                  info = zipfile.ZipInfo(str(rel), date_time=(2020, 1, 1, 0, 0, 0))
-                  info.compress_type = zipfile.ZIP_DEFLATED
-                  info.external_attr = 0o100644 << 16
+                  info = zipfile.ZipInfo(str(rel), date_time=(2020,1,1,0,0,0)); info.compress_type = zipfile.ZIP_DEFLATED; info.external_attr = 0o100644 << 16
                   zf.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
           PY
 
           unzip -t "$OUT" >/dev/null
           test "$(zipinfo -1 "$OUT" | grep -v '/$' | wc -l)" = '8'
           test "$(find "$BUNDLE_DIR" -type f \( -iname '*.jks' -o -iname '*.keystore' -o -iname '*.p12' -o -iname '*.pfx' -o -iname '*.pem' -o -iname '*.key' \) | wc -l)" = '0'
-          if grep -R -a -E -n 'AIza[0-9A-Za-z_-]{20,}|ya29\.[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' "$BUNDLE_DIR"; then
-            echo 'SECRET_LIKE_VALUE_MATCHES!=0'
-            exit 1
-          fi
-
-          BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
-          BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
-          test "$BUNDLE_SHA256" = '598b5e7f10f43eb1c1a1b3a9f1df57328e185825d860a13b3f41a75d8201c213'
-          test "$BUNDLE_BYTES" = '86635935'
-          echo 'R1_V10_FROZEN_BYTES=PASS'
-          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v10-AUDIT.txt" <<AUDIT
-          R1_V10_GENERATION=PASS
-          R1_V10_FROZEN_BYTES=PASS
+          if grep -R -a -E -n 'AIza[0-9A-Za-z_-]{20,}|ya29\.[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' "$BUNDLE_DIR"; then exit 1; fi
+          BUNDLE_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"; BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v11-AUDIT.txt" <<AUDIT
+          R1_V11_GENERATION=PASS
           BUNDLE_SHA256=${BUNDLE_SHA256}
           BUNDLE_BYTES=${BUNDLE_BYTES}
           BUNDLE_FILES=8
           PRIVATE_KEY_FILES=0
           SECRET_LIKE_VALUE_MATCHES=0
-          SIGNER_PS1_GIT_BLOB=d782f03bb97ca0910436500080bcaf10efc00161
+          SIGNER_PS1_GIT_BLOB=00da4d27f537390b3b88fbe2470cacbfdff638fd
           SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
           APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
-          R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT
-          R2_PHYSICAL_CAMPAIGN=IN_PROGRESS
-          OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL
+          R1_TRUSTED_EDGE_SIGNING=OPEN
+          R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1
+          HUMAN_UAT_ELIGIBLE=NO
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
           AUDIT
-          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v10-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v11-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload v10 trusted-edge handoff bundle
+      - name: Upload v11 trusted-edge handoff bundle
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-r1-trusted-edge-bundle-v10-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          name: financesensor-alpha2-r1-trusted-edge-bundle-v11-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: |
-            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip
-            FinanceSensor-ALPHA2-R1-BUNDLE-v10-AUDIT.txt
+            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v11.zip
+            FinanceSensor-ALPHA2-R1-BUNDLE-v11-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
 
-      - name: Preserve post-signing trust boundary
+      - name: Preserve pre-signing trust boundary
+        shell: bash
         run: |
           set -euo pipefail
-          echo 'R1_V10_GENERATION=PASS'
-          echo 'R1_V10_FROZEN_BYTES=PASS'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'R1_V11_GENERATION=PASS'
+          echo 'R1_TRUSTED_EDGE_SIGNING=OPEN'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
-          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1'
+          echo 'HUMAN_UAT_ELIGIBLE=NO'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'
