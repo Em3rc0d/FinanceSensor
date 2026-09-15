@@ -5,6 +5,7 @@ import './validate-alpha2-human-intervention-gate.mjs';
 
 const workflow = fs.readFileSync('.github/workflows/alpha2-integrated-runtime.yml', 'utf8');
 const pipeline = fs.readFileSync('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart', 'utf8');
+const projection = fs.readFileSync('spikes/mobile-shell/lib/alpha2/alpha2_projection.dart', 'utf8');
 const pdfReader = fs.readFileSync('spikes/mobile-shell/lib/alpha2/alpha2_statement_pdf_reader.dart', 'utf8');
 const regression = fs.readFileSync('spikes/mobile-shell/test/alpha2_statement_import_isolation_test.dart', 'utf8');
 const canonical = JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json', 'utf8'));
@@ -45,6 +46,13 @@ for (const marker of [
 if (pipeline.includes('ALPHA2_REFRESH_STATEMENT_IMPORT_FAILED')) fail('STATEMENT_IMPORT_MUST_NOT_ABORT_WHOLE_REFRESH');
 
 for (const marker of [
+  'class Alpha2PublicDashboardProjection',
+  'buildAlpha2PublicProjection',
+  "'STATEMENT_PDF_REJECTED'",
+  "'STATEMENT_STRICT_REVIEW_REQUIRED'",
+]) if (!projection.includes(marker)) fail(`PROJECTION_ISOLATION_MARKER_MISSING:${marker}`);
+
+for (const marker of [
   'class Alpha2SafeStructuredPdfReader',
   'await document?.dispose()',
   'catch (_)',
@@ -52,8 +60,12 @@ for (const marker of [
 ]) if (!pdfReader.includes(marker)) fail(`PDF_READER_SAFETY_MARKER_MISSING:${marker}`);
 
 for (const marker of [
-  'unexpected PDF runtime failure is candidate-local and Gmail evidence still reaches runtime',
-  'password-provider runtime failure is sanitized and cannot abort refresh',
+  'unexpected PDF runtime failure is candidate-local and Gmail evidence still reaches dashboard projection',
+  'password-provider runtime failure is sanitized and cannot abort dashboard projection',
+  'result.projection.transactions',
+  'result.projection.cashflow',
+  "gap.reason == 'STATEMENT_PDF_REJECTED'",
+  "gap.reason == 'STATEMENT_STRICT_REVIEW_REQUIRED'",
   'alpha2StatementPdfRuntimeRejected',
   'alpha2StatementPasswordProviderRejected',
 ]) if (!regression.includes(marker)) fail(`REGRESSION_TEST_MISSING:${marker}`);
@@ -74,6 +86,7 @@ if (observation.privacy?.rawScreenshotInGitHub !== false || observation.privacy?
 console.log('ALPHA2_2009_CANDIDATE_CUT=PASS');
 console.log('SOURCE_BASE=ALPHA2_2008_POSTPASSWORD_IMPORT_FAILURE');
 console.log('POST_PASSWORD_IMPORT_ISOLATION=GATED');
+console.log('SYNTHETIC_DASHBOARD_PROJECTION_AFTER_STATEMENT_FAILURE=GATED');
 console.log('STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO');
 console.log('HUMAN_INTERVENTION_POLICY=EXCEPTION_ONLY_CERTIFICATION');
 console.log('HUMAN_DISCOVERY_TESTING=FORBIDDEN');

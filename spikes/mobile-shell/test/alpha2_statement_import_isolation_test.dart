@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'unexpected PDF runtime failure is candidate-local and Gmail evidence still reaches runtime',
+    'unexpected PDF runtime failure is candidate-local and Gmail evidence still reaches dashboard projection',
     () async {
       final ingress = _OneStatementIngress();
       final pipeline = Alpha2Pipeline(
@@ -31,13 +31,31 @@ void main() {
         result.statementOutcomes.single.reviewCodes,
         const <String>[alpha2StatementPdfRuntimeRejected],
       );
+
+      // The exact +2008 physical failure must never regress: a rejected EECC is
+      // optional enrichment and cannot erase already-safe Gmail evidence or
+      // prevent the public dashboard projection from materializing.
       expect(result.runtime.canonicalTransactions, isNotEmpty);
+      expect(result.projection.transactions, hasLength(1));
+      expect(result.projection.transactions.single.amount, 19.90);
+      expect(result.projection.transactions.single.currency, 'PEN');
+      expect(
+        result.projection.transactions.single.flowDirection,
+        Alpha2FlowDirection.outflow,
+      );
+      expect(result.projection.cashflow, isNotEmpty);
+      expect(
+        result.projection.knowledgeGaps.any(
+          (gap) => gap.reason == 'STATEMENT_PDF_REJECTED',
+        ),
+        isTrue,
+      );
       expect(ingress.releaseAttempts, 1);
     },
   );
 
   test(
-    'password-provider runtime failure is sanitized and cannot abort refresh',
+    'password-provider runtime failure is sanitized and cannot abort dashboard projection',
     () async {
       final ingress = _OneStatementIngress(includeGmailEvidence: false);
       final pipeline = Alpha2Pipeline(
@@ -55,6 +73,13 @@ void main() {
       expect(
         result.statementOutcomes.single.reviewCodes,
         const <String>[alpha2StatementPasswordProviderRejected],
+      );
+      expect(result.projection.transactions, isEmpty);
+      expect(
+        result.projection.knowledgeGaps.any(
+          (gap) => gap.reason == 'STATEMENT_STRICT_REVIEW_REQUIRED',
+        ),
+        isTrue,
       );
       expect(ingress.fetchAttempts, 0);
       expect(ingress.releaseAttempts, 1);
