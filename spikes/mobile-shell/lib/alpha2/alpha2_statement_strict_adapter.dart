@@ -142,14 +142,17 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
 
 bool _looksLikeBcpSavingsLedger(Alpha2LayoutPage page) {
   final text = _strictNormalize(page.items.map((item) => item.text).join(' '));
-  const required = <String>[
-    'ESTADO DE CUENTA DE AHORROS CUENTA DIGITAL BCP',
-    'FECHA PROC',
-    'FECHA VALOR',
-    'CARGOS / DEBE',
-    'ABONOS / HABER',
-  ];
-  return required.every(text.contains);
+  if (!text.contains('ESTADO DE CUENTA DE AHORROS CUENTA DIGITAL BCP')) {
+    return false;
+  }
+  // Use the same reconstructed-header semantics as the completeness geometry.
+  // Real PDF text extractors may split visual headers into adjacent fragments
+  // such as `CARGOS /` + `DEBE`. A successful base parse must not be rejected
+  // merely because this second audit sees fragment boundaries differently.
+  return _headerItem(page, 'FECHA PROC') != null &&
+      _headerItem(page, 'FECHA VALOR') != null &&
+      _headerItem(page, 'CARGOS / DEBE') != null &&
+      _headerItem(page, 'ABONOS / HABER') != null;
 }
 
 _StrictHeaderGeometry? _strictHeaderGeometry(Alpha2LayoutPage page) {
@@ -193,14 +196,57 @@ _StrictHeaderGeometry? _strictHeaderGeometry(Alpha2LayoutPage page) {
 
 Alpha2LayoutItem? _headerItem(Alpha2LayoutPage page, String target) {
   final normalizedTarget = _strictNormalize(target);
-  final matches = page.items
+  final directMatches = page.items
       .where((item) => _strictNormalize(item.text).contains(normalizedTarget))
       .toList()
     ..sort((a, b) {
       final byY = b.y.compareTo(a.y);
       return byY != 0 ? byY : a.x.compareTo(b.x);
     });
-  return matches.isEmpty ? null : matches.first;
+  if (directMatches.isNotEmpty) return directMatches.first;
+
+  final reconstructed = <Alpha2LayoutItem>[];
+  for (final line in _strictLines(page)) {
+    for (var start = 0; start < line.items.length; start += 1) {
+      final maximumEnd = math.min(line.items.length, start + 4);
+      for (var end = start + 1; end <= maximumEnd; end += 1) {
+        final segment = line.items.sublist(start, end);
+        final joined = segment
+            .map((item) => item.text.trim())
+            .where((text) => text.isNotEmpty)
+            .join(' ');
+        final normalized = _strictNormalize(joined);
+        if (!normalized.contains(normalizedTarget)) continue;
+
+        final left = segment.map((item) => item.x).reduce(math.min);
+        final right = segment
+            .map((item) => item.x + item.width)
+            .reduce(math.max);
+        final sequence = segment
+            .map((item) => item.sequence)
+            .reduce(math.min);
+        reconstructed.add(
+          Alpha2LayoutItem(
+            text: joined,
+            x: left,
+            y: line.y,
+            width: math.max(0, right - left),
+            sequence: sequence,
+          ),
+        );
+      }
+    }
+  }
+
+  reconstructed.sort((a, b) {
+    final aExtra = _strictNormalize(a.text).length - normalizedTarget.length;
+    final bExtra = _strictNormalize(b.text).length - normalizedTarget.length;
+    final bySpecificity = aExtra.compareTo(bExtra);
+    if (bySpecificity != 0) return bySpecificity;
+    final byY = b.y.compareTo(a.y);
+    return byY != 0 ? byY : a.x.compareTo(b.x);
+  });
+  return reconstructed.isEmpty ? null : reconstructed.first;
 }
 
 List<_StrictLine> _strictLines(
