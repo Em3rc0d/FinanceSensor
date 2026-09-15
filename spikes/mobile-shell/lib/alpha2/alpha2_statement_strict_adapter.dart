@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'alpha2_statement_geometry.dart';
 
 const String alpha2StatementCompletenessVersion =
-    'A2_BCP_SAVINGS_COMPLETENESS_V1';
+    'A2_BCP_SAVINGS_COMPLETENESS_V2';
 const String alpha2UnexplainedMonetaryRowCode =
     'STATEMENT_MONETARY_ROW_UNEXPLAINED';
 const String alpha2CompletenessGeometryUnknownCode =
@@ -14,6 +14,11 @@ const String alpha2CompletenessGeometryUnknownCode =
 /// evidence. This adapter adds a fail-closed completeness condition: every
 /// monetary ledger row must be geometrically explainable before any row from
 /// the statement is eligible for durable import.
+///
+/// BCP also renders balance/summary rows in the same monetary columns. Those
+/// rows are not ledger movements and intentionally carry no process/value date.
+/// Only the narrow certified summary labels below are excluded from movement
+/// completeness; any other undated monetary row remains fail-closed.
 class Alpha2StrictBcpSavingsAdapter {
   const Alpha2StrictBcpSavingsAdapter({
     this.geometryParser = const Alpha2BcpSavingsGeometryParser(),
@@ -119,6 +124,8 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
       final hasCredit = (_strictMoney(creditText) ?? 0) > 0;
       if (!hasDebit && !hasCredit) continue;
 
+      if (_isCertifiedBcpSummaryRow(line, geometry)) continue;
+
       monetaryRows += 1;
       final leading = line.items
           .where((item) => item.x < geometry.descriptionMinX)
@@ -138,6 +145,29 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
     monetaryRows: monetaryRows,
     explainedMonetaryRows: explainedMonetaryRows,
   );
+}
+
+bool _isCertifiedBcpSummaryRow(
+  _StrictLine line,
+  _StrictHeaderGeometry geometry,
+) {
+  final description = _strictNormalize(
+    _joinItemsInRange(
+      line.items,
+      geometry.descriptionMinX,
+      geometry.debitMinX,
+    ),
+  );
+  final wholeLine = _strictNormalize(
+    line.items
+        .map((item) => item.text.trim())
+        .where((text) => text.isNotEmpty)
+        .join(' '),
+  );
+  final label = description.isNotEmpty ? description : wholeLine;
+  return RegExp(
+    r'^(?:SALDO ANTERIOR|TOTAL MOVIMIENTO(?:S)?|SALDO(?: FINAL)?)\b',
+  ).hasMatch(label);
 }
 
 bool _looksLikeBcpSavingsLedger(Alpha2LayoutPage page) {
