@@ -337,13 +337,25 @@ Alpha2LayoutItem? _findHeader(
   double? preferredY,
 }) {
   final normalizedAliases = aliases.map(_normalizeLayout).toList();
-  final candidates = <Alpha2LayoutItem>[];
-
-  for (final item in page.items) {
+  final direct = page.items.where((item) {
     final normalized = _normalizeLayout(item.text);
-    if (normalizedAliases.any(normalized.contains)) candidates.add(item);
+    return normalizedAliases.any(normalized.contains);
+  }).toList();
+
+  if (direct.isNotEmpty) {
+    direct.sort((a, b) {
+      if (preferredY != null) {
+        final byDistance =
+            (a.y - preferredY).abs().compareTo((b.y - preferredY).abs());
+        if (byDistance != 0) return byDistance;
+      }
+      final byY = b.y.compareTo(a.y);
+      return byY != 0 ? byY : a.x.compareTo(b.x);
+    });
+    return direct.first;
   }
 
+  final reconstructed = <Alpha2LayoutItem>[];
   for (final line in _creditLines(page)) {
     for (var start = 0; start < line.items.length; start += 1) {
       for (var end = start + 1;
@@ -352,12 +364,12 @@ Alpha2LayoutItem? _findHeader(
         final segment = line.items.sublist(start, end);
         final joined = segment.map((item) => item.text.trim()).join(' ');
         final normalized = _normalizeLayout(joined);
-        if (!normalizedAliases.any(normalized.contains)) continue;
+        if (!normalizedAliases.any((alias) => normalized == alias)) continue;
         final left = segment.map((item) => item.x).reduce(math.min);
         final right = segment
             .map((item) => item.x + item.width)
             .reduce(math.max);
-        candidates.add(
+        reconstructed.add(
           Alpha2LayoutItem(
             text: joined,
             x: left,
@@ -370,17 +382,19 @@ Alpha2LayoutItem? _findHeader(
     }
   }
 
-  if (candidates.isEmpty) return null;
-  candidates.sort((a, b) {
+  if (reconstructed.isEmpty) return null;
+  reconstructed.sort((a, b) {
     if (preferredY != null) {
       final byDistance =
           (a.y - preferredY).abs().compareTo((b.y - preferredY).abs());
       if (byDistance != 0) return byDistance;
     }
     final byY = b.y.compareTo(a.y);
-    return byY != 0 ? byY : a.x.compareTo(b.x);
+    if (byY != 0) return byY;
+    final byWidth = a.width.compareTo(b.width);
+    return byWidth != 0 ? byWidth : a.x.compareTo(b.x);
   });
-  return candidates.first;
+  return reconstructed.first;
 }
 
 List<_CreditLine> _creditLines(
