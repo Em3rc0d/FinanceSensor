@@ -44,6 +44,7 @@ class _Alpha2HomeState extends State<Alpha2Home> {
     ingress: Alpha2PlatformIngressSource(),
     vault: Alpha2PlatformVault(),
   );
+  final Map<String, String> _profilePasswords = <String, String>{};
   Alpha2SessionState? _sessionState;
   Alpha2PipelineResult? _result;
   bool _busy = true;
@@ -53,6 +54,12 @@ class _Alpha2HomeState extends State<Alpha2Home> {
   void initState() {
     super.initState();
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _profilePasswords.clear();
+    super.dispose();
   }
 
   Future<void> _bootstrap() async {
@@ -112,17 +119,25 @@ class _Alpha2HomeState extends State<Alpha2Home> {
       if (!mounted) return;
       setState(() => _safeError = 'La desconexión no pudo verificarse.');
     } finally {
+      _profilePasswords.clear();
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<String?> _requestStatementPassword(Alpha2StatementCandidateHandle candidate) async {
+    final profileId = candidate.profileId;
+    final cached = _profilePasswords[profileId];
+    if (cached != null && cached.isNotEmpty) return cached;
     if (!mounted) return null;
-    return showDialog<String>(
+    final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => Alpha2StatementPasswordDialog(candidate: candidate),
     );
+    if (password != null && password.isNotEmpty) {
+      _profilePasswords[profileId] = password;
+    }
+    return password;
   }
 
   @override
@@ -220,7 +235,7 @@ class _Alpha2StatementPasswordDialogState extends State<Alpha2StatementPasswordD
         children: [
           Text('${candidate.institutionCode} · ${candidate.productType}',style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          const Text('La clave se usa únicamente durante esta actualización local para abrir los EECC de este perfil. No se guarda ni se sincroniza.'),
+          const Text('La clave se reutiliza solo durante esta sesión local para abrir los EECC de este perfil. Se elimina al desconectar o cerrar la app; no se guarda ni se sincroniza.'),
           const SizedBox(height: 16),
           TextField(controller: _controller,autofocus: true,obscureText: true,enableSuggestions: false,autocorrect: false,decoration: const InputDecoration(labelText: 'Clave del PDF',border: OutlineInputBorder()),onSubmitted: _submit),
         ],
