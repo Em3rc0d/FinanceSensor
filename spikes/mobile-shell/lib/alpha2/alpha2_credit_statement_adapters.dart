@@ -18,14 +18,9 @@ const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
 
 /// Strict Banco Ripley credit-card statement adapter.
 ///
-/// The supported ledger contract is intentionally narrow and follows Banco
-/// Ripley's public "Conoce como leer tu Estado de Cuenta" template: movement
-/// rows live under `Tus movimientos del mes` and are bounded by the documented
-/// header family `Fecha de consumo`, `Fecha de proceso`, `N° Ticket`,
-/// `Descripción`, `T/A`, `Monto`, `TEA`, `N° de cuotas`, `Valor cuota`,
-/// `Capital`, `Interés`, `Total`. `Total` is the billed-period movement amount;
-/// a negative total is an abono/pago/extorno and a positive total is a
-/// consumption/cuota/comisión/seguro. Summary/formula sections are never rows.
+/// Authority is deliberately limited to the public Banco Ripley statement
+/// template. Movement rows live under `Tus movimientos del mes`; `Total` is the
+/// billed-period row amount. Formula/summary/points sections are excluded.
 class Alpha2StrictRipleyCreditAdapter {
   const Alpha2StrictRipleyCreditAdapter();
 
@@ -59,27 +54,25 @@ class Alpha2StrictRipleyCreditAdapter {
       final geometry = _ripleyLedgerGeometry(page);
       if (geometry == null) continue;
       ledgerPages += 1;
-
       final footerY = _ripleyLedgerFooterY(page, geometry.headerY);
+
       for (final line in _creditLines(page)) {
         if (line.y >= geometry.headerY - 1) continue;
         if (footerY != null && line.y <= footerY + 1) continue;
 
-        final totalText = _joinRange(
-          line.items,
-          geometry.totalMinX,
-          double.infinity,
+        final signedTotal = _parseSignedMoney(
+          _joinRange(line.items, geometry.totalMinX, double.infinity),
         );
-        final signedTotal = _parseSignedMoney(totalText);
         if (signedTotal == null || signedTotal == 0) continue;
         monetaryRows += 1;
 
-        final dateText = _joinRange(
-          line.items,
-          double.negativeInfinity,
-          geometry.processDateMinX,
+        final occurredAt = _parseCreditDate(
+          _joinRange(
+            line.items,
+            double.negativeInfinity,
+            geometry.processDateMinX,
+          ),
         );
-        final occurredAt = _parseCreditDate(dateText);
         if (occurredAt == null) {
           review.add('RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED');
           continue;
@@ -99,17 +92,11 @@ class Alpha2StrictRipleyCreditAdapter {
         final direction = signedTotal < 0
             ? Alpha2FlowDirection.inflow
             : Alpha2FlowDirection.outflow;
-        final semantic = _creditSemantic(
-          description,
-          direction,
-          institutionCode: 'BANCO_RIPLEY',
-        );
         final amount = signedTotal.abs();
-        final sequence = evidence.length;
         final digest = sha256
             .convert(
               utf8.encode(
-                'ripley-credit-v1|$sourceReceiptId|${page.pageNumber}|$sequence|${occurredAt.toIso8601String()}|${(amount * 100).round()}|${direction.name}',
+                'ripley-credit-v1|$sourceReceiptId|${page.pageNumber}|${evidence.length}|${occurredAt.toIso8601String()}|${(amount * 100).round()}|${direction.name}',
               ),
             )
             .toString();
@@ -121,7 +108,7 @@ class Alpha2StrictRipleyCreditAdapter {
             amount: amount,
             currency: 'PEN',
             occurredAt: occurredAt,
-            semanticType: semantic,
+            semanticType: _creditSemantic(description, direction),
             channel: Alpha2EvidenceChannel.statementLedger,
             truthState: Alpha2TruthState.posted,
             institutionCode: 'BANCO_RIPLEY',
@@ -153,12 +140,12 @@ class Alpha2StrictRipleyCreditAdapter {
   }
 }
 
-/// Private-content-free structural probe for the still-unpromoted BCP credit
-/// format. It never emits evidence and never returns extracted text, dates,
-/// amounts, merchants, card/account identifiers or geometry. The code only
-/// encodes presence/absence of a fixed whitelist of public statement concepts
-/// plus a coarse page-count bucket. This lets an owned-device UAT tell us which
-/// certified adapter family is needed without copying the user's PDF to GitHub.
+/// Private-content-free probe for BCP credit statements.
+///
+/// It emits no financial evidence and no raw text/geometry. The only diagnostic
+/// is a bitmask over a fixed whitelist of public statement concepts plus a
+/// coarse page-count bucket. This is safe to return from owned-device UAT and is
+/// sufficient to choose the next certified, profile-specific adapter family.
 class Alpha2BcpCreditStructuralProbe {
   const Alpha2BcpCreditStructuralProbe();
 
@@ -166,20 +153,23 @@ class Alpha2BcpCreditStructuralProbe {
     required Alpha2StatementLayout layout,
   }) {
     final normalized = _normalizeLayout(
-      layout.pages.expand((page) => page.items).map((item) => item.text).join(' '),
+      layout.pages
+          .expand((page) => page.items)
+          .map((item) => item.text)
+          .join(' '),
     );
     var mask = 0;
-    if (_containsAny(normalized, const <String>['BCP', 'BANCO DE CREDITO'])) {
+    if (_containsAny(normalized, const ['BCP', 'BANCO DE CREDITO'])) {
       mask |= 1 << 0;
     }
-    if (_containsAny(normalized, const <String>[
+    if (_containsAny(normalized, const [
       'CICLO DE FACTURACION',
       'PERIODO DE FACTURACION',
       'FECHA DE FACTURACION',
     ])) {
       mask |= 1 << 1;
     }
-    if (_containsAny(normalized, const <String>[
+    if (_containsAny(normalized, const [
       'FECHA DE CONSUMO',
       'FECHA CONSUMO',
       'FECHA DE COMPRA',
@@ -187,45 +177,37 @@ class Alpha2BcpCreditStructuralProbe {
     ])) {
       mask |= 1 << 2;
     }
-    if (_containsAny(normalized, const <String>[
+    if (_containsAny(normalized, const [
       'FECHA DE PROCESO',
       'FECHA PROCESO',
       'FECHA PROC',
     ])) {
       mask |= 1 << 3;
     }
-    if (_containsAny(normalized, const <String>[
+    if (_containsAny(normalized, const [
       'DESCRIPCION',
       'DETALLE DE MOVIMIENTOS',
       'DETALLE DE TU ESTADO DE CUENTA',
     ])) {
       mask |= 1 << 4;
     }
-    if (_containsAny(normalized, const <String>[
-      'MONTO',
-      'IMPORTE',
-      'TOTAL',
-    ])) {
+    if (_containsAny(normalized, const ['MONTO', 'IMPORTE', 'TOTAL'])) {
       mask |= 1 << 5;
     }
-    if (_containsAny(normalized, const <String>[
+    if (_containsAny(normalized, const [
       'PAGO MINIMO',
       'PAGO TOTAL',
       'DEUDA TOTAL',
     ])) {
       mask |= 1 << 6;
     }
-    if (_containsAny(normalized, const <String>['SOLES', 'PEN', 'S/'])) {
+    if (_containsAny(normalized, const ['SOLES', 'PEN', 'S/'])) {
       mask |= 1 << 7;
     }
-    if (_containsAny(normalized, const <String>['DOLARES', 'USD', 'US\$'])) {
+    if (_containsAny(normalized, const ['DOLARES', 'USD', 'US\$'])) {
       mask |= 1 << 8;
     }
-    if (_containsAny(normalized, const <String>[
-      'CUOTA',
-      'CUOTAS',
-      'TEA',
-    ])) {
+    if (_containsAny(normalized, const ['CUOTA', 'CUOTAS', 'TEA'])) {
       mask |= 1 << 9;
     }
 
@@ -236,13 +218,11 @@ class Alpha2BcpCreditStructuralProbe {
       _ => 'P5P',
     };
     final signature = mask.toRadixString(16).toUpperCase().padLeft(3, '0');
-    final safeCode = '$alpha2BcpCreditProbePrefix${bucket}_M$signature';
-
     return Alpha2StatementParseResult(
       evidence: const <Alpha2Evidence>[],
       reviewCodes: <String>[
         'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
-        safeCode,
+        '$alpha2BcpCreditProbePrefix${bucket}_M$signature',
       ],
       pageCount: layout.pageCount,
       statementPeriodId: null,
@@ -283,15 +263,32 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
   final pageText = _normalizeLayout(page.items.map((item) => item.text).join(' '));
   if (!pageText.contains('TUS MOVIMIENTOS DEL MES')) return null;
 
-  final consumption = _findHeader(page, const <String>['FECHA DE CONSUMO']);
-  final process = _findHeader(page, const <String>['FECHA DE PROCESO']);
-  final ticket = _findHeader(page, const <String>['N DE TICKET', 'N° DE TICKET', 'Nº DE TICKET']);
-  final description = _findHeader(page, const <String>['DESCRIPCION']);
-  final owner = _findHeader(page, const <String>['T/A']);
-  final interest = _findHeader(page, const <String>['INTERES']);
-  final total = _findHeader(page, const <String>['TOTAL']);
-  if (consumption == null ||
-      process == null ||
+  final consumption = _findHeader(page, const ['FECHA DE CONSUMO']);
+  if (consumption == null) return null;
+  final preferredY = consumption.y;
+  final process = _findHeader(
+    page,
+    const ['FECHA DE PROCESO'],
+    preferredY: preferredY,
+  );
+  final ticket = _findHeader(
+    page,
+    const ['N DE TICKET', 'N° DE TICKET', 'Nº DE TICKET'],
+    preferredY: preferredY,
+  );
+  final description = _findHeader(
+    page,
+    const ['DESCRIPCION'],
+    preferredY: preferredY,
+  );
+  final owner = _findHeader(page, const ['T/A'], preferredY: preferredY);
+  final interest = _findHeader(
+    page,
+    const ['INTERES'],
+    preferredY: preferredY,
+  );
+  final total = _findHeader(page, const ['TOTAL'], preferredY: preferredY);
+  if (process == null ||
       ticket == null ||
       description == null ||
       owner == null ||
@@ -300,30 +297,23 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
     return null;
   }
 
-  final ordered = <double>[
-    consumption.x,
-    process.x,
-    ticket.x,
-    description.x,
-    owner.x,
-    interest.x,
-    total.x,
+  final anchors = <Alpha2LayoutItem>[
+    consumption,
+    process,
+    ticket,
+    description,
+    owner,
+    interest,
+    total,
   ];
+  if (anchors.any((item) => (item.y - preferredY).abs() > 8)) return null;
+  final ordered = anchors.map((item) => item.x).toList();
   for (var index = 1; index < ordered.length; index += 1) {
     if (ordered[index] <= ordered[index - 1]) return null;
   }
 
-  final headerY = <double>[
-    consumption.y,
-    process.y,
-    ticket.y,
-    description.y,
-    owner.y,
-    interest.y,
-    total.y,
-  ].reduce(math.min);
   return _RipleyGeometry(
-    headerY: headerY,
+    headerY: anchors.map((item) => item.y).reduce(math.min),
     processDateMinX: (consumption.x + process.x) / 2,
     descriptionMinX: (ticket.x + description.x) / 2,
     descriptionMaxX: (description.x + owner.x) / 2,
@@ -343,18 +333,16 @@ double? _ripleyLedgerFooterY(Alpha2LayoutPage page, double headerY) {
 
 Alpha2LayoutItem? _findHeader(
   Alpha2LayoutPage page,
-  List<String> aliases,
-) {
+  List<String> aliases, {
+  double? preferredY,
+}) {
   final normalizedAliases = aliases.map(_normalizeLayout).toList();
-  final direct = page.items.where((item) {
-    final value = _normalizeLayout(item.text);
-    return normalizedAliases.any(value.contains);
-  }).toList()
-    ..sort((a, b) {
-      final byY = b.y.compareTo(a.y);
-      return byY != 0 ? byY : a.x.compareTo(b.x);
-    });
-  if (direct.isNotEmpty) return direct.first;
+  final candidates = <Alpha2LayoutItem>[];
+
+  for (final item in page.items) {
+    final normalized = _normalizeLayout(item.text);
+    if (normalizedAliases.any(normalized.contains)) candidates.add(item);
+  }
 
   for (final line in _creditLines(page)) {
     for (var start = 0; start < line.items.length; start += 1) {
@@ -369,17 +357,30 @@ Alpha2LayoutItem? _findHeader(
         final right = segment
             .map((item) => item.x + item.width)
             .reduce(math.max);
-        return Alpha2LayoutItem(
-          text: joined,
-          x: left,
-          y: line.y,
-          width: math.max(0, right - left),
-          sequence: segment.map((item) => item.sequence).reduce(math.min),
+        candidates.add(
+          Alpha2LayoutItem(
+            text: joined,
+            x: left,
+            y: line.y,
+            width: math.max(0, right - left),
+            sequence: segment.map((item) => item.sequence).reduce(math.min),
+          ),
         );
       }
     }
   }
-  return null;
+
+  if (candidates.isEmpty) return null;
+  candidates.sort((a, b) {
+    if (preferredY != null) {
+      final byDistance =
+          (a.y - preferredY).abs().compareTo((b.y - preferredY).abs());
+      if (byDistance != 0) return byDistance;
+    }
+    final byY = b.y.compareTo(a.y);
+    return byY != 0 ? byY : a.x.compareTo(b.x);
+  });
+  return candidates.first;
 }
 
 List<_CreditLine> _creditLines(
@@ -426,39 +427,31 @@ String _joinRange(
         .trim();
 
 double? _parseSignedMoney(String raw) {
-  var value = raw.trim();
-  if (value.isEmpty) return null;
-  final parenthesized = value.startsWith('(') && value.endsWith(')');
-  final trailingMinus = value.endsWith('-');
-  final leadingMinus = value.startsWith('-');
-  value = value.replaceAll(RegExp(r'[^0-9,.-]'), '');
-  value = value.replaceFirst(RegExp(r'^-'), '').replaceFirst(RegExp(r'-$'), '');
-  if (value.isEmpty) return null;
-  final comma = value.lastIndexOf(',');
-  final dot = value.lastIndexOf('.');
+  final parenthesized = raw.trim().startsWith('(') && raw.trim().endsWith(')');
+  var cleaned = raw.trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+  if (cleaned.isEmpty) return null;
+  final negative = parenthesized || cleaned.startsWith('-') || cleaned.endsWith('-');
+  cleaned = cleaned
+      .replaceFirst(RegExp(r'^-'), '')
+      .replaceFirst(RegExp(r'-$'), '');
+  if (cleaned.isEmpty) return null;
+  final comma = cleaned.lastIndexOf(',');
+  final dot = cleaned.lastIndexOf('.');
   final normalized = comma > dot
-      ? value.replaceAll('.', '').replaceFirst(',', '.')
-      : value.replaceAll(',', '');
+      ? cleaned.replaceAll('.', '').replaceFirst(',', '.')
+      : cleaned.replaceAll(',', '');
   final parsed = double.tryParse(normalized);
   if (parsed == null || !parsed.isFinite) return null;
-  final negative = parenthesized || trailingMinus || leadingMinus;
   return negative ? -parsed.abs() : parsed.abs();
 }
 
 DateTime? _parseCreditDate(String raw) {
   final normalized = _normalizeLayout(raw);
-  final numeric = RegExp(r'\b(\d{1,2})/(\d{1,2})/(\d{4})\b').firstMatch(normalized);
-  if (numeric != null) {
-    return _safeUtc(
-      int.tryParse(numeric.group(3) ?? ''),
-      int.tryParse(numeric.group(2) ?? ''),
-      int.tryParse(numeric.group(1) ?? ''),
-    );
-  }
-  final named = RegExp(
-    r'\b(\d{1,2})/(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(\d{4})\b',
+  final match = RegExp(
+    r'\b(\d{1,2})/(\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(\d{2}|\d{4})\b',
   ).firstMatch(normalized);
-  if (named == null) return null;
+  if (match == null) return null;
+  final monthToken = match.group(2)!;
   const months = <String, int>{
     'ENE': 1,
     'FEB': 2,
@@ -474,11 +467,11 @@ DateTime? _parseCreditDate(String raw) {
     'NOV': 11,
     'DIC': 12,
   };
-  return _safeUtc(
-    int.tryParse(named.group(3) ?? ''),
-    months[named.group(2)],
-    int.tryParse(named.group(1) ?? ''),
-  );
+  final rawYear = int.tryParse(match.group(3)!);
+  if (rawYear == null) return null;
+  final year = match.group(3)!.length == 2 ? 2000 + rawYear : rawYear;
+  final month = int.tryParse(monthToken) ?? months[monthToken];
+  return _safeUtc(year, month, int.tryParse(match.group(1)!));
 }
 
 DateTime? _safeUtc(int? year, int? month, int? day) {
@@ -493,42 +486,34 @@ _CreditPeriod? _ripleyStatementPeriod(List<Alpha2LayoutPage> pages) {
   final text = _normalizeLayout(
     pages.expand((page) => page.items).map((item) => item.text).join(' '),
   );
-  final candidates = <_CreditPeriod>[];
-  final pattern = RegExp(
-    r'PERIODO DE FACTURACION[^0-9]*(\d{1,2})/(\d{1,2})/(\d{4})\s*(?:-|AL)\s*(\d{1,2})/(\d{1,2})/(\d{4})',
+  final periodAnchor = text.indexOf('PERIODO DE FACTURACION');
+  if (periodAnchor < 0) return null;
+  final window = text.substring(
+    periodAnchor,
+    math.min(text.length, periodAnchor + 180),
   );
-  for (final match in pattern.allMatches(text)) {
-    final start = _safeUtc(
-      int.tryParse(match.group(3) ?? ''),
-      int.tryParse(match.group(2) ?? ''),
-      int.tryParse(match.group(1) ?? ''),
-    );
-    final end = _safeUtc(
-      int.tryParse(match.group(6) ?? ''),
-      int.tryParse(match.group(5) ?? ''),
-      int.tryParse(match.group(4) ?? ''),
-    );
-    if (start == null || end == null || start.isAfter(end)) continue;
-    candidates.add(
-      _CreditPeriod(
-        start,
-        end,
-        'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}',
-      ),
-    );
-  }
-  final unique = <String, _CreditPeriod>{
-    for (final item in candidates)
-      '${item.start.millisecondsSinceEpoch}:${item.end.millisecondsSinceEpoch}': item,
-  };
-  return unique.length == 1 ? unique.values.single : null;
+  final tokenPattern = RegExp(
+    r'(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{2}|\d{4}))',
+  );
+  final tokens = tokenPattern
+      .allMatches(window)
+      .map((match) => match.group(1)!)
+      .toList();
+  if (tokens.length != 2) return null;
+  final start = _parseCreditDate(tokens[0]);
+  final end = _parseCreditDate(tokens[1]);
+  if (start == null || end == null || start.isAfter(end)) return null;
+  return _CreditPeriod(
+    start,
+    end,
+    'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}',
+  );
 }
 
 Alpha2SemanticType _creditSemantic(
   String description,
-  Alpha2FlowDirection direction, {
-  required String institutionCode,
-}) {
+  Alpha2FlowDirection direction,
+) {
   final text = _normalizeLayout(description);
   if (direction == Alpha2FlowDirection.inflow) {
     if (RegExp(r'\b(PAGO|ABONO)\b').hasMatch(text)) {
