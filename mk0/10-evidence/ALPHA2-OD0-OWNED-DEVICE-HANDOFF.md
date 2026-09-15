@@ -22,6 +22,7 @@ TRUSTED_EDGE_SIGNING_PASS=YES
 OD0_EXECUTION_ALLOWED=YES
 OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
 HUMAN_UAT_ELIGIBLE=YES
+FINANCIAL_VIEW_MATERIALIZED=PHYSICAL_CERTIFICATION_REQUIRED
 ```
 
 ## One continuous run
@@ -44,7 +45,7 @@ Return only the sanitized OD0 receipt and the final visible result needed for ce
 
 `OD0_PASS != R2_PASS`
 
-`R2_PHYSICAL_PASS requires the consolidated financial-view observation.`
+`R2_PHYSICAL_PASS requires FINANCIAL_VIEW_MATERIALIZED=YES from the consolidated physical observation.`
 
 `R2_PASS != BUILD_READY`
 
