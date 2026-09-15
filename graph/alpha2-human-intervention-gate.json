@@ -1,10 +1,11 @@
 {
-  "schemaVersion": "A2_HUMAN_INTERVENTION_GATE_V1",
+  "schemaVersion": "A2_HUMAN_INTERVENTION_GATE_V2",
   "policyId": "POLICY-ALPHA2-HUMAN-INTERVENTION-CERTIFICATION-ONLY",
   "mode": "EXCEPTION_ONLY_CERTIFICATION",
-  "currentCandidate": "0.2.0-alpha.2+2009",
-  "candidateSourceCommit": "9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f",
-  "candidateState": "OWNED_DEVICE_UAT_ELIGIBLE",
+  "currentCandidate": "0.2.0-alpha.2+2012",
+  "candidateSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
+  "candidateCanonicalCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
+  "candidateState": "PRE_SIGNING_ELIGIBLE",
   "humanDiscoveryTestingForbidden": true,
   "candidateGenerationNoiseEscalatesToHuman": false,
   "candidateMutationResetsEligibility": true,
@@ -23,16 +24,17 @@
     "statementFailureIsolationPass": true,
     "encryptedPersistenceAutomatedContractPass": true,
     "replayIdempotencyAutomatedContractPass": true,
+    "creditCoverageRegressionsPass": true,
     "knownCandidateBlockingDefects": 0,
     "noNewerProductSourceMutation": true
   },
   "ownedDeviceUat": {
-    "requestAllowed": true,
-    "humanUatEligible": true,
-    "trustedEdgeSigningPass": true,
-    "stableSignedArtifactIdentityFrozen": true,
-    "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
-    "signedApkBytes": 182538790,
+    "requestAllowed": false,
+    "humanUatEligible": false,
+    "trustedEdgeSigningPass": false,
+    "stableSignedArtifactIdentityFrozen": false,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
     "packageFrozen": "com.financesensor.lab.gmailconnection.r2",
     "exactOauthScopeFrozen": "gmail.readonly",
     "finiteCampaignContractFrozen": true,
@@ -40,11 +42,14 @@
     "sameCandidateRepeatRequested": false,
     "purposeWhenEligible": "CERTIFICATION_ONLY"
   },
-  "blockers": [],
+  "blockers": [
+    "TRUSTED_EDGE_SIGNING_2012_NOT_EXECUTED",
+    "OWNED_DEVICE_UAT_ELIGIBILITY_REQUIRES_STABLE_SIGNED_2012_IDENTITY"
+  ],
   "claims": {
     "signingRequestAllowed": true,
-    "ownedDeviceUatRequestAllowed": true,
-    "humanUatEligible": true,
+    "ownedDeviceUatRequestAllowed": false,
+    "humanUatEligible": false,
     "physicalAlpha2Pass": false,
     "buildReady": false,
     "releaseReady": false
