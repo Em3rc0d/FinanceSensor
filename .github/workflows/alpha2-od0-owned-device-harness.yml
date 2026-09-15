@@ -11,7 +11,8 @@ on:
       - 'tools/validate-alpha2-od0-owned-device-harness.mjs'
       - 'mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md'
       - 'graph/alpha2-r2-owned-device-campaign.json'
-      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/alpha2-canonical-candidate.json'
       - '.github/workflows/alpha2-od0-owned-device-harness.yml'
       - 'tools/validate-ci-runner-policy.mjs'
   push:
@@ -23,7 +24,8 @@ on:
       - 'tools/validate-alpha2-od0-owned-device-harness.mjs'
       - 'mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md'
       - 'graph/alpha2-r2-owned-device-campaign.json'
-      - 'graph/alpha2-r2-sanitized-receipt-schema.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/alpha2-canonical-candidate.json'
       - '.github/workflows/alpha2-od0-owned-device-harness.yml'
       - 'tools/validate-ci-runner-policy.mjs'
 
@@ -35,7 +37,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-and-package:
+  validate-blocked-boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -57,79 +59,25 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Validate OD0 public-safe harness
+      - name: Validate fail-closed OD0 boundary
         run: node tools/validate-alpha2-od0-owned-device-harness.mjs
 
       - name: Validate CI runner policy
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Package public-safe OD0 handoff
-        shell: bash
+      - name: Preserve pre-signing physical boundary
         run: |
           set -euo pipefail
-          ROOT="$RUNNER_TEMP/financesensor-od0"
-          DIR="$ROOT/FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF"
-          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF.zip"
-          rm -rf "$ROOT" "$OUT"
-          mkdir -p "$DIR"
-          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.ps1 "$DIR/"
-          cp tools/RUN-FINANCESENSOR-ALPHA2-OD0.cmd "$DIR/"
-          cp mk0/10-evidence/ALPHA2-OD0-OWNED-DEVICE-HANDOFF.md "$DIR/README.md"
-          if grep -R -a -E -n 'AIza[0-9A-Za-z_-]{20,}|ya29\.[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' "$DIR"; then
-            echo 'SECRET_LIKE_VALUE_MATCHES!=0'
-            exit 1
-          fi
-          python3 - "$DIR" "$OUT" <<'PY'
-          import pathlib, sys, zipfile
-          root = pathlib.Path(sys.argv[1])
-          out = pathlib.Path(sys.argv[2])
-          prefix = root.name
-          with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-              for path in sorted(p for p in root.rglob('*') if p.is_file()):
-                  rel = pathlib.PurePosixPath(prefix) / path.relative_to(root).as_posix()
-                  info = zipfile.ZipInfo(str(rel), date_time=(2020,1,1,0,0,0))
-                  info.compress_type = zipfile.ZIP_DEFLATED
-                  info.external_attr = 0o100644 << 16
-                  zf.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-          PY
-          unzip -t "$OUT" >/dev/null
-          test "$(zipinfo -1 "$OUT" | grep -v '/$' | wc -l)" = '3'
-          SHA="$(sha256sum "$OUT" | awk '{print $1}')"
-          BYTES="$(stat -c '%s' "$OUT")"
-          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-OD0-HANDOFF-AUDIT.txt" <<AUDIT
-          ALPHA2_OD0_HANDOFF_PACKAGE=PASS
-          CANDIDATE=0.2.0-alpha.2+2008
-          PRODUCT_SOURCE_COMMIT=45b605d29fe0b90f528e4f0f952ab878080b2f0b
-          STABLE_SIGNED_APK_SHA256=a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277
-          HANDOFF_ZIP_SHA256=${SHA}
-          HANDOFF_ZIP_BYTES=${BYTES}
-          HANDOFF_FILES=3
-          PRIVATE_SIGNING_MATERIAL_IN_HANDOFF=0
-          STABLE_SIGNED_APK_IN_HANDOFF=0
-          DEVICE_SERIAL_IN_RECEIPT=0
-          RAW_ADB_OUTPUT_IN_RECEIPT=0
-          PUBLIC_CI_ORIGINATED_OD0_PASS=0
-          BUILD_READY=NO
-          RELEASE_READY=NO
-          AUDIT
-          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-OD0-HANDOFF-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload OD0 public-safe handoff
-        uses: actions/upload-artifact@v4
-        with:
-          name: financesensor-alpha2-2008-od0-owned-device-handoff-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          path: |
-            FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF.zip
-            FinanceSensor-ALPHA2-OD0-HANDOFF-AUDIT.txt
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Preserve physical boundary
-        run: |
-          set -euo pipefail
-          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=PASS'
+          echo 'ALPHA2_OD0_HANDOFF_PACKAGE=BLOCKED'
+          echo 'CANDIDATE=0.2.0-alpha.2+2009'
+          echo 'SIGNING_REQUEST_ALLOWED=YES'
+          echo 'TRUSTED_EDGE_SIGNING_PASS=NO'
+          echo 'OD0_EXECUTION_ALLOWED=NO'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
           echo 'PUBLIC_CI_ORIGINATED_OD0_PASS=0'
-          echo 'R2_NEXT_GATE=OD0'
+          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'ADB_EXECUTED_BY_CI=0'
+          echo 'DEVICE_TOUCHED_BY_CI=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

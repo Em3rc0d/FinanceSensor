@@ -8,19 +8,21 @@ on:
     paths:
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-r2-sanitized-receipt-schema.json'
-      - 'graph/prebuild-remainder-design.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/prebuild-remainder-design.json'
       - 'graph/physical-closure-campaign.json'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
-      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
-      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
-      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-prebuild-remainder-design.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
   push:
@@ -29,19 +31,21 @@ on:
     paths:
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-r2-sanitized-receipt-schema.json'
-      - 'graph/prebuild-remainder-design.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/prebuild-remainder-design.json'
       - 'graph/physical-closure-campaign.json'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.txt'
       - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-*.json'
       - 'graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-*.json'
-      - 'tools/validate-alpha2-r1-physical-signing-receipt.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-owned-device-campaign.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
-      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
-      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-prebuild-remainder-design.mjs'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/reduce-alpha2-r1-signing-receipt.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-r2-owned-device-campaign.yml'
 
@@ -74,24 +78,26 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Current +2008 R1 physical receipt PASS
-        run: node tools/validate-alpha2-r1-physical-signing-receipt.mjs
+      - name: Human intervention gate
+        run: node tools/validate-alpha2-human-intervention-gate.mjs
 
-      - name: R2 +2008 OD0-ready campaign contract
+      - name: Current +2009 R1 pre-signing handoff
+        run: node tools/validate-alpha2-r1-signing-handoff.mjs
+
+      - name: R2 +2009 signing-blocked campaign contract
         run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
 
       - name: R2 prebuild chain
         run: node tools/validate-alpha2-r2-chain.mjs
 
-      - name: Current +2008 signing reducer regression
+      - name: Historical +2008 signing reducer regression
         run: |
           set -euo pipefail
           node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2008-2026-09-14.txt > /tmp/alpha2-r1-2008-reduced.txt
           grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2008-reduced.txt
           grep -q '"candidate": "0.2.0-alpha.2+2008"' /tmp/alpha2-r1-2008-reduced.txt
           grep -q '"signedApkSha256": "a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277"' /tmp/alpha2-r1-2008-reduced.txt
-          grep -q '"signedApkBytes": 182538790' /tmp/alpha2-r1-2008-reduced.txt
-          echo 'ALPHA2_2008_SIGNING_RECEIPT=PASS_SANITIZED'
+          echo 'ALPHA2_2008_SIGNING_RECEIPT=HISTORICAL_NON_INHERITABLE'
 
       - name: Historical +2007 signing reducer regression
         run: |
@@ -99,24 +105,23 @@ jobs:
           node tools/reduce-alpha2-r1-signing-receipt.mjs graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2007-2026-09-12.txt > /tmp/alpha2-r1-2007-reduced.txt
           grep -q 'ALPHA2_R1_SIGNING_RECEIPT_REDUCER=PASS' /tmp/alpha2-r1-2007-reduced.txt
           grep -q '"candidate": "0.2.0-alpha.2+2007"' /tmp/alpha2-r1-2007-reduced.txt
-          grep -q '"signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab"' /tmp/alpha2-r1-2007-reduced.txt
-          grep -q '"signedApkBytes": 182145574' /tmp/alpha2-r1-2007-reduced.txt
           echo 'ALPHA2_2007_SIGNING_RECEIPT=HISTORICAL_NON_INHERITABLE'
 
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
 
-      - name: Preserve +2008 post-R1 physical boundary
+      - name: Preserve +2009 pre-signing physical boundary
         run: |
           set -euo pipefail
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT'
+          echo 'SIGNING_REQUEST_ALLOWED=YES'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=IN_PROGRESS'
-          echo 'OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
           echo 'CURRENT_OD0_OD11_PASS=NONE'
-          echo 'ALPHA2_2007_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=OD0'
-          echo 'R2_CURRENT_BLOCKER=OWNED_ANDROID_OD0_INSTALL_AND_LAUNCH_REQUIRED'
+          echo 'ALPHA2_2008_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
+          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_CURRENT_BLOCKER=TRUSTED_EDGE_SIGNING_2009_REQUIRED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'

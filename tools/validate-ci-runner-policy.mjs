@@ -30,20 +30,88 @@ for (const file of ACTIVE_WORKFLOWS) {
 }
 
 const contracts = {
-  'mobile-shell.yml': {markers:['flutter build apk --debug','REAL_GMAIL=0','REAL_OAUTH=0','REAL_FINANCIAL_DATA=0','BUILD_READY=NO'],forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i]},
-  'mobile-gmail-connection.yml': {markers:['ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT','EXACT_SCOPE=gmail.readonly','APP_REFRESH_TOKEN_CUSTODY=0','DART_BEARER_CUSTODY=0','OFFLINE_ACCESS_REQUESTED=0','REAL_OAUTH_EXECUTED_BY_CI=0','REAL_GMAIL_EXECUTED_BY_CI=0','BUILD_READY=NO'],forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i]},
-  'mobile-human-test-alpha.yml': {markers:['node tools/validate-human-test-alpha.mjs','--target lib/main_human_test.dart','com.financesensor.lab.gmailconnection.r2','EXACT_SCOPE=gmail.readonly','REAL_OAUTH_EXECUTED_BY_CI=0','REAL_GMAIL_EXECUTED_BY_CI=0','PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL','TRUSTED_EDGE_RESIGN_REQUIRED=YES','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/]},
-  'gmail-historical.yml': {markers:['Synthetic/static only','REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN','contents: read','runs-on: ubuntu-latest'],forbidden:[/\$\{\{\s*secrets\./]},
-  'statement-etl-contract.yml': {markers:['node tools/validate-statement-etl-reconciliation.mjs','REAL_STATEMENT_DATA_IN_CI=0','REAL_GMAIL_IN_CI=0','IOS_TOUCHED=0','BUILD_READY=false'],forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]},
+  'mobile-shell.yml': {
+    markers:['flutter build apk --debug','REAL_GMAIL=0','REAL_OAUTH=0','REAL_FINANCIAL_DATA=0','BUILD_READY=NO'],
+    forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i]
+  },
+  'mobile-gmail-connection.yml': {
+    markers:['ANDROID_AUTHORIZATION_PROVIDER=GOOGLE_AUTHORIZATION_CLIENT','EXACT_SCOPE=gmail.readonly','APP_REFRESH_TOKEN_CUSTODY=0','DART_BEARER_CUSTODY=0','OFFLINE_ACCESS_REQUESTED=0','REAL_OAUTH_EXECUTED_BY_CI=0','REAL_GMAIL_EXECUTED_BY_CI=0','BUILD_READY=NO'],
+    forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|owned-oauth-level-c/i]
+  },
+  'mobile-human-test-alpha.yml': {
+    markers:['node tools/validate-human-test-alpha.mjs','--target lib/main_human_test.dart','com.financesensor.lab.gmailconnection.r2','EXACT_SCOPE=gmail.readonly','REAL_OAUTH_EXECUTED_BY_CI=0','REAL_GMAIL_EXECUTED_BY_CI=0','PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL','TRUSTED_EDGE_RESIGN_REQUIRED=YES','BUILD_READY=NO','RELEASE_READY=NO'],
+    forbidden:[/FINANCESENSOR_GMAIL_ACCESS_TOKEN|FINANCESENSOR_GMAIL_REFRESH_TOKEN|FINANCESENSOR_GOOGLE_CLIENT_SECRET|FINANCESENSOR_GOOGLE_CREDENTIALS_PATH/]
+  },
+  'gmail-historical.yml': {
+    markers:['Synthetic/static only','REAL_HISTORICAL_GMAIL_COVERAGE remains physically OPEN','contents: read','runs-on: ubuntu-latest'],
+    forbidden:[/\$\{\{\s*secrets\./]
+  },
+  'statement-etl-contract.yml': {
+    markers:['node tools/validate-statement-etl-reconciliation.mjs','REAL_STATEMENT_DATA_IN_CI=0','REAL_GMAIL_IN_CI=0','IOS_TOUCHED=0','BUILD_READY=false'],
+    forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]
+  },
   'alpha2-design-freeze.yml': {markers:['node tools/validate-alpha2-design-freeze.mjs','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_DATA_IN_CI=0','BUILD_READY=NO']},
   'alpha2-statement-discovery.yml': {markers:['node tools/validate-alpha2-a-statement-discovery.mjs','ATTACHMENT_BYTES_FETCHED=0','PASSWORD_REQUESTED=0','VAULT_MUTATION=0','REAL_GMAIL_IN_CI=0','BUILD_READY=NO']},
-  'alpha2-statement-fetch-parse.yml': {markers:['node tools/validate-alpha2-b-statement-fetch-parse.mjs','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_PLAINTEXT_IN_CI=0','PASSWORD_DURABLE_STORAGE=0','RAW_PDF_DURABLE_WRITES=0','PHYSICAL_PROFILE_PASS=0','BUILD_READY=NO'],forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]},
-  'alpha2-financial-vault.yml': {markers:['node tools/validate-alpha2-c-financial-vault.mjs','SQLCIPHER_VERSION=4.18.0','REAL_FINANCIAL_PLAINTEXT_IN_CI=0','REAL_PLATFORM_KEYSTORE_IN_CI=0','PLAINTEXT_SQLITE_FALLBACK=0','DURABLE_APP_DEK=0','PHYSICAL_SQLCIPHER_INSPECTION=0','BUILD_READY=NO'],forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]},
+  'alpha2-statement-fetch-parse.yml': {
+    markers:['node tools/validate-alpha2-b-statement-fetch-parse.mjs','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_PLAINTEXT_IN_CI=0','PASSWORD_DURABLE_STORAGE=0','RAW_PDF_DURABLE_WRITES=0','PHYSICAL_PROFILE_PASS=0','BUILD_READY=NO'],
+    forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]
+  },
+  'alpha2-financial-vault.yml': {
+    markers:['node tools/validate-alpha2-c-financial-vault.mjs','SQLCIPHER_VERSION=4.18.0','REAL_FINANCIAL_PLAINTEXT_IN_CI=0','REAL_PLATFORM_KEYSTORE_IN_CI=0','PLAINTEXT_SQLITE_FALLBACK=0','DURABLE_APP_DEK=0','PHYSICAL_SQLCIPHER_INSPECTION=0','BUILD_READY=NO'],
+    forbidden:[/owned-oauth-|RUN-FINANCESENSOR-|gmail\.googleapis\.com|accounts\.google\.com|oauth2\.googleapis\.com/i]
+  },
   'alpha2-consolidated-contract.yml': {markers:['node tools/validate-alpha2-consolidated-product-contract.mjs','contents: read','runs-on: ubuntu-latest']},
-  'alpha2-integrated-runtime.yml': {markers:['node tools/validate-alpha2-integrated-runtime.mjs','node tools/validate-alpha2-2009-candidate-cut.mjs','--target lib/main_alpha2.dart','--build-number 2009','CANDIDATE_ID=0.2.0-alpha.2+2009','POST_PASSWORD_SAFE_STOP_DIAGNOSTICS=YES','POST_PASSWORD_IMPORT_ISOLATION=YES','STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO','ANDROID_COMPILE_SDK=37','ANDROID_MIN_SDK=31','ANDROID_TARGET_SDK=36','SQLCIPHER_VERSION=4.18.0','REAL_OAUTH_EXECUTED_BY_CI=NO','REAL_GMAIL_EXECUTED_BY_CI=NO','REAL_FINANCIAL_DATA_IN_CI=NO','PHYSICAL_SQLCIPHER_PASS=NO','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/--build-number 2008|CANDIDATE_ID=0\.2\.0-alpha\.2\+2008|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES|REAL_FINANCIAL_DATA_IN_CI=YES|PHYSICAL_SQLCIPHER_PASS=YES|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]},
-  'alpha2-r1-trusted-edge-signing.yml': {markers:['node tools/validate-alpha2-canonical-candidate.mjs','node tools/validate-alpha2-r1-signing-handoff.mjs','node tools/validate-alpha2-r1-ci-routing-receipt.mjs','node tools/validate-alpha2-r1-physical-signing-receipt.mjs','Download exact canonical +2008 artifact','Generate deterministic public-safe v10 handoff bundle','FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v10.zip','R1_V10_GENERATION=PASS','R1_V10_FROZEN_BYTES=PASS','R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_PHYSICAL_CAMPAIGN=IN_PROGRESS','OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|R2_PHYSICAL_CAMPAIGN=PASS|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i]},
-  'alpha2-r2-owned-device-campaign.yml': {markers:['node tools/validate-alpha2-r1-physical-signing-receipt.mjs','node tools/validate-alpha2-r2-owned-device-campaign.mjs','node tools/validate-alpha2-r2-chain.mjs','node tools/validate-ci-runner-policy.mjs','R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_PHYSICAL_CAMPAIGN=IN_PROGRESS','OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL','CURRENT_OD0_OD11_PASS=NONE','ALPHA2_2007_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE','R2_NEXT_GATE=OD0','R2_CURRENT_BLOCKER=OWNED_ANDROID_OD0_INSTALL_AND_LAUNCH_REQUIRED','REAL_OAUTH_IN_CI=0','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_DATA_IN_CI=0','PRIVATE_SIGNING_MATERIAL_IN_CI=0','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|R2_PHYSICAL_CAMPAIGN=PASS|REAL_OAUTH_IN_CI=1|REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_DATA_IN_CI=1|PRIVATE_SIGNING_MATERIAL_IN_CI=1|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]},
-  'alpha2-od0-owned-device-harness.yml': {markers:['node tools/validate-alpha2-od0-owned-device-harness.mjs','node tools/validate-ci-runner-policy.mjs','FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF.zip','STABLE_SIGNED_APK_SHA256=a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277','PRIVATE_SIGNING_MATERIAL_IN_HANDOFF=0','STABLE_SIGNED_APK_IN_HANDOFF=0','DEVICE_SERIAL_IN_RECEIPT=0','RAW_ADB_OUTPUT_IN_RECEIPT=0','PUBLIC_CI_ORIGINATED_OD0_PASS=0','R2_NEXT_GATE=OD0','BUILD_READY=NO','RELEASE_READY=NO'],forbidden:[/PUBLIC_CI_ORIGINATED_OD0_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|\$\{\{\s*secrets\./i]},
+  'alpha2-integrated-runtime.yml': {
+    markers:['node tools/validate-alpha2-integrated-runtime.mjs','node tools/validate-alpha2-2009-candidate-cut.mjs','--target lib/main_alpha2.dart','--build-number 2009','CANDIDATE_ID=0.2.0-alpha.2+2009','POST_PASSWORD_SAFE_STOP_DIAGNOSTICS=YES','POST_PASSWORD_IMPORT_ISOLATION=YES','STATEMENT_FAILURE_BLOCKS_SAFE_PROJECTION=NO','ANDROID_COMPILE_SDK=37','ANDROID_MIN_SDK=31','ANDROID_TARGET_SDK=36','SQLCIPHER_VERSION=4.18.0','REAL_OAUTH_EXECUTED_BY_CI=NO','REAL_GMAIL_EXECUTED_BY_CI=NO','REAL_FINANCIAL_DATA_IN_CI=NO','PHYSICAL_SQLCIPHER_PASS=NO','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'],
+    forbidden:[/--build-number 2008|CANDIDATE_ID=0\.2\.0-alpha\.2\+2008|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES|REAL_FINANCIAL_DATA_IN_CI=YES|PHYSICAL_SQLCIPHER_PASS=YES|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]
+  },
+  'alpha2-r1-trusted-edge-signing.yml': {
+    markers:[
+      'node tools/validate-alpha2-human-intervention-gate.mjs',
+      'node tools/validate-alpha2-canonical-candidate.mjs',
+      'node tools/validate-alpha2-r1-signing-handoff.mjs',
+      'node tools/validate-alpha2-r1-ci-routing-receipt.mjs',
+      'Download exact canonical +2009 artifact',
+      'financesensor-alpha2-2009-candidate-34913707304',
+      'Generate deterministic public-safe v11 handoff bundle',
+      'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v11.zip',
+      '1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717',
+      'R1_V11_GENERATION=PASS','R1_V11_FROZEN_BYTES=PASS',
+      'SIGNING_REQUEST_ALLOWED=YES','R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE',
+      'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO','PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0',
+      'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING','PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'
+    ],
+    forbidden:[/node tools\/validate-alpha2-r1-physical-signing-receipt\.mjs|Download exact canonical \+2008 artifact|BUNDLE-v10|R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT|OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL|PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|REAL_OAUTH_EXECUTED_BY_CI=YES|REAL_GMAIL_EXECUTED_BY_CI=YES/i]
+  },
+  'alpha2-r2-owned-device-campaign.yml': {
+    markers:[
+      'node tools/validate-alpha2-human-intervention-gate.mjs',
+      'node tools/validate-alpha2-r1-signing-handoff.mjs',
+      'node tools/validate-alpha2-r2-owned-device-campaign.mjs',
+      'node tools/validate-alpha2-r2-chain.mjs','node tools/validate-ci-runner-policy.mjs',
+      'ALPHA2_2008_SIGNING_RECEIPT=HISTORICAL_NON_INHERITABLE',
+      'ALPHA2_2007_SIGNING_RECEIPT=HISTORICAL_NON_INHERITABLE',
+      'SIGNING_REQUEST_ALLOWED=YES','R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE',
+      'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0','R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING',
+      'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO','CURRENT_OD0_OD11_PASS=NONE',
+      'ALPHA2_2008_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE',
+      'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING','R2_CURRENT_BLOCKER=TRUSTED_EDGE_SIGNING_2009_REQUIRED',
+      'REAL_OAUTH_IN_CI=0','REAL_GMAIL_IN_CI=0','REAL_FINANCIAL_DATA_IN_CI=0','PRIVATE_SIGNING_MATERIAL_IN_CI=0',
+      'PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'
+    ],
+    forbidden:[/node tools\/validate-alpha2-r1-physical-signing-receipt\.mjs|R1_TRUSTED_EDGE_SIGNING=PASS_FROM_SANITIZED_RECEIPT|R2_PHYSICAL_CAMPAIGN=IN_PROGRESS|OD0_INSTALL_AND_LAUNCH=READY_FOR_PHYSICAL|R2_NEXT_GATE=OD0|PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|R2_PHYSICAL_CAMPAIGN=PASS|REAL_OAUTH_IN_CI=1|REAL_GMAIL_IN_CI=1|REAL_FINANCIAL_DATA_IN_CI=1|PRIVATE_SIGNING_MATERIAL_IN_CI=1|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES/i]
+  },
+  'alpha2-od0-owned-device-harness.yml': {
+    markers:[
+      'node tools/validate-alpha2-od0-owned-device-harness.mjs','node tools/validate-ci-runner-policy.mjs',
+      'ALPHA2_OD0_HANDOFF_PACKAGE=BLOCKED','CANDIDATE=0.2.0-alpha.2+2009',
+      'SIGNING_REQUEST_ALLOWED=YES','TRUSTED_EDGE_SIGNING_PASS=NO','OD0_EXECUTION_ALLOWED=NO',
+      'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO','PUBLIC_CI_ORIGINATED_OD0_PASS=0',
+      'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING','ADB_EXECUTED_BY_CI=0','DEVICE_TOUCHED_BY_CI=0',
+      'PHYSICAL_ALPHA2_PASS=NO','BUILD_READY=NO','RELEASE_READY=NO'
+    ],
+    forbidden:[/FinanceSensor-ALPHA2-OD0-OWNED-DEVICE-HANDOFF\.zip|STABLE_SIGNED_APK_SHA256=a6e9e944|R2_NEXT_GATE=OD0|PUBLIC_CI_ORIGINATED_OD0_PASS=1|OD0_INSTALL_AND_LAUNCH=PASS|PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|\$\{\{\s*secrets\./i]
+  },
 };
 
 for (const [file, contract] of Object.entries(contracts)) {
@@ -52,6 +120,7 @@ for (const [file, contract] of Object.entries(contracts)) {
   for (const marker of contract.markers ?? []) if (!text.includes(marker)) fail(file, `workflow contract missing marker: ${marker}`);
   for (const pattern of contract.forbidden ?? []) if (pattern.test(text)) fail(file, `workflow contains forbidden execution/promotion surface: ${pattern}`);
 }
+
 for (const file of RETIRED_WORKFLOWS) {
   if (!files.includes(file)) { fail(file, 'registered retired workflow is missing'); continue; }
   const text = read(file);
@@ -60,11 +129,13 @@ for (const file of RETIRED_WORKFLOWS) {
   if (!/^\s*workflow_dispatch\s*:/m.test(text)) fail(file, 'retired workflow must remain manual only');
   if (/\$\{\{\s*secrets\./.test(text)) fail(file, 'retired workflow must not reference secrets');
 }
+
 if (failures.length) {
   console.error('FINANCESENSOR_CI_RUNNER_POLICY=FAIL');
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
+
 console.log('FINANCESENSOR_CI_RUNNER_POLICY=PASS');
 console.log(`ACTIVE_WORKFLOWS=${ACTIVE_WORKFLOWS.size}`);
 console.log(`RETIRED_WORKFLOWS=${RETIRED_WORKFLOWS.size}`);
@@ -72,13 +143,11 @@ console.log('RUNNER_ROUTE=ubuntu-latest');
 console.log('ACTIVE_SELF_HOSTED_PATHS=0');
 console.log('WORKFLOW_SECRET_REFERENCES=0');
 console.log('CRON_DEPENDENCIES=0');
-console.log('ALPHA2_R1_WORKFLOW_REGISTERED=1');
-console.log('ALPHA2_R2_WORKFLOW_REGISTERED=1');
-console.log('ALPHA2_OD0_HANDOFF_WORKFLOW_REGISTERED=1');
 console.log('ALPHA2_2009_CANDIDATE_CUT=ROUTED');
-console.log('R1_CURRENT_PHYSICAL_RECEIPT=PASS_SANITIZED_USER_ORIGIN');
-console.log('R1_V10_PUBLIC_BUNDLE_GENERATION=ROUTED');
-console.log('R2_CURRENT_PHYSICAL_CAMPAIGN=IN_PROGRESS_OD0_READY');
+console.log('R1_V11_PUBLIC_BUNDLE_GENERATION=ROUTED');
+console.log('R1_TRUSTED_EDGE_SIGNING=PENDING_USER_TRUSTED_EDGE');
+console.log('R2_CURRENT_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_SIGNING');
+console.log('OD0_HANDOFF_PACKAGE_ALLOWED=0');
 console.log('PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0');
 console.log('PUBLIC_CI_ORIGINATED_OD0_PASS=0');
 console.log('PUBLIC_CI_BUILD_READY_PROMOTION=0');

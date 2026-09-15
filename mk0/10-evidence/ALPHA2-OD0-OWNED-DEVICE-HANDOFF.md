@@ -1,38 +1,41 @@
-# Alpha.2 +2008 — OD0 owned-device handoff
+# Alpha.2 +2009 — OD0 owned-device handoff boundary
 
-This handoff executes only `OD0 — SIGNED_APK_INSTALL_AND_LAUNCH` for the already certified stable-signed Alpha.2 +2008 candidate.
+**Status:** BLOCKED BY R1 TRUSTED-EDGE SIGNING
 
-## Frozen identity
+The current canonical product candidate is `0.2.0-alpha.2+2009`, but OD0 is **not executable yet**. The exact canonical APK is frozen and all reproducible pre-signing gates are green; however, the stable trusted-edge signature has not yet been produced for this candidate.
 
-- Candidate: `0.2.0-alpha.2+2008`
-- Product source commit: `45b605d29fe0b90f528e4f0f952ab878080b2f0b`
-- Stable-signed APK SHA-256: `a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277`
-- Stable-signed APK bytes: `182538790`
-- Stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
+## Current frozen identity
+
+- Candidate: `0.2.0-alpha.2+2009`
+- Product source commit: `9391f8cfbafcf89d5e3fbd7c0bfc995247df9c6f`
+- Canonical source commit: `e19bcccee13e326bbc08012533ddaeba026c633a`
+- Canonical unsigned APK SHA-256: `1603ebdb5bd47bf732a1ea3cced705ac67ec57b690b1bf6795f543230e3d0717`
+- Canonical unsigned APK bytes: `182514883`
+- Expected stable signer SHA1: `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`
 - Android package: `com.financesensor.lab.gmailconnection.r2`
 - Gmail scope: `gmail.readonly`
 
-Operational tooling added after this freeze does not change the product candidate or APK identity. Any product-source/APK identity change still reopens R1/R2.
+## Why OD0 is blocked
 
-## One-click execution
+The previous +2008 owned-device observation found the deterministic post-password statement-import failure. +2009 contains the remediation and has a different product/APK identity. Under the mutation law, +2008 signing and physical evidence are historical and non-inheritable.
 
-The public-safe bundle contains:
+Therefore the only allowed human boundary now is R1 trusted-edge signing of the exact +2009 canonical APK. Until a sanitized R1 signing receipt freezes the resulting stable-signed APK identity:
 
-- `RUN-FINANCESENSOR-ALPHA2-OD0.cmd`
-- `RUN-FINANCESENSOR-ALPHA2-OD0.ps1`
-- this handoff document
+```text
+SIGNING_REQUEST_ALLOWED=YES
+TRUSTED_EDGE_SIGNING_PASS=NO
+OD0_EXECUTION_ALLOWED=NO
+OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO
+HUMAN_UAT_ELIGIBLE=NO
+```
 
-The operator extracts the bundle on the owned Windows trusted edge, connects exactly one authorized Android phone, double-clicks the CMD, and selects the locally generated stable-signed +2008 APK. The harness verifies the exact APK hash, byte length and stable signer before touching the device.
+## Fail-closed operational tooling
 
-The harness then removes any prior installation of the package, installs the exact stable-signed candidate, confirms package resolution, launches the launcher activity and confirms the app process is observed. It records only Android API level and coarse counts. Device serials, raw ADB output, tokens, Gmail content, financial plaintext, screenshots and private signing material are never written to the receipt.
+`RUN-FINANCESENSOR-ALPHA2-OD0.ps1` and `.cmd` are intentionally inert in this state. Normal execution writes only a sanitized `FinanceSensor-ALPHA2-R2-OD0-BLOCKED.txt` status and exits before ADB or any device operation.
 
-## Receipt boundary
+The harness will be rebound to the exact stable-signed +2009 APK only after R1 trusted-edge signing is certified. At that point the consolidated owned-device campaign may open; until then no OD0 handoff package is valid.
 
-On PASS the harness writes `ALPHA2-R2-OWNED-ANDROID-OD0-<date>.json` using `A2_R2_SANITIZED_RECEIPT_V1`. `OD0` is PASS and `OD1..OD11` remain INCONCLUSIVE / not executed.
-
-On failure it writes only `FinanceSensor-ALPHA2-R2-OD0-FAILURE.txt` with a stable result code. Raw command output is deliberately omitted.
-
-Only the generated sanitized PASS JSON or sanitized failure TXT may be returned for ingestion.
+`OLD_2008_OD0_HANDOFF = SUPERSEDED / FORBIDDEN`
 
 `OD0_PASS != R2_PASS`
 
