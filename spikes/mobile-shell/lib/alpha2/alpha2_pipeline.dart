@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
+import 'alpha2_credit_statement_adapters.dart';
 import 'alpha2_ingress.dart';
 import 'alpha2_models.dart';
 import 'alpha2_product_gate.dart';
@@ -70,6 +71,12 @@ const String alpha2StatementPdfRuntimeRejected =
 const String alpha2StatementPersistenceRejected =
     'STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED';
 
+const Set<String> alpha2RuntimeStatementProfiles = <String>{
+  alpha2BcpSavingsProfileId,
+  alpha2BcpCreditProfileId,
+  alpha2RipleyCreditProfileId,
+};
+
 Map<String, int> alpha2StatementOutcomeCounts(
   Iterable<Alpha2StatementImportOutcome> outcomes,
 ) {
@@ -98,6 +105,7 @@ class Alpha2PipelineResult {
     required this.productGate,
     required this.projection,
   });
+
   final String ingressCoverage;
   final int gmailEvidenceCount;
   final List<Alpha2StatementImportOutcome> statementOutcomes;
@@ -114,12 +122,16 @@ class Alpha2Pipeline {
     this.bcpSavingsParser = const Alpha2StrictBcpSavingsAdapter(
       geometryParser: Alpha2BcpSavingsGeometryParser(),
     ),
+    this.ripleyCreditParser = const Alpha2StrictRipleyCreditAdapter(),
+    this.bcpCreditProbe = const Alpha2BcpCreditStructuralProbe(),
   });
 
   final Alpha2IngressSource ingress;
   final Alpha2Vault vault;
   final Alpha2StatementLayoutReader pdfReader;
   final Alpha2StrictBcpSavingsAdapter bcpSavingsParser;
+  final Alpha2StrictRipleyCreditAdapter ripleyCreditParser;
+  final Alpha2BcpCreditStructuralProbe bcpCreditProbe;
 
   Future<Alpha2PipelineResult> refresh({
     required String tenantId,
@@ -184,10 +196,6 @@ class Alpha2Pipeline {
             ),
           );
         } catch (_) {
-          // A statement is optional enrichment. An unexpected candidate-local
-          // runtime error must be represented as a sanitized knowledge gap and
-          // must not prevent already-safe Gmail/vault evidence from reaching
-          // the canonical runtime and dashboard projection.
           await _safeRelease(candidate.handle);
           statementOutcomes.add(
             Alpha2StatementImportOutcome(
@@ -272,9 +280,8 @@ class Alpha2Pipeline {
     try {
       await ingress.releaseStatementHandle(handle);
     } catch (_) {
-      // Handle cleanup must never erase a safe per-candidate outcome. Native
-      // scanner lifetime and disconnect/onDestroy remain secondary cleanup
-      // boundaries.
+      // Scanner lifetime and disconnect/onDestroy remain secondary cleanup
+      // boundaries. Cleanup failure must never replace a sanitized outcome.
     }
   }
 
@@ -285,7 +292,7 @@ class Alpha2Pipeline {
   }) async {
     if (!candidate.fetchEligible ||
         candidate.state != 'STRONG' ||
-        candidate.profileId != alpha2BcpSavingsProfileId) {
+        !alpha2RuntimeStatementProfiles.contains(candidate.profileId)) {
       await _safeRelease(candidate.handle);
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
@@ -383,11 +390,20 @@ class Alpha2Pipeline {
 
       Alpha2StatementParseResult parsed;
       try {
-        parsed = bcpSavingsParser.parse(
-          layout: layout,
-          sourceReceiptId: sourceReceiptId,
-          tenantId: tenantId,
-        );
+        parsed = switch (candidate.profileId) {
+          alpha2BcpSavingsProfileId => bcpSavingsParser.parse(
+              layout: layout,
+              sourceReceiptId: sourceReceiptId,
+              tenantId: tenantId,
+            ),
+          alpha2RipleyCreditProfileId => ripleyCreditParser.parse(
+              layout: layout,
+              sourceReceiptId: sourceReceiptId,
+              tenantId: tenantId,
+            ),
+          alpha2BcpCreditProfileId => bcpCreditProbe.inspect(layout: layout),
+          _ => throw StateError('ALPHA2_PROFILE_ROUTING_IMPOSSIBLE'),
+        };
       } catch (_) {
         return Alpha2StatementImportOutcome(
           profileId: candidate.profileId,
@@ -419,7 +435,7 @@ class Alpha2Pipeline {
           profileId: candidate.profileId,
           status: 'REVIEW_REQUIRED',
           evidenceCount: 0,
-          reviewCodes: parsed.reviewCodes,
+          reviewCodes: List<String>.unmodifiable(parsed.reviewCodes),
           statementPeriodId: parsed.statementPeriodId,
         );
       }
@@ -452,8 +468,7 @@ class Alpha2Pipeline {
         try {
           bytes.fillRange(0, bytes.length, 0);
         } catch (_) {
-          // Zeroization is attempted unconditionally, but cleanup failure must
-          // not replace a sanitized candidate outcome.
+          // Zeroization is attempted unconditionally.
         }
       }
       await _safeRelease(candidate.handle);

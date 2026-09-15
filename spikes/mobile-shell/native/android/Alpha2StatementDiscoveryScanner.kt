@@ -32,7 +32,9 @@ class Alpha2StatementDiscoveryScanner {
         private const val ATTACHMENT_MAX_ATTEMPTS = 3
         private const val PDF_HEADER_SCAN_BYTES = 1_024
         private const val PDF_MIME = "application/pdf"
+        private const val BCP_CREDIT_PROFILE = "PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1"
         private const val BCP_SAVINGS_PROFILE = "PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1"
+        private const val RIPLEY_CREDIT_PROFILE = "PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1"
         private val TRANSIENT_ATTACHMENT_HTTP = setOf(408, 429, 500, 502, 503, 504)
         private val ATTACHMENT_RETRY_DELAYS_MS = longArrayOf(250L, 750L)
     }
@@ -67,14 +69,16 @@ class Alpha2StatementDiscoveryScanner {
 
     private val profiles = listOf(
         Profile(
-            id = "PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1",
+            id = BCP_CREDIT_PROFILE,
             institutionCode = "BCP",
             productType = "CREDIT_CARD",
             senderDomains = setOf("notificacionesbcp.com.pe"),
             subjectMarkers = listOf("estado de cuenta de tu tarjeta visa"),
             filenameRegex = Regex("^eecc_visa\\.pdf$", RegexOption.IGNORE_CASE),
             requiresLocalPassword = true,
-            runtimeFetchEnabled = false,
+            // +2012 fetches this exact STRONG profile only so Dart can run the
+            // privacy-safe structural probe. No BCP credit rows are imported.
+            runtimeFetchEnabled = true,
         ),
         Profile(
             id = BCP_SAVINGS_PROFILE,
@@ -90,14 +94,16 @@ class Alpha2StatementDiscoveryScanner {
             runtimeFetchEnabled = true,
         ),
         Profile(
-            id = "PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1",
+            id = RIPLEY_CREDIT_PROFILE,
             institutionCode = "BANCO_RIPLEY",
             productType = "CREDIT_CARD",
             senderDomains = setOf("bancoripley.com.pe"),
             subjectMarkers = listOf("estado de cuenta banco ripley"),
             filenameRegex = Regex("\\.pdf$", RegexOption.IGNORE_CASE),
             requiresLocalPassword = true,
-            runtimeFetchEnabled = false,
+            // +2012 has a profile-specific strict Dart adapter derived from the
+            // bank's public statement template. There is still no fallback fetch.
+            runtimeFetchEnabled = true,
         ),
     )
 

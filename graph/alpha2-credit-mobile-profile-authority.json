@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "A2_CREDIT_MOBILE_PROFILE_AUTHORITY_V1",
+  "candidate": "0.2.0-alpha.2+2012",
+  "status": "STATIC_IMPLEMENTED_PHYSICAL_OPEN",
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2011",
+    "sourceCommit": "c7a795604404821f167d5eb9d9b41dd1bda811a9",
+    "integratedRunId": 34977682793,
+    "artifactId": 10400262449,
+    "artifactZipSha256": "0cb4119f5ff62ddd7bf3771383ae9f81b3b3c5d3d4a52fa4f9e90591c90c2121",
+    "unsignedApkSha256": "ea803fb00569b48b4cca17387aed81b93fd257fa3242bf5308d9fb9b1c71010a",
+    "unsignedApkBytes": 182521411,
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "profiles": [
+    {
+      "profileId": "PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1",
+      "mode": "STRICT_IMPORT",
+      "adapter": "A2_BCP_SAVINGS_COMPLETENESS_V2",
+      "physicalPass": false
+    },
+    {
+      "profileId": "PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1",
+      "mode": "STRICT_IMPORT",
+      "adapter": "A2_RIPLEY_CREDIT_STRICT_V1",
+      "authority": "BANCO_RIPLEY_PUBLIC_STATEMENT_TEMPLATE",
+      "authorityUrl": "https://www.bancoripley.com.pe/pdf/como-leer-eecc.pdf",
+      "ledgerAnchor": "TUS_MOVIMIENTOS_DEL_MES",
+      "amountAuthority": "TOTAL_COLUMN_IN_LEDGER_HEADER_FAMILY",
+      "summaryFormulaPointsExcluded": true,
+      "physicalPass": false
+    },
+    {
+      "profileId": "PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1",
+      "mode": "STRUCTURAL_PROBE_ONLY",
+      "adapter": "A2_BCP_CREDIT_STRUCTURAL_PROBE_V1",
+      "financialEvidenceEmission": false,
+      "rawTextEmission": false,
+      "amountEmission": false,
+      "dateEmission": false,
+      "merchantEmission": false,
+      "geometryEmission": false,
+      "safeDiagnosticPattern": "^BCP_CREDIT_STRUCTURAL_V1_P(?:0|1|2_4|5P)_M[0-9A-F]{3}$",
+      "physicalPass": false
+    }
+  ],
+  "interbankSavings": {
+    "staticParserExists": true,
+    "mobileGmailIdentityAllowlist": "OPEN",
+    "runtimeFetchEnabled": false,
+    "reason": "NO_ALLOWLISTED_GMAIL_IDENTITY_YET"
+  },
+  "privacy": {
+    "realPrivatePdfInRepository": false,
+    "realFinancialPlaintextInRepository": false,
+    "passwordPersisted": false,
+    "dniDerivedOrStored": false,
+    "crossInstitutionPasswordReuse": false,
+    "genericParserFallback": false
+  },
+  "claims": {
+    "staticImplementationPass": false,
+    "physicalProfilePass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

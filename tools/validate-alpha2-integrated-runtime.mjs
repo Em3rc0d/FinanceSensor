@@ -5,6 +5,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const [
   authorityText,
+  creditAuthorityText,
   pipeline,
   productGate,
   monthlyCoverage,
@@ -12,6 +13,8 @@ const [
   runtime,
   sensor,
   statementStrict,
+  creditAdapters,
+  creditAdapterTests,
   transactionScanner,
   statementScanner,
   vaultBridge,
@@ -25,6 +28,7 @@ const [
   adrIndex
 ] = await Promise.all([
   read('graph/alpha2-mobile-runtime-authority.json'),
+  read('graph/alpha2-credit-mobile-profile-authority.json'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_product_gate.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_monthly_coverage.dart'),
@@ -32,6 +36,8 @@ const [
   read('spikes/mobile-shell/lib/alpha2/alpha2_runtime.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_sensor_v1.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_statement_strict_adapter.dart'),
+  read('spikes/mobile-shell/lib/alpha2/alpha2_credit_statement_adapters.dart'),
+  read('spikes/mobile-shell/test/alpha2_credit_statement_adapters_test.dart'),
   read('spikes/mobile-shell/native/android/Alpha2TransactionScanner.kt'),
   read('spikes/mobile-shell/native/android/Alpha2StatementDiscoveryScanner.kt'),
   read('spikes/mobile-shell/native/android/Alpha2VaultBridge.kt'),
@@ -46,6 +52,7 @@ const [
 ]);
 
 const authority = JSON.parse(authorityText);
+const creditAuthority = JSON.parse(creditAuthorityText);
 if (authority.contract !== 'ALPHA2_MOBILE_RUNTIME_AUTHORITY_V1') throw new Error('ALPHA2_AUTHORITY_CONTRACT_MISMATCH');
 if (authority.adr !== 'ADR-038') throw new Error('ALPHA2_AUTHORITY_ADR_MISMATCH');
 if (authority.authorities?.dart?.canonicalTransactionAuthority !== true) throw new Error('ALPHA2_DART_CANONICAL_AUTHORITY_REQUIRED');
@@ -53,6 +60,14 @@ if (authority.authorities?.node?.shippedProductRuntime !== false) throw new Erro
 if (authority.publicProjection?.numericConfidenceAllowed !== false) throw new Error('ALPHA2_PUBLIC_CONFIDENCE_FORBIDDEN');
 if (authority.physicalCadence?.mode !== 'MILESTONE_ONLY') throw new Error('ALPHA2_PHYSICAL_CADENCE_MISMATCH');
 if (authority.claims?.buildReady !== false || authority.claims?.releaseReady !== false) throw new Error('ALPHA2_PREMATURE_READY_CLAIM');
+
+if (creditAuthority.schemaVersion !== 'A2_CREDIT_MOBILE_PROFILE_AUTHORITY_V1') throw new Error('ALPHA2_CREDIT_AUTHORITY_SCHEMA');
+if (creditAuthority.candidate !== '0.2.0-alpha.2+2012') throw new Error('ALPHA2_CREDIT_AUTHORITY_CANDIDATE');
+if (creditAuthority.claims?.physicalProfilePass !== false || creditAuthority.claims?.buildReady !== false || creditAuthority.claims?.releaseReady !== false) throw new Error('ALPHA2_CREDIT_PREMATURE_PROMOTION');
+if (creditAuthority.privacy?.genericParserFallback !== false || creditAuthority.privacy?.realPrivatePdfInRepository !== false || creditAuthority.privacy?.realFinancialPlaintextInRepository !== false) throw new Error('ALPHA2_CREDIT_PRIVACY_BOUNDARY');
+const creditProfiles = new Map((creditAuthority.profiles ?? []).map(item => [item.profileId, item]));
+if (creditProfiles.get('PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRICT_IMPORT') throw new Error('ALPHA2_RIPLEY_STRICT_AUTHORITY_REQUIRED');
+if (creditProfiles.get('PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRUCTURAL_PROBE_ONLY') throw new Error('ALPHA2_BCP_CREDIT_PROBE_ONLY_REQUIRED');
 
 if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
 if (!adrIndex.includes('| ADR-039 | Alpha.2 installability incident and Android baseline retention |')) throw new Error('ALPHA2_ADR_039_REGISTRY_MISSING');
@@ -63,6 +78,9 @@ for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 
 }
 if (!pipeline.includes('Alpha2BcpSavingsGeometryParser')) throw new Error('ALPHA2_BCP_GEOMETRY_PARSER_NOT_WIRED');
 if (!pipeline.includes('Alpha2StrictBcpSavingsAdapter')) throw new Error('ALPHA2_STATEMENT_STRICT_ADAPTER_NOT_WIRED');
+if (!pipeline.includes('Alpha2StrictRipleyCreditAdapter')) throw new Error('ALPHA2_RIPLEY_STRICT_ADAPTER_NOT_WIRED');
+if (!pipeline.includes('Alpha2BcpCreditStructuralProbe')) throw new Error('ALPHA2_BCP_CREDIT_PROBE_NOT_WIRED');
+if (!pipeline.includes('alpha2RuntimeStatementProfiles')) throw new Error('ALPHA2_EXACT_PROFILE_ROUTER_MISSING');
 if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_PARSE_REVIEW_FAIL_CLOSED_MISSING');
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
 if (!runtime.includes('blockedFromMaterialization')) throw new Error('ALPHA2_AMBIGUOUS_DOUBLE_COUNT_GUARD_MISSING');
@@ -72,9 +90,26 @@ for (const marker of [
   'audit.monetaryRows > audit.explainedMonetaryRows',
   'review.add(alpha2UnexplainedMonetaryRowCode)',
   '_isCertifiedBcpSummaryRow'
-]) {
-  if (!statementStrict.includes(marker)) throw new Error(`ALPHA2_STATEMENT_COMPLETENESS_MARKER_MISSING:${marker}`);
-}
+]) if (!statementStrict.includes(marker)) throw new Error(`ALPHA2_STATEMENT_COMPLETENESS_MARKER_MISSING:${marker}`);
+
+for (const marker of [
+  'A2_RIPLEY_CREDIT_STRICT_V1',
+  'TUS MOVIMIENTOS DEL MES',
+  'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED',
+  'geometry.totalMinX',
+  'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1',
+  'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
+  'BCP_CREDIT_STRUCTURAL_V1_',
+  'evidence: const <Alpha2Evidence>[]'
+]) if (!creditAdapters.includes(marker)) throw new Error(`ALPHA2_CREDIT_ADAPTER_MARKER_MISSING:${marker}`);
+for (const marker of [
+  'Ripley strict adapter imports ledger totals and excludes summary/formulas',
+  'Ripley unknown undated monetary row fails closed',
+  'Ripley rate/installment numbers are not movement amount authority',
+  'BCP credit probe emits only coarse whitelisted structural code',
+  "isNot(contains('TIENDA PRIVADA'))",
+  "isNot(contains('123.45'))"
+]) if (!creditAdapterTests.includes(marker)) throw new Error(`ALPHA2_CREDIT_REGRESSION_MISSING:${marker}`);
 
 if (!pipeline.includes('evaluateAlpha2ProductGate(')) throw new Error('ALPHA2_EF_PRODUCT_GATE_NOT_EXECUTED');
 if (!pipeline.includes('monthlyClose: productGate.monthlyClose')) throw new Error('ALPHA2_F_TO_G_PROJECTION_NOT_WIRED');
@@ -101,8 +136,10 @@ for (const marker of ['PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1','PE-BCP-CREDIT-MON
   if (!statementScanner.includes(marker)) throw new Error(`ALPHA2_STATEMENT_PROFILE_MISSING:${marker}`);
 }
 const enabledCount = (statementScanner.match(/runtimeFetchEnabled = true/g) ?? []).length;
-if (enabledCount !== 1) throw new Error(`ALPHA2_FETCH_ENABLED_PROFILE_COUNT:${enabledCount}`);
+if (enabledCount !== 3) throw new Error(`ALPHA2_FETCH_ENABLED_PROFILE_COUNT:${enabledCount}`);
+if (!statementScanner.includes('BCP_CREDIT_PROFILE') || !statementScanner.includes('RIPLEY_CREDIT_PROFILE')) throw new Error('ALPHA2_EXACT_CREDIT_PROFILE_CONSTANTS_MISSING');
 if (!statementScanner.includes('attachmentBytesFetched" to false')) throw new Error('ALPHA2_DISCOVERY_FETCH_BOUNDARY_MISSING');
+if (/generic/i.test(statementScanner) && statementScanner.includes('runtimeFetchEnabled')) throw new Error('ALPHA2_GENERIC_STATEMENT_FETCH_FORBIDDEN');
 
 for (const marker of ['SQLCIPHER_VERSION = "4.18.0"','context.noBackupFilesDir','DEK_BYTES = 32','AndroidKeyStore','ALPHA2_KEYSTORE_SOFTWARE_FALLBACK_FORBIDDEN','database key authority unavailable']) {
   if (!vaultBridge.toLowerCase().includes(marker.toLowerCase())) throw new Error(`ALPHA2_VAULT_MARKER_MISSING:${marker}`);
@@ -122,6 +159,9 @@ console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
 console.log('STATEMENT_STRICT_COMPLETENESS=A2_BCP_SAVINGS_COMPLETENESS_V2');
+console.log('RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V1');
+console.log('BCP_CREDIT_MODE=STRUCTURAL_PROBE_ONLY');
+console.log('EXACT_FETCH_ENABLED_PROFILES=3');
 console.log('STATEMENT_PARTIAL_BATCH_IMPORT=FORBIDDEN');
 console.log('ACCOUNT_GRAPH_PRODUCT_GATE=WIRED');
 console.log('MONTHLY_COVERAGE_PRODUCT_GATE=WIRED');
