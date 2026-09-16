@@ -8,8 +8,8 @@
   "priorChainId": "FINANCESENSOR_ALPHA2_2012_CERTIFICATION",
   "priorHeadBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
   "baseHeight": 7,
-  "headBlockHash": "adb68584fc13a52b25fb8a2adaa47e4cee3778c3c8fea53a50589ab71e5f1f9a",
-  "state": "PRE_SIGNING_FRONTIER",
+  "headBlockHash": "4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4",
+  "state": "R1_BUNDLE_FROZEN_SIGNING_REQUIRED",
   "nextGate": "R1_TRUSTED_EDGE_SIGNING",
   "blocks": [
     {
@@ -84,6 +84,26 @@
         "releaseReady": false
       },
       "blockHash": "adb68584fc13a52b25fb8a2adaa47e4cee3778c3c8fea53a50589ab71e5f1f9a"
+    },
+    {
+      "height": 11,
+      "kind": "R1_BUNDLE_FREEZE",
+      "parentBlockHash": "adb68584fc13a52b25fb8a2adaa47e4cee3778c3c8fea53a50589ab71e5f1f9a",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2013",
+        "workflow": "Alpha.2 R1 Trusted-Edge Signing",
+        "generationHeadSha": "c786edf1a51be68e9391390e400fa5408f4b35f0",
+        "runId": 35050293777,
+        "artifactId": 10428682465,
+        "wrapperArtifactSha256": "b2c483b96c44bb1b5e0bbf61946701666db3d661bb3e73ea10c894097c290909",
+        "innerBundleSha256": "d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc",
+        "innerBundleBytes": 86659248,
+        "innerBundleFiles": 8,
+        "manifestIntegrity": "PASS",
+        "privateSigningMaterialInCi": false,
+        "trustedEdgeSigningPass": false
+      },
+      "blockHash": "4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4"
     }
   ]
 }
