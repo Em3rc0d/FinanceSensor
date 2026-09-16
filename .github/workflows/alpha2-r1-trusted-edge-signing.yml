@@ -86,7 +86,7 @@ jobs:
           grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
           grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
           echo 'CANONICAL_2013_INPUT=PASS'
-      - name: Generate deterministic public-safe v13 bundle
+      - name: Regenerate deterministic frozen v13 bundle
         shell: bash
         run: |
           set -euo pipefail
@@ -151,8 +151,11 @@ jobs:
           unzip -t "$OUT" >/dev/null
           test "$(zipinfo -1 "$OUT"|grep -v '/$'|wc -l)" = '8'
           BUNDLE_SHA256="$(sha256sum "$OUT"|awk '{print $1}')"; BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = 'd8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc'
+          test "$BUNDLE_BYTES" = '86659248'
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v13-AUDIT.txt" <<AUDIT
           R1_V13_GENERATION=PASS
+          R1_V13_FROZEN_BYTES=PASS
           CANDIDATE=0.2.0-alpha.2+2013
           INPUT_APK_SHA256=bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1
           BUNDLE_SHA256=${BUNDLE_SHA256}
@@ -170,7 +173,7 @@ jobs:
           RELEASE_READY=NO
           AUDIT
           cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v13-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload v13 signing handoff
+      - name: Upload frozen v13 signing handoff
         uses: actions/upload-artifact@v4
         with:
           name: financesensor-alpha2-r1-trusted-edge-bundle-v13-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -182,6 +185,8 @@ jobs:
       - name: Preserve pre-signing physical boundary
         run: |
           echo 'R1_V13_GENERATION=PASS'
+          echo 'R1_V13_FROZEN_BYTES=PASS'
+          echo 'R1_BUNDLE_SHA256=d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc'
           echo 'SIGNING_REQUEST_ALLOWED=YES'
           echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
           echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
