@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [jett/mk0-foundation]
-    paths: ['graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-r1-signing-handoff.json','graph/alpha2-canonical-candidate.json','graph/alpha2-human-intervention-gate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','tools/validate-alpha2-r2-owned-device-campaign.mjs','tools/validate-alpha2-r2-chain.mjs','tools/validate-prebuild-remainder-design.mjs','tools/validate-ci-runner-policy.mjs','.github/workflows/alpha2-r2-owned-device-campaign.yml']
+    paths: ['graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-r1-signing-handoff.json','graph/alpha2-canonical-candidate.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-2013-certification-ledger-extension.json','tools/validate-alpha2-r2-owned-device-campaign.mjs','tools/validate-alpha2-r2-chain.mjs','tools/validate-prebuild-remainder-design.mjs','tools/validate-ci-runner-policy.mjs','.github/workflows/alpha2-r2-owned-device-campaign.yml']
   push:
     branches: [jett/mk0-foundation]
-    paths: ['graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-r1-signing-handoff.json','graph/alpha2-canonical-candidate.json','graph/alpha2-human-intervention-gate.json','graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json','tools/validate-alpha2-r2-owned-device-campaign.mjs','tools/validate-alpha2-r2-chain.mjs','tools/validate-prebuild-remainder-design.mjs','tools/validate-ci-runner-policy.mjs','.github/workflows/alpha2-r2-owned-device-campaign.yml']
+    paths: ['graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-r1-signing-handoff.json','graph/alpha2-canonical-candidate.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-2013-certification-ledger-extension.json','tools/validate-alpha2-r2-owned-device-campaign.mjs','tools/validate-alpha2-r2-chain.mjs','tools/validate-prebuild-remainder-design.mjs','tools/validate-ci-runner-policy.mjs','.github/workflows/alpha2-r2-owned-device-campaign.yml']
 permissions: {contents: read}
 jobs:
   validate-r2-boundary:
@@ -23,18 +23,21 @@ jobs:
       - run: node tools/validate-alpha2-r2-chain.mjs
       - run: node tools/validate-prebuild-remainder-design.mjs
       - run: node tools/validate-ci-runner-policy.mjs
-      - name: Preserve signed physical frontier
+      - name: Preserve pre-signing physical frontier
         run: |
-          echo 'CANDIDATE=0.2.0-alpha.2+2012'
-          echo 'SIGNING_REQUEST_ALLOWED=NO'
-          echo 'R1_TRUSTED_EDGE_SIGNING=PASS'
+          echo 'CANDIDATE=0.2.0-alpha.2+2013'
+          echo 'CANONICAL_UNSIGNED_APK_SHA256=bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1'
+          echo 'R1_BUNDLE_SHA256=d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc'
+          echo 'SIGNING_REQUEST_ALLOWED=YES'
+          echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
-          echo 'R2_PHYSICAL_CAMPAIGN=READY_FOR_OD0'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
+          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'
+          echo 'OD0_EXECUTION_ALLOWED=NO'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
           echo 'CURRENT_OD0_OD11_PASS=NONE'
-          echo 'ALPHA2_2009_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
-          echo 'R2_NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
-          echo 'R2_CURRENT_BLOCKER=OWNED_DEVICE_OD0_EXECUTION_REQUIRED'
+          echo 'ALPHA2_2012_R2_EVIDENCE=HISTORICAL_NON_INHERITABLE'
+          echo 'R2_NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'R2_CURRENT_BLOCKER=TRUSTED_EDGE_SIGNING_REQUIRED'
           echo 'REAL_OAUTH_IN_CI=0'
           echo 'REAL_GMAIL_IN_CI=0'
           echo 'REAL_FINANCIAL_DATA_IN_CI=0'
