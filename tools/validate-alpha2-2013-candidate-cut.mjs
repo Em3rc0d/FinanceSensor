@@ -66,13 +66,15 @@ if (authority.boundaries?.predecessorPhysicalEvidenceInherited !== false || auth
 
 if (canonical2012.candidate !== '0.2.0-alpha.2+2012') fail('PREDECESSOR_CANONICAL_MOVED_EARLY');
 if (canonical2012.signing?.signedApkSha256 !== signed2012 || canonical2012.signing?.trustedEdgeSigningPass !== true) fail('PREDECESSOR_SIGNED_IDENTITY_DRIFT');
-if (!failureReceipt.includes('ALPHA2_REFRESH_SCAN_FAILED') || !failureReceipt.includes('physicalEvidenceInheritanceAllowed') && !failureReceipt.includes('no heredar')) {
-  if (!failureReceipt.includes('no inherit')) fail('PHYSICAL_FAILURE_RECEIPT_INCOMPLETE');
-}
-if (!failureReceipt.includes('does not invent') && !failureReceipt.includes('no inventa') && !failureReceipt.includes('does not') ) {
-  // Receipt wording may evolve, but it must explicitly retain the sanitized diagnostic and non-promotion law.
-}
-if (!failureReceipt.includes('PHYSICAL_ALPHA2_PASS') || !failureReceipt.includes('BUILD_READY') || !failureReceipt.includes('RELEASE_READY')) fail('FAILURE_RECEIPT_PROMOTION_BOUNDARY_MISSING');
+if (canonical2012.boundaries?.physicalAlpha2Pass !== false || canonical2012.boundaries?.buildReady !== false || canonical2012.boundaries?.releaseReady !== false) fail('PREDECESSOR_PREMATURE_PROMOTION');
+
+for (const marker of [
+  'ALPHA2_REFRESH_SCAN_FAILED',
+  'may not inherit',
+  'PHYSICAL_ALPHA2_PASS',
+  'BUILD_READY',
+  'RELEASE_READY',
+]) if (!failureReceipt.includes(marker)) fail(`PHYSICAL_FAILURE_RECEIPT_MISSING:${marker}`);
 
 if (/PHYSICAL_ALPHA2_PASS=YES|BUILD_READY=YES|RELEASE_READY=YES|PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=1/.test(workflow)) fail('WORKFLOW_PREMATURE_PROMOTION');
 
