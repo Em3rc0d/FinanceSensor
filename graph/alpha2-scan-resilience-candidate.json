@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "A2_SCAN_RESILIENCE_CANDIDATE_V1",
+  "candidate": "0.2.0-alpha.2+2013",
+  "status": "BUILD_CANDIDATE_PENDING_CANONICAL_FREEZE",
+  "remediationSourceCommit": "da6176f9acba1854c470ce2caea471bb6b66d8f2",
+  "remediationPr": 145,
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2012",
+    "canonicalSourceCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
+    "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+    "signedApkBytes": 182563366,
+    "physicalResult": "REJECTED_AT_REFRESH_SCAN",
+    "physicalFailureReceipt": "mk0/10-evidence/ALPHA2-2012-PHYSICAL-SCAN-FAILURE-2026-09-15.md",
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "remediation": {
+    "transactionAndStatementScansIsolated": true,
+    "boundedScanAttempts": 2,
+    "boundedRetryDelayMs": 500,
+    "transientHttpRetryStatuses": [408, 429, 500, 502, 503, 504],
+    "reauthRemainsFailClosed": true,
+    "partialSafeSourceContinuation": true,
+    "rawGmailReturned": false,
+    "attachmentBytesFetchedDuringDiscovery": false,
+    "numericConfidenceReturned": false,
+    "regression": "spikes/mobile-shell/test/alpha2_scan_resilience_contract_test.dart"
+  },
+  "authority": {
+    "canonicalPromotionPending": true,
+    "canonicalUnsignedApkSha256": null,
+    "canonicalUnsignedApkBytes": null,
+    "canonicalBuildRunId": null,
+    "canonicalArtifactId": null,
+    "trustedEdgeResignRequired": true,
+    "trustedEdgeSigningPass": false,
+    "stableSignedApkSha256": null,
+    "physicalCampaignResetRequired": true
+  },
+  "boundaries": {
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "predecessorPhysicalEvidenceInherited": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
