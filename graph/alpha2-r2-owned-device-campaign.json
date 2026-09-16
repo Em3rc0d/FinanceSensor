@@ -1,38 +1,38 @@
 {
-  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V5",
+  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V6",
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "READY_FOR_OD0",
+  "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
   "candidate": {
-    "id": "0.2.0-alpha.2+2012",
-    "productSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
-    "sourceCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
-    "canonicalInputApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+    "id": "0.2.0-alpha.2+2013",
+    "productSourceCommit": "da6176f9acba1854c470ce2caea471bb6b66d8f2",
+    "sourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+    "canonicalInputApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
     "canonicalInputApkBytes": 182538547,
-    "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
-    "signedApkBytes": 182563366,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
-    "installabilityObservation": "ELIGIBLE_NOT_EXECUTED",
-    "stableSignedInstallability": "OD0_REQUIRED"
+    "installabilityObservation": "BLOCKED_UNTIL_TRUSTED_EDGE_SIGNING",
+    "stableSignedInstallability": "R1_REQUIRED"
   },
-  "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json",
+  "r1PhysicalReceipt": null,
   "historicalInvalidatedCampaign": {
-    "candidate": "0.2.0-alpha.2+2009",
-    "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
-    "lastSanitizedReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json",
-    "priorPassedGates": [],
-    "priorOpenGate": "CONSOLIDATED_OWNED_DEVICE_UAT",
+    "candidate": "0.2.0-alpha.2+2012",
+    "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+    "lastSanitizedReceipt": "mk0/10-evidence/ALPHA2-2012-PHYSICAL-SCAN-FAILURE-2026-09-15.md",
+    "priorPassedGates": ["OD0_INSTALL_AND_LAUNCH","OD1_GMAIL_AUTH_CONNECTED"],
+    "priorOpenGate": "FINANCIAL_REFRESH_SCAN",
     "continuationAllowed": false,
     "evidenceInheritanceAllowed": false,
-    "reason": "SOURCE_OR_APK_IDENTITY_CHANGED_BY_2012_CREDIT_COVERAGE_CANDIDATE"
+    "reason": "PHYSICAL_REFRESH_SCAN_FAILED_AND_SUCCESSOR_SOURCE_IDENTITY_CHANGED"
   },
   "olderHistoricalCampaigns": [
-    {"candidate":"0.2.0-alpha.2+2008","signedApkSha256":"a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277","evidenceInheritanceAllowed":false},
-    {"candidate":"0.2.0-alpha.2+2007","signedApkSha256":"40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab","evidenceInheritanceAllowed":false}
+    {"candidate":"0.2.0-alpha.2+2009","signedApkSha256":"7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a","evidenceInheritanceAllowed":false},
+    {"candidate":"0.2.0-alpha.2+2008","signedApkSha256":"a6e9e9441842f9de78147d8bef0103c63c1ad5b499963303111dbb99dfcd5277","evidenceInheritanceAllowed":false}
   ],
   "laws": {
     "sameSignedCandidateRequired": true,
@@ -53,7 +53,7 @@
     "allowedReceiptFields": ["candidateId","sourceCommit","signedApkSha256","signedApkBytes","signerSha1","androidPackage","gmailScope","deviceClass","androidApiLevel","gateId","gateStatus","stableResultCode","coarseCounters","replayDigest","sanitizationPass"]
   },
   "subgates": [
-    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"READY","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
+    {"id":"OD0","contract":"SIGNED_APK_INSTALL_AND_LAUNCH","status":"BLOCKED_BY_R1_SIGNING","requires":["R1_TRUSTED_EDGE_SIGNING_PASS"],"physicalClaims":["SIGNED_APK_HASH_MATCH","SIGNER_SHA1_MATCH","INSTALL_PASS","LAUNCH_PASS"]},
     {"id":"OD1","contract":"EXACT_GMAIL_READONLY_OAUTH","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD0"],"physicalClaims":["ANDROID_PACKAGE_MATCH","EXACT_SCOPE_GMAIL_READONLY","REAL_OAUTH_PASS","NO_OFFLINE_ACCESS_REQUEST"]},
     {"id":"OD2","contract":"METADATA_FIRST_STATEMENT_DISCOVERY","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD1"],"physicalClaims":["METADATA_FIRST_PASS","ATTACHMENT_BYTES_NOT_FETCHED_BEFORE_STRONG_CANDIDATE","RAW_GMAIL_IDENTITY_REMAINS_NATIVE_ONLY"]},
     {"id":"OD3","contract":"BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE","status":"BLOCKED_BY_PRIOR_GATE","requires":["OD2"],"physicalClaims":["BCP_SAVINGS_FETCH_ALLOWED","BCP_CREDIT_FETCH_ALLOWED_PROBE_ONLY","RIPLEY_CREDIT_FETCH_ALLOWED","INTERBANK_FETCH_BLOCKED_WITHOUT_IDENTITY","GENERIC_FALLBACK_ABSENT"]},
@@ -68,5 +68,5 @@
   ],
   "feeders": {"R3_Q003":["OD1","OD2","OD3","OD10"],"R4_Q004":["OD2","OD4","OD5","OD10"],"R5_Q005":["OD5"],"note":"R2 supplies owned-Android evidence only; provider, deletion/backup, cross-platform crypto, witness and recovery phases remain independently open."},
   "receipt": {"schema":"graph/alpha2-r2-sanitized-receipt-schema.json","expectedPathPattern":"graph/physical-receipts/ALPHA2-R2-OWNED-ANDROID-<gate>-<date>.json","current":null},
-  "currentState": {"r1TrustedEdgeSigning":"PASS","r2PhysicalCampaign":"READY_FOR_OD0","nextGate":"OD0_SIGNED_APK_INSTALL_AND_LAUNCH","currentBlocker":"OWNED_DEVICE_OD0_EXECUTION_REQUIRED","q003":"ACTIVE","q004":"ACTIVE","q005":"ACTIVE","gMk0":"OPEN","buildReady":false,"releaseReady":false}
+  "currentState": {"r1TrustedEdgeSigning":"REQUIRED","r2PhysicalCampaign":"BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING","nextGate":"R1_TRUSTED_EDGE_SIGNING","currentBlocker":"TRUSTED_EDGE_SIGNING_REQUIRED","q003":"ACTIVE","q004":"ACTIVE","q005":"ACTIVE","gMk0":"OPEN","buildReady":false,"releaseReady":false}
 }
