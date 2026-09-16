@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "A2_CERTIFICATION_LEDGER_EXTENSION_V1",
+  "chainId": "FINANCESENSOR_ALPHA2_2013_CERTIFICATION",
+  "candidate": "0.2.0-alpha.2+2013",
+  "hashAlgorithm": "SHA-256",
+  "canonicalization": "RECURSIVE_KEY_SORTED_JSON_UTF8_V1",
+  "blockHashDomain": "FINANCESENSOR_ALPHA2_CERT_BLOCK_V1",
+  "priorChainId": "FINANCESENSOR_ALPHA2_2012_CERTIFICATION",
+  "priorHeadBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
+  "baseHeight": 7,
+  "headBlockHash": "adb68584fc13a52b25fb8a2adaa47e4cee3778c3c8fea53a50589ab71e5f1f9a",
+  "state": "PRE_SIGNING_FRONTIER",
+  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "blocks": [
+    {
+      "height": 7,
+      "kind": "PHYSICAL_FAILURE_OBSERVATION",
+      "parentBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2012",
+        "stableSignedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+        "diagnostic": "ALPHA2_REFRESH_SCAN_FAILED",
+        "result": "REJECTED_AT_REFRESH_SCAN",
+        "physicalEvidenceInheritedBySuccessor": false,
+        "receipt": "mk0/10-evidence/ALPHA2-2012-PHYSICAL-SCAN-FAILURE-2026-09-15.md"
+      },
+      "blockHash": "fad58d0caea17a7a83ffff3baa35aefb9e3649700a1e899e0a2d75ea8b9c1e2b"
+    },
+    {
+      "height": 8,
+      "kind": "SCAN_RESILIENCE_REMEDIATION_MERGE",
+      "parentBlockHash": "fad58d0caea17a7a83ffff3baa35aefb9e3649700a1e899e0a2d75ea8b9c1e2b",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2013",
+        "pullRequest": 145,
+        "remediationMergeSha": "da6176f9acba1854c470ce2caea471bb6b66d8f2",
+        "scanResilience": "A2_SCAN_RESILIENCE_V1",
+        "transactionStatementScanIsolation": true,
+        "boundedTransientRetry": true,
+        "reauthFailClosed": true,
+        "partialSafeSourceContinuation": true,
+        "physicalEvidenceInherited": false
+      },
+      "blockHash": "2d5e7a66d7a7a2a9a0e0097e3e696aa83bf89ce87308a81d0eca56a25a0a6acf"
+    },
+    {
+      "height": 9,
+      "kind": "CANONICAL_BUILD_FREEZE",
+      "parentBlockHash": "2d5e7a66d7a7a2a9a0e0097e3e696aa83bf89ce87308a81d0eca56a25a0a6acf",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2013",
+        "candidateCutPullRequest": 146,
+        "certifiedPrHead": "006b1c26890bf18c8a34b12c03c2d1ca297d7c75",
+        "sourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+        "workflow": "Alpha.2 Integrated Runtime",
+        "runId": 35043945554,
+        "jobId": 104629619526,
+        "artifactId": 10425404905,
+        "artifactName": "financesensor-alpha2-2013-candidate-35043945554",
+        "artifactZipSha256": "86df2518365999197679bbf55e77f67a8f330fb9d9a2ef6b755dfd2c9b712ddd",
+        "artifactZipBytes": 87687486,
+        "unsignedApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
+        "unsignedApkBytes": 182538547,
+        "signatureVerify": "PASS",
+        "aapt2Parse": "PASS"
+      },
+      "blockHash": "2d0f1f1014979b02553d10f46c913736cda00b22030df5e5378e3a8e5566b87d"
+    },
+    {
+      "height": 10,
+      "kind": "PRE_SIGNING_FRONTIER",
+      "parentBlockHash": "2d0f1f1014979b02553d10f46c913736cda00b22030df5e5378e3a8e5566b87d",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2013",
+        "canonicalUnsignedApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
+        "handoffBundle": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v13.zip",
+        "handoffBundleStatus": "PENDING_CI_GENERATION",
+        "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+        "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+        "signingRequestAllowed": true,
+        "ownedDeviceUatAllowed": false,
+        "physicalAlpha2Pass": false,
+        "buildReady": false,
+        "releaseReady": false
+      },
+      "blockHash": "adb68584fc13a52b25fb8a2adaa47e4cee3778c3c8fea53a50589ab71e5f1f9a"
+    }
+  ]
+}
