@@ -1,9 +1,11 @@
 {
-  "schemaVersion": "A2_SCAN_RESILIENCE_CANDIDATE_V1",
+  "schemaVersion": "A2_SCAN_RESILIENCE_CANDIDATE_V2",
   "candidate": "0.2.0-alpha.2+2013",
-  "status": "BUILD_CANDIDATE_PENDING_CANONICAL_FREEZE",
+  "status": "CANONICAL_UNSIGNED_FROZEN_SIGNING_REQUIRED",
   "remediationSourceCommit": "da6176f9acba1854c470ce2caea471bb6b66d8f2",
   "remediationPr": 145,
+  "candidateCutPr": 146,
+  "candidateCutHead": "006b1c26890bf18c8a34b12c03c2d1ca297d7c75",
   "predecessor": {
     "candidate": "0.2.0-alpha.2+2012",
     "canonicalSourceCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
@@ -26,11 +28,14 @@
     "regression": "spikes/mobile-shell/test/alpha2_scan_resilience_contract_test.dart"
   },
   "authority": {
-    "canonicalPromotionPending": true,
-    "canonicalUnsignedApkSha256": null,
-    "canonicalUnsignedApkBytes": null,
-    "canonicalBuildRunId": null,
-    "canonicalArtifactId": null,
+    "canonicalPromotionPending": false,
+    "canonicalSourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+    "canonicalUnsignedApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
+    "canonicalUnsignedApkBytes": 182538547,
+    "canonicalBuildRunId": 35043945554,
+    "canonicalBuildJobId": 104629619526,
+    "canonicalArtifactId": 10425404905,
+    "canonicalArtifactZipSha256": "86df2518365999197679bbf55e77f67a8f330fb9d9a2ef6b755dfd2c9b712ddd",
     "trustedEdgeResignRequired": true,
     "trustedEdgeSigningPass": false,
     "stableSignedApkSha256": null,

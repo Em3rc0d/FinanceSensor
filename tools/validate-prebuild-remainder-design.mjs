@@ -1,9 +1,12 @@
 import fs from 'node:fs';
-const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8')), r1=JSON.parse(fs.readFileSync('graph/alpha2-r1-signing-handoff.json','utf8')), r2=JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8')), h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8')), ledger=JSON.parse(fs.readFileSync('graph/closure-ledger.json','utf8')), readiness=JSON.parse(fs.readFileSync('graph/build-readiness.json','utf8'));
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8')), r1=JSON.parse(fs.readFileSync('graph/alpha2-r1-signing-handoff.json','utf8')), r2=JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8')), h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8')), cert=JSON.parse(fs.readFileSync('graph/alpha2-2013-certification-ledger-extension.json','utf8')), ledger=JSON.parse(fs.readFileSync('graph/closure-ledger.json','utf8')), readiness=JSON.parse(fs.readFileSync('graph/build-readiness.json','utf8'));
 const a=(x,m)=>{if(!x)throw new Error(`PREBUILD_REMAINDER_DESIGN_FAILED:${m}`)};
-const signed='05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000';
-a(c.candidate==='0.2.0-alpha.2+2012'&&c.sourceCommit==='b75cc39318ee749a1123971f19d895d71e35bd91','canonical'); a(c.authority?.apkSha256==='74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e','APK');
-a(c.signing?.trustedEdgeSigningPass===true&&c.signing?.signedApkSha256===signed&&r1.trustedEdgeSigningPass===true&&r1.signedApkSha256===signed&&r2.status==='READY_FOR_OD0','R1/R2');
-a(h.preSigning?.completed===true&&h.ownedDeviceUat?.requestAllowed===true,'human frontier');
+const apk='bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1', bundle='d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc';
+a(c.candidate==='0.2.0-alpha.2+2013'&&c.sourceCommit==='fd6b2ba75a63e650626f2fcece6c13f0bea4f541','canonical');
+a(c.authority?.apkSha256===apk&&c.signing?.trustedEdgeSigningPass===false&&c.signing?.signedApkSha256===null,'APK/signing');
+a(r1.trustedEdgeSigningPass===false&&r1.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE'&&r1.handoffBundle?.sha256===bundle,'R1');
+a(r2.status==='BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'&&r2.currentState?.nextGate==='R1_TRUSTED_EDGE_SIGNING','R2');
+a(h.preSigning?.completed===false&&h.preSigning?.requestAllowed===true&&h.ownedDeviceUat?.requestAllowed===false,'human frontier');
+a(cert.state==='R1_BUNDLE_FROZEN_SIGNING_REQUIRED'&&cert.nextGate==='R1_TRUSTED_EDGE_SIGNING','cert frontier');
 for(const id of ['Q-003','Q-004','Q-005'])a(ledger.nodes?.find(n=>n.id===id)?.status==='ACTIVE',`${id}`); const g=ledger.nodes?.find(n=>n.id==='G-MK0');a(g&&g.status!=='CLOSED','G-MK0');a(ledger.buildReady===false&&readiness.buildReady===false,'BUILD_READY');a(readiness.law==='BUILD_READY_TRUE_REQUIRES_G_MK0_CLOSED','law');
-console.log('PREBUILD_REMAINDER_DESIGN=PASS'); console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2012'); console.log('CURRENT_EXECUTION_FRONTIER=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'); console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'); console.log('Q003_Q004_Q005=ACTIVE'); console.log('G_MK0=OPEN'); console.log('BUILD_READY=NO');
+console.log('PREBUILD_REMAINDER_DESIGN=PASS'); console.log('CURRENT_CANONICAL_REFREEZE=0.2.0-alpha.2+2013'); console.log(`R1_BUNDLE_SHA256=${bundle}`); console.log('CURRENT_EXECUTION_FRONTIER=R1_TRUSTED_EDGE_SIGNING'); console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'); console.log('Q003_Q004_Q005=ACTIVE'); console.log('G_MK0=OPEN'); console.log('BUILD_READY=NO');
