@@ -8,6 +8,7 @@ on:
       - jett/mk0-foundation
     paths:
       - 'graph/alpha2-certification-ledger.json'
+      - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
@@ -26,6 +27,7 @@ on:
       - jett/mk0-foundation
     paths:
       - 'graph/alpha2-certification-ledger.json'
+      - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
@@ -75,7 +77,7 @@ jobs:
       - name: Revalidate canonical candidate
         run: node tools/validate-alpha2-canonical-candidate.mjs
 
-      - name: Revalidate R1 post-merge handoff
+      - name: Revalidate R1 frozen handoff
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
 
       - name: Revalidate R2 fail-closed chain
@@ -92,9 +94,11 @@ jobs:
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
           ALPHA2_CERTIFICATION_LEDGER=PASS
-          CANDIDATE=0.2.0-alpha.2+2012
-          CHAIN_STATE=PRE_SIGNING_CONSENSUS_FROZEN
-          HEAD_BLOCK_HASH=4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5
+          CANDIDATE=0.2.0-alpha.2+2013
+          HISTORICAL_2012_HEAD=6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e
+          EXTENSION_HEAD_BLOCK_HASH=4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4
+          CHAIN_STATE=R1_BUNDLE_FROZEN_SIGNING_REQUIRED
+          R1_BUNDLE_SHA256=d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc
           NEXT_GATE=R1_TRUSTED_EDGE_SIGNING
           PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
