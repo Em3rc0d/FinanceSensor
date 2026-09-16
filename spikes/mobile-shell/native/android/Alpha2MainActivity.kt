@@ -32,6 +32,16 @@ class MainActivity : FlutterActivity() {
         private const val GMAIL_PROFILE = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
         private const val PREFS = "financesensor_alpha2_edge_state"
         private const val DISCONNECT_BARRIER = "gmail_disconnect_barrier"
+        private const val SCAN_MAX_ATTEMPTS = 2
+        private const val SCAN_RETRY_DELAY_MS = 500L
+    }
+
+    private data class ScannerOutcome(
+        val payload: Map<String, Any?>?,
+        val safeCode: String?,
+        val reauthRequired: Boolean = false,
+    ) {
+        val succeeded: Boolean get() = payload != null
     }
 
     private val io = Executors.newSingleThreadExecutor()
@@ -243,32 +253,136 @@ class MainActivity : FlutterActivity() {
             return
         }
         io.execute {
-            try {
-                val transaction = Alpha2TransactionScanner.scan(token)
-                val statements = statementScanner.scan(token)
-                val response = mapOf(
-                    "status" to "SCAN_COMPLETE",
-                    "gmailEvidence" to (transaction["events"] ?: emptyList<Map<String, Any?>>()),
-                    "statementCandidates" to (statements["statementCandidates"] ?: emptyList<Map<String, Any?>>()),
-                    "coverage" to "GMAIL_RECENT_PLUS_TARGETED_STATEMENT_DISCOVERY",
-                    "transactionMessagesInspected" to transaction["messagesInspected"],
-                    "statementMessagesInspected" to statements["messagesInspected"],
-                    "statementStrongCandidates" to statements["strongCandidates"],
-                    "statementConflicts" to statements["conflicts"],
-                    "rawGmailReturned" to false,
-                    "numericConfidenceReturned" to false,
-                    "attachmentBytesFetchedDuringDiscovery" to false,
-                )
-                runOnUiThread { result.success(response) }
-            } catch (error: Alpha2TransactionScanner.ScanException) {
-                if (error.safeCode == "REAUTH_REQUIRED") clearCachedToken(token)
-                runOnUiThread { result.error(error.safeCode, "Financial scan stopped safely", null) }
-            } catch (error: Alpha2StatementDiscoveryScanner.StatementException) {
-                if (error.safeCode == "REAUTH_REQUIRED") clearCachedToken(token)
-                runOnUiThread { result.error(error.safeCode, "Statement discovery stopped safely", null) }
-            } catch (_: Exception) {
-                runOnUiThread { result.error("ALPHA2_SCAN_FAILED", "Financial scan stopped safely", null) }
+            val transactionOutcome = scanTransactionsResilient(token)
+            if (transactionOutcome.reauthRequired) {
+                clearCachedToken(token)
+                runOnUiThread { result.error("REAUTH_REQUIRED", "Financial scan requires reauthorization", null) }
+                return@execute
             }
+
+            val statementOutcome = scanStatementsResilient(token)
+            if (statementOutcome.reauthRequired) {
+                clearCachedToken(token)
+                runOnUiThread { result.error("REAUTH_REQUIRED", "Statement discovery requires reauthorization", null) }
+                return@execute
+            }
+
+            if (!transactionOutcome.succeeded && !statementOutcome.succeeded) {
+                runOnUiThread {
+                    result.error(
+                        "ALPHA2_SCAN_ALL_SOURCES_FAILED",
+                        "Financial scan stopped safely",
+                        null,
+                    )
+                }
+                return@execute
+            }
+
+            val transaction = transactionOutcome.payload ?: emptyMap<String, Any?>()
+            val statements = statementOutcome.payload ?: emptyMap<String, Any?>()
+            val fullCoverage = transactionOutcome.succeeded && statementOutcome.succeeded
+            val coverage = when {
+                fullCoverage -> "GMAIL_RECENT_PLUS_TARGETED_STATEMENT_DISCOVERY"
+                transactionOutcome.succeeded -> "GMAIL_TRANSACTIONS_ONLY_STATEMENT_DISCOVERY_DEGRADED"
+                else -> "STATEMENT_DISCOVERY_ONLY_TRANSACTION_SCAN_DEGRADED"
+            }
+            val diagnostics = listOfNotNull(
+                transactionOutcome.safeCode?.let { "TRANSACTION:$it" },
+                statementOutcome.safeCode?.let { "STATEMENT:$it" },
+            )
+            val response = mapOf(
+                "status" to if (fullCoverage) "SCAN_COMPLETE" else "SCAN_PARTIAL_SAFE",
+                "gmailEvidence" to (transaction["events"] ?: emptyList<Map<String, Any?>>()),
+                "statementCandidates" to (statements["statementCandidates"] ?: emptyList<Map<String, Any?>>()),
+                "coverage" to coverage,
+                "transactionMessagesInspected" to transaction["messagesInspected"],
+                "statementMessagesInspected" to statements["messagesInspected"],
+                "statementStrongCandidates" to statements["strongCandidates"],
+                "statementConflicts" to statements["conflicts"],
+                "safeScanDiagnostics" to diagnostics,
+                "rawGmailReturned" to false,
+                "numericConfidenceReturned" to false,
+                "attachmentBytesFetchedDuringDiscovery" to false,
+            )
+            runOnUiThread { result.success(response) }
+        }
+    }
+
+    private fun scanTransactionsResilient(token: String): ScannerOutcome {
+        for (attempt in 1..SCAN_MAX_ATTEMPTS) {
+            try {
+                return ScannerOutcome(Alpha2TransactionScanner.scan(token), null)
+            } catch (error: Alpha2TransactionScanner.ScanException) {
+                if (error.safeCode == "REAUTH_REQUIRED") {
+                    return ScannerOutcome(null, error.safeCode, reauthRequired = true)
+                }
+                if (attempt == SCAN_MAX_ATTEMPTS || !isTransientScanCode(error.safeCode)) {
+                    return ScannerOutcome(null, sanitizeTransactionScanCode(error.safeCode))
+                }
+            } catch (_: Exception) {
+                if (attempt == SCAN_MAX_ATTEMPTS) {
+                    return ScannerOutcome(null, "ALPHA2_TRANSACTION_SCAN_IO_FAILED")
+                }
+            }
+            if (!sleepBeforeScanRetry(attempt)) {
+                return ScannerOutcome(null, "ALPHA2_TRANSACTION_SCAN_RETRY_INTERRUPTED")
+            }
+        }
+        return ScannerOutcome(null, "ALPHA2_TRANSACTION_SCAN_FAILED")
+    }
+
+    private fun scanStatementsResilient(token: String): ScannerOutcome {
+        for (attempt in 1..SCAN_MAX_ATTEMPTS) {
+            try {
+                return ScannerOutcome(statementScanner.scan(token), null)
+            } catch (error: Alpha2StatementDiscoveryScanner.StatementException) {
+                if (error.safeCode == "REAUTH_REQUIRED") {
+                    return ScannerOutcome(null, error.safeCode, reauthRequired = true)
+                }
+                if (attempt == SCAN_MAX_ATTEMPTS || !isTransientScanCode(error.safeCode)) {
+                    return ScannerOutcome(null, sanitizeStatementScanCode(error.safeCode))
+                }
+            } catch (_: Exception) {
+                if (attempt == SCAN_MAX_ATTEMPTS) {
+                    return ScannerOutcome(null, "ALPHA2_STATEMENT_DISCOVERY_IO_FAILED")
+                }
+            }
+            if (!sleepBeforeScanRetry(attempt)) {
+                return ScannerOutcome(null, "ALPHA2_STATEMENT_DISCOVERY_RETRY_INTERRUPTED")
+            }
+        }
+        return ScannerOutcome(null, "ALPHA2_STATEMENT_DISCOVERY_FAILED")
+    }
+
+    private fun sanitizeTransactionScanCode(code: String): String {
+        val normalized = code.trim().uppercase()
+        return if (Regex("^ALPHA2_GMAIL_HTTP_[0-9]{3}$").matches(normalized)) normalized
+        else "ALPHA2_TRANSACTION_SCAN_FAILED"
+    }
+
+    private fun sanitizeStatementScanCode(code: String): String {
+        val normalized = code.trim().uppercase()
+        return if (Regex("^ALPHA2_STATEMENT_GMAIL_HTTP_[0-9]{3}$").matches(normalized)) normalized
+        else "ALPHA2_STATEMENT_DISCOVERY_FAILED"
+    }
+
+    private fun isTransientScanCode(code: String): Boolean {
+        val normalized = code.trim().uppercase()
+        val status = Regex("HTTP_([0-9]{3})$")
+            .find(normalized)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+        return status in setOf(408, 429, 500, 502, 503, 504)
+    }
+
+    private fun sleepBeforeScanRetry(attempt: Int): Boolean {
+        return try {
+            Thread.sleep(SCAN_RETRY_DELAY_MS * attempt)
+            true
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
         }
     }
 
