@@ -16,6 +16,7 @@ $ExpectedSignerSha1='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
 $AndroidPackage='com.financesensor.lab.gmailconnection.r2'
 $VersionCode='2013'
 $GmailScope='gmail.readonly'
+$HarnessRevision='OD0_HARNESS_V2_ARRAY_SAFE_VERSION_CHECK'
 $OutputDir=Split-Path -Parent $MyInvocation.MyCommand.Path
 $DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2013.apk'
 $DefaultReceipt="$DefaultApk.receipt.txt"
@@ -39,9 +40,23 @@ function Read-Receipt([string]$Path){
   }
   return $map
 }
+function Test-VersionCodeInPackageState([object[]]$PackageState,[string]$ExpectedVersionCode){
+  $packageStateText=(@($PackageState) | ForEach-Object { [string]$_ }) -join "`n"
+  return [regex]::IsMatch($packageStateText,"(?m)\bversionCode=$([regex]::Escape($ExpectedVersionCode))\b")
+}
 
 if($SelfTest){
+  $versionFixture=@(
+    "Package [$AndroidPackage]",
+    'userId=10345',
+    'versionCode=2013 minSdk=31 targetSdk=36',
+    'firstInstallTime=2026-09-17 18:00:00'
+  )
+  if(-not (Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2013')){ throw 'OD0_SELFTEST_EXPECTED_VERSION_NOT_FOUND' }
+  if(Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2012'){ throw 'OD0_SELFTEST_WRONG_VERSION_ACCEPTED' }
   Write-Host 'FINANCESENSOR_ALPHA2_OD0_HARNESS_SELFTEST=PASS'
+  Write-Host 'VERSION_CODE_ARRAY_REGRESSION=PASS'
+  Write-Host "OD0_HARNESS_REVISION=$HarnessRevision"
   Write-Host "CURRENT_CANDIDATE=$Candidate"
   Write-Host "EXPECTED_SIGNED_APK_SHA256=$SignedApkSha256"
   Write-Host 'OD0_EXECUTION_ALLOWED=YES'
@@ -102,12 +117,30 @@ if(!$apksigner){
 }
 if(!$apksigner){ Fail 'OD0_APKSIGNER_NOT_FOUND' 'Android build-tools apksigner was not found. No device operation attempted.' }
 
+$aapt2=Resolve-Tool @('aapt2.exe','aapt2') @()
+if(!$aapt2){
+  foreach($root in $sdkRoots){
+    $bt=Join-Path $root 'build-tools'
+    if(Test-Path -LiteralPath $bt){
+      $candidate=Get-ChildItem -LiteralPath $bt -Directory | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'aapt2.exe' } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+      if($candidate){ $aapt2=$candidate; break }
+    }
+  }
+}
+if(!$aapt2){ Fail 'OD0_AAPT2_NOT_FOUND' 'Android build-tools aapt2 was not found. No device operation attempted.' }
+
 $verify=& $apksigner verify --verbose --print-certs $apk 2>&1
 if($LASTEXITCODE -ne 0){ Fail 'OD0_APKSIGNER_VERIFY_FAILED' 'Stable APK signature verification failed. No install attempted.' }
 $shaLine=$verify | Where-Object { $_ -match 'SHA-1 digest:' } | Select-Object -First 1
 if(!$shaLine){ Fail 'OD0_SIGNER_SHA1_NOT_FOUND' 'Signer SHA-1 could not be read. No install attempted.' }
 $observedSigner=Normalize-Hex (($shaLine -split 'SHA-1 digest:',2)[1])
 if($observedSigner -ne (Normalize-Hex $ExpectedSignerSha1)){ Fail 'OD0_SIGNER_SHA1_MISMATCH' 'Stable APK signer differs from frozen OAuth identity. No install attempted.' }
+
+$badging=& $aapt2 dump badging $apk 2>&1
+if($LASTEXITCODE -ne 0){ Fail 'OD0_AAPT2_BADGING_FAILED' 'Stable APK metadata could not be parsed. No install attempted.' }
+$badgingText=(@($badging) | ForEach-Object { [string]$_ }) -join "`n"
+if($badgingText -notmatch "package:\s+name='$([regex]::Escape($AndroidPackage))'"){ Fail 'OD0_APK_PACKAGE_MISMATCH_PREINSTALL' 'Stable APK package identity differs from frozen OAuth package. No install attempted.' }
+if($badgingText -notmatch "versionCode='$([regex]::Escape($VersionCode))'"){ Fail 'OD0_APK_VERSION_CODE_MISMATCH_PREINSTALL' 'Stable APK does not report versionCode 2013 before install. No install attempted.' }
 
 & $adb start-server | Out-Null
 $deviceLines=& $adb devices
@@ -124,7 +157,7 @@ if($LASTEXITCODE -ne 0 -or -not ($install -match 'Success')){ Fail 'OD0_ADB_INST
 
 $packageState=& $adb shell dumpsys package $AndroidPackage 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($packageState -match [regex]::Escape($AndroidPackage))){ Fail 'OD0_PACKAGE_NOT_FOUND_AFTER_INSTALL' 'Expected package is not installed after replacement.' }
-if($packageState -notmatch "versionCode=$VersionCode\b"){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2013.' }
+if(-not (Test-VersionCodeInPackageState -PackageState $packageState -ExpectedVersionCode $VersionCode)){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2013.' }
 
 $launch=& $adb shell monkey -p $AndroidPackage -c android.intent.category.LAUNCHER 1 2>&1
 if($LASTEXITCODE -ne 0){ Fail 'OD0_LAUNCH_FAILED' 'Package install passed but launcher invocation failed.' }
@@ -144,6 +177,8 @@ Start-Sleep -Seconds 2
   'GATE_ID=OD0',
   'GATE_STATUS=PASS',
   'STABLE_RESULT_CODE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH_PASS',
+  "OD0_HARNESS_REVISION=$HarnessRevision",
+  'APK_PREINSTALL_BADGING_PASS=YES',
   'INSTALL_MODE=ADB_INSTALL_R_PRESERVE_DATA',
   'UNINSTALL_EXECUTED=0',
   'PM_CLEAR_EXECUTED=0',
