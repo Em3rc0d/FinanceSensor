@@ -14,6 +14,7 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches: [jett/mk0-foundation]
@@ -27,6 +28,7 @@ on:
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions: {contents: read, actions: read}
@@ -55,7 +57,7 @@ jobs:
         run: node tools/validate-alpha2-human-intervention-gate.mjs
       - name: Canonical Alpha.2 +2013 boundary
         run: node tools/validate-alpha2-canonical-candidate.mjs
-      - name: R1 v13 trusted-edge handoff boundary
+      - name: R1 v13 trusted-edge signed boundary
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
       - name: CI runner governance
         run: node tools/validate-ci-runner-policy.mjs
@@ -165,9 +167,11 @@ jobs:
           SECRET_LIKE_VALUE_MATCHES=0
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
           PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0
-          SIGNING_REQUEST_ALLOWED=YES
-          R1_TRUSTED_EDGE_SIGNING=REQUIRED
-          OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO
+          SIGNING_REQUEST_ALLOWED=NO
+          R1_TRUSTED_EDGE_SIGNING=PASS
+          SIGNED_APK_SHA256=4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387
+          OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
+          NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
@@ -182,15 +186,16 @@ jobs:
             FinanceSensor-ALPHA2-R1-BUNDLE-v13-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
-      - name: Preserve pre-signing physical boundary
+      - name: Preserve signed physical boundary
         run: |
           echo 'R1_V13_GENERATION=PASS'
           echo 'R1_V13_FROZEN_BYTES=PASS'
           echo 'R1_BUNDLE_SHA256=d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
-          echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'SIGNING_REQUEST_ALLOWED=NO'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS'
+          echo 'SIGNED_APK_SHA256=4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
+          echo 'NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
