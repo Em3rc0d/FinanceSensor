@@ -6,20 +6,20 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Candidate='0.2.0-alpha.2+2012'
-$ProductSourceCommit='e46eef4f406dec3220d3f1a2bda51bf7a4fd7202'
-$CanonicalSourceCommit='b75cc39318ee749a1123971f19d895d71e35bd91'
-$CanonicalApkSha256='74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e'
-$SignedApkSha256='05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000'
+$Candidate='0.2.0-alpha.2+2013'
+$ProductSourceCommit='da6176f9acba1854c470ce2caea471bb6b66d8f2'
+$CanonicalSourceCommit='fd6b2ba75a63e650626f2fcece6c13f0bea4f541'
+$CanonicalApkSha256='bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1'
+$SignedApkSha256='4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387'
 $SignedApkBytes=182563366
 $ExpectedSignerSha1='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $AndroidPackage='com.financesensor.lab.gmailconnection.r2'
-$VersionCode='2012'
+$VersionCode='2013'
 $GmailScope='gmail.readonly'
 $OutputDir=Split-Path -Parent $MyInvocation.MyCommand.Path
-$DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2012.apk'
+$DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2013.apk'
 $DefaultReceipt="$DefaultApk.receipt.txt"
-$OutputReceipt=Join-Path $OutputDir 'FinanceSensor-ALPHA2-R2-OD0-0.2.0-alpha.2+2012.receipt.txt'
+$OutputReceipt=Join-Path $OutputDir 'FinanceSensor-ALPHA2-R2-OD0-0.2.0-alpha.2+2013.receipt.txt'
 
 function Fail([string]$Code,[string]$Message){
   Write-Host "[FinanceSensor OD0] FAIL: $Message" -ForegroundColor Red
@@ -61,8 +61,8 @@ $apk=(Resolve-Path -LiteralPath $ApkPath).Path
 $receipt=(Resolve-Path -LiteralPath $ReceiptPath).Path
 $observedHash=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()
 $observedBytes=(Get-Item -LiteralPath $apk).Length
-if($observedHash -ne $SignedApkSha256){ Fail 'OD0_SIGNED_APK_HASH_MISMATCH' 'Signed APK SHA-256 does not match frozen +2012 identity.' }
-if($observedBytes -ne $SignedApkBytes){ Fail 'OD0_SIGNED_APK_SIZE_MISMATCH' 'Signed APK byte length does not match frozen +2012 identity.' }
+if($observedHash -ne $SignedApkSha256){ Fail 'OD0_SIGNED_APK_HASH_MISMATCH' 'Signed APK SHA-256 does not match frozen +2013 identity.' }
+if($observedBytes -ne $SignedApkBytes){ Fail 'OD0_SIGNED_APK_SIZE_MISMATCH' 'Signed APK byte length does not match frozen +2013 identity.' }
 
 $r=Read-Receipt $receipt
 $required=@{
@@ -118,13 +118,13 @@ $apiLevel=(& $adb shell getprop ro.build.version.sdk 2>$null | Select-Object -Fi
 if($apiLevel -notmatch '^\d+$'){ Fail 'OD0_ANDROID_API_UNREADABLE' 'Android API level could not be read. No install attempted.' }
 if([int]$apiLevel -lt 31){ Fail 'OD0_ANDROID_API_TOO_OLD' 'Device is below minSdk 31. No install attempted.' }
 
-Write-Host '[FinanceSensor OD0] Exact signed +2012 identity verified. Installing with data-preserving replacement...'
+Write-Host '[FinanceSensor OD0] Exact signed +2013 identity verified. Installing with data-preserving replacement...'
 $install=& $adb install -r $apk 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($install -match 'Success')){ Fail 'OD0_ADB_INSTALL_R_FAILED' 'adb install -r failed. No PASS recorded.' }
 
 $packageState=& $adb shell dumpsys package $AndroidPackage 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($packageState -match [regex]::Escape($AndroidPackage))){ Fail 'OD0_PACKAGE_NOT_FOUND_AFTER_INSTALL' 'Expected package is not installed after replacement.' }
-if($packageState -notmatch "versionCode=$VersionCode\b"){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2012.' }
+if($packageState -notmatch "versionCode=$VersionCode\b"){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2013.' }
 
 $launch=& $adb shell monkey -p $AndroidPackage -c android.intent.category.LAUNCHER 1 2>&1
 if($LASTEXITCODE -ne 0){ Fail 'OD0_LAUNCH_FAILED' 'Package install passed but launcher invocation failed.' }
@@ -157,7 +157,7 @@ Start-Sleep -Seconds 2
   'SANITIZATION_PASS=YES'
 ) | Set-Content -LiteralPath $OutputReceipt -Encoding UTF8
 
-Write-Host '[FinanceSensor OD0] PASS: exact +2012 stable-signed APK installed and launched without clearing app data.' -ForegroundColor Green
+Write-Host '[FinanceSensor OD0] PASS: exact +2013 stable-signed APK installed and launched without clearing app data.' -ForegroundColor Green
 Write-Host "RECEIPT=$OutputReceipt"
 Write-Host 'NEXT_GATE=OD1_TO_OD11_CONSOLIDATED_OWNED_DEVICE_UAT'
 exit 0
