@@ -65,9 +65,15 @@
       "observedInnerBundleBytes": 86659248,
       "manifestIntegrity": "PASS"
     },
-    "certificationReceipt": null
+    "certificationReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json"
   },
-  "stableSignedApk": null,
+  "stableSignedApk": {
+    "sha256": "4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387",
+    "bytes": 182563366,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly"
+  },
   "historicalPhysicalReceipts": [
     {"candidate":"0.2.0-alpha.2+2012","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json","inheritAsCurrentPass":false},
     {"candidate":"0.2.0-alpha.2+2009","path":"graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2009-2026-09-15.json","inheritAsCurrentPass":false}
@@ -83,12 +89,12 @@
     "physicalSigningInPublicCi": false,
     "exactCanonicalArtifactRequired": true
   },
-  "physicalReceipt": null,
-  "status": "READY_FOR_TRUSTED_EDGE_SIGNING",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
-  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "physicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json",
+  "status": "TRUSTED_EDGE_SIGNED_OD0_READY",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387",
+  "signedApkBytes": 182563366,
+  "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
   "physicalAlpha2Pass": false,
   "buildReady": false,
   "releaseReady": false
