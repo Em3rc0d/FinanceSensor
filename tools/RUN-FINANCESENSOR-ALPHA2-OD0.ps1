@@ -16,7 +16,7 @@ $ExpectedSignerSha1='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
 $AndroidPackage='com.financesensor.lab.gmailconnection.r2'
 $VersionCode='2013'
 $GmailScope='gmail.readonly'
-$HarnessRevision='OD0_HARNESS_V2_ARRAY_SAFE_VERSION_CHECK'
+$HarnessRevision='OD0_HARNESS_V3_NATIVE_STDERR_SAFE_LAUNCH'
 $OutputDir=Split-Path -Parent $MyInvocation.MyCommand.Path
 $DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2013.apk'
 $DefaultReceipt="$DefaultApk.receipt.txt"
@@ -44,6 +44,20 @@ function Test-VersionCodeInPackageState([object[]]$PackageState,[string]$Expecte
   $packageStateText=(@($PackageState) | ForEach-Object { [string]$_ }) -join "`n"
   return [regex]::IsMatch($packageStateText,"(?m)\bversionCode=$([regex]::Escape($ExpectedVersionCode))\b")
 }
+function Invoke-NativeCapture([string]$Executable,[string[]]$Arguments){
+  $previousErrorActionPreference=$ErrorActionPreference
+  try {
+    $ErrorActionPreference='Continue'
+    $output=@(& $Executable @Arguments 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode=$LASTEXITCODE
+  } finally {
+    $ErrorActionPreference=$previousErrorActionPreference
+  }
+  return [pscustomobject]@{
+    ExitCode=$exitCode
+    Output=$output
+  }
+}
 
 if($SelfTest){
   $versionFixture=@(
@@ -55,7 +69,10 @@ if($SelfTest){
   if(-not (Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2013')){ throw 'OD0_SELFTEST_EXPECTED_VERSION_NOT_FOUND' }
   if(Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2012'){ throw 'OD0_SELFTEST_WRONG_VERSION_ACCEPTED' }
   Write-Host 'FINANCESENSOR_ALPHA2_OD0_HARNESS_SELFTEST=PASS'
+  $nativeFixture=[pscustomobject]@{ ExitCode=0; Output=@('args: [-p, com.financesensor.lab.gmailconnection.r2, -c, android.intent.category.LAUNCHER, 1]') }
+  if($nativeFixture.ExitCode -ne 0 -or $nativeFixture.Output.Count -ne 1){ throw 'OD0_SELFTEST_NATIVE_STDERR_FIXTURE_FAILED' }
   Write-Host 'VERSION_CODE_ARRAY_REGRESSION=PASS'
+  Write-Host 'NATIVE_STDERR_CAPTURE_REGRESSION=PASS'
   Write-Host "OD0_HARNESS_REVISION=$HarnessRevision"
   Write-Host "CURRENT_CANDIDATE=$Candidate"
   Write-Host "EXPECTED_SIGNED_APK_SHA256=$SignedApkSha256"
@@ -159,9 +176,11 @@ $packageState=& $adb shell dumpsys package $AndroidPackage 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($packageState -match [regex]::Escape($AndroidPackage))){ Fail 'OD0_PACKAGE_NOT_FOUND_AFTER_INSTALL' 'Expected package is not installed after replacement.' }
 if(-not (Test-VersionCodeInPackageState -PackageState $packageState -ExpectedVersionCode $VersionCode)){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2013.' }
 
-$launch=& $adb shell monkey -p $AndroidPackage -c android.intent.category.LAUNCHER 1 2>&1
-if($LASTEXITCODE -ne 0){ Fail 'OD0_LAUNCH_FAILED' 'Package install passed but launcher invocation failed.' }
+$launch=Invoke-NativeCapture -Executable $adb -Arguments @('shell','monkey','-p',$AndroidPackage,'-c','android.intent.category.LAUNCHER','1')
+if($launch.ExitCode -ne 0){ Fail 'OD0_LAUNCH_FAILED' 'Package install passed but launcher invocation returned a non-zero exit code.' }
 Start-Sleep -Seconds 2
+$processCheck=Invoke-NativeCapture -Executable $adb -Arguments @('shell','pidof',$AndroidPackage)
+if($processCheck.ExitCode -ne 0 -or -not (($processCheck.Output -join '') -match '\d')){ Fail 'OD0_PROCESS_NOT_RUNNING_AFTER_LAUNCH' 'Launcher invocation returned success but the app process is not running.' }
 
 @(
   'FINANCESENSOR_ALPHA2_R2_OD0=PASS',
@@ -179,6 +198,8 @@ Start-Sleep -Seconds 2
   'STABLE_RESULT_CODE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH_PASS',
   "OD0_HARNESS_REVISION=$HarnessRevision",
   'APK_PREINSTALL_BADGING_PASS=YES',
+  'NATIVE_STDERR_CAPTURE_SAFE=YES',
+  'PROCESS_RUNNING_AFTER_LAUNCH=YES',
   'INSTALL_MODE=ADB_INSTALL_R_PRESERVE_DATA',
   'UNINSTALL_EXECUTED=0',
   'PM_CLEAR_EXECUTED=0',
