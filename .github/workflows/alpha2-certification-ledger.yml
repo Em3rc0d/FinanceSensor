@@ -13,6 +13,7 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
@@ -32,6 +33,7 @@ on:
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
+      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
@@ -57,7 +59,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-
       - name: Verify exact checkout
         shell: bash
         run: |
@@ -65,30 +66,22 @@ jobs:
           EXPECTED_SHA='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           echo "EXACT_HEAD_SHA=$EXPECTED_SHA"
-
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Recompute hash-linked certification ledger
         run: node tools/validate-alpha2-certification-ledger.mjs
-
       - name: Revalidate canonical candidate
         run: node tools/validate-alpha2-canonical-candidate.mjs
-
-      - name: Revalidate R1 frozen handoff
+      - name: Revalidate R1 signed handoff
         run: node tools/validate-alpha2-r1-signing-handoff.mjs
-
       - name: Revalidate R2 fail-closed chain
         run: node tools/validate-alpha2-r2-chain.mjs
-
       - name: Revalidate human intervention boundary
         run: node tools/validate-alpha2-human-intervention-gate.mjs
-
       - name: Revalidate public CI routing
         run: node tools/validate-ci-runner-policy.mjs
-
       - name: Certification ledger summary
         shell: bash
         run: |
@@ -96,13 +89,13 @@ jobs:
           ALPHA2_CERTIFICATION_LEDGER=PASS
           CANDIDATE=0.2.0-alpha.2+2013
           HISTORICAL_2012_HEAD=6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e
-          EXTENSION_HEAD_BLOCK_HASH=4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4
-          CHAIN_STATE=R1_BUNDLE_FROZEN_SIGNING_REQUIRED
-          R1_BUNDLE_SHA256=d8f981a35c121d0f75b3b42196b8af8a2fc9306ce5203df20b85a9c2830fadbc
-          NEXT_GATE=R1_TRUSTED_EDGE_SIGNING
+          EXTENSION_HEAD_BLOCK_HASH=38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028
+          CHAIN_STATE=STABLE_SIGNED_FRONTIER
+          SIGNED_APK_SHA256=4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387
+          NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH
           PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
-          OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO
+          OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
