@@ -8,9 +8,9 @@
   "priorChainId": "FINANCESENSOR_ALPHA2_2012_CERTIFICATION",
   "priorHeadBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
   "baseHeight": 7,
-  "headBlockHash": "4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4",
-  "state": "R1_BUNDLE_FROZEN_SIGNING_REQUIRED",
-  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "headBlockHash": "38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028",
+  "state": "STABLE_SIGNED_FRONTIER",
+  "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
   "blocks": [
     {
       "height": 7,
@@ -104,6 +104,32 @@
         "trustedEdgeSigningPass": false
       },
       "blockHash": "4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4"
+    },
+    {
+      "height": 12,
+      "kind": "STABLE_SIGNED_APK_FREEZE",
+      "parentBlockHash": "4e46bbb2d1d109b3abf736ac509296ab5b256b676ff82e5c3b1a1de9f9ac8cd4",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2013",
+        "productSourceCommit": "da6176f9acba1854c470ce2caea471bb6b66d8f2",
+        "canonicalSourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+        "canonicalRunId": 35043945554,
+        "canonicalArtifactId": 10425404905,
+        "inputApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
+        "inputApkBytes": 182538547,
+        "signedApkSha256": "4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387",
+        "signedApkBytes": 182563366,
+        "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+        "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+        "exactScope": "gmail.readonly",
+        "physicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json",
+        "trustedEdgeSigningPass": true,
+        "privateSigningMaterialInGitHub": false,
+        "physicalAlpha2Pass": false,
+        "buildReady": false,
+        "releaseReady": false
+      },
+      "blockHash": "38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028"
     }
   ]
 }
