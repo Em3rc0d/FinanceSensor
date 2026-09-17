@@ -75,7 +75,7 @@ jobs:
       - name: Upload OD0 handoff bundle
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-r2-od0-handoff-2013-r2-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          name: financesensor-alpha2-r2-od0-handoff-2013-r3-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: FinanceSensor-ALPHA2-R2-OD0-HANDOFF-2013-R3.zip
           if-no-files-found: error
           retention-days: 7
