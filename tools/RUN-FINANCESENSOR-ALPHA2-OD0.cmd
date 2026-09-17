@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo FinanceSensor Alpha.2 +2013 - OD0 trusted owned-device gate
+echo FinanceSensor Alpha.2 +2013 - OD0 trusted owned-device gate - harness revision 2
 echo Exact stable-signed APK only. Data-preserving install only.
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN-FINANCESENSOR-ALPHA2-OD0.ps1"
