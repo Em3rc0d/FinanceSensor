@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "A2_STRICT_REVIEW_DIAGNOSTIC_CANDIDATE_V1",
+  "candidate": "0.2.0-alpha.2+2014",
+  "status": "CANDIDATE_CUT_PENDING_CANONICAL_BUILD",
+  "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
+  "productSourcePr": 151,
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2013",
+    "canonicalSourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+    "canonicalUnsignedApkSha256": "bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1",
+    "stableSignedApkSha256": "4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387",
+    "stableSignedApkBytes": 182563366,
+    "physicalObservation": "GMAIL_RUNTIME_MATERIALIZED_EECC_IMPORTED_0_REVIEW_11",
+    "physicalObservationReceipt": "mk0/10-evidence/ALPHA2-2013-STRICT-EECC-REVIEW-PHYSICAL-OBSERVATION-2026-09-17.md",
+    "formalPhysicalAlpha2Pass": false,
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "remediation": {
+    "diagnosticVersion": "A2_STRICT_REVIEW_DIAGNOSTICS_V1",
+    "diagnosticPrefix": "REVIEW_DIAGNOSTIC:",
+    "onePrimaryCausePerReviewedStatement": true,
+    "profileAllowlist": true,
+    "reviewCodeAllowlist": true,
+    "unknownCodeCollapsesTo": "STATEMENT_STRICT_REVIEW_OTHER",
+    "gapCountDuplicationForbidden": true,
+    "humanReadableSafeLabels": true,
+    "arbitraryParserDetailExposure": false,
+    "regression": "spikes/mobile-shell/test/alpha2_statement_review_diagnostics_test.dart",
+    "profilePasswordSessionReuse": true,
+    "profilePasswordDiskPersistence": false
+  },
+  "authority": {
+    "canonicalPromotionPending": true,
+    "currentCanonicalCandidate": "0.2.0-alpha.2+2013",
+    "currentCanonicalSourceCommit": "fd6b2ba75a63e650626f2fcece6c13f0bea4f541",
+    "nextCanonicalSourceCommit": null,
+    "nextCanonicalBuildRunId": null,
+    "nextCanonicalArtifactId": null,
+    "nextCanonicalUnsignedApkSha256": null,
+    "trustedEdgeResignRequired": true,
+    "trustedEdgeSigningPass": false,
+    "stableSignedApkSha256": null,
+    "physicalCampaignResetRequired": true
+  },
+  "boundaries": {
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "predecessorPhysicalEvidenceInherited": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
