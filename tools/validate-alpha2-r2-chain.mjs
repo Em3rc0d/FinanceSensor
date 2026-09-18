@@ -9,7 +9,8 @@ const id='0.2.0-alpha.2+2014', src='8e5bb535a7263beab0b687b616dff88205da58f3', a
 a(c.candidate===id&&c.sourceCommit===src&&c.authority?.apkSha256===apk&&c.signing?.trustedEdgeSigningPass===false,'canonical');
 a(r1.candidate===id&&r1.sourceCommit===src&&r1.inputApk?.sha256===apk&&r1.trustedEdgeSigningPass===false,'R1');
 a(r2.candidate?.id===id&&r2.candidate?.sourceCommit===src&&r2.candidate?.canonicalInputApkSha256===apk&&r2.candidate?.signedApkSha256===null,'R2');
-a(l.state==='PRE_SIGNING_FRONTIER'&&l.nextGate==='R1_TRUSTED_EDGE_SIGNING','ledger');
+a(l.state==='R1_BUNDLE_FROZEN_SIGNING_REQUIRED'&&l.nextGate==='R1_TRUSTED_EDGE_SIGNING','ledger');
+a(r1.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE'&&r1.handoffBundle?.sha256==='eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be','R1 bundle frozen');
 a(r2.status==='BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'&&r2.currentState?.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier');
 a(h.ownedDeviceUat?.requestAllowed===false&&h.preSigning?.requestAllowed===true,'human');
 console.log('ALPHA2_R2_PREBUILD_CHAIN=PASS');
