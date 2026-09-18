@@ -33,13 +33,29 @@
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip",
-    "status": "PENDING_CI_GENERATION",
-    "sha256": null,
-    "bytes": null,
+    "status": "FROZEN_PUBLIC_SAFE_BUNDLE",
+    "sha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+    "bytes": 86665753,
     "files": 8,
     "privateKeyFiles": 0,
     "secretLikeValueMatches": 0,
-    "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
+    "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
+    "zipStructure": "PASS",
+    "zipIntegrity": "PASS",
+    "manifestIntegrity": "PASS",
+    "ps1GitBlobVerified": "17c2a5e6f2e932c3cd032a52d9af1c68757658c4",
+    "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "generationReceipt": {
+      "status": "PR_HEAD_CI_PASS",
+      "headSha": "846296261b59a6acc8bb4a225b7d4fbdb28cd853",
+      "runId": 35293721081,
+      "artifactId": 10526829557,
+      "wrapperArtifactSha256": "1cb124bf2884e55fd559dd7ee0bac0c4036287183d0c5e30072187fc8341ce90",
+      "wrapperArtifactBytes": 86294990,
+      "observedInnerBundleSha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+      "observedInnerBundleBytes": 86665753,
+      "manifestIntegrity": "PASS"
+    }
   },
   "stableSignedApk": null,
   "historicalPhysicalReceipts": [
