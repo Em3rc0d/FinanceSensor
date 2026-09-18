@@ -1,0 +1,27 @@
+name: Alpha.2 OD0 Owned-Device Handoff
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [jett/mk0-foundation]
+    paths: ['tools/validate-alpha2-od0-owned-device-harness.mjs','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+  push:
+    branches: [jett/mk0-foundation]
+    paths: ['tools/validate-alpha2-od0-owned-device-harness.mjs','graph/alpha2-r2-owned-device-campaign.json','graph/alpha2-human-intervention-gate.json','graph/alpha2-canonical-candidate.json','.github/workflows/alpha2-od0-owned-device-harness.yml','tools/validate-ci-runner-policy.mjs']
+permissions: {contents: read}
+jobs:
+  validate-blocked-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/validate-alpha2-od0-owned-device-harness.mjs
+      - run: node tools/validate-ci-runner-policy.mjs
+      - run: |
+          echo 'CANDIDATE=0.2.0-alpha.2+2014'
+          echo 'OD0_HANDOFF_PACKAGE=BLOCKED'
+          echo 'BLOCKER=R1_TRUSTED_EDGE_SIGNING_REQUIRED'
+          echo 'OD0_EXECUTION_ALLOWED=NO'
+          echo 'PHYSICAL_ALPHA2_PASS=NO'

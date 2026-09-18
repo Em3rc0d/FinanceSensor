@@ -1,0 +1,71 @@
+name: Alpha.2 Certification Ledger
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, jett/mk0-foundation]
+    paths:
+      - 'graph/alpha2-certification-ledger.json'
+      - 'graph/alpha2-2013-certification-ledger-extension.json'
+      - 'graph/alpha2-2014-certification-ledger-extension.json'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'tools/validate-alpha2-certification-ledger.mjs'
+      - 'tools/validate-alpha2-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/validate-alpha2-human-intervention-gate.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-certification-ledger.yml'
+  push:
+    branches: [main, jett/mk0-foundation]
+    paths:
+      - 'graph/alpha2-certification-ledger.json'
+      - 'graph/alpha2-2013-certification-ledger-extension.json'
+      - 'graph/alpha2-2014-certification-ledger-extension.json'
+      - 'graph/alpha2-canonical-candidate.json'
+      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-r2-owned-device-campaign.json'
+      - 'graph/alpha2-human-intervention-gate.json'
+      - 'tools/validate-alpha2-certification-ledger.mjs'
+      - 'tools/validate-alpha2-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-r2-chain.mjs'
+      - 'tools/validate-alpha2-human-intervention-gate.mjs'
+      - 'tools/validate-ci-runner-policy.mjs'
+      - '.github/workflows/alpha2-certification-ledger.yml'
+
+permissions: {contents: read}
+
+jobs:
+  validate-certification-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/validate-alpha2-certification-ledger.mjs
+      - run: node tools/validate-alpha2-canonical-candidate.mjs
+      - run: node tools/validate-alpha2-r1-signing-handoff.mjs
+      - run: node tools/validate-alpha2-r2-chain.mjs
+      - run: node tools/validate-alpha2-human-intervention-gate.mjs
+      - run: node tools/validate-ci-runner-policy.mjs
+      - name: Certification ledger summary
+        run: |
+          echo 'ALPHA2_CERTIFICATION_LEDGER=PASS'
+          echo 'CANDIDATE=0.2.0-alpha.2+2014'
+          echo 'PRIOR_2013_HEAD=38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028'
+          echo 'CHAIN_STATE=R1_BUNDLE_FROZEN_SIGNING_REQUIRED'
+          echo 'R1_BUNDLE_SHA256=eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
+          echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO'
+          echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'PHYSICAL_ALPHA2_PASS=NO'
+          echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'

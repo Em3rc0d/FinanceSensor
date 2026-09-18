@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "A2_HUMAN_INTERVENTION_GATE_V5",
+  "policyId": "POLICY-ALPHA2-HUMAN-INTERVENTION-CERTIFICATION-ONLY",
+  "mode": "EXCEPTION_ONLY_CERTIFICATION",
+  "currentCandidate": "0.2.0-alpha.2+2014",
+  "candidateSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
+  "candidateCanonicalCommit": "8e5bb535a7263beab0b687b616dff88205da58f3",
+  "candidateState": "CANONICAL_FROZEN_SIGNING_REQUIRED",
+  "humanDiscoveryTestingForbidden": true,
+  "candidateGenerationNoiseEscalatesToHuman": false,
+  "candidateMutationResetsEligibility": true,
+  "priorCandidatePhysicalEvidenceInheritable": false,
+  "sameCandidateRerunPolicy": "AMBIGUOUS_OR_ENVIRONMENTAL_ONLY",
+  "preSigning": {
+    "requestAllowed": true,
+    "completed": false,
+    "canonicalSourceIdentityFrozen": true,
+    "canonicalApkIdentityFrozen": true,
+    "requiredCiConsensusComplete": true,
+    "requiredCiConsensusGreen": true,
+    "staticAnalysisPass": true,
+    "unitIntegrationPass": true,
+    "exactPhysicalFailureRegressionPass": true,
+    "syntheticEndToEndDashboardProjectionPass": true,
+    "statementFailureIsolationPass": true,
+    "scanResilienceRegressionPass": true,
+    "encryptedPersistenceAutomatedContractPass": true,
+    "replayIdempotencyAutomatedContractPass": true,
+    "creditCoverageRegressionsPass": true,
+    "knownCandidateBlockingDefects": 0,
+    "noNewerProductSourceMutation": true,
+    "safeReviewDiagnosticsPass": true
+  },
+  "ownedDeviceUat": {
+    "requestAllowed": false,
+    "humanUatEligible": false,
+    "trustedEdgeSigningPass": false,
+    "stableSignedArtifactIdentityFrozen": false,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "packageFrozen": "com.financesensor.lab.gmailconnection.r2",
+    "exactOauthScopeFrozen": "gmail.readonly",
+    "finiteCampaignContractFrozen": true,
+    "consolidatedCampaignPreferred": true,
+    "sameCandidateRepeatRequested": false,
+    "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+    "purposeWhenEligible": "CERTIFICATION_ONLY"
+  },
+  "blockers": [
+    "R1_TRUSTED_EDGE_SIGNING_REQUIRED",
+    "OD0_OD11_PHYSICAL_CAMPAIGN_REQUIRED"
+  ],
+  "claims": {
+    "signingRequestAllowed": true,
+    "trustedEdgeSigningPass": false,
+    "ownedDeviceUatRequestAllowed": false,
+    "humanUatEligible": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

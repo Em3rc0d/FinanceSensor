@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
+const r=JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8'));
+const h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_OD0_2014_BLOCK_FAILED:${m}`)};
+a(c.candidate==='0.2.0-alpha.2+2014'&&c.signing?.trustedEdgeSigningPass===false,'canonical unsigned');
+a(r.status==='BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'&&r.subgates?.[0]?.status==='BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING','R2 block');
+a(h.ownedDeviceUat?.requestAllowed===false&&h.ownedDeviceUat?.trustedEdgeSigningPass===false,'human block');
+console.log('ALPHA2_OD0_OWNED_DEVICE_HARNESS=BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING');
+console.log('CANDIDATE=0.2.0-alpha.2+2014');
+console.log('OD0_EXECUTION_ALLOWED=NO');
+console.log('PHYSICAL_ALPHA2_PASS=NO');

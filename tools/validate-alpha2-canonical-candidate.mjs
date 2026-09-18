@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_CANONICAL_V9_FAILED:${m}`)};
+a(c.schemaVersion==='A2_CANONICAL_CANDIDATE_RECEIPT_V9','schema');
+a(c.candidate==='0.2.0-alpha.2+2014','candidate');
+a(c.productSourceCommit==='7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b','product source');
+a(c.sourceCommit==='8e5bb535a7263beab0b687b616dff88205da58f3','source');
+a(c.authority?.runId===35291827028&&c.authority?.jobId===105436111056&&c.authority?.artifactId===10526841901,'CI authority');
+a(c.authority?.artifactZipSha256==='d41eca871471d9700d2d8c48b2b70a7ac806f3cae0ee11c3e5020c0a171a9f80'&&c.authority?.artifactZipBytes===87694587,'artifact');
+a(c.authority?.apkSha256==='72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3'&&c.authority?.apkBytes===182550031,'APK');
+a(c.authority?.safeReviewDiagnostics==='A2_SAFE_REVIEW_DIAGNOSTICS_V1'&&c.authority?.strictParserBehaviorChanged===false,'diagnostic-only law');
+a(c.predecessor?.candidate==='0.2.0-alpha.2+2013'&&c.predecessor?.physicalEvidenceInheritanceAllowed===false,'predecessor');
+a(c.signing?.status==='TRUSTED_EDGE_SIGNING_REQUIRED'&&c.signing?.trustedEdgeSigningPass===false&&c.signing?.signedApkSha256===null,'pre-signing');
+a(c.boundaries?.physicalAlpha2Pass===false&&c.boundaries?.buildReady===false&&c.boundaries?.releaseReady===false,'readiness');
+console.log('ALPHA2_CANONICAL_CANDIDATE=PASS');
+console.log('CANDIDATE=0.2.0-alpha.2+2014');
+console.log('CANONICAL_UNSIGNED_APK_SHA256=72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3');
+console.log('TRUSTED_EDGE_SIGNING=REQUIRED');

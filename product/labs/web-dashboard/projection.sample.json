@@ -1,0 +1,86 @@
+{
+  "schema": "ALPHA2_PUBLIC_DASHBOARD_V1",
+  "transactions": [
+    {
+      "id": "evt_demo_001",
+      "occurredAt": "2026-09-05T15:10:00.000Z",
+      "amount": 18.9,
+      "currency": "PEN",
+      "semanticType": "EXPENSE",
+      "truthState": "RECONCILED",
+      "flowDirection": "OUTFLOW",
+      "merchant": "cafeteria demo",
+      "category": "Comida",
+      "account": "…A1B2C3"
+    },
+    {
+      "id": "evt_demo_002",
+      "occurredAt": "2026-09-03T12:00:00.000Z",
+      "amount": 2400,
+      "currency": "PEN",
+      "semanticType": "INCOME",
+      "truthState": "POSTED",
+      "flowDirection": "INFLOW",
+      "merchant": "planilla demo",
+      "category": "Otros",
+      "account": "…A1B2C3"
+    },
+    {
+      "id": "evt_demo_003",
+      "occurredAt": "2026-09-02T18:30:00.000Z",
+      "amount": 12.99,
+      "currency": "USD",
+      "semanticType": "EXPENSE",
+      "truthState": "OBSERVED",
+      "flowDirection": "OUTFLOW",
+      "merchant": "software demo",
+      "category": "Suscripciones"
+    }
+  ],
+  "cashflow": [
+    {
+      "currency": "PEN",
+      "income": 2400,
+      "expense": 18.9,
+      "net": 2381.1,
+      "truthState": "PARTIAL"
+    },
+    {
+      "currency": "USD",
+      "income": 0,
+      "expense": 12.99,
+      "net": -12.99,
+      "truthState": "PARTIAL"
+    }
+  ],
+  "recurringCandidates": [
+    {
+      "id": "rec_demo_1",
+      "state": "CANDIDATE",
+      "cadence": "MONTHLY",
+      "merchant": "software demo",
+      "currency": "USD",
+      "semanticType": "EXPENSE",
+      "occurrenceCount": 3,
+      "truthState": "OBSERVED"
+    }
+  ],
+  "knowledgeGaps": [
+    {
+      "id": "gap_demo_1",
+      "kind": "CATEGORY_UNKNOWN",
+      "reason": "CATEGORY_SIGNAL_INSUFFICIENT",
+      "truthState": "UNKNOWN"
+    }
+  ],
+  "monthlyState": {
+    "status": "RECONCILING",
+    "includedSources": 1,
+    "reconciledIncludedSources": 0,
+    "pendingStatements": 0,
+    "unresolvedItems": 1,
+    "blockingConflicts": 0,
+    "userExcludedSources": 0,
+    "notAvailableSources": 0
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_A_STATEMENT_DISCOVERY",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
+  "asOf": "2026-09-05",
+  "baseCommit": "22df3d83725685e1795af7db38d1836fd81b855c",
+  "designAuthority": "graph/alpha2-design-freeze.json",
+  "implementation": {
+    "runtime": "NODE_PURE_CONTRACT_AND_GMAIL_PROVIDER_ADAPTER",
+    "productPromotion": false,
+    "physicalExecution": false,
+    "gmailScopeChanged": false,
+    "attachmentBytesFetched": false,
+    "messageBodyDataRequested": false,
+    "pdfRuntimeInvoked": false,
+    "passwordRequested": false,
+    "vaultMutation": false,
+    "iosTouched": false
+  },
+  "registry": {
+    "version": 1,
+    "profiles": [
+      "PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1",
+      "PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1",
+      "PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1"
+    ],
+    "interbankSavingsAutomaticProfile": "OPEN_NO_ALLOWLISTED_GMAIL_IDENTITY",
+    "genericProfile": false
+  },
+  "queryPlanner": {
+    "knownSenderRequired": true,
+    "statementSubjectMarkerRequired": true,
+    "pdfMarkerRequired": true,
+    "hasAttachmentRequired": true,
+    "historyDaysDefault": 730,
+    "historyDaysHardMaximum": 730,
+    "spamTrashIncluded": false,
+    "metadataHeaderGateBeforeMimeProjection": true,
+    "mimeProjectionFormat": "FULL_WITH_PARTIAL_RESPONSE_FIELDS",
+    "mimeProjectionBodyDataSelected": false,
+    "messagesPerProfileHardMaximum": 1000,
+    "pagesPerProfileHardMaximum": 40
+  },
+  "candidateGate": {
+    "states": ["REJECTED", "WEAK", "PROBABLE", "STRONG", "CONFLICT"],
+    "downloadEligibleState": "STRONG",
+    "unknownSenderRejected": true,
+    "nonPdfDescriptorRejected": true,
+    "invalidAttachmentSizeRejected": true,
+    "emptyAttachmentRejected": true,
+    "oversizedAttachmentRejected": true,
+    "inlineAttachmentRejected": true,
+    "revokedAuthorityRejected": true,
+    "profileConflictFailsClosed": true,
+    "multipleStrongAttachmentsFailClosed": true,
+    "maximumAttachmentBytes": 20971520,
+    "rawSenderInProjection": false,
+    "rawSubjectInProjection": false,
+    "rawFilenameInProjection": false
+  },
+  "inventory": {
+    "sourceMessageDeduplication": true,
+    "sourceAttachmentDeduplication": true,
+    "terminalSourceKeyIdempotency": true,
+    "aggregateStateCounts": true,
+    "aggregateProfileCounts": true,
+    "rawMetadataDurable": false
+  },
+  "tests": {
+    "syntheticOnly": true,
+    "realGmail": false,
+    "realFinancialData": false,
+    "requiredMarkers": [
+      "QUERY_HISTORY_CEILING",
+      "KNOWN_STRONG_CANDIDATE",
+      "UNKNOWN_SENDER_REJECTED",
+      "NON_PDF_REJECTED",
+      "SIZE_BOUNDS",
+      "INVALID_SIZE_FAILS_CLOSED",
+      "INLINE_ATTACHMENT_REJECTED",
+      "AUTHORITY_REVOKED",
+      "PROFILE_CONFLICT",
+      "MULTIPLE_STRONG_ATTACHMENTS_CONFLICT",
+      "RAW_METADATA_EXCLUDED",
+      "OVERLAP_DEDUP",
+      "ATTACHMENT_SOURCE_KEY_DEDUP",
+      "TERMINAL_SOURCE_KEY_IDEMPOTENCY",
+      "NO_ATTACHMENT_FETCH",
+      "NO_FULL_PROJECTION_FOR_UNKNOWN_METADATA",
+      "INVALID_REGISTRY_FAILS_CLOSED"
+    ]
+  },
+  "ciEvidence": {
+    "verifiedHeadSha": "8271267403c8ad9712f446a3e12b1c3aac64795f",
+    "mergedCommitSha": "6e6d818be03189be0fcc2457013bfa4b1154d41f",
+    "workflowRuns": {
+      "alpha2StatementDiscovery": 33981318555,
+      "alpha2DesignFreeze": 33981318562,
+      "statementEtlContract": 33981318566,
+      "gmailHistorical": 33981318560
+    },
+    "allConclusions": "SUCCESS"
+  },
+  "openGates": [
+    "ANDROID_PRODUCT_INTEGRATION",
+    "OWNED_GMAIL_PHYSICAL_DISCOVERY",
+    "INTERBANK_GMAIL_DISCOVERY_IDENTITY",
+    "ALPHA_2_B_ATTACHMENT_FETCH"
+  ],
+  "buildReady": false
+}
