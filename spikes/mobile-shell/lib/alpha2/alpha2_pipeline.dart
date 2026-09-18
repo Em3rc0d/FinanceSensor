@@ -505,13 +505,15 @@ String _safeStatementReviewCode({
   required String profileId,
   required List<String> reviewCodes,
 }) {
+  final safeProfile = _safeStatementReviewProfile(profileId);
   final safe = reviewCodes
       .map((code) => code.trim().toUpperCase())
       .map((code) {
         if (_alpha2SafeStatementReviewCodes.contains(code)) return code;
-        if (RegExp(
-          r'^BCP_CREDIT_STRUCTURAL_V1_P(?:0|1|2_4|5P)_M[0-9A-F]{3}$',
-        ).hasMatch(code)) {
+        if (safeProfile == 'BCP_CREDIT' &&
+            RegExp(
+              r'^BCP_CREDIT_STRUCTURAL_V1_P(?:0|1|2_4|5P)_M[0-9A-F]{3}$',
+            ).hasMatch(code)) {
           return 'BCP_CREDIT_STRUCTURAL_PROBE';
         }
         return 'STATEMENT_STRICT_REVIEW_OTHER';
