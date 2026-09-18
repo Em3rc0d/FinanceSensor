@@ -211,7 +211,10 @@ String _cadence(String cadence) => switch (cadence.toUpperCase()) {
       _ => 'Patrón',
     };
 
-String _gapLabel(String reason) => switch (reason) {
+String _gapLabel(String reason) {
+  final reviewLabel = _statementReviewGapLabel(reason);
+  if (reviewLabel != null) return reviewLabel;
+  return switch (reason) {
       'ACCOUNT_MAPPING_REQUIRED' => 'Falta confirmar a qué cuenta pertenece un EECC',
       'CATEGORY_SIGNAL_INSUFFICIENT' => 'Hay movimientos sin categoría suficiente',
       'MISSING_STATEMENT' => 'Falta un estado de cuenta esperado',
@@ -232,6 +235,69 @@ String _gapLabel(String reason) => switch (reason) {
       'STATEMENT_PERSISTENCE_REJECTED' => 'El EECC no pudo guardarse en el almacén cifrado',
       _ => 'Hay información pendiente de confirmar',
     };
+}
+
+String? _statementReviewGapLabel(String reason) {
+  const prefixes = <String, String>{
+    'STATEMENT_REVIEW_BCP_SAVINGS_': 'BCP ahorro',
+    'STATEMENT_REVIEW_BCP_CREDIT_': 'BCP tarjeta',
+    'STATEMENT_REVIEW_RIPLEY_CREDIT_': 'Ripley tarjeta',
+    'STATEMENT_REVIEW_UNKNOWN_PROFILE_': 'EECC',
+  };
+  String? profileLabel;
+  String? code;
+  for (final entry in prefixes.entries) {
+    if (!reason.startsWith(entry.key)) continue;
+    profileLabel = entry.value;
+    code = reason.substring(entry.key.length);
+    break;
+  }
+  if (profileLabel == null || code == null || code.isEmpty) return null;
+
+  final detail = switch (code) {
+    'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED' =>
+      'el parser de este perfil aún requiere certificación',
+    'STATEMENT_PERIOD_AMBIGUOUS' ||
+    'RIPLEY_CREDIT_PERIOD_AMBIGUOUS' =>
+      'no se pudo fijar un único período del estado de cuenta',
+    'STATEMENT_HEADER_GEOMETRY_UNKNOWN' ||
+    'STATEMENT_COMPLETENESS_GEOMETRY_UNKNOWN' ||
+    'RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN' =>
+      'la geometría del ledger no coincide con el contrato certificado',
+    'STATEMENT_LEDGER_PAGE_NOT_FOUND' =>
+      'no se identificó una página de movimientos',
+    'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND' ||
+    'STATEMENT_ROW_VALUE_DATE_NOT_FOUND' ||
+    'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION' =>
+      'las fechas de movimiento no pudieron reconstruirse con seguridad',
+    'STATEMENT_ROW_VERTICAL_FRAGMENTATION' ||
+    'STATEMENT_ROW_AMOUNT_NOT_FOUND' =>
+      'las filas monetarias quedaron fragmentadas o sin monto vinculable',
+    'STATEMENT_ROW_BOTH_DEBIT_CREDIT' =>
+      'una fila aparece simultáneamente como cargo y abono',
+    'STATEMENT_MONETARY_ROW_UNEXPLAINED' ||
+    'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED' =>
+      'hay una fila monetaria que el parser no puede explicar',
+    'RIPLEY_CREDIT_DESCRIPTION_REQUIRED' =>
+      'hay un movimiento sin descripción vinculable',
+    'STATEMENT_LAYOUT_NO_MOVEMENTS' ||
+    'RIPLEY_CREDIT_LAYOUT_NO_MOVEMENTS' =>
+      'no se encontraron movimientos importables en el layout reconocido',
+    'STATEMENT_STRICT_PARSE_RUNTIME_REJECTED' ||
+    'STATEMENT_IMPORT_RUNTIME_REJECTED' =>
+      'el parser se detuvo de forma segura durante la importación',
+    'STATEMENT_PASSWORD_PROVIDER_REJECTED' =>
+      'la obtención local de la clave fue rechazada de forma segura',
+    'STATEMENT_SOURCE_RECEIPT_REJECTED' =>
+      'no se pudo construir el recibo local de la fuente',
+    'BCP_CREDIT_STRUCTURAL_PROBE' =>
+      'solo se completó el diagnóstico estructural seguro',
+    'STATEMENT_STRICT_REVIEW_OTHER' =>
+      'el parser falló cerrado con una causa no publicable',
+    _ => 'el parser estricto requiere revisión',
+  };
+  return '$profileLabel: $detail';
+}
 
 String _money(double value, String currency) {
   final prefix = currency == 'PEN' ? 'S/' : currency == 'USD' ? r'$' : currency;
