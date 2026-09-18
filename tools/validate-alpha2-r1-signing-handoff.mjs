@@ -13,7 +13,7 @@ a(r.signer?.cmdGitBlob===execFileSync('git',['hash-object',cmd],{encoding:'utf8'
 a(r.signer?.expectedSignerSha1==='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0','signer');
 a(r.handoffBundle?.name==='FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip','bundle name');
 a(['PENDING_CI_GENERATION','FROZEN_PUBLIC_SAFE_BUNDLE'].includes(r.handoffBundle?.status),'bundle status');
-if(r.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE'){a(/^[0-9a-f]{64}$/.test(r.handoffBundle.sha256)&&r.handoffBundle.bytes>0,'frozen bundle bytes')}
+if(r.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE'){a(r.handoffBundle.sha256==='eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'&&r.handoffBundle.bytes===86665753,'frozen bundle bytes');a(r.handoffBundle.manifestIntegrity==='PASS'&&r.handoffBundle.zipIntegrity==='PASS'&&r.handoffBundle.privateKeyFiles===0,'frozen bundle integrity')}
 a(r.trustedEdgeSigningPass===false&&r.status==='CANONICAL_FROZEN_SIGNING_REQUIRED'&&r.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier');
 a(r.physicalAlpha2Pass===false&&r.buildReady===false&&r.releaseReady===false,'readiness');
 const p=fs.readFileSync(ps,'utf8');
