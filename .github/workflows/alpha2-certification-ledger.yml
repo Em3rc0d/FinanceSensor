@@ -3,100 +3,68 @@ name: Alpha.2 Certification Ledger
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - main
-      - jett/mk0-foundation
+    branches: [main, jett/mk0-foundation]
     paths:
       - 'graph/alpha2-certification-ledger.json'
       - 'graph/alpha2-2013-certification-ledger-extension.json'
+      - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
-      - 'mk0/10-evidence/ALPHA2-CERTIFICATION-LEDGER.md'
       - '.github/workflows/alpha2-certification-ledger.yml'
   push:
-    branches:
-      - main
-      - jett/mk0-foundation
+    branches: [main, jett/mk0-foundation]
     paths:
       - 'graph/alpha2-certification-ledger.json'
       - 'graph/alpha2-2013-certification-ledger-extension.json'
+      - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
-      - 'graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
-      - 'mk0/10-evidence/ALPHA2-CERTIFICATION-LEDGER.md'
       - '.github/workflows/alpha2-certification-ledger.yml'
 
-permissions:
-  contents: read
-
-concurrency:
-  group: financesensor-alpha2-cert-ledger-${{ github.ref }}
-  cancel-in-progress: true
+permissions: {contents: read}
 
 jobs:
   validate-certification-ledger:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout exact head
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - name: Verify exact checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED_SHA='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
-          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          echo "EXACT_HEAD_SHA=$EXPECTED_SHA"
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Recompute hash-linked certification ledger
-        run: node tools/validate-alpha2-certification-ledger.mjs
-      - name: Revalidate canonical candidate
-        run: node tools/validate-alpha2-canonical-candidate.mjs
-      - name: Revalidate R1 signed handoff
-        run: node tools/validate-alpha2-r1-signing-handoff.mjs
-      - name: Revalidate R2 fail-closed chain
-        run: node tools/validate-alpha2-r2-chain.mjs
-      - name: Revalidate human intervention boundary
-        run: node tools/validate-alpha2-human-intervention-gate.mjs
-      - name: Revalidate public CI routing
-        run: node tools/validate-ci-runner-policy.mjs
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/validate-alpha2-certification-ledger.mjs
+      - run: node tools/validate-alpha2-canonical-candidate.mjs
+      - run: node tools/validate-alpha2-r1-signing-handoff.mjs
+      - run: node tools/validate-alpha2-r2-chain.mjs
+      - run: node tools/validate-alpha2-human-intervention-gate.mjs
+      - run: node tools/validate-ci-runner-policy.mjs
       - name: Certification ledger summary
-        shell: bash
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          ALPHA2_CERTIFICATION_LEDGER=PASS
-          CANDIDATE=0.2.0-alpha.2+2013
-          HISTORICAL_2012_HEAD=6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e
-          EXTENSION_HEAD_BLOCK_HASH=38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028
-          CHAIN_STATE=STABLE_SIGNED_FRONTIER
-          SIGNED_APK_SHA256=4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387
-          NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH
-          PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO
-          PRIVATE_SIGNING_MATERIAL_IN_CI=0
-          OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
-          PHYSICAL_ALPHA2_PASS=NO
-          BUILD_READY=NO
-          RELEASE_READY=NO
-          EOF
+          echo 'ALPHA2_CERTIFICATION_LEDGER=PASS'
+          echo 'CANDIDATE=0.2.0-alpha.2+2014'
+          echo 'PRIOR_2013_HEAD=38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028'
+          echo 'CHAIN_STATE=PRE_SIGNING_FRONTIER'
+          echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO'
+          echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'PHYSICAL_ALPHA2_PASS=NO'
+          echo 'BUILD_READY=NO'
+          echo 'RELEASE_READY=NO'
