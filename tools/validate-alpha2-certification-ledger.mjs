@@ -15,9 +15,13 @@ a(prior.headBlockHash==='38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c
 a(ext.schemaVersion==='A2_CERTIFICATION_LEDGER_EXTENSION_V2'&&ext.chainId==='FINANCESENSOR_ALPHA2_2014_CERTIFICATION','identity');
 a(ext.priorChainId===prior.chainId&&ext.priorHeadBlockHash===prior.headBlockHash&&ext.baseHeight===13,'link');
 const kinds=['PHYSICAL_DIAGNOSTIC_OBSERVATION','SAFE_REVIEW_DIAGNOSTICS_MERGE','CANONICAL_BUILD_FREEZE','PRE_SIGNING_FRONTIER'];
-a(ext.blocks.length>=4,'shape');
+a(ext.blocks.length===5,'shape');
 for(let i=0;i<ext.blocks.length;i++){const b=ext.blocks[i];a(b.height===13+i,`height:${i}`);a(b.parentBlockHash===(i===0?prior.headBlockHash:ext.blocks[i-1].blockHash),`parent:${i}`);a(hash(ext.blockHashDomain,b)===b.blockHash,`hash:${i}`)}
 for(let i=0;i<4;i++)a(ext.blocks[i].kind===kinds[i],`kind:${i}`);
+a(ext.blocks[4].kind==='R1_BUNDLE_FREEZE','kind:4');
+const bundle=ext.blocks[4].payload;
+a(bundle.innerBundleSha256==='eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'&&bundle.innerBundleBytes===86665753&&bundle.innerBundleFiles===8,'bundle bytes');
+a(bundle.manifestIntegrity==='PASS'&&bundle.zipIntegrity==='PASS'&&bundle.privateSigningMaterialInCi===false&&bundle.trustedEdgeSigningPass===false,'bundle boundary');
 a(ext.headBlockHash===ext.blocks.at(-1).blockHash,'head');
 a(['PRE_SIGNING_FRONTIER','R1_BUNDLE_FROZEN_SIGNING_REQUIRED'].includes(ext.state),'state');
 const build=ext.blocks[2].payload;
