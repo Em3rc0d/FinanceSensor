@@ -14,10 +14,12 @@ on:
       - 'graph/alpha2-mobile-runtime-authority.json'
       - 'graph/alpha2-credit-mobile-profile-authority.json'
       - 'graph/alpha2-scan-resilience-candidate.json'
+      - 'graph/alpha2-strict-review-diagnostics-candidate.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'mk0/10-evidence/ALPHA2-CREDIT-MOBILE-PROFILE-AUTHORITY.md'
       - 'mk0/10-evidence/ALPHA2-2012-PHYSICAL-SCAN-FAILURE-2026-09-15.md'
+      - 'mk0/10-evidence/ALPHA2-2013-STRICT-EECC-REVIEW-PHYSICAL-OBSERVATION-2026-09-17.md'
       - 'spikes/e2ee-sync/src/alpha2-projection-adapter.js'
       - 'spikes/e2ee-sync/test/alpha2-projection-adapter.test.js'
       - 'product/labs/web-dashboard/**'
@@ -25,7 +27,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
-      - 'tools/validate-alpha2-2013-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2014-candidate-cut.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
   push:
@@ -40,10 +42,12 @@ on:
       - 'graph/alpha2-mobile-runtime-authority.json'
       - 'graph/alpha2-credit-mobile-profile-authority.json'
       - 'graph/alpha2-scan-resilience-candidate.json'
+      - 'graph/alpha2-strict-review-diagnostics-candidate.json'
       - 'graph/alpha2-canonical-candidate.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'mk0/10-evidence/ALPHA2-CREDIT-MOBILE-PROFILE-AUTHORITY.md'
       - 'mk0/10-evidence/ALPHA2-2012-PHYSICAL-SCAN-FAILURE-2026-09-15.md'
+      - 'mk0/10-evidence/ALPHA2-2013-STRICT-EECC-REVIEW-PHYSICAL-OBSERVATION-2026-09-17.md'
       - 'spikes/e2ee-sync/src/alpha2-projection-adapter.js'
       - 'spikes/e2ee-sync/test/alpha2-projection-adapter.test.js'
       - 'product/labs/web-dashboard/**'
@@ -51,7 +55,7 @@ on:
       - 'tools/validate-mobile-stack.mjs'
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
-      - 'tools/validate-alpha2-2013-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2014-candidate-cut.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
 
@@ -85,8 +89,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: +2013 candidate cut boundary
-        run: node tools/validate-alpha2-2013-candidate-cut.mjs
+      - name: +2014 candidate cut boundary
+        run: node tools/validate-alpha2-2014-candidate-cut.mjs
 
       - name: Integrated architecture boundary
         run: node tools/validate-alpha2-integrated-runtime.mjs
@@ -160,7 +164,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2013
+            --build-number 2014
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -172,7 +176,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2013'" <<< "$BADGING"
+          grep -q "versionCode='2014'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -188,10 +192,10 @@ jobs:
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2013
-          PREDECESSOR_INTERNAL_CANDIDATE=0.2.0-alpha.2+2012
-          PREDECESSOR_CANONICAL=0.2.0-alpha.2+2012
-          PREDECESSOR_PHYSICAL_RESULT=REJECTED_AT_REFRESH_SCAN
+          CANDIDATE_ID=0.2.0-alpha.2+2014
+          PREDECESSOR_INTERNAL_CANDIDATE=0.2.0-alpha.2+2013
+          PREDECESSOR_CANONICAL=0.2.0-alpha.2+2013
+          PREDECESSOR_PHYSICAL_RESULT=OBSERVED_STRICT_EECC_REVIEW_0_IMPORTED_11_REVIEWED
           SOURCE_COMMIT=${SOURCE_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
           EXACT_SCOPE=gmail.readonly
@@ -213,6 +217,12 @@ jobs:
           RAW_GMAIL_RETURNED=NO
           ATTACHMENT_BYTES_FETCHED_DURING_DISCOVERY=NO
           NUMERIC_CONFIDENCE_RETURNED=NO
+          STRICT_REVIEW_DIAGNOSTICS=A2_STRICT_REVIEW_DIAGNOSTICS_V1
+          STRICT_REVIEW_PRIMARY_CAUSE_PER_STATEMENT=YES
+          STRICT_REVIEW_PROFILE_ALLOWLIST=YES
+          STRICT_REVIEW_CODE_ALLOWLIST=YES
+          STRICT_REVIEW_UNKNOWN_COLLAPSE=STATEMENT_STRICT_REVIEW_OTHER
+          STRICT_REVIEW_ARBITRARY_DETAIL_EXPOSURE=NO
           BCP_FRAGMENTED_HEADER_RECONSTRUCTION=YES
           CERTIFIED_BCP_SUMMARY_ROWS_ARE_NOT_MOVEMENTS=YES
           UNKNOWN_UNDATED_MONETARY_ROW_FAILS_CLOSED=YES
@@ -244,7 +254,7 @@ jobs:
       - name: Upload internal compile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-2013-candidate-${{ github.run_id }}
+          name: financesensor-alpha2-2014-candidate-${{ github.run_id }}
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/alpha2-integrated-ci-evidence.txt
