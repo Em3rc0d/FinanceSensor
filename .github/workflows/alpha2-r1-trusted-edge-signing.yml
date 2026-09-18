@@ -154,8 +154,11 @@ jobs:
           test "$(zipinfo -1 "$OUT"|grep -v '/$'|wc -l)" = '8'
           BUNDLE_SHA256="$(sha256sum "$OUT"|awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = 'eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
+          test "$BUNDLE_BYTES" = '86665753'
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v14-AUDIT.txt" <<AUDIT
           R1_V14_GENERATION=PASS
+          R1_V14_FROZEN_BYTES=PASS
           CANDIDATE=0.2.0-alpha.2+2014
           INPUT_APK_SHA256=72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3
           BUNDLE_SHA256=${BUNDLE_SHA256}
@@ -185,6 +188,9 @@ jobs:
       - name: Preserve pre-signing boundary
         run: |
           echo 'R1_V14_GENERATION=PASS'
+          echo 'R1_V14_FROZEN_BYTES=PASS'
+          echo 'R1_BUNDLE_SHA256=eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
+          echo 'R1_BUNDLE_BYTES=86665753'
           echo 'SIGNING_REQUEST_ALLOWED=YES'
           echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
           echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
