@@ -195,6 +195,7 @@ Alpha2PublicDashboardProjection buildAlpha2PublicProjection({
 }
 
 const String _fetchDiagnosticPrefix = 'FETCH_DIAGNOSTIC:';
+const String _reviewDiagnosticPrefix = 'REVIEW_DIAGNOSTIC:';
 
 List<Alpha2KnowledgeGap> _statementOutcomeGaps(
   Map<String, int> statementStatusCounts,
@@ -202,7 +203,6 @@ List<Alpha2KnowledgeGap> _statementOutcomeGaps(
   const reasons = <String, String>{
     'PASSWORD_REQUIRED': 'STATEMENT_PASSWORD_REQUIRED',
     'PDF_REJECTED': 'STATEMENT_PDF_REJECTED',
-    'REVIEW_REQUIRED': 'STATEMENT_STRICT_REVIEW_REQUIRED',
     'PERSISTENCE_REJECTED': 'STATEMENT_PERSISTENCE_REJECTED',
   };
   final gaps = <Alpha2KnowledgeGap>[];
@@ -224,6 +224,30 @@ List<Alpha2KnowledgeGap> _statementOutcomeGaps(
 
   for (final entry in reasons.entries) {
     addGaps(entry.key, entry.value, statementStatusCounts[entry.key] ?? 0);
+  }
+
+  final reviewReasonCounts = <String, int>{};
+  var classifiedReviewCount = 0;
+  for (final entry in statementStatusCounts.entries) {
+    if (!entry.key.startsWith(_reviewDiagnosticPrefix) || entry.value <= 0) {
+      continue;
+    }
+    final payload = entry.key.substring(_reviewDiagnosticPrefix.length);
+    final reason = _statementReviewReason(payload);
+    reviewReasonCounts[reason] = (reviewReasonCounts[reason] ?? 0) + entry.value;
+    classifiedReviewCount += entry.value;
+  }
+  final totalReviewCount = statementStatusCounts['REVIEW_REQUIRED'] ?? 0;
+  final genericReviewCount = totalReviewCount > classifiedReviewCount
+      ? totalReviewCount - classifiedReviewCount
+      : 0;
+  if (genericReviewCount > 0) {
+    reviewReasonCounts['STATEMENT_STRICT_REVIEW_REQUIRED'] =
+        (reviewReasonCounts['STATEMENT_STRICT_REVIEW_REQUIRED'] ?? 0) +
+            genericReviewCount;
+  }
+  for (final entry in reviewReasonCounts.entries) {
+    addGaps('review_${entry.key}', entry.key, entry.value);
   }
 
   final fetchReasonCounts = <String, int>{};
@@ -248,6 +272,26 @@ List<Alpha2KnowledgeGap> _statementOutcomeGaps(
   }
 
   return gaps;
+}
+
+String _statementReviewReason(String payload) {
+  final separator = payload.indexOf(':');
+  if (separator <= 0 || separator >= payload.length - 1) {
+    return 'STATEMENT_STRICT_REVIEW_REQUIRED';
+  }
+  final profile = payload.substring(0, separator);
+  final code = payload.substring(separator + 1);
+  const profiles = <String>{
+    'BCP_SAVINGS',
+    'BCP_CREDIT',
+    'RIPLEY_CREDIT',
+    'UNKNOWN_PROFILE',
+  };
+  if (!profiles.contains(profile) ||
+      !RegExp(r'^[A-Z0-9_]+$').hasMatch(code)) {
+    return 'STATEMENT_STRICT_REVIEW_REQUIRED';
+  }
+  return 'STATEMENT_REVIEW_${profile}_$code';
 }
 
 String _statementFetchReason(String safeCode) {

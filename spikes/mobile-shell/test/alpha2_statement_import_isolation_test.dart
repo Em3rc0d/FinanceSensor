@@ -77,9 +77,17 @@ void main() {
       expect(result.projection.transactions, isEmpty);
       expect(
         result.projection.knowledgeGaps.any(
-          (gap) => gap.reason == 'STATEMENT_STRICT_REVIEW_REQUIRED',
+          (gap) =>
+              gap.reason ==
+              'STATEMENT_REVIEW_BCP_SAVINGS_STATEMENT_PASSWORD_PROVIDER_REJECTED',
         ),
         isTrue,
+      );
+      expect(
+        result.projection.knowledgeGaps.any(
+          (gap) => gap.reason == 'STATEMENT_STRICT_REVIEW_REQUIRED',
+        ),
+        isFalse,
       );
       expect(ingress.fetchAttempts, 0);
       expect(ingress.releaseAttempts, 1);

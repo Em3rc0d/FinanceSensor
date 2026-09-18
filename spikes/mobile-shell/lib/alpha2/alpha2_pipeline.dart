@@ -60,6 +60,7 @@ const List<String> alpha2SafeStatementOutcomeStatuses = <String>[
   'QUARANTINED_PROFILE',
 ];
 const String alpha2FetchDiagnosticCountPrefix = 'FETCH_DIAGNOSTIC:';
+const String alpha2ReviewDiagnosticCountPrefix = 'REVIEW_DIAGNOSTIC:';
 const String alpha2StatementImportRuntimeRejected =
     'STATEMENT_IMPORT_RUNTIME_REJECTED';
 const String alpha2StatementPasswordProviderRejected =
@@ -90,6 +91,16 @@ Map<String, int> alpha2StatementOutcomeCounts(
     if (status == 'FETCH_REJECTED' && outcome.reviewCodes.isNotEmpty) {
       final safeCode = _safeStatementFetchCode(outcome.reviewCodes.first);
       final diagnosticKey = '$alpha2FetchDiagnosticCountPrefix$safeCode';
+      counts[diagnosticKey] = (counts[diagnosticKey] ?? 0) + 1;
+    }
+    if (status == 'REVIEW_REQUIRED') {
+      final safeProfile = _safeStatementReviewProfile(outcome.profileId);
+      final safeCode = _safeStatementReviewCode(
+        profileId: outcome.profileId,
+        reviewCodes: outcome.reviewCodes,
+      );
+      final diagnosticKey =
+          '$alpha2ReviewDiagnosticCountPrefix$safeProfile:$safeCode';
       counts[diagnosticKey] = (counts[diagnosticKey] ?? 0) + 1;
     }
   }
@@ -475,6 +486,96 @@ class Alpha2Pipeline {
     }
   }
 }
+
+String _safeStatementReviewProfile(String rawProfileId) {
+  final profile = rawProfileId.trim().toUpperCase();
+  if (profile == alpha2BcpSavingsProfileId.toUpperCase()) {
+    return 'BCP_SAVINGS';
+  }
+  if (profile == alpha2BcpCreditProfileId.toUpperCase()) {
+    return 'BCP_CREDIT';
+  }
+  if (profile == alpha2RipleyCreditProfileId.toUpperCase()) {
+    return 'RIPLEY_CREDIT';
+  }
+  return 'UNKNOWN_PROFILE';
+}
+
+String _safeStatementReviewCode({
+  required String profileId,
+  required List<String> reviewCodes,
+}) {
+  final safeProfile = _safeStatementReviewProfile(profileId);
+  final safe = reviewCodes
+      .map((code) => code.trim().toUpperCase())
+      .map((code) {
+        if (_alpha2SafeStatementReviewCodes.contains(code)) return code;
+        if (safeProfile == 'BCP_CREDIT' &&
+            RegExp(
+              r'^BCP_CREDIT_STRUCTURAL_V1_P(?:0|1|2_4|5P)_M[0-9A-F]{3}$',
+            ).hasMatch(code)) {
+          return 'BCP_CREDIT_STRUCTURAL_PROBE';
+        }
+        return 'STATEMENT_STRICT_REVIEW_OTHER';
+      })
+      .toSet();
+
+  const priority = <String>[
+    'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
+    'STATEMENT_HEADER_GEOMETRY_UNKNOWN',
+    'STATEMENT_COMPLETENESS_GEOMETRY_UNKNOWN',
+    'STATEMENT_LEDGER_PAGE_NOT_FOUND',
+    'RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN',
+    'STATEMENT_PERIOD_AMBIGUOUS',
+    'RIPLEY_CREDIT_PERIOD_AMBIGUOUS',
+    'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND',
+    'STATEMENT_ROW_VALUE_DATE_NOT_FOUND',
+    'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION',
+    'STATEMENT_ROW_VERTICAL_FRAGMENTATION',
+    'STATEMENT_ROW_AMOUNT_NOT_FOUND',
+    'STATEMENT_ROW_BOTH_DEBIT_CREDIT',
+    'STATEMENT_MONETARY_ROW_UNEXPLAINED',
+    'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED',
+    'RIPLEY_CREDIT_DESCRIPTION_REQUIRED',
+    'STATEMENT_LAYOUT_NO_MOVEMENTS',
+    'RIPLEY_CREDIT_LAYOUT_NO_MOVEMENTS',
+    'STATEMENT_STRICT_PARSE_RUNTIME_REJECTED',
+    'STATEMENT_IMPORT_RUNTIME_REJECTED',
+    'STATEMENT_PASSWORD_PROVIDER_REJECTED',
+    'STATEMENT_SOURCE_RECEIPT_REJECTED',
+    'BCP_CREDIT_STRUCTURAL_PROBE',
+    'STATEMENT_STRICT_REVIEW_OTHER',
+  ];
+  for (final code in priority) {
+    if (safe.contains(code)) return code;
+  }
+  return 'STATEMENT_STRICT_REVIEW_OTHER';
+}
+
+const Set<String> _alpha2SafeStatementReviewCodes = <String>{
+  'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
+  'STATEMENT_PERIOD_AMBIGUOUS',
+  'STATEMENT_HEADER_GEOMETRY_UNKNOWN',
+  'STATEMENT_ROW_BOTH_DEBIT_CREDIT',
+  'STATEMENT_LEDGER_PAGE_NOT_FOUND',
+  'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND',
+  'STATEMENT_ROW_VALUE_DATE_NOT_FOUND',
+  'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION',
+  'STATEMENT_ROW_VERTICAL_FRAGMENTATION',
+  'STATEMENT_ROW_AMOUNT_NOT_FOUND',
+  'STATEMENT_LAYOUT_NO_MOVEMENTS',
+  'STATEMENT_MONETARY_ROW_UNEXPLAINED',
+  'STATEMENT_COMPLETENESS_GEOMETRY_UNKNOWN',
+  'RIPLEY_CREDIT_PERIOD_AMBIGUOUS',
+  'RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN',
+  'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED',
+  'RIPLEY_CREDIT_DESCRIPTION_REQUIRED',
+  'RIPLEY_CREDIT_LAYOUT_NO_MOVEMENTS',
+  'STATEMENT_STRICT_PARSE_RUNTIME_REJECTED',
+  'STATEMENT_IMPORT_RUNTIME_REJECTED',
+  'STATEMENT_PASSWORD_PROVIDER_REJECTED',
+  'STATEMENT_SOURCE_RECEIPT_REJECTED',
+};
 
 String _safeStatementFetchCode(String rawCode) {
   final code = rawCode.trim().toUpperCase();

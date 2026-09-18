@@ -3,6 +3,7 @@ import 'package:financesensor_mobile_shell/alpha2/alpha2_dashboard_sections.dart
 import 'package:financesensor_mobile_shell/alpha2/alpha2_models.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_pipeline.dart';
 import 'package:financesensor_mobile_shell/alpha2/alpha2_projection.dart';
+import 'package:financesensor_mobile_shell/alpha2/alpha2_statement_geometry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,49 +12,49 @@ void main() {
       (tester) async {
     const outcomes = <Alpha2StatementImportOutcome>[
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'IMPORTED',
         evidenceCount: 4,
         reviewCodes: <String>[],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'FETCH_REJECTED',
         evidenceCount: 0,
         reviewCodes: <String>['ALPHA2_STATEMENT_GMAIL_HTTP_429'],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'FETCH_REJECTED',
         evidenceCount: 0,
         reviewCodes: <String>['ALPHA2_STATEMENT_ATTACHMENT_TIMEOUT'],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'PDF_REJECTED',
         evidenceCount: 0,
         reviewCodes: <String>['STATEMENT_PDF_OPEN_OR_PASSWORD_REJECTED'],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'PDF_REJECTED',
         evidenceCount: 0,
         reviewCodes: <String>['STATEMENT_PDF_OPEN_OR_PASSWORD_REJECTED'],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'REVIEW_REQUIRED',
         evidenceCount: 0,
         reviewCodes: <String>['STATEMENT_HEADER_GEOMETRY_UNKNOWN'],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'PASSWORD_REQUIRED',
         evidenceCount: 0,
         reviewCodes: <String>[],
       ),
       Alpha2StatementImportOutcome(
-        profileId: 'BCP_SAVINGS',
+        profileId: alpha2BcpSavingsProfileId,
         status: 'PERSISTENCE_REJECTED',
         evidenceCount: 0,
         reviewCodes: <String>['STATEMENT_ENCRYPTED_PERSISTENCE_REJECTED'],
@@ -88,7 +89,11 @@ void main() {
     expect(byReason['STATEMENT_FETCH_NETWORK_RETRY_EXHAUSTED'], 1);
     expect(byReason['STATEMENT_FETCH_REJECTED'], isNull);
     expect(byReason['STATEMENT_PDF_REJECTED'], 2);
-    expect(byReason['STATEMENT_STRICT_REVIEW_REQUIRED'], 1);
+    expect(
+      byReason['STATEMENT_REVIEW_BCP_SAVINGS_STATEMENT_HEADER_GEOMETRY_UNKNOWN'],
+      1,
+    );
+    expect(byReason['STATEMENT_STRICT_REVIEW_REQUIRED'], isNull);
     expect(byReason['STATEMENT_PASSWORD_REQUIRED'], 1);
     expect(byReason['STATEMENT_PERSISTENCE_REJECTED'], 1);
 
@@ -116,8 +121,14 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('El EECC llegó al parser estricto y requiere revisión'),
+      find.text(
+        'BCP ahorro: la geometría del ledger no coincide con el contrato certificado',
+      ),
       findsOneWidget,
+    );
+    expect(
+      find.text('El EECC llegó al parser estricto y requiere revisión'),
+      findsNothing,
     );
     expect(
       find.text('La clave del EECC fue omitida en esta actualización'),
