@@ -2,157 +2,135 @@
 
 **Plan authority:** closure roadmap for `jett/mk0-foundation`  
 **Status:** ACTIVE  
-**Planning date:** 2026-09-15  
-**Rule:** no gate is closed by prose. Every closure requires repository evidence and the exact candidate identity to which the evidence applies.
+**Reconciled:** 2026-09-17  
+**Rule:** no gate is closed by prose. Every closure requires evidence bound to the exact candidate identity.
 
 ## 1. Objective
 
-Move FinanceSensor from the current Alpha.2 `+2012` certification frontier to a correctly documented, reproducible and releasable product without weakening the existing fail-closed model.
+Move FinanceSensor from the current Alpha.2 `+2014` pre-signing frontier to a correctly certified, documented and releasable Android product without weakening the fail-closed model.
 
-The plan intentionally separates:
-
-1. product/runtime implementation;
-2. deterministic automated evidence;
-3. trusted-edge/private evidence;
-4. owned-device physical evidence;
-5. project governance/documentation;
-6. build readiness;
-7. release readiness.
-
-A green CI run alone is not project completion.
+The plan separates product/runtime implementation, deterministic CI evidence, trusted-edge private evidence, owned-device physical evidence, governance/documentation, build readiness and release readiness. A green CI run alone is not project completion.
 
 ## 2. Current starting point
 
-Current candidate:
-
 ```text
-0.2.0-alpha.2+2012
+candidate                       0.2.0-alpha.2+2014
+canonical source               8e5bb535a7263beab0b687b616dff88205da58f3
+canonical run                  35291827028
+canonical artifact             10526841901
+unsigned APK SHA256            72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3
+unsigned APK bytes             182550031
+R1 v14 bundle SHA256           eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be
+R1 v14 bundle bytes            86665753
+trusted-edge signing           REQUIRED
+OD0                            BLOCKED_BY_R1
+PHYSICAL_ALPHA2_PASS           NO
+BUILD_READY                    NO
+RELEASE_READY                  NO
 ```
 
-Frozen unsigned APK:
-
-```text
-SHA-256 74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e
-bytes   182538547
-```
-
-Current release claims:
-
-```text
-PHYSICAL_ALPHA2_PASS=NO
-BUILD_READY=NO
-RELEASE_READY=NO
-```
-
-PR #144 is the current signed-candidate/OD0 transition and must be resolved before the physical campaign can be considered authoritative on the base branch.
+The +2014 change is diagnostic-only. Parser/geometry/PDF-reader identities remain frozen from +2013 by the candidate-cut validator. Physical evidence from +2013 is historical and non-inheritable.
 
 ## 3. Closure graph
 
-```mermaid
-flowchart TD
-    S[Alpha.2 +2012 canonical] --> P144[PR #144 stable-signed freeze]
-    P144 --> PM[Post-merge consensus]
-    PM --> OD0[OD0 exact install + launch]
-    OD0 --> R2[R2 consolidated owned-device campaign]
-    R2 --> PHY{PHYSICAL_ALPHA2_PASS?}
-    PHY -->|NO| FIX[Typed defect or knowledge-gap remediation]
-    FIX --> NEW[New candidate identity]
-    NEW --> S
-    PHY -->|YES| Q[Close Q-003 / Q-004 / Q-005]
-    Q --> X[Close A-001 / SEC-001 / DM-001]
-    X --> DOC[Documentation reconciliation]
-    DOC --> GMK0[G-MK0]
-    GMK0 --> BR{BUILD_READY?}
-    BR -->|NO| FIX2[Resolve explicit failed gate]
-    FIX2 --> GMK0
-    BR -->|YES| RC[Release candidate freeze]
-    RC --> REL[Release validation + handoff]
-    REL --> RR{RELEASE_READY?}
-    RR -->|NO| FIX3[Resolve release blocker]
-    FIX3 --> RC
-    RR -->|YES| DONE[Project release complete]
+```text
++2014 canonical unsigned
+        ↓
+R1 v14 deterministic bundle freeze
+        ↓
+R1 trusted-edge signing                  ← current frontier
+        ↓
+stable-signed +2014 identity freeze
+        ↓
+OD0 exact signed install + launch
+        ↓
+R2 finite owned-device campaign
+        ↓
+safe strict-review cause evidence
+        ↓
+PHYSICAL_ALPHA2_PASS?
+   ├─ NO  → typed remediation → new candidate identity → restart R1/R2
+   └─ YES → Q-003 / Q-004 / Q-005
+                    ↓
+          A-001 / SEC-001 / DM-001
+                    ↓
+                  G-MK0
+                    ↓
+               BUILD_READY
+                    ↓
+          release candidate freeze
+                    ↓
+              RELEASE_READY
 ```
 
-## 4. Workstream A — protect the current authority chain
+## 4. Workstream A — protect the +2014 authority chain
 
-### A0.1 Freeze semantics
+### A1. Canonical freeze — CLOSED
 
-- Preserve the exact canonical `+2012` source/APK identity.
-- Do not inherit any physical PASS from `+2009`, `+2011` or older candidates.
-- Do not alter parser/runtime source while the `+2012` physical campaign is active.
-- Documentation-only changes must not be interpreted as a new product candidate.
+PR #152 froze the canonical unsigned candidate. PR #153 froze the R1 v14 bundle. PR #154 reconciled the prebuild graph after the source/APK identity change.
 
-**Exit:** candidate identity and applicable evidence are unambiguous.
+Laws:
 
-### A0.2 Resolve PR #144
+- do not mutate the +2014 product source in place;
+- do not inherit physical PASS from +2013 or older candidates;
+- do not substitute a CI/debug signer for the stable signer;
+- do not treat documentation-only changes as a product identity change;
+- do not allow public CI to synthesize trusted-edge or physical PASS.
 
-- Require all configured PR checks to pass.
-- Review the ledger transition and signed APK receipt.
-- Merge only if the proposed stable identity matches the exact canonical unsigned input.
-- Run the required post-merge consensus/readiness checks.
-- Persist the resulting merge/run identifiers in the certification ledger/status docs.
+### A2. R1 trusted-edge signing — CURRENT
 
-**Exit:** stable-signed `+2012` identity is authoritative on the base branch and OD0 is legally reachable under project governance.
+Use only `FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip` with frozen SHA-256 `eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be`.
+
+Required result:
+
+- canonical input hash/bytes match;
+- stable signer SHA1 matches `63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0`;
+- signed APK verifies with apksigner;
+- sanitized signing receipt produced;
+- no private keystore/password/key enters GitHub.
+
+Any failure leaves R1 open and R2 blocked.
 
 ## 5. Workstream B — physical Alpha.2 certification
 
-### B1. OD0 — exact install and launch
+### B1. OD0
 
-Use only the repository-approved OD0 harness and exact frozen signed APK.
+OD0 becomes reachable only after the exact signed +2014 identity is frozen on the base branch.
 
-Required evidence:
+Required evidence includes signed APK SHA-256, byte length, signer identity, `versionCode=2014`, exactly one authorized owned Android device, data-preserving `adb install -r`, successful package/launch verification and a sanitized receipt.
 
-- expected signed SHA-256;
-- expected byte length;
-- expected signer;
-- exactly one authorized owned Android device;
-- correct `versionCode=2012`;
-- `adb install -r` path only;
-- successful package resolution/launch;
-- sanitized receipt only.
+Never persist or upload device serials, OAuth tokens, Gmail content, statement PDFs, PDF passwords, account numbers or financial plaintext.
 
-Forbidden evidence:
+### B2. R2 consolidated campaign
 
-- raw Gmail content;
-- statement plaintext;
-- PDF password;
-- OAuth tokens;
-- keystore/private key;
-- device serial or unnecessary personal identifiers.
+Exercise the intended user journey rather than only app launch:
 
-**Exit:** OD0 PASS bound to the exact signed `+2012` identity.
-
-### B2. Consolidated R2 campaign
-
-Execute the finite owned-device campaign defined by the repository. The campaign must prove the intended user journey rather than merely app launch.
-
-Minimum closure dimensions:
-
-- Gmail authorization/connectivity boundary;
-- safe source discovery;
-- attachment acquisition for eligible profiles;
-- session-only password behavior;
-- statement open/decode path;
-- strict parser behavior;
-- persistence/runtime materialization;
+- exact Gmail read-only OAuth boundary;
+- metadata-first source discovery;
+- bounded attachment fetch;
+- profile-scoped session-only password behavior;
+- BCP Savings strict parse;
+- Ripley Credit strict parse;
+- BCP Credit structural probe without financial evidence;
+- unsupported profile/input fail-closed behavior;
+- safe +2014 strict-review cause diagnostics;
+- SQLCipher/local persistence and reopen;
+- canonical reconciliation/no-double-count;
 - financial dashboard materialization;
-- failure isolation: one bad/unsupported EECC does not destroy already-safe evidence;
-- disconnect/secret cleanup behavior;
-- no raw exception leakage.
+- disconnect/secret cleanup;
+- safe diagnostics without raw errors.
 
-For each physical gate:
+For each gate:
 
 ```text
 PASS         -> advance
-FAIL         -> type defect, create new candidate if source changes, reset non-inheritable evidence
-INCONCLUSIVE -> repeat only when evidence/environment is genuinely ambiguous
+FAIL         -> type the defect; if source changes, cut a new candidate and reset non-inheritable evidence
+INCONCLUSIVE -> repeat only for genuine environment/evidence ambiguity
 ```
 
-**Exit:** `PHYSICAL_ALPHA2_PASS=YES` only after every required physical acceptance criterion is satisfied by the exact signed candidate.
+## 6. Workstream C — MK0 exit
 
-## 6. Workstream C — remaining MK0 exit gates
-
-After physical Alpha.2 PASS, close the existing project gates in the repository-defined order:
+Only after physical Alpha.2 PASS:
 
 ```text
 Q-003
@@ -168,149 +146,88 @@ G-MK0
 BUILD_READY
 ```
 
-This plan intentionally does not invent names or acceptance semantics for these gate IDs. Their repository definitions are authoritative. For each gate:
-
-1. locate the canonical requirement/validator;
-2. list required evidence;
-3. execute the validator/test;
-4. persist a machine-readable receipt where the repository pattern requires one;
-5. record PASS/FAIL and exact SHA/run;
-6. never close a dependent gate while a prerequisite remains open.
-
-**Exit:** every MK0 exit node is closed and `BUILD_READY=YES` is mechanically justified.
+Each gate must identify its canonical requirement, validator, evidence and exact authority SHA. Dependent gates do not close while prerequisites remain open.
 
 ## 7. Workstream D — documentation closure
 
-Documentation must be regenerated/reconciled from the actual repository state, not from an aspirational plan.
+Living documentation must be regenerated from actual evidence and classify claims as PROVEN, PLANNED, OUT_OF_SCOPE or UNVERIFIED.
 
-Required closure set:
+Before release finalize:
 
-- `docs/closure/PROJECT_STATUS_2026-09-15.md` — evidence snapshot.
-- `docs/closure/EXECUTION_PLAN.md` — this plan.
-- `docs/closure/DEFINITION_OF_DONE.md` — completion contract.
-- `docs/closure/AUDIT_RECONCILIATION.md` — generic audit vs. repository evidence.
-- architecture overview and trust boundaries.
-- data model / canonical financial evidence model.
-- Gmail/OAuth boundary and scopes.
-- statement-profile/parser registry and supported/unsupported matrix.
-- secrets/privacy policy.
-- CI/CD and runner governance.
-- trusted-edge signing runbook.
-- owned-device certification runbook.
-- release runbook.
-- known limitations.
-- troubleshooting guide using safe diagnostic codes.
-- user-facing installation/onboarding guide.
-- changelog/release notes for the release candidate.
-- final evidence manifest linking requirements -> tests/gates -> receipts.
+- architecture and trust boundaries;
+- canonical data/evidence model;
+- supported/unsupported bank/profile matrix;
+- Gmail/OAuth privacy boundary;
+- parser registry;
+- safe diagnostic catalog;
+- CI/runner governance;
+- trusted-edge signing runbook;
+- owned-device certification runbook;
+- installation/onboarding/troubleshooting;
+- known limitations;
+- release runbook;
+- requirement → gate/test → evidence manifest.
 
-### Documentation acceptance rule
+## 8. Workstream E — release candidate
 
-Every statement must be classifiable as one of:
+After `BUILD_READY=YES`:
 
-- **PROVEN** — backed by current evidence;
-- **PLANNED** — explicitly future work;
-- **OUT_OF_SCOPE** — intentionally excluded;
-- **UNVERIFIED** — cannot currently be claimed.
+- freeze exact release source;
+- freeze exact signed distributable;
+- run release-level automated regression;
+- reproduce artifact from documented build path;
+- validate install/upgrade and persistence/replay expectations;
+- execute final bounded physical smoke/UAT;
+- finalize privacy/secrets review, release notes, known limitations and evidence manifest.
 
-No documentation may silently convert PLANNED or UNVERIFIED into PROVEN.
+Only then may `RELEASE_READY=YES` be considered.
 
-## 8. Workstream E — product readiness after MK0
+## 9. Priority order
 
-Once `BUILD_READY=YES`, prepare a frozen release candidate. The release candidate must not add opportunistic features.
+### P0
 
-Required tasks:
+1. Trusted-edge sign exact +2014.
+2. Freeze signed +2014 identity and sanitized receipt.
+3. Generate/unlock +2014 OD0 handoff.
+4. Complete OD0.
+5. Complete R2 and observe safe strict-review causes.
+6. Remediate only evidence-backed defects; cut a successor candidate if source changes.
+7. Reach `PHYSICAL_ALPHA2_PASS=YES`.
+8. Close Q-003/Q-004/Q-005 and dependent closure gates.
+9. Close G-MK0 and derive `BUILD_READY=YES`.
+10. Freeze and certify the release candidate.
+11. Reach `RELEASE_READY=YES`.
 
-- freeze the exact source and distributable identity;
-- run full automated regression on the exact release SHA;
-- reproduce the distributable from the documented build path;
-- verify signing identity and install/upgrade path;
-- validate persistence compatibility/idempotency/replay expectations;
-- execute the final bounded owned-device smoke/UAT required by release policy;
-- confirm privacy/secrets boundaries;
-- finalize user documentation and release notes;
-- record known limitations as explicit product constraints;
-- create release evidence manifest.
+### P1
 
-**Exit:** release candidate satisfies the `RELEASE_READY` contract.
+Finalize release documentation, runbooks, source-profile matrix, safe diagnostic catalog and requirement-to-evidence traceability.
 
-## 9. Workstream F — release and project closure
+### P2
 
-A release is complete only when all of the following coexist:
+Additional bank coverage, platform expansion such as iOS, non-blocking UX polish and new analytics belong after the first certified release unless promoted by a separately frozen milestone.
 
-- exact source SHA frozen;
-- exact signed distributable hash frozen;
-- automated gates green on that source;
-- required physical gates PASS on that distributable;
-- no open P0/P1 release-blocking defect;
-- final documentation matches the shipped product;
-- install/upgrade/rollback instructions exist;
-- evidence manifest is complete;
-- `BUILD_READY=YES`;
-- `RELEASE_READY=YES`;
-- release tag/release notes identify the exact authority chain.
-
-After this point, unresolved enhancements move to the next milestone and do not retroactively keep the completed release open.
-
-## 10. Priority order
-
-### P0 — blocks completion
-
-1. Resolve PR #144 + post-merge consensus.
-2. OD0 on exact signed `+2012`.
-3. Complete R2 owned-device campaign.
-4. Close any defect discovered by R2 under candidate-invalidation law.
-5. Reach `PHYSICAL_ALPHA2_PASS=YES`.
-6. Close Q-003/Q-004/Q-005.
-7. Close A-001/SEC-001/DM-001.
-8. Close G-MK0 and obtain `BUILD_READY=YES`.
-9. Freeze and certify release candidate.
-10. Obtain `RELEASE_READY=YES` and publish the exact release evidence.
-
-### P1 — required documentation/productization
-
-- architecture/trust-boundary consolidation;
-- supported-bank/profile matrix;
-- data model and persistence docs;
-- user/install/troubleshooting docs;
-- release/signing/certification runbooks;
-- final requirement-to-evidence traceability;
-- explicit known limitations.
-
-### P2 — after the first completed release
-
-- additional bank/profile coverage beyond the currently proven set;
-- unsupported-platform expansion such as iOS unless promoted into a separately planned milestone;
-- UX polish not required by release acceptance;
-- new analytics/insights features;
-- broader automation of trusted-edge steps where doing so does not weaken the privacy model.
-
-## 11. Execution discipline
-
-For every task use this closure loop:
+## 10. Execution discipline
 
 ```text
-Requirement
+requirement
   -> evidence needed
-  -> implementation/change (only if required)
+  -> implementation/change only if required
   -> automated validation
-  -> physical validation when applicable
-  -> durable receipt
-  -> documentation update
+  -> physical validation where applicable
+  -> durable sanitized receipt
+  -> documentation reconciliation
   -> gate closure
 ```
 
-If a task cannot name its required evidence and exit condition, it is not ready to execute.
+If a task cannot name its evidence and exit condition, it is not ready to execute.
 
-## 12. Immediate next action
-
-The immediate controlling action is **not new feature development**. It is:
+## 11. Immediate next action
 
 ```text
-PR #144
-  -> merge/readiness consensus
-  -> exact signed +2012 OD0
-  -> consolidated R2 campaign
+R1 trusted-edge signing of exact +2014
+  -> return sanitized signing receipt
+  -> freeze signed identity
+  -> generate +2014 OD0 handoff
 ```
 
-Only evidence produced by that chain determines whether the next action is gate closure or a new candidate remediation.
+No new feature work is the controlling action.
