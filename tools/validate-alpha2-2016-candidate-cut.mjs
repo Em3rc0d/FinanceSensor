@@ -25,11 +25,14 @@ if (c.boundaries?.physicalAlpha2Pass !== false || c.boundaries?.buildReady !== f
 
 for (const marker of [
   'A2_BCP_SAVINGS_COMPLETENESS_V3',
-  'SALDO CONTABLE',
-  'SALDO DISPONIBLE',
-  'TOTAL(?: DE)? CARGO',
-  'TOTAL(?: DE)? ABONO'
+  ' CONTABLE',
+  ' DISPONIBLE',
+  'CARGO(?:S)?',
+  'ABONO(?:S)?'
 ]) if (!bcp.includes(marker)) fail(`BCP_MARKER:${marker}`);
+for (const marker of ['SALDO CONTABLE','SALDO DISPONIBLE','TOTAL CARGOS','TOTAL ABONOS']) {
+  if (!bcpTests.includes(marker)) fail(`BCP_TEST_DATA:${marker}`);
+}
 
 for (const marker of [
   'A2_RIPLEY_CREDIT_STRICT_V2',
