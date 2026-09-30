@@ -5,10 +5,10 @@
   "implements": "graph/prebuild-remainder-design.json#R2",
   "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
   "candidate": {
-    "id": "0.2.0-alpha.2+2014",
+    "id": "0.2.0-alpha.2+2015",
     "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
-    "sourceCommit": "8e5bb535a7263beab0b687b616dff88205da58f3",
-    "canonicalInputApkSha256": "72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3",
+    "sourceCommit": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56",
+    "canonicalInputApkSha256": "5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3",
     "canonicalInputApkBytes": 182550031,
     "signedApkSha256": null,
     "signedApkBytes": null,
@@ -21,14 +21,14 @@
   },
   "r1PhysicalReceipt": null,
   "historicalInvalidatedCampaign": {
-    "candidate": "0.2.0-alpha.2+2013",
-    "signedApkSha256": "4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387",
-    "lastSanitizedReceipt": "mk0/10-evidence/ALPHA2-2013-OD0-NATIVE-STDERR-FALSE-NEGATIVE-2026-09-17.md",
+    "candidate": "0.2.0-alpha.2+2014",
+    "signedApkSha256": null,
+    "lastSanitizedReceipt": null,
     "priorPassedGates": [],
-    "priorOpenGate": "STRICT_REVIEW_DIAGNOSTIC_CLASSIFICATION",
+    "priorOpenGate": "R1_TRUSTED_EDGE_SIGNING",
     "continuationAllowed": false,
     "evidenceInheritanceAllowed": false,
-    "reason": "SUCCESSOR_PRODUCT_IDENTITY_CHANGED_FOR_SAFE_REVIEW_DIAGNOSTICS"
+    "reason": "ORIGINAL_CANONICAL_ARTIFACT_EXPIRED_BEFORE_TRUSTED_EDGE_SIGNING_IDENTITY_REFROZEN_AS_2015"
   },
   "olderHistoricalCampaigns": [
     {
