@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 const h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
-const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_HUMAN_GATE_V5_FAILED:${m}`)};
-a(h.schemaVersion==='A2_HUMAN_INTERVENTION_GATE_V5'&&h.currentCandidate==='0.2.0-alpha.2+2014','identity');
-a(h.candidateCanonicalCommit==='8e5bb535a7263beab0b687b616dff88205da58f3','canonical');
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_HUMAN_GATE_V6_FAILED:${m}`)};
+a(h.schemaVersion==='A2_HUMAN_INTERVENTION_GATE_V5'&&h.currentCandidate==='0.2.0-alpha.2+2015','identity');
+a(h.candidateCanonicalCommit==='702a28b5f0c9fdaa05ce6c1079b60473df3c1c56','canonical');
 a(h.candidateState==='CANONICAL_FROZEN_SIGNING_REQUIRED','state');
 a(h.preSigning?.requestAllowed===true&&h.preSigning?.safeReviewDiagnosticsPass===true,'signing eligibility');
 a(h.ownedDeviceUat?.requestAllowed===false&&h.ownedDeviceUat?.trustedEdgeSigningPass===false,'UAT blocked');
