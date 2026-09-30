@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "A2_2015_IDENTITY_REFREEZE_V1",
+  "candidate": "0.2.0-alpha.2+2015",
+  "status": "IDENTITY_REFREEZE_ONLY",
+  "functionalBaselineCandidate": "0.2.0-alpha.2+2014",
+  "functionalBaselineSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
+  "reason": "The original +2014 CI artifact expired before trusted-edge signing. +2015 re-freezes the same functional product behavior under a fresh installable identity without changing parsers, projection, dashboard logic, or PDF handling.",
+  "functionalBlobShas": {
+    "spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart": "9b6e44c3a365c6d193ed0b8bb585d98d0a0d1489",
+    "spikes/mobile-shell/lib/alpha2/alpha2_projection.dart": "9650c45f603eb83adbb09701e77c0974ee4ab702",
+    "spikes/mobile-shell/lib/alpha2/alpha2_dashboard_sections.dart": "3b55bca6f21eb143e09561c778cead0a9aec6486",
+    "spikes/mobile-shell/lib/alpha2/alpha2_statement_strict_adapter.dart": "c01585fd5c4ac2d1a6836222bcea7a5974be659f",
+    "spikes/mobile-shell/lib/alpha2/alpha2_credit_statement_adapters.dart": "e0cd3631f867dc06d5e489fd04ff6d8bdd6ea7ca",
+    "spikes/mobile-shell/lib/alpha2/alpha2_statement_geometry.dart": "00f5e3a0528f94e46947eea2cb9cc47d52f16f9f",
+    "spikes/mobile-shell/lib/alpha2/alpha2_statement_pdf_reader.dart": "30cfe4c391107879d2daeeddfe359e0e76e5f4d2"
+  },
+  "build": {
+    "buildName": "0.2.0-alpha.2",
+    "versionCode": 2015,
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeResignRequired": true,
+    "canonicalPromotionPending": true
+  },
+  "boundaries": {
+    "functionalDelta": false,
+    "physicalEvidenceInheritedFrom2014": false,
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
