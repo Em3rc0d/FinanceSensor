@@ -56,12 +56,12 @@
     "physicalEvidenceInheritanceAllowed": false
   },
   "physicalInstallabilityObservation": {
-    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
+    "status": "SIGNED_OD0_REQUIRED",
     "installPass": false,
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "+2015 is an identity-only refreeze of +2014 because the original +2014 CI artifact expired before trusted-edge signing. Fresh signing and owned-device evidence are required.",
+    "reason": "+2015 is stable-signed with the frozen OAuth signer. OD0 install/launch remains required before any broader physical PASS.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
@@ -106,11 +106,11 @@
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
-    "trustedEdgeSigningPass": false,
-    "signedApkSha256": null,
-    "signedApkBytes": null,
-    "receipt": null
+    "status": "TRUSTED_EDGE_SIGNED",
+    "trustedEdgeSigningPass": true,
+    "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+    "signedApkBytes": 182575654,
+    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2015-2026-09-30.json"
   },
   "boundaries": {
     "realOauthExecutedByCi": false,

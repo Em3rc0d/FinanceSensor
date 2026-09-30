@@ -6,21 +6,21 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Candidate='0.2.0-alpha.2+2013'
-$ProductSourceCommit='da6176f9acba1854c470ce2caea471bb6b66d8f2'
-$CanonicalSourceCommit='fd6b2ba75a63e650626f2fcece6c13f0bea4f541'
-$CanonicalApkSha256='bcb6db29b9fb567dcffc99d875674a6834938c837fd2fe7f1aa83cc29c3b0da1'
-$SignedApkSha256='4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387'
-$SignedApkBytes=182563366
+$Candidate='0.2.0-alpha.2+2015'
+$ProductSourceCommit='7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b'
+$CanonicalSourceCommit='702a28b5f0c9fdaa05ce6c1079b60473df3c1c56'
+$CanonicalApkSha256='5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3'
+$SignedApkSha256='076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e'
+$SignedApkBytes=182575654
 $ExpectedSignerSha1='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $AndroidPackage='com.financesensor.lab.gmailconnection.r2'
-$VersionCode='2013'
+$VersionCode='2015'
 $GmailScope='gmail.readonly'
 $HarnessRevision='OD0_HARNESS_V3_NATIVE_STDERR_SAFE_LAUNCH'
 $OutputDir=Split-Path -Parent $MyInvocation.MyCommand.Path
-$DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2013.apk'
+$DefaultApk='FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2015.apk'
 $DefaultReceipt="$DefaultApk.receipt.txt"
-$OutputReceipt=Join-Path $OutputDir 'FinanceSensor-ALPHA2-R2-OD0-0.2.0-alpha.2+2013.receipt.txt'
+$OutputReceipt=Join-Path $OutputDir 'FinanceSensor-ALPHA2-R2-OD0-0.2.0-alpha.2+2015.receipt.txt'
 
 function Fail([string]$Code,[string]$Message){
   Write-Host "[FinanceSensor OD0] FAIL: $Message" -ForegroundColor Red
@@ -63,11 +63,11 @@ if($SelfTest){
   $versionFixture=@(
     "Package [$AndroidPackage]",
     'userId=10345',
-    'versionCode=2013 minSdk=31 targetSdk=36',
+    'versionCode=2015 minSdk=31 targetSdk=36',
     'firstInstallTime=2026-09-17 18:00:00'
   )
-  if(-not (Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2013')){ throw 'OD0_SELFTEST_EXPECTED_VERSION_NOT_FOUND' }
-  if(Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2012'){ throw 'OD0_SELFTEST_WRONG_VERSION_ACCEPTED' }
+  if(-not (Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2015')){ throw 'OD0_SELFTEST_EXPECTED_VERSION_NOT_FOUND' }
+  if(Test-VersionCodeInPackageState -PackageState $versionFixture -ExpectedVersionCode '2014'){ throw 'OD0_SELFTEST_WRONG_VERSION_ACCEPTED' }
   Write-Host 'FINANCESENSOR_ALPHA2_OD0_HARNESS_SELFTEST=PASS'
   $nativeFixture=[pscustomobject]@{ ExitCode=0; Output=@('args: [-p, com.financesensor.lab.gmailconnection.r2, -c, android.intent.category.LAUNCHER, 1]') }
   if($nativeFixture.ExitCode -ne 0 -or $nativeFixture.Output.Count -ne 1){ throw 'OD0_SELFTEST_NATIVE_STDERR_FIXTURE_FAILED' }
@@ -93,8 +93,8 @@ $apk=(Resolve-Path -LiteralPath $ApkPath).Path
 $receipt=(Resolve-Path -LiteralPath $ReceiptPath).Path
 $observedHash=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()
 $observedBytes=(Get-Item -LiteralPath $apk).Length
-if($observedHash -ne $SignedApkSha256){ Fail 'OD0_SIGNED_APK_HASH_MISMATCH' 'Signed APK SHA-256 does not match frozen +2013 identity.' }
-if($observedBytes -ne $SignedApkBytes){ Fail 'OD0_SIGNED_APK_SIZE_MISMATCH' 'Signed APK byte length does not match frozen +2013 identity.' }
+if($observedHash -ne $SignedApkSha256){ Fail 'OD0_SIGNED_APK_HASH_MISMATCH' 'Signed APK SHA-256 does not match frozen +2015 identity.' }
+if($observedBytes -ne $SignedApkBytes){ Fail 'OD0_SIGNED_APK_SIZE_MISMATCH' 'Signed APK byte length does not match frozen +2015 identity.' }
 
 $r=Read-Receipt $receipt
 $required=@{
@@ -157,7 +157,7 @@ $badging=& $aapt2 dump badging $apk 2>&1
 if($LASTEXITCODE -ne 0){ Fail 'OD0_AAPT2_BADGING_FAILED' 'Stable APK metadata could not be parsed. No install attempted.' }
 $badgingText=(@($badging) | ForEach-Object { [string]$_ }) -join "`n"
 if($badgingText -notmatch "package:\s+name='$([regex]::Escape($AndroidPackage))'"){ Fail 'OD0_APK_PACKAGE_MISMATCH_PREINSTALL' 'Stable APK package identity differs from frozen OAuth package. No install attempted.' }
-if($badgingText -notmatch "versionCode='$([regex]::Escape($VersionCode))'"){ Fail 'OD0_APK_VERSION_CODE_MISMATCH_PREINSTALL' 'Stable APK does not report versionCode 2013 before install. No install attempted.' }
+if($badgingText -notmatch "versionCode='$([regex]::Escape($VersionCode))'"){ Fail 'OD0_APK_VERSION_CODE_MISMATCH_PREINSTALL' 'Stable APK does not report versionCode 2015 before install. No install attempted.' }
 
 & $adb start-server | Out-Null
 $deviceLines=& $adb devices
@@ -168,13 +168,13 @@ $apiLevel=(& $adb shell getprop ro.build.version.sdk 2>$null | Select-Object -Fi
 if($apiLevel -notmatch '^\d+$'){ Fail 'OD0_ANDROID_API_UNREADABLE' 'Android API level could not be read. No install attempted.' }
 if([int]$apiLevel -lt 31){ Fail 'OD0_ANDROID_API_TOO_OLD' 'Device is below minSdk 31. No install attempted.' }
 
-Write-Host '[FinanceSensor OD0] Exact signed +2013 identity verified. Installing with data-preserving replacement...'
+Write-Host '[FinanceSensor OD0] Exact signed +2015 identity verified. Installing with data-preserving replacement...'
 $install=& $adb install -r $apk 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($install -match 'Success')){ Fail 'OD0_ADB_INSTALL_R_FAILED' 'adb install -r failed. No PASS recorded.' }
 
 $packageState=& $adb shell dumpsys package $AndroidPackage 2>&1
 if($LASTEXITCODE -ne 0 -or -not ($packageState -match [regex]::Escape($AndroidPackage))){ Fail 'OD0_PACKAGE_NOT_FOUND_AFTER_INSTALL' 'Expected package is not installed after replacement.' }
-if(-not (Test-VersionCodeInPackageState -PackageState $packageState -ExpectedVersionCode $VersionCode)){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2013.' }
+if(-not (Test-VersionCodeInPackageState -PackageState $packageState -ExpectedVersionCode $VersionCode)){ Fail 'OD0_VERSION_CODE_MISMATCH_AFTER_INSTALL' 'Installed package does not report versionCode 2015.' }
 
 $launch=Invoke-NativeCapture -Executable $adb -Arguments @('shell','monkey','-p',$AndroidPackage,'-c','android.intent.category.LAUNCHER','1')
 if($launch.ExitCode -ne 0){ Fail 'OD0_LAUNCH_FAILED' 'Package install passed but launcher invocation returned a non-zero exit code.' }
@@ -213,7 +213,7 @@ if($processCheck.ExitCode -ne 0 -or -not (($processCheck.Output -join '') -match
   'SANITIZATION_PASS=YES'
 ) | Set-Content -LiteralPath $OutputReceipt -Encoding UTF8
 
-Write-Host '[FinanceSensor OD0] PASS: exact +2013 stable-signed APK installed and launched without clearing app data.' -ForegroundColor Green
+Write-Host '[FinanceSensor OD0] PASS: exact +2015 stable-signed APK installed and launched without clearing app data.' -ForegroundColor Green
 Write-Host "RECEIPT=$OutputReceipt"
 Write-Host 'NEXT_GATE=OD1_TO_OD11_CONSOLIDATED_OWNED_DEVICE_UAT'
 exit 0

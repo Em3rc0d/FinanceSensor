@@ -51,15 +51,23 @@
       "observedInnerBundleBytes": 86665754,
       "manifestIntegrity": "PASS"
     },
-    "zipIntegrity": "PASS"
+    "zipIntegrity": "PASS",
+    "certificationReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2015-2026-09-30.json"
   },
-  "stableSignedApk": null,
-  "status": "CANONICAL_FROZEN_SIGNING_REQUIRED",
-  "trustedEdgeSigningPass": false,
-  "signedApkSha256": null,
-  "signedApkBytes": null,
-  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "stableSignedApk": {
+    "sha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+    "bytes": 182575654,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly"
+  },
+  "status": "TRUSTED_EDGE_SIGNED_OD0_READY",
+  "trustedEdgeSigningPass": true,
+  "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+  "signedApkBytes": 182575654,
+  "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
   "physicalAlpha2Pass": false,
   "buildReady": false,
-  "releaseReady": false
+  "releaseReady": false,
+  "physicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2015-2026-09-30.json"
 }

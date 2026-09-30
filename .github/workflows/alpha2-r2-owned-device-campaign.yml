@@ -22,14 +22,14 @@ jobs:
       - run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
       - run: node tools/validate-alpha2-r2-chain.mjs
       - run: node tools/validate-ci-runner-policy.mjs
-      - name: Preserve blocked physical frontier
+      - name: Preserve signed physical frontier
         run: |
           echo 'CANDIDATE=0.2.0-alpha.2+2015'
-          echo 'CANONICAL_UNSIGNED_APK_SHA256=5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3'
-          echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
-          echo 'R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'
-          echo 'OD0_EXECUTION_ALLOWED=NO'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
+          echo 'SIGNED_APK_SHA256=076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS'
+          echo 'R2_PHYSICAL_CAMPAIGN=READY_FOR_OD0'
+          echo 'OD0_EXECUTION_ALLOWED=YES'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
           echo 'RELEASE_READY=NO'

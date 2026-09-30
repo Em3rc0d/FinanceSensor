@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "A2_SAFE_REVIEW_DIAGNOSTICS_PHYSICAL_V1",
+  "candidate": "0.2.0-alpha.2+2015",
+  "stableSignedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+  "observationClass": "OWNED_DEVICE_SCREEN_OBSERVATION_SANITIZED",
+  "gmailObserved": 12,
+  "statementsImported": 0,
+  "statementsReviewRequired": 10,
+  "reviewDiagnostics": [
+    {
+      "profile": "BCP_SAVINGS",
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED",
+      "count": 7
+    },
+    {
+      "profile": "RIPLEY_CREDIT",
+      "code": "RIPLEY_CREDIT_PERIOD_AMBIGUOUS",
+      "count": 3
+    }
+  ],
+  "uncategorizedMovements": 12,
+  "knownGaps": 22,
+  "observedProjection": {
+    "penNetOutflow": 736.78,
+    "cardPaymentExcludedFromExpense": true,
+    "transferExcludedFromExpense": true,
+    "categoryCoverageInsufficient": true,
+    "recurringCoverageInsufficient": true
+  },
+  "claims": {
+    "od0Pass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  },
+  "privacy": {
+    "rawScreenshotsInGitHub": false,
+    "merchantNamesInGitHub": false,
+    "transactionAmountsInGitHub": false,
+    "accountNumbersInGitHub": false,
+    "statementPdfInGitHub": false,
+    "pdfPasswordInGitHub": false,
+    "oauthTokensInGitHub": false,
+    "sanitizationPass": true
+  }
+}
