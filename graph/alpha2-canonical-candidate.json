@@ -90,6 +90,10 @@
       "reason": "Superseded only because its original canonical CI artifact expired before trusted-edge signing; +2015 preserves the same functional behavior under a fresh identity."
     },
     {
+      "candidate": "0.2.0-alpha.2+2014",
+      "reason": "Superseded only because its original canonical CI artifact expired before trusted-edge signing; +2015 preserves the same functional behavior under a fresh identity."
+    },
+    {
       "candidate": "0.2.0-alpha.2+2013",
       "reason": "Historical stable-signed predecessor; physical strict-review observation is non-inheritable."
     },
