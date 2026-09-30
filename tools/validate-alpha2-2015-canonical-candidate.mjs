@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error('ALPHA2_CANONICAL_V10_FAILED:'+m)};
+a(c.schemaVersion==='A2_CANONICAL_CANDIDATE_RECEIPT_V10','schema');
+a(c.candidate==='0.2.0-alpha.2+2015','candidate');
+a(c.sourceCommit==='702a28b5f0c9fdaa05ce6c1079b60473df3c1c56','source');
+a(c.authority?.runId===36787460970&&c.authority?.jobId===110132193331&&c.authority?.artifactId===11129918967,'CI authority');
+a(c.authority?.artifactZipSha256==='f4bf34a7e25168db0bf5abd50943c68c8cbb22bf996e6e720c9ccd7fac08eef8'&&c.authority?.artifactZipBytes===87694578,'artifact');
+a(c.authority?.apkSha256==='5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3'&&c.authority?.apkBytes===182550031,'APK');
+a(c.authority?.functionalBaselineCandidate==='0.2.0-alpha.2+2014'&&c.authority?.functionalDelta===false,'identity-only law');
+a(c.predecessor?.candidate==='0.2.0-alpha.2+2014'&&c.predecessor?.physicalEvidenceInheritanceAllowed===false,'predecessor');
+a(c.signing?.status==='TRUSTED_EDGE_SIGNING_REQUIRED'&&c.signing?.trustedEdgeSigningPass===false,'pre-signing');
+a(c.boundaries?.physicalAlpha2Pass===false&&c.boundaries?.buildReady===false&&c.boundaries?.releaseReady===false,'readiness');
+console.log('ALPHA2_CANONICAL_CANDIDATE_V10=PASS');
+console.log('CANDIDATE=0.2.0-alpha.2+2015');
+console.log('TRUSTED_EDGE_SIGNING=REQUIRED');
