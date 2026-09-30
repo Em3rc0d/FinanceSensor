@@ -166,7 +166,7 @@ bool _isCertifiedBcpSummaryRow(
   );
   final label = description.isNotEmpty ? description : wholeLine;
   return RegExp(
-    r'^(?:SALDO ANTERIOR|TOTAL MOVIMIENTO(?:S)?|SALDO(?: FINAL)?)\b',
+    r'^(?:SALDO(?: ANTERIOR| INICIAL| CONTABLE| DISPONIBLE| FINAL)?|TOTAL(?: DE)? MOVIMIENTO(?:S)?|TOTAL(?: DE)? CARGO(?:S)?|TOTAL(?: DE)? ABONO(?:S)?|TOTAL DEBE|TOTAL HABER)\b',
   ).hasMatch(label);
 }
 
