@@ -498,7 +498,7 @@ DateTime? _safeUtc(int? year, int? month, int? day) {
 
 _CreditPeriod? _ripleyStatementPeriod(List<Alpha2LayoutPage> pages) {
   final tokenPattern = RegExp(
-    r'(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{2}|\d{4}))',
+    r'(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{4}|\d{2}))',
   );
   final periods = <String, _CreditPeriod>{};
 
