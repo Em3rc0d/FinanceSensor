@@ -17,28 +17,28 @@ for(const f of files){
 }
 
 const canonical=JSON.parse(read('graph/alpha2-canonical-candidate.json'));
-const r1Graph=JSON.parse(read('graph/alpha2-r1-signing-handoff.json'));
+const r1Graph=JSON.parse(read('graph/alpha2-2015-r1-signing-handoff.json'));
 const human=JSON.parse(read('graph/alpha2-human-intervention-gate.json'));
 const r1=read(path.join(dir,'alpha2-r1-trusted-edge-signing.yml'));
 const r2=read(path.join(dir,'alpha2-r2-owned-device-campaign.yml'));
 const od0=read(path.join(dir,'alpha2-od0-owned-device-harness.yml'));
 
 const currentPreSigning =
-  canonical.candidate==='0.2.0-alpha.2+2014' &&
+  canonical.candidate==='0.2.0-alpha.2+2015' &&
   canonical.signing?.status==='TRUSTED_EDGE_SIGNING_REQUIRED' &&
   canonical.signing?.trustedEdgeSigningPass===false &&
-  r1Graph.candidate==='0.2.0-alpha.2+2014' &&
+  r1Graph.candidate==='0.2.0-alpha.2+2015' &&
   r1Graph.status==='CANONICAL_FROZEN_SIGNING_REQUIRED' &&
   r1Graph.trustedEdgeSigningPass===false &&
   human.claims?.signingRequestAllowed===true &&
   human.claims?.ownedDeviceUatRequestAllowed===false;
 
-if(!currentPreSigning) fail.push('graph: expected +2014 pre-signing frontier');
+if(!currentPreSigning) fail.push('graph: expected +2015 pre-signing frontier');
 
 for(const m of [
-  '0.2.0-alpha.2+2014',
-  'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip',
-  '72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3',
+  '0.2.0-alpha.2+2015',
+  'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v15.zip',
+  '5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3',
   'SIGNING_REQUEST_ALLOWED=YES',
   'R1_TRUSTED_EDGE_SIGNING=REQUIRED',
   'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO',
@@ -74,7 +74,7 @@ for(const [name,t] of [
 }
 
 if(/SIGNED_APK_SHA256=4d6b9c8588d9178244e8449826e241177d0910246637c69aba54e542f0d93387/.test(r1)){
-  fail.push('alpha2-r1-trusted-edge-signing.yml: historical +2013 signed APK cannot be current +2014 output');
+  fail.push('alpha2-r1-trusted-edge-signing.yml: historical +2013 signed APK cannot be current +2015 output');
 }
 
 if(fail.length){
@@ -86,7 +86,7 @@ if(fail.length){
 console.log('FINANCESENSOR_CI_RUNNER_POLICY=PASS');
 console.log(`WORKFLOWS_SCANNED=${files.length}`);
 console.log('ACTIVE_SELF_HOSTED_PATHS=0');
-console.log('ALPHA2_2014_CANONICAL_UNSIGNED=FROZEN');
+console.log('ALPHA2_2015_CANONICAL_UNSIGNED=FROZEN');
 console.log('R1_TRUSTED_EDGE_SIGNING=REQUIRED');
 console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING');
 console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO');
