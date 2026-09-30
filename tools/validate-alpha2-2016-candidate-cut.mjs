@@ -52,7 +52,7 @@ for (const marker of [
   "PERIODO DE FACTURACION",
   'final periods = <String, _CreditPeriod>{}',
   'return periods.length == 1 ? periods.values.single : null',
-  r'(?:\\d{4}|\\d{2})'
+  '\\d{4}|\\d{2}'
 ]) if (!ripley.includes(marker)) fail(`RIPLEY_MARKER:${marker}`);
 
 for (const marker of [
