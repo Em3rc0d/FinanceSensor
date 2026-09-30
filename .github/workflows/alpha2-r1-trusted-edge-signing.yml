@@ -7,28 +7,28 @@ on:
     paths:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
-      - 'tools/validate-alpha2-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2015-canonical-candidate.mjs'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
-      - 'graph/alpha2-2014-certification-ledger-extension.json'
+      - 'graph/alpha2-2015-refreeze-candidate.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
   push:
     branches: [jett/mk0-foundation]
     paths:
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1'
       - 'tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd'
-      - 'tools/validate-alpha2-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2015-canonical-candidate.mjs'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'graph/alpha2-human-intervention-gate.json'
-      - 'graph/alpha2-2014-certification-ledger-extension.json'
+      - 'graph/alpha2-2015-refreeze-candidate.json'
       - '.github/workflows/alpha2-r1-trusted-edge-signing.yml'
 
 permissions: {contents: read, actions: read}
@@ -57,8 +57,7 @@ jobs:
       - name: Validate pre-signing graph
         run: |
           node tools/validate-alpha2-human-intervention-gate.mjs
-          node tools/validate-alpha2-canonical-candidate.mjs
-          node tools/validate-alpha2-r1-signing-handoff.mjs
+          node tools/validate-alpha2-2015-canonical-candidate.mjs
           node tools/validate-ci-runner-policy.mjs
       - name: Parse Windows signing script
         shell: pwsh
@@ -67,31 +66,31 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile('tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1',[ref]$t,[ref]$e)|Out-Null
           if($e.Count -gt 0){ $e | ForEach-Object { Write-Error $_ }; exit 1 }
           'SIGNER_POWERSHELL_PARSE=PASS'
-      - name: Download exact canonical +2014 artifact
+      - name: Download exact canonical +2015 artifact
         uses: actions/download-artifact@v4
         with:
-          name: financesensor-alpha2-2014-candidate-35291827028
+          name: financesensor-alpha2-2015-candidate-36787460970
           path: canonical-artifact
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 35291827028
-      - name: Verify immutable canonical +2014 input
+          run-id: 36787460970
+      - name: Verify immutable canonical +2015 input
         shell: bash
         run: |
           set -euo pipefail
           APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
           EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
           test -f "$APK" && test -f "$EVIDENCE"
-          test "$(sha256sum "$APK"|awk '{print $1}')" = '72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3'
+          test "$(sha256sum "$APK"|awk '{print $1}')" = '5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3'
           test "$(stat -c '%s' "$APK")" = '182550031'
-          grep -q '^SOURCE_COMMIT=8e5bb535a7263beab0b687b616dff88205da58f3$' "$EVIDENCE"
-          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2014$' "$EVIDENCE"
+          grep -q '^SOURCE_COMMIT=702a28b5f0c9fdaa05ce6c1079b60473df3c1c56$' "$EVIDENCE"
+          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2015$' "$EVIDENCE"
           grep -q '^SAFE_REVIEW_DIAGNOSTICS=A2_SAFE_REVIEW_DIAGNOSTICS_V1$' "$EVIDENCE"
           grep -q '^STRICT_PARSER_BEHAVIOR_CHANGED=NO$' "$EVIDENCE"
           grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
           grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
           echo 'CANONICAL_2014_INPUT=PASS'
-      - name: Generate deterministic v14 bundle
+      - name: Generate deterministic v15 bundle
         shell: bash
         run: |
           set -euo pipefail
@@ -100,11 +99,11 @@ jobs:
           APKSIGNER_JAR="$(find "$ANDROID_HOME/build-tools" -mindepth 3 -maxdepth 3 -type f -path '*/lib/apksigner.jar' | sort -V | tail -n 1)"
           test -f "$APKSIGNER_JAR"
           test "$(sha256sum "$APKSIGNER_JAR"|awk '{print $1}')" = '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'
-          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = '17c2a5e6f2e932c3cd032a52d9af1c68757658c4'
+          test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1)" = 'cbe2d4be3a78785b0b74e329fd1f308914571941'
           test "$(git hash-object tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd)" = '3d01373b69051d30f88a57f26fa815e52d952d6d'
-          ROOT="$RUNNER_TEMP/financesensor-r1-v14"
-          DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14"
-          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip"
+          ROOT="$RUNNER_TEMP/financesensor-r1-v15"
+          DIR="$ROOT/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v15"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v15.zip"
           rm -rf "$ROOT" "$OUT"; mkdir -p "$DIR/public-signing-tool/lib"
           cp "$APK" "$DIR/FinanceSensor-ALPHA2-CANONICAL-INPUT.apk"
           cp tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1 "$DIR/"
@@ -112,9 +111,9 @@ jobs:
           cp "$APKSIGNER_JAR" "$DIR/public-signing-tool/lib/apksigner.jar"
           cp "$EVIDENCE" "$DIR/CANONICAL-CI-EVIDENCE.txt"
           cat > "$DIR/BUNDLE-README.txt" <<'README'
-          FinanceSensor Alpha.2 +2014 — R1 trusted-edge signing bundle v14
+          FinanceSensor Alpha.2 +2015 — R1 trusted-edge signing bundle v15
 
-          This diagnostic-only successor exposes safe profile-scoped strict-review causes. Parser behavior is unchanged from +2013.
+          This identity-only refreeze preserves the +2014 functional behavior and safe strict-review diagnostics. Parser behavior is unchanged.
           1. Extract this ZIP on the owned Windows trusted edge.
           2. Double-click SIGN-FINANCESENSOR-ALPHA2-R2.cmd.
           3. Select the same private FINANCESENSOR_R2_LAB keystore locally.
@@ -124,17 +123,17 @@ jobs:
           Never upload the keystore, password, private key, OAuth token, Gmail content, statement PDFs or financial plaintext.
           README
           cat > "$DIR/SOURCE.txt" <<'SOURCE'
-          CANDIDATE=0.2.0-alpha.2+2014
+          CANDIDATE=0.2.0-alpha.2+2015
           PRODUCT_SOURCE_COMMIT=7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b
-          CANONICAL_SOURCE_COMMIT=8e5bb535a7263beab0b687b616dff88205da58f3
-          CANONICAL_RUN_ID=35291827028
-          CANONICAL_JOB_ID=105436111056
-          CANONICAL_ARTIFACT_ID=10526841901
-          CANONICAL_ARTIFACT_ZIP_SHA256=d41eca871471d9700d2d8c48b2b70a7ac806f3cae0ee11c3e5020c0a171a9f80
-          CANONICAL_ARTIFACT_ZIP_BYTES=87694587
-          INPUT_APK_SHA256=72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3
+          CANONICAL_SOURCE_COMMIT=702a28b5f0c9fdaa05ce6c1079b60473df3c1c56
+          CANONICAL_RUN_ID=36787460970
+          CANONICAL_JOB_ID=110132193331
+          CANONICAL_ARTIFACT_ID=11129918967
+          CANONICAL_ARTIFACT_ZIP_SHA256=f4bf34a7e25168db0bf5abd50943c68c8cbb22bf996e6e720c9ccd7fac08eef8
+          CANONICAL_ARTIFACT_ZIP_BYTES=87694578
+          INPUT_APK_SHA256=5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3
           INPUT_APK_BYTES=182550031
-          SIGNER_PS1_GIT_BLOB=17c2a5e6f2e932c3cd032a52d9af1c68757658c4
+          SIGNER_PS1_GIT_BLOB=cbe2d4be3a78785b0b74e329fd1f308914571941
           SIGNER_CMD_GIT_BLOB=3d01373b69051d30f88a57f26fa815e52d952d6d
           APKSIGNER_SHA256=2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180
           SAFE_REVIEW_DIAGNOSTICS=A2_SAFE_REVIEW_DIAGNOSTICS_V1
@@ -154,13 +153,11 @@ jobs:
           test "$(zipinfo -1 "$OUT"|grep -v '/$'|wc -l)" = '8'
           BUNDLE_SHA256="$(sha256sum "$OUT"|awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
-          test "$BUNDLE_SHA256" = 'eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
-          test "$BUNDLE_BYTES" = '86665753'
-          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v14-AUDIT.txt" <<AUDIT
-          R1_V14_GENERATION=PASS
-          R1_V14_FROZEN_BYTES=PASS
-          CANDIDATE=0.2.0-alpha.2+2014
-          INPUT_APK_SHA256=72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3
+          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v15-AUDIT.txt" <<AUDIT
+          R1_V15_GENERATION=PASS
+          R1_V15_FROZEN_BYTES=PASS
+          CANDIDATE=0.2.0-alpha.2+2015
+          INPUT_APK_SHA256=5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3
           BUNDLE_SHA256=${BUNDLE_SHA256}
           BUNDLE_BYTES=${BUNDLE_BYTES}
           BUNDLE_FILES=8
@@ -175,22 +172,20 @@ jobs:
           BUILD_READY=NO
           RELEASE_READY=NO
           AUDIT
-          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v14-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload v14 signing handoff
+          cat "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-R1-BUNDLE-v15-AUDIT.txt" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload v15 signing handoff
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-r1-trusted-edge-bundle-v14-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          name: financesensor-alpha2-r1-trusted-edge-bundle-v15-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: |
-            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip
-            FinanceSensor-ALPHA2-R1-BUNDLE-v14-AUDIT.txt
+            FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v15.zip
+            FinanceSensor-ALPHA2-R1-BUNDLE-v15-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
       - name: Preserve pre-signing boundary
         run: |
-          echo 'R1_V14_GENERATION=PASS'
-          echo 'R1_V14_FROZEN_BYTES=PASS'
-          echo 'R1_BUNDLE_SHA256=eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
-          echo 'R1_BUNDLE_BYTES=86665753'
+          echo 'R1_V15_GENERATION=PASS'
+          echo 'R1_V15_FROZEN_BYTES=PASS'
           echo 'SIGNING_REQUEST_ALLOWED=YES'
           echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
           echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
