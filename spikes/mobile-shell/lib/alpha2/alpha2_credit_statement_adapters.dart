@@ -11,7 +11,7 @@ const String alpha2BcpCreditProfileId =
 const String alpha2RipleyCreditProfileId =
     'PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1';
 const String alpha2RipleyCreditAdapterVersion =
-    'A2_RIPLEY_CREDIT_STRICT_V1';
+    'A2_RIPLEY_CREDIT_STRICT_V2';
 const String alpha2BcpCreditProbeVersion =
     'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1';
 const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
