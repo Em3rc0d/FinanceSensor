@@ -11,7 +11,7 @@ const String alpha2BcpCreditProfileId =
 const String alpha2RipleyCreditProfileId =
     'PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1';
 const String alpha2RipleyCreditAdapterVersion =
-    'A2_RIPLEY_CREDIT_STRICT_V1';
+    'A2_RIPLEY_CREDIT_STRICT_V2';
 const String alpha2BcpCreditProbeVersion =
     'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1';
 const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
@@ -497,31 +497,65 @@ DateTime? _safeUtc(int? year, int? month, int? day) {
 }
 
 _CreditPeriod? _ripleyStatementPeriod(List<Alpha2LayoutPage> pages) {
-  final text = _normalizeLayout(
-    pages.expand((page) => page.items).map((item) => item.text).join(' '),
-  );
-  final periodAnchor = text.indexOf('PERIODO DE FACTURACION');
-  if (periodAnchor < 0) return null;
-  final window = text.substring(
-    periodAnchor,
-    math.min(text.length, periodAnchor + 180),
-  );
   final tokenPattern = RegExp(
-    r'(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{2}|\d{4}))',
+    r'(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{4}|\d{2}))',
   );
-  final tokens = tokenPattern
-      .allMatches(window)
-      .map((match) => match.group(1)!)
-      .toList();
-  if (tokens.length != 2) return null;
-  final start = _parseCreditDate(tokens[0]);
-  final end = _parseCreditDate(tokens[1]);
-  if (start == null || end == null || start.isAfter(end)) return null;
-  return _CreditPeriod(
-    start,
-    end,
-    'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}',
-  );
+  final periods = <String, _CreditPeriod>{};
+
+  for (final page in pages) {
+    final lines = _creditLines(page);
+    for (final anchorLine in lines) {
+      final anchorText = _normalizeLayout(
+        anchorLine.items
+            .map((item) => item.text.trim())
+            .where((text) => text.isNotEmpty)
+            .join(' '),
+      );
+      if (!anchorText.contains('PERIODO DE FACTURACION')) continue;
+
+      var tokens = tokenPattern
+          .allMatches(anchorText)
+          .map((match) => match.group(1)!)
+          .toList();
+
+      // Some PDF extractors place the period label and its dates on two very
+      // close baselines. Expand only when the anchor line itself does not
+      // already provide the exact pair. This prevents unrelated nearby dates
+      // (payment due date, transaction dates, etc.) from contaminating period
+      // authority.
+      if (tokens.length < 2) {
+        const yTolerance = 10.0;
+        final bandText = _normalizeLayout(
+          lines
+              .where(
+                (line) =>
+                    (line.y - anchorLine.y).abs() <= yTolerance,
+              )
+              .expand((line) => line.items)
+              .map((item) => item.text.trim())
+              .where((text) => text.isNotEmpty)
+              .join(' '),
+        );
+        tokens = tokenPattern
+            .allMatches(bandText)
+            .map((match) => match.group(1)!)
+            .toList();
+      }
+
+      if (tokens.length != 2) continue;
+      final start = _parseCreditDate(tokens[0]);
+      final end = _parseCreditDate(tokens[1]);
+      if (start == null || end == null || start.isAfter(end)) continue;
+      final period = _CreditPeriod(
+        start,
+        end,
+        'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}',
+      );
+      periods[period.id] = period;
+    }
+  }
+
+  return periods.length == 1 ? periods.values.single : null;
 }
 
 Alpha2SemanticType _creditSemantic(

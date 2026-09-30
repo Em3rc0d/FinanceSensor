@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "A2_2016_PARSER_REMEDIATION_V1",
+  "candidate": "0.2.0-alpha.2+2016",
+  "status": "PARSER_REMEDIATION_CANDIDATE",
+  "remediationSourceCommit": "b0904405285a33ec8d6b0ed5a300f5517c41420b",
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2015",
+    "stableSignedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+    "physicalDiagnostics": "graph/physical-receipts/ALPHA2-2015-SAFE-REVIEW-DIAGNOSTICS-2026-09-30.json",
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "observedPhysicalFailures": [
+    {
+      "profile": "BCP_SAVINGS",
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED",
+      "count": 7
+    },
+    {
+      "profile": "RIPLEY_CREDIT",
+      "code": "RIPLEY_CREDIT_PERIOD_AMBIGUOUS",
+      "count": 3
+    }
+  ],
+  "productDelta": {
+    "parserBehaviorChanged": true,
+    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V3",
+    "bcpDetachedCertifiedControlBinding": "BOUNDED_UNIQUE_Y10",
+    "bcpUnknownUndatedMonetaryRowStillFailsClosed": true,
+    "ripleyCreditAdapterVersion": "A2_RIPLEY_CREDIT_STRICT_V2",
+    "ripleyPeriodAuthority": "GEOMETRY_ANCHORED_UNIQUE_PERIOD",
+    "ripleyUnrelatedNearbyDatesIgnoredWhenAnchorLineHasExactPair": true,
+    "ripleyConflictingAnchoredPeriodsFailClosed": true,
+    "rawFinancialDataAddedToTests": false,
+    "physicalScreenshotsCommitted": false,
+    "ripleyFourDigitYearPreferredBeforeTwoDigitFallback": true
+  },
+  "functionalBlobShas": {
+    "spikes/mobile-shell/lib/alpha2/alpha2_statement_strict_adapter.dart": "987f107836db5e6962d7894bbc5409144d699f3e",
+    "spikes/mobile-shell/lib/alpha2/alpha2_credit_statement_adapters.dart": "8c8d92b4dab6fae49bef9f76ee2d50bec1756120",
+    "spikes/mobile-shell/test/alpha2_statement_strict_adapter_test.dart": "c173655b51fff7bc22053b4a2c7fd141b62b5b8b",
+    "spikes/mobile-shell/test/alpha2_credit_statement_adapters_test.dart": "bf3a3d394373d6ecfdb8d374fc5d2db9cfb9cae1"
+  },
+  "build": {
+    "buildName": "0.2.0-alpha.2",
+    "versionCode": 2016,
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeResignRequired": true,
+    "canonicalPromotionPending": true
+  },
+  "boundaries": {
+    "predecessorPhysicalEvidenceInherited": false,
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

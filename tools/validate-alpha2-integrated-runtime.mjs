@@ -85,7 +85,7 @@ if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
 if (!runtime.includes('blockedFromMaterialization')) throw new Error('ALPHA2_AMBIGUOUS_DOUBLE_COUNT_GUARD_MISSING');
 for (const marker of [
-  'A2_BCP_SAVINGS_COMPLETENESS_V2',
+  'A2_BCP_SAVINGS_COMPLETENESS_V3',
   'STATEMENT_MONETARY_ROW_UNEXPLAINED',
   'audit.monetaryRows > audit.explainedMonetaryRows',
   'review.add(alpha2UnexplainedMonetaryRowCode)',
@@ -93,7 +93,7 @@ for (const marker of [
 ]) if (!statementStrict.includes(marker)) throw new Error(`ALPHA2_STATEMENT_COMPLETENESS_MARKER_MISSING:${marker}`);
 
 for (const marker of [
-  'A2_RIPLEY_CREDIT_STRICT_V1',
+  'A2_RIPLEY_CREDIT_STRICT_V2',
   'TUS MOVIMIENTOS DEL MES',
   'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED',
   'geometry.totalMinX',
@@ -158,8 +158,8 @@ console.log('ALPHA2_INTEGRATED_RUNTIME_ARCHITECTURE=PASS');
 console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
-console.log('STATEMENT_STRICT_COMPLETENESS=A2_BCP_SAVINGS_COMPLETENESS_V2');
-console.log('RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V1');
+console.log('STATEMENT_STRICT_COMPLETENESS=A2_BCP_SAVINGS_COMPLETENESS_V3');
+console.log('RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V2');
 console.log('BCP_CREDIT_MODE=STRUCTURAL_PROBE_ONLY');
 console.log('EXACT_FETCH_ENABLED_PROFILES=3');
 console.log('STATEMENT_PARTIAL_BATCH_IMPORT=FORBIDDEN');

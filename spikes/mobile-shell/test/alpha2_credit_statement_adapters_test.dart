@@ -34,6 +34,30 @@ void main() {
     expect(result.evidence.every((item) => item.amount != 7777), isTrue);
   });
 
+  test('Ripley period stays anchored when unrelated dates are nearby', () {
+    final result = ripley.parse(
+      layout: _ripleyLayout(includeNearbyUnrelatedDate: true),
+      sourceReceiptId: 'stmt-src:ripley-period-anchor',
+      tenantId: 'tenant-1',
+    );
+
+    expect(result.importable, isTrue);
+    expect(result.reviewCodes, isEmpty);
+    expect(result.statementPeriodId, contains('2026-08-01'));
+    expect(result.statementPeriodId, contains('2026-08-31'));
+  });
+
+  test('Ripley conflicting anchored periods remain fail-closed', () {
+    final result = ripley.parse(
+      layout: _ripleyLayout(conflictingAnchoredPeriod: true),
+      sourceReceiptId: 'stmt-src:ripley-period-conflict',
+      tenantId: 'tenant-1',
+    );
+
+    expect(result.importable, isFalse);
+    expect(result.reviewCodes, contains('RIPLEY_CREDIT_PERIOD_AMBIGUOUS'));
+  });
+
   test('Ripley unknown undated monetary row fails closed', () {
     final result = ripley.parse(
       layout: _ripleyLayout(includeUnknownUndatedMonetaryRow: true),
@@ -105,16 +129,22 @@ void main() {
 
 Alpha2StatementLayout _ripleyLayout({
   bool includeUnknownUndatedMonetaryRow = false,
+  bool includeNearbyUnrelatedDate = false,
+  bool conflictingAnchoredPeriod = false,
   String totalAmount = '120.50',
   String noisyRate = '12.34',
 }) {
   final items = <Alpha2LayoutItem>[
     _item('Periodo de facturación 01/08/2026 - 31/08/2026', 20, 790, 0),
-    _item('Pago Total del Mes', 20, 760, 1),
-    _item('9999.00', 850, 760, 2),
-    _item('Tus movimientos del mes', 20, 730, 3),
-    _item('Fecha de consumo', 20, 700, 4),
-    _item('Fecha de proceso', 100, 700, 5),
+    if (includeNearbyUnrelatedDate)
+      _item('Fecha límite de pago 15/09/2026', 20, 770, 1),
+    if (conflictingAnchoredPeriod)
+      _item('Periodo de facturación 02/08/2026 - 31/08/2026', 20, 780, 2),
+    _item('Pago Total del Mes', 20, 760, 3),
+    _item('9999.00', 850, 760, 4),
+    _item('Tus movimientos del mes', 20, 730, 5),
+    _item('Fecha de consumo', 20, 700, 6),
+    _item('Fecha de proceso', 100, 700, 7),
     _item('N° de Ticket', 180, 700, 6),
     _item('Descripción', 280, 700, 7),
     _item('T/A', 420, 700, 8),
