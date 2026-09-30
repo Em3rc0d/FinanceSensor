@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/validate-alpha2-human-intervention-gate.mjs
-      - run: node tools/validate-alpha2-r1-signing-handoff.mjs
+      - run: node tools/validate-alpha2-2015-canonical-candidate.mjs
       - run: node tools/validate-alpha2-r2-owned-device-campaign.mjs
       - run: node tools/validate-alpha2-r2-chain.mjs
       - run: node tools/validate-ci-runner-policy.mjs
