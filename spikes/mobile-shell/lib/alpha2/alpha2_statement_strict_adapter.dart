@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'alpha2_statement_geometry.dart';
 
 const String alpha2StatementCompletenessVersion =
-    'A2_BCP_SAVINGS_COMPLETENESS_V2';
+    'A2_BCP_SAVINGS_COMPLETENESS_V3';
 const String alpha2UnexplainedMonetaryRowCode =
     'STATEMENT_MONETARY_ROW_UNEXPLAINED';
 const String alpha2CompletenessGeometryUnknownCode =
