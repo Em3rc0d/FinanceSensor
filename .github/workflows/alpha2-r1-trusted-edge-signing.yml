@@ -54,7 +54,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - name: Validate pre-signing graph
+      - name: Validate signed R1 graph
         run: |
           node tools/validate-alpha2-human-intervention-gate.mjs
           node tools/validate-alpha2-2015-canonical-candidate.mjs
@@ -164,10 +164,10 @@ jobs:
           PRIVATE_KEY_FILES=0
           SECRET_LIKE_VALUE_MATCHES=0
           PRIVATE_SIGNING_MATERIAL_IN_CI=0
-          SIGNING_REQUEST_ALLOWED=YES
-          R1_TRUSTED_EDGE_SIGNING=REQUIRED
-          OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO
-          NEXT_GATE=R1_TRUSTED_EDGE_SIGNING
+          SIGNING_REQUEST_ALLOWED=NO
+          R1_TRUSTED_EDGE_SIGNING=PASS
+          OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES
+          NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH
           PHYSICAL_ALPHA2_PASS=NO
           BUILD_READY=NO
           RELEASE_READY=NO
@@ -182,14 +182,14 @@ jobs:
             FinanceSensor-ALPHA2-R1-BUNDLE-v15-AUDIT.txt
           if-no-files-found: error
           retention-days: 7
-      - name: Preserve pre-signing boundary
+      - name: Preserve signed R1 boundary
         run: |
           echo 'R1_V15_GENERATION=PASS'
           echo 'R1_V15_FROZEN_BYTES=PASS'
-          echo 'SIGNING_REQUEST_ALLOWED=YES'
-          echo 'R1_TRUSTED_EDGE_SIGNING=REQUIRED'
-          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO'
-          echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
+          echo 'SIGNING_REQUEST_ALLOWED=NO'
+          echo 'R1_TRUSTED_EDGE_SIGNING=PASS'
+          echo 'OWNED_DEVICE_UAT_REQUEST_ALLOWED=YES'
+          echo 'NEXT_GATE=OD0_SIGNED_APK_INSTALL_AND_LAUNCH'
           echo 'PUBLIC_CI_ORIGINATED_PHYSICAL_PASS=0'
           echo 'PHYSICAL_ALPHA2_PASS=NO'
           echo 'BUILD_READY=NO'
