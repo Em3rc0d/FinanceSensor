@@ -50,6 +50,20 @@ void main() {
     expect(result.importable, isTrue);
   });
 
+  test('certified BCP balance and aggregate labels stay outside the ledger', () {
+    final result = parser.parse(
+      layout: _layout(
+        includeBrokenMonetaryRow: false,
+        includeExtendedBcpSummaryRows: true,
+      ),
+      sourceReceiptId: 'stmt-src:test-bcp-extended-summary',
+      tenantId: 'tenant-1',
+    );
+    expect(result.evidence, hasLength(1));
+    expect(result.reviewCodes, isEmpty);
+    expect(result.importable, isTrue);
+  });
+
   test('unknown undated monetary row still fails closed', () {
     final result = parser.parse(
       layout: _layout(includeBrokenMonetaryRow: false, includeUnknownFooter: true),
@@ -67,6 +81,7 @@ Alpha2StatementLayout _layout({
   bool fragmentedHeaders = false,
   bool includeBcpSummaryRows = false,
   bool includeUnknownFooter = false,
+  bool includeExtendedBcpSummaryRows = false,
 }) {
   final items = <Alpha2LayoutItem>[
     _item('ESTADO DE CUENTA DE AHORROS CUENTA DIGITAL BCP', 20, 780, 0),
@@ -97,6 +112,20 @@ Alpha2StatementLayout _layout({
       _item('10.00', 400, 600, sequence++),
       _item('SALDO', 200, 580, sequence++),
       _item('990.00', 500, 580, sequence++),
+    ]);
+  }
+  if (includeExtendedBcpSummaryRows) {
+    items.addAll(<Alpha2LayoutItem>[
+      _item('SALDO INICIAL', 200, 690, sequence++),
+      _item('1,000.00', 500, 690, sequence++),
+      _item('TOTAL CARGOS', 200, 610, sequence++),
+      _item('10.00', 400, 610, sequence++),
+      _item('TOTAL ABONOS', 200, 590, sequence++),
+      _item('25.00', 500, 590, sequence++),
+      _item('SALDO CONTABLE', 200, 570, sequence++),
+      _item('1,015.00', 500, 570, sequence++),
+      _item('SALDO DISPONIBLE', 200, 550, sequence++),
+      _item('1,015.00', 500, 550, sequence++),
     ]);
   }
   if (includeBrokenMonetaryRow) {
