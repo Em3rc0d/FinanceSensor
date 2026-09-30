@@ -15,7 +15,7 @@ const ripleyTest = read('spikes/mobile-shell/test/alpha2_credit_statement_adapte
 
 if (candidate.schemaVersion !== 'A2_2016_PARSER_REMEDIATION_V1') fail('SCHEMA');
 if (candidate.candidate !== '0.2.0-alpha.2+2016') fail('CANDIDATE');
-if (candidate.remediationSourceCommit !== '7c9c719d629da3c0cbfcd48ec6af494dda7d0f01') fail('REMEDIATION_SOURCE');
+if (candidate.remediationSourceCommit !== 'b0904405285a33ec8d6b0ed5a300f5517c41420b') fail('REMEDIATION_SOURCE');
 if (candidate.predecessor?.candidate !== '0.2.0-alpha.2+2015') fail('PREDECESSOR');
 if (candidate.predecessor?.stableSignedApkSha256 !== '076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e') fail('PREDECESSOR_SIGNED_IDENTITY');
 if (candidate.predecessor?.physicalEvidenceInheritanceAllowed !== false) fail('PHYSICAL_INHERITANCE');
@@ -33,6 +33,7 @@ if (candidate.productDelta?.bcpUnknownUndatedMonetaryRowStillFailsClosed !== tru
 if (candidate.productDelta?.ripleyCreditAdapterVersion !== 'A2_RIPLEY_CREDIT_STRICT_V2') fail('RIPLEY_VERSION');
 if (candidate.productDelta?.ripleyPeriodAuthority !== 'GEOMETRY_ANCHORED_UNIQUE_PERIOD') fail('RIPLEY_PERIOD_AUTHORITY');
 if (candidate.productDelta?.ripleyConflictingAnchoredPeriodsFailClosed !== true) fail('RIPLEY_FAIL_CLOSED');
+if (candidate.productDelta?.ripleyFourDigitYearPreferredBeforeTwoDigitFallback !== true) fail('RIPLEY_YEAR_AUTHORITY');
 
 for (const [path, expected] of Object.entries(candidate.functionalBlobShas ?? {})) {
   const observed = execFileSync('git', ['hash-object', path], { encoding: 'utf8' }).trim();
@@ -50,7 +51,8 @@ for (const marker of [
   'A2_RIPLEY_CREDIT_STRICT_V2',
   "PERIODO DE FACTURACION",
   'final periods = <String, _CreditPeriod>{}',
-  'return periods.length == 1 ? periods.values.single : null'
+  'return periods.length == 1 ? periods.values.single : null',
+  r'(?:\\d{4}|\\d{2})'
 ]) if (!ripley.includes(marker)) fail(`RIPLEY_MARKER:${marker}`);
 
 for (const marker of [
