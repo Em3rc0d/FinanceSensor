@@ -33,14 +33,25 @@
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v15.zip",
-    "status": "PENDING_CI_GENERATION",
-    "sha256": null,
-    "bytes": null,
+    "status": "FROZEN_PUBLIC_SAFE_BUNDLE",
+    "sha256": "839449508c823d41f1b5b2e962fd695a8dc70007d5d917a65adba9cfbbf4371a",
+    "bytes": 86665754,
     "files": 8,
     "privateKeyFiles": 0,
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
-    "manifestIntegrity": null,
-    "generationReceipt": null
+    "manifestIntegrity": "PASS",
+    "generationReceipt": {
+      "status": "PR_HEAD_CI_PASS",
+      "headSha": "68a050164f3d2af854aaa3ea40a33f1c58efc21f",
+      "runId": 36789906802,
+      "artifactId": 11131915740,
+      "wrapperArtifactSha256": "8a1e7ff44786f3673ce1da679b14b400ef2b11a3ccf86443aacf5197f834e7f8",
+      "wrapperArtifactBytes": 86295026,
+      "observedInnerBundleSha256": "839449508c823d41f1b5b2e962fd695a8dc70007d5d917a65adba9cfbbf4371a",
+      "observedInnerBundleBytes": 86665754,
+      "manifestIntegrity": "PASS"
+    },
+    "zipIntegrity": "PASS"
   },
   "stableSignedApk": null,
   "status": "CANONICAL_FROZEN_SIGNING_REQUIRED",
