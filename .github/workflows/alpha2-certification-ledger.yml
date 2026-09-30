@@ -9,12 +9,12 @@ on:
       - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2015-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -26,12 +26,12 @@ on:
       - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-r1-signing-handoff.json'
+      - 'graph/alpha2-2015-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
       - 'tools/validate-alpha2-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2015-canonical-candidate.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -51,17 +51,17 @@ jobs:
         with: {node-version: '22'}
       - run: node tools/validate-alpha2-certification-ledger.mjs
       - run: node tools/validate-alpha2-canonical-candidate.mjs
-      - run: node tools/validate-alpha2-r1-signing-handoff.mjs
+      - run: node tools/validate-alpha2-2015-canonical-candidate.mjs
       - run: node tools/validate-alpha2-r2-chain.mjs
       - run: node tools/validate-alpha2-human-intervention-gate.mjs
       - run: node tools/validate-ci-runner-policy.mjs
       - name: Certification ledger summary
         run: |
           echo 'ALPHA2_CERTIFICATION_LEDGER=PASS'
-          echo 'CANDIDATE=0.2.0-alpha.2+2014'
-          echo 'PRIOR_2013_HEAD=38b0f1b62a5adac5ab655a8579a3e5099e978557aab14648112b25c484cd4028'
+          echo 'CANDIDATE=0.2.0-alpha.2+2015'
+          echo 'FUNCTIONAL_BASELINE=0.2.0-alpha.2+2014'
           echo 'CHAIN_STATE=R1_BUNDLE_FROZEN_SIGNING_REQUIRED'
-          echo 'R1_BUNDLE_SHA256=eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be'
+          echo 'R1_BUNDLE_SHA256=839449508c823d41f1b5b2e962fd695a8dc70007d5d917a65adba9cfbbf4371a'
           echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
           echo 'PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO'
           echo 'PRIVATE_SIGNING_MATERIAL_IN_CI=0'
