@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "phase": "P2",
+  "subBoundary": "ANDROID",
+  "status": "PASS",
+  "observedAtDay": "2026-09-03",
+  "sourceBaselineCommit": "93fa4f47386c3e0e023a2b21a24bd948f5852a4c",
+  "claim": "ANDROID_PROTECTED_OAUTH_CUSTODY",
+  "receipt": {
+    "path": "mk0/10-evidence/EV-P2-ANDROID-CREDENTIAL-CUSTODY-PHYSICAL-2026-09-03.md",
+    "blobSha": "145c0faab6316d4b3ba75f3df537922370efe7df"
+  },
+  "physicalSources": [
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-GMAIL-R1-PHYSICAL-CONNECT-PASS-2026-09-02.md",
+      "blobSha": "b9316381264d506822de130c929a78b8ff4be5c3",
+      "role": "ANDROID_OWNED_DEVICE_CUSTODY_OBSERVATION"
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-LOCAL-DISCONNECT-PASS-PROVIDER-REVOKE-UNVERIFIED-2026-09-02.md",
+      "blobSha": "60080dbf911ec7b6216708393d4457e3a62fe92b",
+      "role": "ANDROID_OWNED_DEVICE_CUSTODY_OBSERVATION"
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-STABLE-LOCAL-LIFECYCLE-PASS-2026-09-03.md",
+      "blobSha": "4d1b34f23f806709c1f50995c588ce71b51dd943",
+      "role": "ANDROID_OWNED_DEVICE_CUSTODY_OBSERVATION"
+    }
+  ],
+  "implementationSources": [
+    {
+      "path": "spikes/mobile-shell/native/android/MainActivity.kt",
+      "blobSha": "35d5e8c77ceb7601ec876a22f397d091cec9c58b",
+      "role": "ANDROID_NATIVE_CREDENTIAL_BOUNDARY"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-026-ANDROID-GOOGLE-AUTHORIZATION-BOUNDARY.md",
+      "blobSha": "0c0ffaf4289f75779288e20fc279bc5278632f39",
+      "role": "ANDROID_AUTHORIZATION_CONTRACT"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-027-ANDROID-ACCOUNT-HANDLE-CUSTODY.md",
+      "blobSha": "ac2a134e22b153aafb4ce40958d3f5f1122ab4d5",
+      "role": "ANDROID_ACCOUNT_HANDLE_CONTRACT"
+    },
+    {
+      "path": "mk0/11-decisions/ADR-028-MOBILE-OAUTH-CUSTODY-SEMANTICS.md",
+      "blobSha": "626522aa029724cefeea46a8db9f093daa904f88",
+      "role": "P2_CUSTODY_SEMANTICS"
+    }
+  ],
+  "physicalFacts": [
+    "REAL_GOOGLE_AUTHORIZATION_PASS",
+    "EXACT_GMAIL_READONLY_PASS",
+    "GMAIL_PROFILE_REACHABLE_PASS",
+    "APP_REFRESH_TOKEN_CUSTODY_NONE",
+    "BEARER_TO_FLUTTER_NONE",
+    "DURABLE_DISCONNECT_BARRIER_PASS",
+    "APP_REOPEN_REMAINS_DISCONNECTED_PASS"
+  ],
+  "implementationFacts": [
+    "OFFLINE_ACCESS_FORBIDDEN",
+    "SHORT_BEARER_MEMORY_ONLY",
+    "ACCOUNT_HANDLE_MEMORY_ONLY",
+    "PERSISTED_AUTH_STATE_BOOLEAN_ONLY",
+    "TOKEN_IDENTIFIER_TO_FLUTTER_FORBIDDEN"
+  ],
+  "supportsButDoesNotCloseCrossPlatformClaims": [
+    "NO_TOKEN_PLAINTEXT_IN_ORDINARY_STORAGE",
+    "NO_TOKEN_GMAIL_FINANCIAL_PLAINTEXT_IN_LOGS",
+    "DISCONNECT_REMOVES_PROTECTED_CREDENTIAL"
+  ],
+  "doesNotProve": [
+    "IOS_PROTECTED_OAUTH_CUSTODY",
+    "GOOGLE_PROVIDER_REVOKE_PASS",
+    "P2_PASS",
+    "Q003_CLOSED",
+    "Q004_CLOSED",
+    "BUILD_READY"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "A2_R2_SANITIZED_PHYSICAL_OBSERVATION_V1",
+  "project": "FinanceSensor",
+  "candidateId": "0.2.0-alpha.2+2007",
+  "sourceCommit": "8a4aa307b9b3328e67232c919a94994e80446331",
+  "signedApkSha256": "40a275755d5ee4fad54ad29ae176d6140d111bf0655b06d48ad72d6c75ca63ab",
+  "signedApkBytes": 182145574,
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+  "gmailScope": "gmail.readonly",
+  "observedAt": "2026-09-14",
+  "gateId": "OD3",
+  "gateContract": "BOUNDED_FETCH_ONLY_FOR_ALLOWED_PROFILE",
+  "gateStatus": "INCONCLUSIVE",
+  "stableResultCode": "SAFE_STOP_AFTER_SINGLE_BCP_SAVINGS_PASSWORD_HANDOFF",
+  "observations": {
+    "connectedBeforeRefresh": true,
+    "refreshStarted": true,
+    "passwordDialogProfile": "BCP_SAVINGS",
+    "passwordDialogCount": 1,
+    "passwordEnteredLocally": true,
+    "passwordValueCaptured": false,
+    "openLocallySubmitted": true,
+    "postSubmitBusyStateObserved": true,
+    "terminalUiState": "FINANCIAL_REFRESH_STOPPED_SAFELY",
+    "dashboardProjectionRendered": false,
+    "statementOutcomeSummaryRendered": false
+  },
+  "interpretation": {
+    "od3PassProven": false,
+    "od4PassProven": false,
+    "passwordFanoutRegressionObserved": false,
+    "ordinaryCandidateFetchFailureCanBeDistinguishedFromThisUi": false,
+    "reason": "The current UI collapses an uncaught refresh exception into a generic safe-stop after the single session-only password handoff. Candidate-level fetch/PDF/strict-parse/persistence rejections are expected to reduce to safe outcomes, so this observation requires stage-safe diagnostics before OD3 or OD4 can be certified."
+  },
+  "privacy": {
+    "rawScreenshotInGitHub": false,
+    "pdfPasswordInGitHub": false,
+    "rawStatementPdfInGitHub": false,
+    "gmailIdentityInGitHub": false,
+    "financialPlaintextInGitHub": false
+  },
+  "buildReady": false,
+  "releaseReady": false
+}

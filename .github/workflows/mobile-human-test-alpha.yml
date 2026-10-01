@@ -1,0 +1,294 @@
+name: FinanceSensor Android Human Test Alpha
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/mobile-shell/lib/main_human_test.dart'
+      - 'spikes/mobile-shell/native/android/HumanTestMainActivity.kt'
+      - 'spikes/mobile-shell/native/android/FinancialMailScanner.kt'
+      - 'spikes/mobile-shell/test/human_test_candidate_test.dart'
+      - 'spikes/mobile-shell/pubspec.yaml'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/alpha2-b-statement-fetch-parse.json'
+      - 'graph/alpha2-c-financial-vault.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'graph/alpha2-human-test-build.json'
+      - 'graph/alpha2-r2-trusted-edge-signing.json'
+      - 'graph/build-readiness.json'
+      - 'graph/closure-ledger.json'
+      - 'tools/SIGN-FINANCESENSOR-R2.cmd'
+      - 'tools/SIGN-FINANCESENSOR-R2.ps1'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-human-test-build-receipt.mjs'
+      - 'tools/validate-alpha2-static-build-handoff.mjs'
+      - 'tools/validate-r2-signer-powershell-syntax.mjs'
+      - 'tools/validate-r2-trusted-edge-signing-handoff.mjs'
+      - 'tools/validate-human-test-alpha.mjs'
+      - 'mk0/10-evidence/EV-ALPHA2-HUMAN-TEST-BUILD-2026-09-05.md'
+      - 'mk0/12-release/ALPHA2-STATIC-BUILD-HANDOFF.md'
+      - 'mk0/12-release/HUMAN-TEST-CANDIDATE.md'
+      - 'mk0/12-release/R2-TRUSTED-EDGE-SIGNING-HANDOFF.md'
+      - '.github/workflows/mobile-human-test-alpha.yml'
+  push:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'spikes/mobile-shell/lib/main_human_test.dart'
+      - 'spikes/mobile-shell/native/android/HumanTestMainActivity.kt'
+      - 'spikes/mobile-shell/native/android/FinancialMailScanner.kt'
+      - 'spikes/mobile-shell/test/human_test_candidate_test.dart'
+      - 'spikes/mobile-shell/pubspec.yaml'
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'graph/alpha2-b-statement-fetch-parse.json'
+      - 'graph/alpha2-c-financial-vault.json'
+      - 'graph/alpha2-d-reconciliation.json'
+      - 'graph/alpha2-e-account-graph.json'
+      - 'graph/alpha2-f-monthly-coverage.json'
+      - 'graph/alpha2-g-sensor-v1.json'
+      - 'graph/alpha2-human-test-build.json'
+      - 'graph/alpha2-r2-trusted-edge-signing.json'
+      - 'graph/build-readiness.json'
+      - 'graph/closure-ledger.json'
+      - 'tools/SIGN-FINANCESENSOR-R2.cmd'
+      - 'tools/SIGN-FINANCESENSOR-R2.ps1'
+      - 'tools/validate-build-readiness.mjs'
+      - 'tools/validate-alpha2-human-test-build-receipt.mjs'
+      - 'tools/validate-alpha2-static-build-handoff.mjs'
+      - 'tools/validate-r2-signer-powershell-syntax.mjs'
+      - 'tools/validate-r2-trusted-edge-signing-handoff.mjs'
+      - 'tools/validate-human-test-alpha.mjs'
+      - 'mk0/10-evidence/EV-ALPHA2-HUMAN-TEST-BUILD-2026-09-05.md'
+      - 'mk0/12-release/ALPHA2-STATIC-BUILD-HANDOFF.md'
+      - 'mk0/12-release/HUMAN-TEST-CANDIDATE.md'
+      - 'mk0/12-release/R2-TRUSTED-EDGE-SIGNING-HANDOFF.md'
+      - '.github/workflows/mobile-human-test-alpha.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-human-test-alpha-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-human-test-alpha:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pre-physical build-readiness boundary
+        run: node tools/validate-build-readiness.mjs
+
+      - name: Alpha.2 A-G static build handoff
+        run: node tools/validate-alpha2-static-build-handoff.mjs
+
+      - name: Human-test privacy boundary
+        run: node tools/validate-human-test-alpha.mjs
+
+      - name: Setup Flutter 3.44.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          channel: stable
+          cache: true
+
+      - name: Materialize Android scaffold
+        working-directory: spikes/mobile-shell
+        run: |
+          flutter create \
+            --platforms=android \
+            --android-language=kotlin \
+            --project-name=financesensor_mobile_shell \
+            --org=com.financesensor.lab \
+            .
+
+      - name: Apply human-test trusted edge
+        working-directory: spikes/mobile-shell
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          physical_package = 'com.financesensor.lab.gmailconnection.r2'
+          generated_package = 'com.financesensor.lab.financesensor_mobile_shell'
+          kts = Path('android/app/build.gradle.kts')
+          groovy = Path('android/app/build.gradle')
+
+          if kts.exists():
+              text = kts.read_text()
+              markers = (
+                  'minSdk = flutter.minSdkVersion',
+                  'targetSdk = flutter.targetSdkVersion',
+                  f'applicationId = "{generated_package}"',
+              )
+              if not all(marker in text for marker in markers):
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(markers[0], 'minSdk = 31')
+              text = text.replace(markers[1], 'targetSdk = 36')
+              text = text.replace(markers[2], f'applicationId = "{physical_package}"')
+              if 'play-services-auth:21.6.0' not in text:
+                  text += '\n\ndependencies {\n    implementation("com.google.android.gms:play-services-auth:21.6.0")\n}\n'
+              kts.write_text(text)
+          elif groovy.exists():
+              text = groovy.read_text()
+              markers = (
+                  'minSdkVersion flutter.minSdkVersion',
+                  'targetSdkVersion flutter.targetSdkVersion',
+                  f'applicationId "{generated_package}"',
+              )
+              if not all(marker in text for marker in markers):
+                  raise SystemExit('EXPECTED_FLUTTER_ANDROID_BASELINE_MARKER_NOT_FOUND')
+              text = text.replace(markers[0], 'minSdkVersion 31')
+              text = text.replace(markers[1], 'targetSdkVersion 36')
+              text = text.replace(markers[2], f'applicationId "{physical_package}"')
+              if 'play-services-auth:21.6.0' not in text:
+                  text += '\n\ndependencies {\n    implementation "com.google.android.gms:play-services-auth:21.6.0"\n}\n'
+              groovy.write_text(text)
+          else:
+              raise SystemExit('ANDROID_APP_GRADLE_FILE_NOT_FOUND')
+
+          target_dir = Path('android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell')
+          target_dir.mkdir(parents=True, exist_ok=True)
+          sources = {
+              Path('native/android/HumanTestMainActivity.kt'): target_dir / 'MainActivity.kt',
+              Path('native/android/FinancialMailScanner.kt'): target_dir / 'FinancialMailScanner.kt',
+          }
+          for source, target in sources.items():
+              if not source.exists():
+                  raise SystemExit(f'NATIVE_SOURCE_NOT_FOUND:{source}')
+              target.write_text(source.read_text())
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.INTERNET" />'
+          if permission not in manifest_text:
+              marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+              if marker not in manifest_text:
+                  raise SystemExit('ANDROID_MANIFEST_ROOT_MARKER_NOT_FOUND')
+              manifest_text = manifest_text.replace(marker, marker + '\n    ' + permission, 1)
+              manifest.write_text(manifest_text)
+          PY
+
+      - name: Verify native compile surface
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          grep -R -E -q 'minSdk(Version)?\s*[= ]\s*31' android/app/build.gradle*
+          grep -R -E -q 'targetSdk(Version)?\s*[= ]\s*36' android/app/build.gradle*
+          grep -R -q 'com.financesensor.lab.gmailconnection.r2' android/app/build.gradle*
+          grep -R -q 'play-services-auth:21.6.0' android/app/build.gradle*
+          grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
+          grep -q 'https://www.googleapis.com/auth/gmail.readonly' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'FinancialMailScanner.scan(token)' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/MainActivity.kt
+          grep -q 'MAX_MESSAGES = 300' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell/FinancialMailScanner.kt
+          ! grep -R -q 'requestOfflineAccess' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          ! grep -R -q 'serverAuthCode' android/app/src/main/kotlin/com/financesensor/lab/financesensor_mobile_shell
+          echo 'ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2'
+          echo 'EXACT_SCOPE=gmail.readonly'
+          echo 'SESSION_ONLY_FINANCIAL_STATE=YES'
+
+      - name: Resolve dependencies
+        working-directory: spikes/mobile-shell
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: spikes/mobile-shell
+        run: flutter analyze
+
+      - name: Flutter tests
+        working-directory: spikes/mobile-shell
+        run: flutter test
+
+      - name: Build Android human-test APK
+        working-directory: spikes/mobile-shell
+        run: flutter build apk --debug --target lib/main_human_test.dart
+
+      - name: Freeze candidate evidence
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          APK='build/app/outputs/flutter-apk/app-debug.apk'
+          test -f "$APK"
+          APK_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          APK_BYTES="$(stat -c '%s' "$APK")"
+          printf '%s  %s\n' "$APK_SHA256" "$APK" > "$APK.sha256"
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$(find -L "$SDK_ROOT/build-tools" -name apksigner -print 2>/dev/null | sort -V | tail -1)"
+          test -n "$APKSIGNER"
+          CERT_INFO="$(bash "$APKSIGNER" verify --print-certs "$APK" 2>&1 || true)"
+          RAW_SHA1="$(printf '%s\n' "$CERT_INFO" | grep -Ei 'certificate SHA-?1 digest:' | head -1 | sed -E 's/.*digest:[[:space:]]*//I')"
+          test -n "$RAW_SHA1"
+
+          cat > human-test-alpha-evidence.txt <<EOF
+          FINANCESENSOR_HUMAN_TEST_CANDIDATE=0.1.0-alpha.1+1001
+          SOURCE_COMMIT=${GITHUB_SHA}
+          STATIC_A_G_CERTIFIED=YES
+          ALPHA2_MOBILE_INTEGRATION=OPEN
+          ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
+          APK_SHA256=${APK_SHA256}
+          APK_BYTES=${APK_BYTES}
+          EXACT_SCOPE=gmail.readonly
+          MAX_RECENT_INBOX_MESSAGES=300
+          METADATA_FIRST=1
+          FULL_ONLY_FOR_STRONG_KNOWN_BANK_CANDIDATES=1
+          SESSION_ONLY_FINANCIAL_STATE=1
+          RAW_FINANCIAL_CONTENT_PERSISTENCE=0
+          DART_BEARER_CUSTODY=0
+          APP_REFRESH_TOKEN_CUSTODY=0
+          OFFLINE_ACCESS_REQUESTED=0
+          REAL_OAUTH_EXECUTED_BY_CI=0
+          REAL_GMAIL_EXECUTED_BY_CI=0
+          PUBLIC_CI_SIGNER=COMPILE_ONLY_EPHEMERAL
+          TRUSTED_EDGE_RESIGN_REQUIRED=YES
+          HUMAN_TEST_READY=YES
+          ALPHA2_PHYSICAL_PRODUCT_PASS=NO
+          BUILD_READY=NO
+          RELEASE_READY=NO
+          IOS_TOUCHED=0
+          EOF
+          cat human-test-alpha-evidence.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Package public signing helper
+        working-directory: spikes/mobile-shell
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$(find -L "$SDK_ROOT/build-tools" -name apksigner -print 2>/dev/null | sort -V | tail -1)"
+          TOOL_ROOT="$(dirname "$APKSIGNER")"
+          test -f "$TOOL_ROOT/lib/apksigner.jar"
+          mkdir -p public-signing-tool/lib
+          cp "$APKSIGNER" public-signing-tool/apksigner
+          cp "$TOOL_ROOT/lib/apksigner.jar" public-signing-tool/lib/apksigner.jar
+          chmod 0755 public-signing-tool/apksigner
+          printf '%s\n' 'PUBLIC_SIGNING_TOOL_ONLY=1' 'NO_PRIVATE_KEY_INCLUDED=1' > public-signing-tool/README.txt
+
+      - name: Upload human-test candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-android-human-test-alpha-0.1.0
+          path: |
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
+            spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk.sha256
+            spikes/mobile-shell/human-test-alpha-evidence.txt
+            spikes/mobile-shell/public-signing-tool/**
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "A2_CERTIFICATION_LEDGER_V1",
+  "chainId": "FINANCESENSOR_ALPHA2_2012_CERTIFICATION",
+  "candidate": "0.2.0-alpha.2+2012",
+  "hashAlgorithm": "SHA-256",
+  "canonicalization": "RECURSIVE_KEY_SORTED_JSON_UTF8_V1",
+  "blockHashDomain": "FINANCESENSOR_ALPHA2_CERT_BLOCK_V1",
+  "genesisBlockHash": "5753f562ee49c5b964010b541510c25e06b4d068055501227f0aa42328523893",
+  "headBlockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e",
+  "state": "STABLE_SIGNED_FRONTIER",
+  "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
+  "blocks": [
+    {
+      "height": 0,
+      "kind": "PRODUCT_SOURCE_MERGE",
+      "parentBlockHash": null,
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2012",
+        "pullRequest": 140,
+        "productSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
+        "mergeSha": "b75cc39318ee749a1123971f19d895d71e35bd91",
+        "physicalEvidenceInherited": false
+      },
+      "blockHash": "5753f562ee49c5b964010b541510c25e06b4d068055501227f0aa42328523893"
+    },
+    {
+      "height": 1,
+      "kind": "CANONICAL_BUILD_FREEZE",
+      "parentBlockHash": "5753f562ee49c5b964010b541510c25e06b4d068055501227f0aa42328523893",
+      "payload": {
+        "workflow": "Alpha.2 Integrated Runtime",
+        "runId": 34983489697,
+        "jobId": 104429538724,
+        "artifactId": 10402582806,
+        "artifactName": "financesensor-alpha2-2012-candidate-34983489697",
+        "artifactZipSha256": "0f67c95372e5ce2e4ed21ff4724bf25f4bb5c7553f228faf6302ad62935b37d3",
+        "artifactZipBytes": 87684356,
+        "unsignedApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+        "unsignedApkBytes": 182538547,
+        "signatureVerify": "PASS",
+        "aapt2Parse": "PASS"
+      },
+      "blockHash": "6d34ebfae536829c60be06acfba8d22126025fcb3b5e0d3e0e36c09045a99ffa"
+    },
+    {
+      "height": 2,
+      "kind": "CANONICAL_GOVERNANCE_PROMOTION",
+      "parentBlockHash": "6d34ebfae536829c60be06acfba8d22126025fcb3b5e0d3e0e36c09045a99ffa",
+      "payload": {
+        "pullRequest": 141,
+        "headSha": "42bcb13416cd87eeaf54c54b8fa981100d723280",
+        "mergeSha": "c9ca769a86de58a77121b42d4b3520c7420441ae",
+        "preMergeConsensus": [
+          {"workflow": "Alpha.2 Integrated Runtime", "runId": 34990251747, "conclusion": "SUCCESS"},
+          {"workflow": "Alpha.2 R1 Trusted-Edge Signing", "runId": 34990251718, "conclusion": "SUCCESS"},
+          {"workflow": "Alpha.2 R2 Owned-Device Campaign Contract", "runId": 34990251735, "conclusion": "SUCCESS"},
+          {"workflow": "Alpha.2 OD0 Owned-Device Handoff", "runId": 34990251734, "conclusion": "SUCCESS"},
+          {"workflow": "Alpha.2 Financial Vault", "runId": 34990251665, "conclusion": "SUCCESS"},
+          {"workflow": "Alpha.2 Statement Fetch and Parse", "runId": 34990251766, "conclusion": "SUCCESS"},
+          {"workflow": "FinanceSensor Statement ETL Contract", "runId": 34990251833, "conclusion": "SUCCESS"}
+        ],
+        "supersededSignedCandidate": {
+          "candidate": "0.2.0-alpha.2+2009",
+          "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
+          "inheritPhysicalPass": false
+        }
+      },
+      "blockHash": "c65e2db79632da9a1c125e851c934b689e3ad3ac5af2ce032c21c85bc55a16dd"
+    },
+    {
+      "height": 3,
+      "kind": "R1_POST_MERGE_REPRODUCTION",
+      "parentBlockHash": "c65e2db79632da9a1c125e851c934b689e3ad3ac5af2ce032c21c85bc55a16dd",
+      "payload": {
+        "governanceParentMergeSha": "c9ca769a86de58a77121b42d4b3520c7420441ae",
+        "workflow": "Alpha.2 R1 Trusted-Edge Signing",
+        "runId": 34995877974,
+        "jobId": 104471846160,
+        "artifactId": 10407169614,
+        "wrapperArtifactSha256": "6af9f1e66315d77a22db5ccd8a7fcb559a84b4fe0b1518b59347256b6e449606",
+        "innerBundleSha256": "d6c9538b0c84d0bdabc966847cd7f6d340bd17eea68bf69e65d3d2a852585642",
+        "innerBundleBytes": 86659710,
+        "innerBundleFiles": 8,
+        "manifestIntegrity": "PASS",
+        "privateSigningMaterialInCi": false,
+        "trustedEdgeSigningPass": false
+      },
+      "blockHash": "d8af51ea908bf336cc6b69862eded5f0942682a13f362be2b7a43c790249e322"
+    },
+    {
+      "height": 4,
+      "kind": "PUBLIC_CONSENSUS_REMEDIATION",
+      "parentBlockHash": "d8af51ea908bf336cc6b69862eded5f0942682a13f362be2b7a43c790249e322",
+      "payload": {
+        "parentGovernanceMergeSha": "c9ca769a86de58a77121b42d4b3520c7420441ae",
+        "pullRequest": 142,
+        "headSha": "0c54201b82190f5ea584abfd27da3f58b9690ec2",
+        "mergeSha": "266705200a48269cf1a4c12886a729b3622f20b5",
+        "reason": "PUBLIC_READINESS_PERMISSION_PARSER_SEMANTICS",
+        "productMutation": false,
+        "canonicalApkMutation": false,
+        "r1BundleMutation": false,
+        "preMergePublicReadinessRunId": 34996625088,
+        "preMergeConclusion": "SUCCESS",
+        "postMergePublicReadinessRunId": 34996818145,
+        "postMergeConclusion": "SUCCESS"
+      },
+      "blockHash": "aa0cf2613e45cb1cb7a6d28d73c5fe47ac1a2abbac7520a1849ed8ac648a7c18"
+    },
+    {
+      "height": 5,
+      "kind": "PRE_SIGNING_FRONTIER",
+      "parentBlockHash": "aa0cf2613e45cb1cb7a6d28d73c5fe47ac1a2abbac7520a1849ed8ac648a7c18",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2012",
+        "canonicalUnsignedApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+        "trustedEdgeBundleSha256": "d6c9538b0c84d0bdabc966847cd7f6d340bd17eea68bf69e65d3d2a852585642",
+        "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+        "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+        "signingRequestAllowed": true,
+        "ownedDeviceUatAllowed": false,
+        "physicalAlpha2Pass": false,
+        "buildReady": false,
+        "releaseReady": false
+      },
+      "blockHash": "4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5"
+    },
+    {
+      "height": 6,
+      "kind": "STABLE_SIGNED_APK_FREEZE",
+      "parentBlockHash": "4fddbd426678fc8b16449ce345d2eca0aa1df45efd22ac33a73adbb7273ffae5",
+      "payload": {
+        "candidate": "0.2.0-alpha.2+2012",
+        "productSourceCommit": "e46eef4f406dec3220d3f1a2bda51bf7a4fd7202",
+        "canonicalSourceCommit": "b75cc39318ee749a1123971f19d895d71e35bd91",
+        "canonicalRunId": 34983489697,
+        "canonicalArtifactId": 10402582806,
+        "inputApkSha256": "74e690e9858fd0ef72d0e39f0863371fa1f1f9cfa726a5078e237d33439c587e",
+        "inputApkBytes": 182538547,
+        "signedApkSha256": "05ee3efd70bb07fe11bde6a21140c03de3ffa872b5f90e7a1014b5106b4b3000",
+        "signedApkBytes": 182563366,
+        "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+        "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+        "exactScope": "gmail.readonly",
+        "trustedEdgeSigningPass": true,
+        "privateSigningMaterialInGitHub": false,
+        "physicalAlpha2Pass": false,
+        "buildReady": false,
+        "releaseReady": false
+      },
+      "blockHash": "6b2014d788011018c4ebbb586e0d9c9f90b4a8e0ea25dd5a94071b150d789b4e"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@financesensor/physical-ingress-spike",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js && node --check live/owned-oauth-level-c-v7.mjs && node --check live/owned-oauth-gmail-history-viewer.mjs && node --check live/owned-oauth-gmail-history-viewer-windows.mjs && node --check live/owned-oauth-bank-statements-viewer.mjs && node --check live/owned-oauth-bank-statements-sweep.mjs && node --check live/windows-dpapi-preflight.mjs && node --check src/windows-dpapi.js && node --check src/pdfjs-statement-parser.js && node --check src/statement-source-adapters.js && node --check src/statement-discovery.js && node --check src/statement-import-session.js && node --check src/statement-row-parser.js && node --check src/statement-evidence-importer.js && node --check src/statement-sweep-profile-adapters.js && node --check src/statement-sweep-engine.js",
+    "live:gmail": "node live/run-gmail.mjs",
+    "live:gmail:owned": "node live/owned-oauth-level-c-v7.mjs",
+    "live:gmail:history": "node live/owned-oauth-gmail-history-viewer-windows.mjs",
+    "live:statements": "node live/owned-oauth-bank-statements-viewer.mjs"
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.3.289"
+  }
+}
