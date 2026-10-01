@@ -11,7 +11,7 @@ const String alpha2BcpCreditProfileId =
 const String alpha2RipleyCreditProfileId =
     'PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1';
 const String alpha2RipleyCreditAdapterVersion =
-    'A2_RIPLEY_CREDIT_STRICT_V2';
+    'A2_RIPLEY_CREDIT_STRICT_V3';
 const String alpha2BcpCreditProbeVersion =
     'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1';
 const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
@@ -263,17 +263,29 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
   final pageText = _normalizeLayout(page.items.map((item) => item.text).join(' '));
   if (!pageText.contains('TUS MOVIMIENTOS DEL MES')) return null;
 
-  final consumption = _findHeader(page, const ['FECHA DE CONSUMO']);
-  if (consumption == null) return null;
-  final preferredY = consumption.y;
+  // Banco Ripley has at least two observed public/owned header families:
+  // "Fecha de consumo" and "Fecha de operación". Both represent the first
+  // movement-date column. Do not require the optional Interés column: the
+  // physically exercised layout places TEA/TNA immediately before Total.
+  final operation = _findHeader(
+    page,
+    const [
+      'FECHA DE OPERACION',
+      'FECHA OPERACION',
+      'FECHA DE CONSUMO',
+      'FECHA CONSUMO',
+    ],
+  );
+  if (operation == null) return null;
+  final preferredY = operation.y;
   final process = _findHeader(
     page,
-    const ['FECHA DE PROCESO'],
+    const ['FECHA DE PROCESO', 'FECHA PROCESO'],
     preferredY: preferredY,
   );
   final ticket = _findHeader(
     page,
-    const ['N DE TICKET', 'N° DE TICKET', 'Nº DE TICKET'],
+    const ['N DE TICKET', 'N TICKET', 'TICKET'],
     preferredY: preferredY,
   );
   final description = _findHeader(
@@ -281,29 +293,45 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
     const ['DESCRIPCION'],
     preferredY: preferredY,
   );
-  final owner = _findHeader(page, const ['T/A'], preferredY: preferredY);
+  final owner = _findHeader(
+    page,
+    const ['T/A', 'TA'],
+    preferredY: preferredY,
+  );
+  final amount = _findHeader(
+    page,
+    const ['MONTO'],
+    preferredY: preferredY,
+  );
+  final rate = _findHeader(
+    page,
+    const ['TEA / TNA', 'TEA/TNA', 'TEA', 'TNA'],
+    preferredY: preferredY,
+  );
   final interest = _findHeader(
     page,
     const ['INTERES'],
     preferredY: preferredY,
   );
   final total = _findHeader(page, const ['TOTAL'], preferredY: preferredY);
+  final totalLeft = interest ?? rate ?? amount;
+
   if (process == null ||
       ticket == null ||
       description == null ||
       owner == null ||
-      interest == null ||
+      totalLeft == null ||
       total == null) {
     return null;
   }
 
   final anchors = <Alpha2LayoutItem>[
-    consumption,
+    operation,
     process,
     ticket,
     description,
     owner,
-    interest,
+    totalLeft,
     total,
   ];
   if (anchors.any((item) => (item.y - preferredY).abs() > 8)) return null;
@@ -314,10 +342,10 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
 
   return _RipleyGeometry(
     headerY: anchors.map((item) => item.y).reduce(math.min),
-    processDateMinX: (consumption.x + process.x) / 2,
+    processDateMinX: (operation.x + process.x) / 2,
     descriptionMinX: (ticket.x + description.x) / 2,
     descriptionMaxX: (description.x + owner.x) / 2,
-    totalMinX: (interest.x + total.x) / 2,
+    totalMinX: (totalLeft.x + total.x) / 2,
   );
 }
 
