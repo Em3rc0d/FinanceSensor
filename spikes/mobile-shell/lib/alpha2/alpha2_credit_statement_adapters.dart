@@ -562,7 +562,7 @@ _CreditPeriod? _ripleyStatementPeriod(List<Alpha2LayoutPage> pages) {
 List<String> _creditDateTokens(String raw) {
   final normalized = _normalizeLayout(raw);
   final tokenPattern = RegExp(
-    r'\b(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{2}|\d{4}))\b',
+    r'\b(\d{1,2}/(?:\d{1,2}|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)/(?:\d{4}|\d{2}))\b',
   );
   return tokenPattern
       .allMatches(normalized)

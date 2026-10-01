@@ -28,7 +28,9 @@ for (const marker of [
   ' CONTABLE',
   ' DISPONIBLE',
   'CARGO(?:S)?',
-  'ABONO(?:S)?'
+  'ABONO(?:S)?',
+  '_isDetachedCertifiedBcpSummaryAmountLine',
+  'const yTolerance = 10.0'
 ]) if (!bcp.includes(marker)) fail(`BCP_MARKER:${marker}`);
 for (const marker of ['SALDO CONTABLE','SALDO DISPONIBLE','TOTAL CARGOS','TOTAL ABONOS']) {
   if (!bcpTests.includes(marker)) fail(`BCP_TEST_DATA:${marker}`);
@@ -39,12 +41,14 @@ for (const marker of [
   '_creditDateTokens',
   '_creditPeriodFromTokens',
   'candidates.length == 1',
-  "PERIODO DE FACTURACION"
+  "PERIODO DE FACTURACION",
+  '(?:\\d{4}|\\d{2})'
 ]) if (!ripley.includes(marker)) fail(`RIPLEY_MARKER:${marker}`);
 
 for (const marker of [
   'certified BCP balance and aggregate labels stay outside the ledger',
-  'unknown undated monetary row still fails closed'
+  'unknown undated monetary row still fails closed',
+  'certified BCP control values may be vertically detached from labels'
 ]) if (!bcpTests.includes(marker)) fail(`BCP_TEST:${marker}`);
 
 for (const marker of [

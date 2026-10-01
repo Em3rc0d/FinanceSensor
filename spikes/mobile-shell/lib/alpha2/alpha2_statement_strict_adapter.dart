@@ -108,7 +108,8 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
       );
     }
 
-    for (final line in _strictLines(page)) {
+    final lines = _strictLines(page);
+    for (final line in lines) {
       if (line.y >= geometry.headerY - 1) continue;
       final debitText = _joinItemsInRange(
         line.items,
@@ -124,7 +125,10 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
       final hasCredit = (_strictMoney(creditText) ?? 0) > 0;
       if (!hasDebit && !hasCredit) continue;
 
-      if (_isCertifiedBcpSummaryRow(line, geometry)) continue;
+      if (_isCertifiedBcpSummaryRow(line, geometry) ||
+          _isDetachedCertifiedBcpSummaryAmountLine(line, lines, geometry)) {
+        continue;
+      }
 
       monetaryRows += 1;
       final leading = line.items
@@ -158,16 +162,77 @@ bool _isCertifiedBcpSummaryRow(
       geometry.debitMinX,
     ),
   );
+  final leftOfMoney = _strictNormalize(
+    _joinItemsInRange(
+      line.items,
+      double.negativeInfinity,
+      geometry.debitMinX,
+    ),
+  );
   final wholeLine = _strictNormalize(
     line.items
         .map((item) => item.text.trim())
         .where((text) => text.isNotEmpty)
         .join(' '),
   );
-  final label = description.isNotEmpty ? description : wholeLine;
-  return RegExp(
-    r'^(?:SALDO(?: ANTERIOR| INICIAL| CONTABLE| DISPONIBLE| FINAL)?|TOTAL(?: DE)? MOVIMIENTO(?:S)?|TOTAL(?: DE)? CARGO(?:S)?|TOTAL(?: DE)? ABONO(?:S)?|TOTAL DEBE|TOTAL HABER)\b',
-  ).hasMatch(label);
+  return _isCertifiedBcpSummaryLabel(description) ||
+      _isCertifiedBcpSummaryLabel(leftOfMoney) ||
+      _isCertifiedBcpSummaryLabel(wholeLine);
+}
+
+bool _isCertifiedBcpSummaryLabel(String value) => RegExp(
+      r'^(?:SALDO(?: ANTERIOR| INICIAL| CONTABLE| DISPONIBLE| FINAL)?|TOTAL(?: DE)? MOVIMIENTO(?:S)?|TOTAL(?: DE)? CARGO(?:S)?|TOTAL(?: DE)? ABONO(?:S)?|TOTAL DEBE|TOTAL HABER)\b',
+    ).hasMatch(_strictNormalize(value));
+
+bool _isDetachedCertifiedBcpSummaryAmountLine(
+  _StrictLine amountLine,
+  List<_StrictLine> lines,
+  _StrictHeaderGeometry geometry,
+) {
+  // Owned-corpus evidence shows that PDF extraction may put a certified
+  // balance/control label and its numeric value on adjacent visual baselines.
+  // Bind only a value-only line to one uniquely nearest certified label in a
+  // tight band. Unknown undated monetary rows keep failing closed.
+  const yTolerance = 10.0;
+  final leftText = _strictNormalize(
+    _joinItemsInRange(
+      amountLine.items,
+      double.negativeInfinity,
+      geometry.debitMinX,
+    ),
+  );
+  if (leftText.isNotEmpty) return false;
+
+  final candidates = <_StrictLine>[];
+  for (final line in lines) {
+    if (identical(line, amountLine) || line.y >= geometry.headerY - 1) continue;
+    final distance = (line.y - amountLine.y).abs();
+    if (distance > yTolerance) continue;
+    final labelText = _strictNormalize(
+      _joinItemsInRange(
+        line.items,
+        double.negativeInfinity,
+        geometry.debitMinX,
+      ),
+    );
+    if (_isCertifiedBcpSummaryLabel(labelText)) {
+      candidates.add(line);
+    }
+  }
+  if (candidates.isEmpty) return false;
+  candidates.sort(
+    (a, b) =>
+        (a.y - amountLine.y).abs().compareTo((b.y - amountLine.y).abs()),
+  );
+  final nearestDistance = (candidates.first.y - amountLine.y).abs();
+  return candidates
+          .where(
+            (line) =>
+                ((line.y - amountLine.y).abs() - nearestDistance).abs() <
+                0.001,
+          )
+          .length ==
+      1;
 }
 
 bool _looksLikeBcpSavingsLedger(Alpha2LayoutPage page) {
