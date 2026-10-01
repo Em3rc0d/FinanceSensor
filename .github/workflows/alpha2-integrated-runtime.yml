@@ -94,8 +94,7 @@ jobs:
           node-version: '22'
 
       - name: +2017 parser parity candidate boundary
-        run: node tools/validate-alpha2-2017-candidate-cut.mjs'
-      - 'tools/validate-alpha2-2017-candidate-cut.mjs
+        run: node tools/validate-alpha2-2017-candidate-cut.mjs
 
       - name: Integrated architecture boundary
         run: node tools/validate-alpha2-integrated-runtime.mjs
