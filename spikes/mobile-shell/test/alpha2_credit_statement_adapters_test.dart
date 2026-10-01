@@ -34,6 +34,27 @@ void main() {
     expect(result.evidence.every((item) => item.amount != 7777), isTrue);
   });
 
+  test('Ripley accepts the physically observed operation and TEA/TNA header family', () {
+    final result = ripley.parse(
+      layout: _ripleyPhysicalHeaderLayout(),
+      sourceReceiptId: 'stmt-src:ripley-physical-header-family',
+      tenantId: 'tenant-1',
+    );
+
+    expect(result.importable, isTrue);
+    expect(result.reviewCodes, isEmpty);
+    expect(result.evidence, hasLength(3));
+    expect(result.evidence.map((item) => item.amount), <double>[243.46, 20.90, 2.94]);
+    expect(
+      result.evidence.map((item) => item.semanticType),
+      <Alpha2SemanticType>[
+        Alpha2SemanticType.cardPayment,
+        Alpha2SemanticType.expense,
+        Alpha2SemanticType.fee,
+      ],
+    );
+  });
+
   test('Ripley billing period ignores unrelated nearby dates', () {
     final result = ripley.parse(
       layout: _ripleyLayout(includeNearbyUnrelatedDate: true),
@@ -189,6 +210,45 @@ Alpha2StatementLayout _ripleyLayout({
     ],
     _item('Cómo se calcula el Pago Total', 20, 300, 42),
     _item('7777.00', 900, 250, 43),
+  ];
+  return Alpha2StatementLayout(
+    pages: <Alpha2LayoutPage>[
+      Alpha2LayoutPage(pageNumber: 1, items: items),
+    ],
+    pageCount: 1,
+  );
+}
+
+Alpha2StatementLayout _ripleyPhysicalHeaderLayout() {
+  final items = <Alpha2LayoutItem>[
+    _item('Periodo de facturación 01/08/2026 - 31/08/2026', 20, 850, 0),
+    _item('EECC Tarjeta de Crédito Ripley', 500, 830, 1),
+    _item('Tus movimientos del mes', 40, 800, 2),
+    _item('Fecha de operación', 40, 760, 3),
+    _item('Fecha de proceso', 120, 760, 4),
+    _item('Nº Ticket', 220, 760, 5),
+    _item('Descripción', 340, 760, 6),
+    _item('T/A', 430, 760, 7),
+    _item('Monto', 500, 760, 8),
+    _item('TEA / TNA', 560, 760, 9),
+    _item('Total', 690, 760, 10),
+    _item('03/AGO/2026', 40, 710, 11),
+    _item('03/AGO/2026', 120, 710, 12),
+    _item('288299', 220, 710, 13),
+    _item('PAGO DIGITAL OTRO BANCO', 285, 710, 14),
+    _item('-243.46', 690, 710, 15),
+    _item('15/AGO/2026', 40, 680, 16),
+    _item('16/AGO/2026', 120, 680, 17),
+    _item('008665', 220, 680, 18),
+    _item('COMERCIO DEMO', 285, 680, 19),
+    _item('T', 430, 680, 20),
+    _item('20.90', 500, 680, 21),
+    _item('109.83%', 560, 680, 22),
+    _item('20.90', 690, 680, 23),
+    _item('22/AGO/2026', 40, 650, 24),
+    _item('22/AGO/2026', 120, 650, 25),
+    _item('SEGURO DE DESGRAVAMEN', 285, 650, 26),
+    _item('2.94', 690, 650, 27),
   ];
   return Alpha2StatementLayout(
     pages: <Alpha2LayoutPage>[
