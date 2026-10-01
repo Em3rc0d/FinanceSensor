@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "A2_2017_PARSER_PARITY_CANDIDATE_V1",
+  "candidate": "0.2.0-alpha.2+2017",
+  "status": "INTERNAL_BUILD_CANDIDATE",
+  "objective": "PORT_PHYSICALLY_PROVEN_LEDGER_GEOMETRY_INVARIANTS_TO_ANDROID",
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2016",
+    "stableSignedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+    "physicalObservationReceipt": "graph/physical-receipts/ALPHA2-2016-PHYSICAL-PARSER-REGRESSION-2026-09-30.json",
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "physicalDiagnostics": {
+    "gmailObserved": 11,
+    "statementsImported": 0,
+    "statementsReviewRequired": 10,
+    "bcpSavings": {
+      "count": 7,
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED"
+    },
+    "ripleyCredit": {
+      "count": 3,
+      "code": "RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN"
+    }
+  },
+  "productDelta": {
+    "parserBehaviorChanged": true,
+    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V4",
+    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V3",
+    "bcpSavingsRemediation": [
+      "PORT_PHYSICALLY_RECONCILED_RIGHTMOST_MONETARY_FRAGMENT_CLUSTER",
+      "BASE_PARSER_AND_COMPLETENESS_SHARE_MONEY_CELL_AUTHORITY",
+      "UNKNOWN_UNDATED_MONETARY_ROWS_REMAIN_FAIL_CLOSED"
+    ],
+    "ripleyCreditRemediation": [
+      "ACCEPT_FECHA_OPERACION_AND_FECHA_CONSUMO_HEADER_FAMILIES",
+      "ACCEPT_TEA_TNA_RATE_COLUMN_AS_TOTAL_LEFT_BOUNDARY",
+      "INTERES_OR_MONTO_REMAIN_NARROW_FALLBACK_BOUNDARIES",
+      "TOTAL_REMAINS_RIGHTMOST_STATEMENT_AMOUNT_AUTHORITY",
+      "BILLING_PERIOD_RULES_FROM_V2_REMAIN_FAIL_CLOSED"
+    ]
+  },
+  "regressionTests": [
+    "BCP money cells use the physically reconciled rightmost fragment cluster",
+    "unknown undated monetary row still fails closed",
+    "Ripley accepts the physically observed operation and TEA/TNA header family",
+    "Ripley conflicting anchored billing periods still fail closed"
+  ],
+  "privacy": {
+    "rawStatementPdfInRepository": false,
+    "rawScreenshotsInRepository": false,
+    "merchantNamesFromPhysicalEvidenceInRepository": false,
+    "transactionAmountsFromPhysicalEvidenceInRepository": false,
+    "accountIdentifiersInRepository": false,
+    "pdfPasswordsInRepository": false,
+    "oauthTokensInRepository": false
+  },
+  "build": {
+    "buildName": "0.2.0-alpha.2",
+    "versionCode": 2017,
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeResignRequired": true,
+    "canonicalPromotionPending": true
+  },
+  "boundaries": {
+    "predecessorPhysicalEvidenceInherited": false,
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
