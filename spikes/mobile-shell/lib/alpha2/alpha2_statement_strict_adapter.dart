@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'alpha2_statement_geometry.dart';
 
 const String alpha2StatementCompletenessVersion =
-    'A2_BCP_SAVINGS_COMPLETENESS_V3';
+    'A2_BCP_SAVINGS_COMPLETENESS_V4';
 const String alpha2UnexplainedMonetaryRowCode =
     'STATEMENT_MONETARY_ROW_UNEXPLAINED';
 const String alpha2CompletenessGeometryUnknownCode =
@@ -111,12 +111,12 @@ _CompletenessAudit _auditMonetaryRows(List<Alpha2LayoutPage> pages) {
     final lines = _strictLines(page);
     for (final line in lines) {
       if (line.y >= geometry.headerY - 1) continue;
-      final debitText = _joinItemsInRange(
+      final debitText = _strictMonetaryColumnText(
         line.items,
         geometry.debitMinX,
         geometry.debitMaxX,
       );
-      final creditText = _joinItemsInRange(
+      final creditText = _strictMonetaryColumnText(
         line.items,
         geometry.creditMinX,
         double.infinity,
@@ -385,6 +385,136 @@ String _joinItemsInRange(
         .map((item) => item.text.trim())
         .where((text) => text.isNotEmpty)
         .join(' ');
+
+String _strictMonetaryColumnText(
+  List<Alpha2LayoutItem> items,
+  double minimum,
+  double maximum,
+) {
+  const touchTolerance = 4.0;
+  final numeric = items
+      .where((item) => item.x >= minimum && item.x < maximum)
+      .where(_strictNumericMoneyFragment)
+      .toList()
+    ..sort((a, b) {
+      final byX = a.x.compareTo(b.x);
+      return byX != 0 ? byX : a.sequence.compareTo(b.sequence);
+    });
+
+  if (numeric.isEmpty) {
+    return _joinItemsInRange(items, minimum, maximum);
+  }
+
+  var start = numeric.length - 1;
+  while (start > 0) {
+    final previous = numeric[start - 1];
+    final current = numeric[start];
+    final previousRight = previous.x + math.max(0, previous.width);
+    final gap = current.x - previousRight;
+    if (!gap.isFinite || gap > touchTolerance) break;
+    start -= 1;
+  }
+
+  final cluster = numeric.sublist(start);
+  final joined = cluster
+      .map((item) => item.text.trim())
+      .where((text) => text.isNotEmpty)
+      .join(' ')
+      .trim();
+  if (_strictLooksLikeCompleteMoney(joined)) return joined;
+
+  final rightmost = numeric.last.text.trim();
+  if (_strictMoney(rightmost) != null) return rightmost;
+  return joined;
+}
+
+bool _strictNumericMoneyFragment(Alpha2LayoutItem item) {
+  final raw = item.text.trim();
+  if (raw.isEmpty) return false;
+  final token = raw.replaceFirst(
+    RegExp(r'^S/\.?\s*', caseSensitive: false),
+    '',
+  );
+  return token.contains(RegExp(r'\d')) &&
+      RegExp(r'^[0-9\s.,()+-]+
+  final token = value.trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+  if (token.isEmpty) return null;
+  final signless = token
+      .replaceFirst(RegExp(r'^-'), '')
+      .replaceFirst(RegExp(r'-$'), '');
+  if (signless.isEmpty) return null;
+  final comma = signless.lastIndexOf(',');
+  final dot = signless.lastIndexOf('.');
+  final normalized = comma > dot
+      ? signless.replaceAll('.', '').replaceFirst(',', '.')
+      : signless.replaceAll(',', '');
+  final amount = double.tryParse(normalized);
+  return amount == null || !amount.isFinite ? null : amount.abs();
+}
+
+String _strictNormalize(String value) {
+  var result = value
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .replaceAll('ü', 'u')
+      .replaceAll('ñ', 'n')
+      .replaceAll('Á', 'A')
+      .replaceAll('É', 'E')
+      .replaceAll('Í', 'I')
+      .replaceAll('Ó', 'O')
+      .replaceAll('Ú', 'U')
+      .replaceAll('Ü', 'U')
+      .replaceAll('Ñ', 'N');
+  return result.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
+}
+).hasMatch(token);
+}
+
+bool _strictLooksLikeCompleteMoney(String value) {
+  final token = value
+      .trim()
+      .replaceFirst(RegExp(r'^S/\.?\s*', caseSensitive: false), '')
+      .replaceAll(RegExp(r'\s+'), '');
+  return RegExp(r'^-?(?:\d{1,3}(?:[.,]\d{3})+|\d+)[.,]\d{2}
+  final token = value.trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+  if (token.isEmpty) return null;
+  final signless = token
+      .replaceFirst(RegExp(r'^-'), '')
+      .replaceFirst(RegExp(r'-$'), '');
+  if (signless.isEmpty) return null;
+  final comma = signless.lastIndexOf(',');
+  final dot = signless.lastIndexOf('.');
+  final normalized = comma > dot
+      ? signless.replaceAll('.', '').replaceFirst(',', '.')
+      : signless.replaceAll(',', '');
+  final amount = double.tryParse(normalized);
+  return amount == null || !amount.isFinite ? null : amount.abs();
+}
+
+String _strictNormalize(String value) {
+  var result = value
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .replaceAll('ü', 'u')
+      .replaceAll('ñ', 'n')
+      .replaceAll('Á', 'A')
+      .replaceAll('É', 'E')
+      .replaceAll('Í', 'I')
+      .replaceAll('Ó', 'O')
+      .replaceAll('Ú', 'U')
+      .replaceAll('Ü', 'U')
+      .replaceAll('Ñ', 'N');
+  return result.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
+}
+)
+      .hasMatch(token);
+}
 
 double? _strictMoney(String value) {
   final token = value.trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
