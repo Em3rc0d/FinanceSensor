@@ -13,31 +13,31 @@ for(const f of files){
 }
 
 const canonical=JSON.parse(read('graph/alpha2-canonical-candidate.json'));
-const r1Graph=JSON.parse(read('graph/alpha2-2016-r1-signing-handoff.json'));
+const r1Graph=JSON.parse(read('graph/alpha2-2017-r1-signing-handoff.json'));
 const human=JSON.parse(read('graph/alpha2-human-intervention-gate.json'));
 const r1=read(path.join(dir,'alpha2-r1-trusted-edge-signing.yml'));
 const r2=read(path.join(dir,'alpha2-r2-owned-device-campaign.yml'));
 const od0=read(path.join(dir,'alpha2-od0-owned-device-harness.yml'));
 
 const currentPreSigning =
-  canonical.candidate==='0.2.0-alpha.2+2016' &&
+  canonical.candidate==='0.2.0-alpha.2+2017' &&
   canonical.signing?.status==='TRUSTED_EDGE_SIGNING_REQUIRED' &&
   canonical.signing?.trustedEdgeSigningPass===false &&
   canonical.authority?.strictParserBehaviorChanged===true &&
-  r1Graph.candidate==='0.2.0-alpha.2+2016' &&
+  r1Graph.candidate==='0.2.0-alpha.2+2017' &&
   r1Graph.status==='CANONICAL_FROZEN_SIGNING_REQUIRED' &&
   r1Graph.trustedEdgeSigningPass===false &&
   human.claims?.signingRequestAllowed===true &&
   human.claims?.ownedDeviceUatRequestAllowed===false;
 
-if(!currentPreSigning) fail.push('graph: expected +2016 pre-signing frontier');
+if(!currentPreSigning) fail.push('graph: expected +2017 pre-signing frontier');
 
 for(const m of [
-  '0.2.0-alpha.2+2016',
-  'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v16.zip',
-  'f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97',
-  'BCP_SAVINGS_COMPLETENESS_VERSION=A2_BCP_SAVINGS_COMPLETENESS_V3',
-  'RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V2',
+  '0.2.0-alpha.2+2017',
+  'FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v17.zip',
+  '5b81d798b5f3885ece41b899a08963b89f5c4e300561a4c469c8c8371c762774',
+  'BCP_SAVINGS_COMPLETENESS_VERSION=A2_BCP_SAVINGS_COMPLETENESS_V4',
+  'RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V3',
   'SIGNING_REQUEST_ALLOWED=YES',
   'R1_TRUSTED_EDGE_SIGNING=REQUIRED',
   'OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO',
@@ -66,7 +66,7 @@ if(fail.length){
 console.log('FINANCESENSOR_CI_RUNNER_POLICY=PASS');
 console.log(`WORKFLOWS_SCANNED=${files.length}`);
 console.log('ACTIVE_SELF_HOSTED_PATHS=0');
-console.log('ALPHA2_2016_CANONICAL_UNSIGNED=FROZEN');
+console.log('ALPHA2_2017_CANONICAL_UNSIGNED=FROZEN');
 console.log('R1_TRUSTED_EDGE_SIGNING=REQUIRED');
 console.log('R2_PHYSICAL_CAMPAIGN=BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING');
 console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO');

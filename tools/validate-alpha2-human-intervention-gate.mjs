@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 const h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
-const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_HUMAN_GATE_V6_FAILED:${m}`)};
-a(h.schemaVersion==='A2_HUMAN_INTERVENTION_GATE_V6','schema');
-a(h.currentCandidate==='0.2.0-alpha.2+2016','identity');
-a(h.candidateCanonicalCommit==='6e48f67c9b580be1be43cfa01f19b3b1eb630611','canonical');
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_HUMAN_GATE_V7_FAILED:${m}`)};
+a(h.schemaVersion==='A2_HUMAN_INTERVENTION_GATE_V7','schema');
+a(h.currentCandidate==='0.2.0-alpha.2+2017','identity');
+a(h.candidateSourceCommit==='3b0f99767909deebd34e9843b6fed3f036159903','source');
+a(h.candidateCanonicalCommit==='3b0f99767909deebd34e9843b6fed3f036159903','canonical');
 a(h.candidateState==='CANONICAL_FROZEN_SIGNING_REQUIRED','state');
 a(h.preSigning?.requestAllowed===true&&h.preSigning?.completed===false,'signing eligibility');
 a(h.preSigning?.requiredCiConsensusGreen===true&&h.preSigning?.exactPhysicalFailureRegressionPass===true,'CI');
