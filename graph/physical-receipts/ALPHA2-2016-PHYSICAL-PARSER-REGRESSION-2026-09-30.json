@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "A2_2016_PHYSICAL_PARSER_REGRESSION_V1",
+  "candidate": "0.2.0-alpha.2+2016",
+  "stableSignedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+  "stableSignedApkBytes": 182575654,
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "observationClass": "OWNED_DEVICE_SCREEN_OBSERVATION_SANITIZED",
+  "gmailObserved": 11,
+  "statementsImported": 0,
+  "statementsReviewRequired": 10,
+  "reviewDiagnostics": [
+    {
+      "profile": "BCP_SAVINGS",
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED",
+      "count": 7
+    },
+    {
+      "profile": "RIPLEY_CREDIT",
+      "code": "RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN",
+      "count": 3
+    }
+  ],
+  "uncategorizedMovements": 11,
+  "knownGaps": 21,
+  "runtimeObservations": {
+    "installPass": true,
+    "launchPass": true,
+    "gmailReadonlyConnectPass": true,
+    "profilePasswordDialogPass": true,
+    "dashboardProjectionVisible": true,
+    "transferAndCardPaymentExpenseExclusionVisible": true
+  },
+  "claims": {
+    "parserRemediationPass": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  },
+  "privacy": {
+    "rawScreenshotsInGitHub": false,
+    "merchantNamesInGitHub": false,
+    "transactionAmountsInGitHub": false,
+    "accountNumbersInGitHub": false,
+    "statementPdfInGitHub": false,
+    "pdfPasswordInGitHub": false,
+    "oauthTokensInGitHub": false,
+    "sanitizationPass": true
+  }
+}

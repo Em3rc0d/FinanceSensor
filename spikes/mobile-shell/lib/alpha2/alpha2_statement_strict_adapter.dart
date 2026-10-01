@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'alpha2_statement_geometry.dart';
 
 const String alpha2StatementCompletenessVersion =
-    'A2_BCP_SAVINGS_COMPLETENESS_V3';
+    'A2_BCP_SAVINGS_COMPLETENESS_V4';
 const String alpha2UnexplainedMonetaryRowCode =
     'STATEMENT_MONETARY_ROW_UNEXPLAINED';
 const String alpha2CompletenessGeometryUnknownCode =
@@ -189,11 +189,13 @@ bool _isDetachedCertifiedBcpSummaryAmountLine(
   List<_StrictLine> lines,
   _StrictHeaderGeometry geometry,
 ) {
-  // Owned-corpus evidence shows that PDF extraction may put a certified
-  // balance/control label and its numeric value on adjacent visual baselines.
-  // Bind only a value-only line to one uniquely nearest certified label in a
-  // tight band. Unknown undated monetary rows keep failing closed.
-  const yTolerance = 10.0;
+  // pdfrx may place a printed BCP control label and its debit/credit values on
+  // adjacent PDF baselines that are farther apart than ordinary glyph
+  // fragmentation. Accept only value-only control fragments, bind them to one
+  // uniquely nearest certified summary label, and refuse the binding when a
+  // narrative or dated ledger line sits between the two. This widens layout
+  // tolerance without turning arbitrary undated money into a movement/control.
+  const yTolerance = 36.0;
   final leftText = _strictNormalize(
     _joinItemsInRange(
       amountLine.items,
@@ -202,6 +204,19 @@ bool _isDetachedCertifiedBcpSummaryAmountLine(
     ),
   );
   if (leftText.isNotEmpty) return false;
+
+  final wholeAmountLine = _strictNormalize(
+    amountLine.items
+        .map((item) => item.text.trim())
+        .where((text) => text.isNotEmpty)
+        .join(' '),
+  );
+  if (RegExp(
+    r'\b\d{2}\s*(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\b',
+    caseSensitive: false,
+  ).hasMatch(wholeAmountLine)) {
+    return false;
+  }
 
   final candidates = <_StrictLine>[];
   for (final line in lines) {
@@ -215,7 +230,13 @@ bool _isDetachedCertifiedBcpSummaryAmountLine(
         geometry.debitMinX,
       ),
     );
-    if (_isCertifiedBcpSummaryLabel(labelText)) {
+    if (_isCertifiedBcpSummaryLabel(labelText) &&
+        _hasNoInterveningBcpNarrativeLine(
+          labelLine: line,
+          amountLine: amountLine,
+          lines: lines,
+          geometry: geometry,
+        )) {
       candidates.add(line);
     }
   }
@@ -233,6 +254,45 @@ bool _isDetachedCertifiedBcpSummaryAmountLine(
           )
           .length ==
       1;
+}
+
+bool _hasNoInterveningBcpNarrativeLine({
+  required _StrictLine labelLine,
+  required _StrictLine amountLine,
+  required List<_StrictLine> lines,
+  required _StrictHeaderGeometry geometry,
+}) {
+  final upper = math.max(labelLine.y, amountLine.y);
+  final lower = math.min(labelLine.y, amountLine.y);
+  for (final line in lines) {
+    if (identical(line, labelLine) || identical(line, amountLine)) continue;
+    if (line.y >= upper || line.y <= lower) continue;
+
+    final leading = _strictNormalize(
+      _joinItemsInRange(
+        line.items,
+        double.negativeInfinity,
+        geometry.debitMinX,
+      ),
+    );
+    if (leading.isNotEmpty && !_isCertifiedBcpSummaryLabel(leading)) {
+      return false;
+    }
+
+    final whole = _strictNormalize(
+      line.items
+          .map((item) => item.text.trim())
+          .where((text) => text.isNotEmpty)
+          .join(' '),
+    );
+    if (RegExp(
+      r'\b\d{2}\s*(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\b',
+      caseSensitive: false,
+    ).hasMatch(whole)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool _looksLikeBcpSavingsLedger(Alpha2LayoutPage page) {

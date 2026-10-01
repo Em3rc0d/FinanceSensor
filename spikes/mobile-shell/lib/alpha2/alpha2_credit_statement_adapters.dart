@@ -11,7 +11,7 @@ const String alpha2BcpCreditProfileId =
 const String alpha2RipleyCreditProfileId =
     'PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1';
 const String alpha2RipleyCreditAdapterVersion =
-    'A2_RIPLEY_CREDIT_STRICT_V2';
+    'A2_RIPLEY_CREDIT_STRICT_V3';
 const String alpha2BcpCreditProbeVersion =
     'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1';
 const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
@@ -64,6 +64,7 @@ class Alpha2StrictRipleyCreditAdapter {
           _joinRange(line.items, geometry.totalMinX, double.infinity),
         );
         if (signedTotal == null || signedTotal == 0) continue;
+        if (_isCertifiedRipleyControlRow(line, geometry)) continue;
         monetaryRows += 1;
 
         final occurredAt = _parseCreditDate(
@@ -263,9 +264,16 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
   final pageText = _normalizeLayout(page.items.map((item) => item.text).join(' '));
   if (!pageText.contains('TUS MOVIMIENTOS DEL MES')) return null;
 
-  final consumption = _findHeader(page, const ['FECHA DE CONSUMO']);
-  if (consumption == null) return null;
-  final preferredY = consumption.y;
+  // Banco Ripley has at least two observed/public header variants:
+  // "Fecha de consumo" and "Fecha de operación". The rightmost authority is
+  // still the statement Total column; rate/interest headers are structural
+  // separators only and are never treated as movement amounts.
+  final operation = _findHeader(
+    page,
+    const ['FECHA DE OPERACION', 'FECHA DE CONSUMO'],
+  );
+  if (operation == null) return null;
+  final preferredY = operation.y;
   final process = _findHeader(
     page,
     const ['FECHA DE PROCESO'],
@@ -273,7 +281,7 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
   );
   final ticket = _findHeader(
     page,
-    const ['N DE TICKET', 'N° DE TICKET', 'Nº DE TICKET'],
+    const ['N DE TICKET', 'N TICKET', 'TICKET'],
     preferredY: preferredY,
   );
   final description = _findHeader(
@@ -281,10 +289,9 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
     const ['DESCRIPCION'],
     preferredY: preferredY,
   );
-  final owner = _findHeader(page, const ['T/A'], preferredY: preferredY);
-  final interest = _findHeader(
+  final owner = _findHeader(
     page,
-    const ['INTERES'],
+    const ['T/A', 'TA'],
     preferredY: preferredY,
   );
   final total = _findHeader(page, const ['TOTAL'], preferredY: preferredY);
@@ -292,33 +299,92 @@ _RipleyGeometry? _ripleyLedgerGeometry(Alpha2LayoutPage page) {
       ticket == null ||
       description == null ||
       owner == null ||
-      interest == null ||
       total == null) {
     return null;
   }
 
-  final anchors = <Alpha2LayoutItem>[
-    consumption,
+  final required = <Alpha2LayoutItem>[
+    operation,
     process,
     ticket,
     description,
     owner,
-    interest,
     total,
   ];
-  if (anchors.any((item) => (item.y - preferredY).abs() > 8)) return null;
-  final ordered = anchors.map((item) => item.x).toList();
-  for (var index = 1; index < ordered.length; index += 1) {
-    if (ordered[index] <= ordered[index - 1]) return null;
+  final requiredX = required.map((item) => item.x).toList();
+  for (var index = 1; index < requiredX.length; index += 1) {
+    if (requiredX[index] <= requiredX[index - 1]) return null;
   }
 
+  final headerYs = required.map((item) => item.y).toList();
+  final minHeaderY = headerYs.reduce(math.min);
+  final maxHeaderY = headerYs.reduce(math.max);
+  if (maxHeaderY - minHeaderY > 30) return null;
+
+  final totalLeft = _ripleyTotalLeftAnchor(
+    page,
+    preferredY: preferredY,
+    ownerX: owner.x,
+    totalX: total.x,
+  );
+  if (totalLeft == null) return null;
+
   return _RipleyGeometry(
-    headerY: anchors.map((item) => item.y).reduce(math.min),
-    processDateMinX: (consumption.x + process.x) / 2,
+    headerY: math.min(minHeaderY, totalLeft.y),
+    processDateMinX: (operation.x + process.x) / 2,
     descriptionMinX: (ticket.x + description.x) / 2,
     descriptionMaxX: (description.x + owner.x) / 2,
-    totalMinX: (interest.x + total.x) / 2,
+    totalMinX: (totalLeft.x + total.x) / 2,
   );
+}
+
+Alpha2LayoutItem? _ripleyTotalLeftAnchor(
+  Alpha2LayoutPage page, {
+  required double preferredY,
+  required double ownerX,
+  required double totalX,
+}) {
+  final candidates = <Alpha2LayoutItem?>[
+    _findHeader(
+      page,
+      const ['INTERES'],
+      preferredY: preferredY,
+    ),
+    _findHeader(
+      page,
+      const ['TEA / TNA', 'TEA/TNA', 'TEA', 'TNA'],
+      preferredY: preferredY,
+    ),
+    _findHeader(
+      page,
+      const ['MONTO'],
+      preferredY: preferredY,
+    ),
+  ]
+      .whereType<Alpha2LayoutItem>()
+      .where((item) => item.x > ownerX && item.x < totalX)
+      .where((item) => (item.y - preferredY).abs() <= 30)
+      .toList();
+
+  if (candidates.isEmpty) return null;
+  candidates.sort((a, b) => b.x.compareTo(a.x));
+  return candidates.first;
+}
+
+bool _isCertifiedRipleyControlRow(
+  _CreditLine line,
+  _RipleyGeometry geometry,
+) {
+  final left = _normalizeLayout(
+    _joinRange(
+      line.items,
+      double.negativeInfinity,
+      geometry.totalMinX,
+    ),
+  );
+  return RegExp(
+    r'^(?:SALDO INICIAL|SALDO ANTERIOR)\b',
+  ).hasMatch(left);
 }
 
 double? _ripleyLedgerFooterY(Alpha2LayoutPage page, double headerY) {
