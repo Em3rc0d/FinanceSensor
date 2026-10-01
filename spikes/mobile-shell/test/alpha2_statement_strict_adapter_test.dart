@@ -78,6 +78,21 @@ void main() {
     expect(result.importable, isTrue);
   });
 
+  test('BCP money cells use the physically reconciled rightmost fragment cluster', () {
+    final result = parser.parse(
+      layout: _layout(
+        includeBrokenMonetaryRow: false,
+        includeDebitFragmentContamination: true,
+      ),
+      sourceReceiptId: 'stmt-src:test-rightmost-money-cluster',
+      tenantId: 'tenant-1',
+    );
+    expect(result.evidence, hasLength(1));
+    expect(result.evidence.single.amount, 10.00);
+    expect(result.reviewCodes, isEmpty);
+    expect(result.importable, isTrue);
+  });
+
   test('unknown undated monetary row still fails closed', () {
     final result = parser.parse(
       layout: _layout(includeBrokenMonetaryRow: false, includeUnknownFooter: true),
@@ -97,6 +112,7 @@ Alpha2StatementLayout _layout({
   bool includeUnknownFooter = false,
   bool includeExtendedBcpSummaryRows = false,
   bool includeDetachedBcpSummaryValues = false,
+  bool includeDebitFragmentContamination = false,
 }) {
   final items = <Alpha2LayoutItem>[
     _item('ESTADO DE CUENTA DE AHORROS CUENTA DIGITAL BCP', 20, 780, 0),
@@ -116,6 +132,8 @@ Alpha2StatementLayout _layout({
     _item('15AGO', 20, 650, 9),
     _item('15AGO', 100, 650, 10),
     _item('COMPRA LOCAL', 200, 650, 11),
+    if (includeDebitFragmentContamination)
+      _item('123', 320, 650, 90, width: 20),
     _item('10.00', 400, 650, 12),
   ];
   var sequence = 13;
@@ -170,5 +188,17 @@ Alpha2StatementLayout _layout({
   );
 }
 
-Alpha2LayoutItem _item(String text, double x, double y, int sequence) =>
-    Alpha2LayoutItem(text: text, x: x, y: y, width: 60, sequence: sequence);
+Alpha2LayoutItem _item(
+  String text,
+  double x,
+  double y,
+  int sequence, {
+  double width = 60,
+}) =>
+    Alpha2LayoutItem(
+      text: text,
+      x: x,
+      y: y,
+      width: width,
+      sequence: sequence,
+    );
