@@ -1,20 +1,20 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V10",
-  "candidate": "0.2.0-alpha.2+2015",
-  "certifiedPrHead": "2f64a3586656cfc78a6797c3957b51eba4673424",
-  "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
-  "sourceCommit": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V11",
+  "candidate": "0.2.0-alpha.2+2016",
+  "certifiedPrHead": "aa2289fda138f1707cebee1b343c6ba9d145c717",
+  "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+  "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 36787460970,
-    "jobId": 110132193331,
-    "artifactId": 11129918967,
-    "artifactName": "financesensor-alpha2-2015-candidate-36787460970",
-    "artifactZipSha256": "f4bf34a7e25168db0bf5abd50943c68c8cbb22bf996e6e720c9ccd7fac08eef8",
-    "artifactZipBytes": 87694578,
+    "runId": 36793859029,
+    "jobId": 110152682973,
+    "artifactId": 11132718675,
+    "artifactName": "financesensor-alpha2-2016-candidate-36793859029",
+    "artifactZipSha256": "205d3b2f64db20908f458074099e386a6b16096a1f84118175a9c2f57c90ebc3",
+    "artifactZipBytes": 87697354,
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3",
-    "apkBytes": 182550031,
+    "apkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
+    "apkBytes": 182551707,
     "minSdk": 31,
     "targetSdk": 36,
     "compileSdk": 37,
@@ -27,9 +27,14 @@
     "reviewDiagnosticsProfileScoped": true,
     "reviewDiagnosticsAllowListed": true,
     "privateReviewDetailEscapes": false,
-    "strictParserBehaviorChanged": false,
-    "functionalBaselineCandidate": "0.2.0-alpha.2+2014",
-    "functionalDelta": false,
+    "strictParserBehaviorChanged": true,
+    "functionalBaselineCandidate": "0.2.0-alpha.2+2015",
+    "functionalDelta": true,
+    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V3",
+    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V2",
+    "bcpCreditMode": "STRUCTURAL_PROBE_ONLY",
+    "bcpCreditFinancialEvidenceEmission": false,
+    "exactFetchEnabledProfiles": 3,
     "transactionStatementScanIsolation": true,
     "boundedTransientRetry": true,
     "reauthFailClosed": true,
@@ -37,80 +42,62 @@
     "rawGmailReturned": false,
     "attachmentBytesFetchedDuringDiscovery": false,
     "numericConfidenceReturned": false,
-    "postPasswordSafeStopDiagnostics": true,
-    "postPasswordImportIsolation": true,
-    "statementFailureBlocksSafeProjection": false,
-    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V2",
-    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V1",
-    "bcpCreditMode": "STRUCTURAL_PROBE_ONLY",
-    "bcpCreditFinancialEvidenceEmission": false,
-    "exactFetchEnabledProfiles": 3,
     "profileKeyDiskPersistence": false,
     "dniDerivationOrStorage": false
   },
   "predecessor": {
-    "candidate": "0.2.0-alpha.2+2014",
-    "canonicalUnsignedApkSha256": "72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3",
-    "stableSignedApkSha256": null,
-    "physicalResult": "NOT_EXECUTED_ARTIFACT_EXPIRED_BEFORE_TRUSTED_EDGE_SIGNING",
+    "candidate": "0.2.0-alpha.2+2015",
+    "canonicalUnsignedApkSha256": "5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3",
+    "stableSignedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+    "physicalResult": "SAFE_DIAGNOSTICS_7_BCP_MONETARY_ROW_UNEXPLAINED_3_RIPLEY_PERIOD_AMBIGUOUS",
     "physicalEvidenceInheritanceAllowed": false
   },
   "physicalInstallabilityObservation": {
-    "status": "SIGNED_OD0_REQUIRED",
+    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
     "installPass": false,
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "+2015 is stable-signed with the frozen OAuth signer. OD0 install/launch remains required before any broader physical PASS.",
+    "reason": "+2016 changes strict parser behavior to remediate the +2015 physical review causes. Fresh stable signing and owned-device evidence are mandatory.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
     {
       "workflow": "Alpha.2 Integrated Runtime",
-      "runId": 36787460970,
+      "runId": 36793859029,
       "conclusion": "SUCCESS",
-      "mergeSha": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56"
+      "mergeSha": "6e48f67c9b580be1be43cfa01f19b3b1eb630611"
     },
     {
       "workflow": "FinanceSensor Public Readiness",
-      "runId": 36787461103,
+      "runId": 36793859090,
       "conclusion": "SUCCESS",
-      "mergeSha": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56"
-    },
-    {
-      "workflow": "FinanceSensor Heartbeat",
-      "runId": 36787461093,
-      "conclusion": "SUCCESS",
-      "mergeSha": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56"
+      "mergeSha": "6e48f67c9b580be1be43cfa01f19b3b1eb630611"
     }
   ],
   "nonAuthoritativeCandidates": [
     {
-      "candidate": "0.2.0-alpha.2+2014",
-      "reason": "Superseded only because its original canonical CI artifact expired before trusted-edge signing; +2015 preserves the same functional behavior under a fresh identity."
+      "candidate": "0.2.0-alpha.2+2015",
+      "reason": "Stable-signed diagnostic predecessor; superseded by evidence-driven parser remediation. Physical evidence is not inherited."
     },
     {
       "candidate": "0.2.0-alpha.2+2014",
-      "reason": "Superseded only because its original canonical CI artifact expired before trusted-edge signing; +2015 preserves the same functional behavior under a fresh identity."
+      "reason": "Historical diagnostic candidate."
     },
     {
       "candidate": "0.2.0-alpha.2+2013",
-      "reason": "Historical stable-signed predecessor; physical strict-review observation is non-inheritable."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2012",
-      "reason": "Historical predecessor; superseded."
+      "reason": "Historical stable-signed predecessor."
     }
   ],
   "signing": {
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
     "exactScope": "gmail.readonly",
-    "status": "TRUSTED_EDGE_SIGNED",
-    "trustedEdgeSigningPass": true,
-    "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
-    "signedApkBytes": 182575654,
-    "receipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2015-2026-09-30.json"
+    "status": "TRUSTED_EDGE_SIGNING_REQUIRED",
+    "trustedEdgeSigningPass": false,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
+    "receipt": null
   },
   "boundaries": {
     "realOauthExecutedByCi": false,

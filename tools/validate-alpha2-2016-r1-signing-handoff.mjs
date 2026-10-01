@@ -1,0 +1,29 @@
+import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
+const r=JSON.parse(fs.readFileSync('graph/alpha2-2016-r1-signing-handoff.json','utf8'));
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
+const ps='tools/SIGN-FINANCESENSOR-ALPHA2-R2.ps1', cmd='tools/SIGN-FINANCESENSOR-ALPHA2-R2.cmd';
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_R1_2016_FAILED:${m}`)};
+a(r.schemaVersion==='A2_R1_TRUSTED_EDGE_HANDOFF_V17'&&r.candidate==='0.2.0-alpha.2+2016','identity');
+a(r.sourceCommit===c.sourceCommit&&r.productSourceCommit===c.productSourceCommit,'source chain');
+a(r.inputApk?.sha256===c.authority?.apkSha256&&r.inputApk?.bytes===c.authority?.apkBytes,'input APK');
+a(r.inputApk?.strictParserBehaviorChanged===true,'parser delta');
+a(r.inputApk?.bcpSavingsCompletenessVersion==='A2_BCP_SAVINGS_COMPLETENESS_V3','BCP V3');
+a(r.inputApk?.ripleyCreditStrictAdapter==='A2_RIPLEY_CREDIT_STRICT_V2','Ripley V2');
+a(r.signer?.powershellGitBlob===execFileSync('git',['hash-object',ps],{encoding:'utf8'}).trim(),'PS1 blob');
+a(r.signer?.cmdGitBlob===execFileSync('git',['hash-object',cmd],{encoding:'utf8'}).trim(),'CMD blob');
+a(r.signer?.expectedSignerSha1==='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0','signer');
+a(r.handoffBundle?.name==='FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v16.zip','bundle name');
+a(['PENDING_CI_GENERATION','FROZEN_PUBLIC_SAFE_BUNDLE'].includes(r.handoffBundle?.status),'bundle status');
+if(r.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE'){
+  a(typeof r.handoffBundle.sha256==='string'&&r.handoffBundle.sha256.length===64,'bundle hash');
+  a(Number.isInteger(r.handoffBundle.bytes)&&r.handoffBundle.bytes>0,'bundle bytes');
+  a(r.handoffBundle.manifestIntegrity==='PASS'&&r.handoffBundle.zipIntegrity==='PASS'&&r.handoffBundle.privateKeyFiles===0,'bundle integrity');
+}
+a(r.trustedEdgeSigningPass===false&&r.status==='CANONICAL_FROZEN_SIGNING_REQUIRED'&&r.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier');
+a(r.physicalAlpha2Pass===false&&r.buildReady===false&&r.releaseReady===false,'readiness');
+const p=fs.readFileSync(ps,'utf8');
+for(const m of ['0.2.0-alpha.2+2016','f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97','182551707','BCP_SAVINGS_COMPLETENESS_VERSION=A2_BCP_SAVINGS_COMPLETENESS_V3','RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V2'])a(p.includes(m),`signer marker ${m}`);
+console.log('ALPHA2_R1_SIGNING_HANDOFF_2016=PASS');
+console.log('R1_TRUSTED_EDGE_SIGNING=REQUIRED');
+console.log('SIGNING_REQUEST_ALLOWED=YES');
