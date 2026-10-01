@@ -41,7 +41,7 @@ for (const marker of [
   '_creditDateTokens',
   '_creditPeriodFromTokens',
   'candidates.length == 1',
-  "PERIODO DE FACTURACION"
+  "PERIODO DE FACTURACION",
   '(?:\\d{4}|\\d{2})'
 ]) if (!ripley.includes(marker)) fail(`RIPLEY_MARKER:${marker}`);
 
