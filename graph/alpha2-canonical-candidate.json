@@ -1,20 +1,20 @@
 {
-  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V11",
-  "candidate": "0.2.0-alpha.2+2016",
-  "certifiedPrHead": "aa2289fda138f1707cebee1b343c6ba9d145c717",
-  "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
-  "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+  "schemaVersion": "A2_CANONICAL_CANDIDATE_RECEIPT_V12",
+  "candidate": "0.2.0-alpha.2+2017",
+  "certifiedPrHead": "05f2282a752d07debafdf57e0826409bb7a98694",
+  "productSourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
+  "sourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
   "authority": {
     "workflow": "Alpha.2 Integrated Runtime",
-    "runId": 36793859029,
-    "jobId": 110152682973,
-    "artifactId": 11132718675,
-    "artifactName": "financesensor-alpha2-2016-candidate-36793859029",
-    "artifactZipSha256": "205d3b2f64db20908f458074099e386a6b16096a1f84118175a9c2f57c90ebc3",
-    "artifactZipBytes": 87697354,
+    "runId": 36808618676,
+    "jobId": 110198437773,
+    "artifactId": 11139310764,
+    "artifactName": "financesensor-alpha2-2017-candidate-36808618676",
+    "artifactZipSha256": "e1f4ba7791d324d06044d970d817e5ccba976dc9f12a989ecc04f2c2a1ac27d2",
+    "artifactZipBytes": 87713990,
     "apkPath": "build/app/outputs/flutter-apk/app-debug.apk",
-    "apkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
-    "apkBytes": 182551707,
+    "apkSha256": "5b81d798b5f3885ece41b899a08963b89f5c4e300561a4c469c8c8371c762774",
+    "apkBytes": 182567371,
     "minSdk": 31,
     "targetSdk": 36,
     "compileSdk": 37,
@@ -28,10 +28,10 @@
     "reviewDiagnosticsAllowListed": true,
     "privateReviewDetailEscapes": false,
     "strictParserBehaviorChanged": true,
-    "functionalBaselineCandidate": "0.2.0-alpha.2+2015",
+    "functionalBaselineCandidate": "0.2.0-alpha.2+2016",
     "functionalDelta": true,
-    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V3",
-    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V2",
+    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V4",
+    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V3",
     "bcpCreditMode": "STRUCTURAL_PROBE_ONLY",
     "bcpCreditFinancialEvidenceEmission": false,
     "exactFetchEnabledProfiles": 3,
@@ -46,10 +46,10 @@
     "dniDerivationOrStorage": false
   },
   "predecessor": {
-    "candidate": "0.2.0-alpha.2+2015",
-    "canonicalUnsignedApkSha256": "5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3",
-    "stableSignedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
-    "physicalResult": "SAFE_DIAGNOSTICS_7_BCP_MONETARY_ROW_UNEXPLAINED_3_RIPLEY_PERIOD_AMBIGUOUS",
+    "candidate": "0.2.0-alpha.2+2016",
+    "canonicalUnsignedApkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
+    "stableSignedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+    "physicalResult": "RUNTIME_PASS_PARSER_REMEDIATION_FAIL_7_BCP_3_RIPLEY",
     "physicalEvidenceInheritanceAllowed": false
   },
   "physicalInstallabilityObservation": {
@@ -58,35 +58,31 @@
     "launchPass": false,
     "oauthPass": false,
     "inheritanceFromPriorCandidateAllowed": false,
-    "reason": "+2016 changes strict parser behavior to remediate the +2015 physical review causes. Fresh stable signing and owned-device evidence are mandatory.",
+    "reason": "+2017 changes strict parser behavior to remediate the +2016 owned-device parser regressions. Fresh stable signing and owned-device evidence are mandatory.",
     "rawScreenshotInGitHub": false
   },
   "postMergeConsensus": [
     {
       "workflow": "Alpha.2 Integrated Runtime",
-      "runId": 36793859029,
+      "runId": 36808618676,
       "conclusion": "SUCCESS",
-      "mergeSha": "6e48f67c9b580be1be43cfa01f19b3b1eb630611"
+      "mergeSha": "3b0f99767909deebd34e9843b6fed3f036159903"
     },
     {
       "workflow": "FinanceSensor Public Readiness",
-      "runId": 36793859090,
+      "runId": 36808618794,
       "conclusion": "SUCCESS",
-      "mergeSha": "6e48f67c9b580be1be43cfa01f19b3b1eb630611"
+      "mergeSha": "3b0f99767909deebd34e9843b6fed3f036159903"
     }
   ],
   "nonAuthoritativeCandidates": [
     {
+      "candidate": "0.2.0-alpha.2+2016",
+      "reason": "Stable-signed physical predecessor; runtime passed but parser remediation failed. Physical evidence is not inherited."
+    },
+    {
       "candidate": "0.2.0-alpha.2+2015",
-      "reason": "Stable-signed diagnostic predecessor; superseded by evidence-driven parser remediation. Physical evidence is not inherited."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2014",
-      "reason": "Historical diagnostic candidate."
-    },
-    {
-      "candidate": "0.2.0-alpha.2+2013",
-      "reason": "Historical stable-signed predecessor."
+      "reason": "Historical diagnostic predecessor."
     }
   ],
   "signing": {
