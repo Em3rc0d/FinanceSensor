@@ -126,7 +126,7 @@ jobs:
           cp "$EVIDENCE" "$DIR/CANONICAL-CI-EVIDENCE.txt"
 
           cat > "$DIR/BUNDLE-README.txt" <<'README'
-          FinanceSensor Alpha.2 +2017 — R1 trusted-edge signing bundle v16
+          FinanceSensor Alpha.2 +2017 — R1 trusted-edge signing bundle v17
 
           This candidate contains the evidence-driven BCP Savings V4 and Ripley Credit V3 parser remediations.
           1. Extract this ZIP on the owned Windows trusted edge.
