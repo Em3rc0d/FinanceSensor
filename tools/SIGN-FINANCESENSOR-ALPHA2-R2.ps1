@@ -1,13 +1,13 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Candidate = '0.2.0-alpha.2+2015'
-$ProductSourceCommit = '7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b'
-$CanonicalSourceCommit = '702a28b5f0c9fdaa05ce6c1079b60473df3c1c56'
-$ExpectedInputSha256 = '5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3'
-$ExpectedInputBytes = 182550031
-$CanonicalRunId = '36787460970'
-$CanonicalArtifactId = '11129918967'
+$Candidate = '0.2.0-alpha.2+2016'
+$ProductSourceCommit = '6e48f67c9b580be1be43cfa01f19b3b1eb630611'
+$CanonicalSourceCommit = '6e48f67c9b580be1be43cfa01f19b3b1eb630611'
+$ExpectedInputSha256 = 'f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97'
+$ExpectedInputBytes = 182551707
+$CanonicalRunId = '36793859029'
+$CanonicalArtifactId = '11132718675'
 $ExpectedSignerSha1 = '63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0'
 $ExpectedPackage = 'com.financesensor.lab.gmailconnection.r2'
 $ExpectedScope = 'gmail.readonly'
@@ -15,7 +15,7 @@ $ExpectedScope = 'gmail.readonly'
 $BaseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $InputApk = Join-Path $BaseDir 'FinanceSensor-ALPHA2-CANONICAL-INPUT.apk'
 $ApkSignerJar = Join-Path $BaseDir 'public-signing-tool\lib\apksigner.jar'
-$OutputApk = Join-Path $BaseDir 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2015.apk'
+$OutputApk = Join-Path $BaseDir 'FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2016.apk'
 
 function Convert-SecureToPlain([Security.SecureString]$Secure) {
   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
@@ -88,7 +88,7 @@ function Remove-Outputs {
 $java = Resolve-Exe 'java'
 $keytool = Resolve-Exe 'keytool'
 if (-not $java -or -not $keytool) { throw 'Java/keytool not found. Install Android Studio/JDK or expose JAVA_HOME.' }
-if (-not (Test-Path -LiteralPath $InputApk)) { throw 'Frozen canonical +2015 APK is missing from this bundle.' }
+if (-not (Test-Path -LiteralPath $InputApk)) { throw 'Frozen canonical +2016 APK is missing from this bundle.' }
 if (-not (Test-Path -LiteralPath $ApkSignerJar)) { throw 'Bundled public apksigner.jar is missing.' }
 
 $inputInfo = Get-Item -LiteralPath $InputApk
@@ -157,6 +157,8 @@ try {
     "EXACT_SCOPE=$ExpectedScope",
     'SCAN_RESILIENCE=A2_SCAN_RESILIENCE_V1',
     'SAFE_REVIEW_DIAGNOSTICS=A2_SAFE_REVIEW_DIAGNOSTICS_V1',
+    'BCP_SAVINGS_COMPLETENESS_VERSION=A2_BCP_SAVINGS_COMPLETENESS_V3',
+    'RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V2',
     'PRIVATE_SIGNING_MATERIAL_IN_GITHUB=0',
     'REAL_OAUTH_EXECUTED_BY_SIGNING_STEP=0',
     'REAL_GMAIL_EXECUTED_BY_SIGNING_STEP=0',
