@@ -473,9 +473,345 @@ Map<String, String> _lineToColumns(_Line line, List<_Boundary> boundaries) {
   return grouped.map(
     (key, items) => MapEntry(
       key,
-      items.map((item) => item.text.trim()).where((text) => text.isNotEmpty).join(' ').trim(),
+      key == 'debit' || key == 'credit'
+          ? _monetaryColumnText(items)
+          : items
+              .map((item) => item.text.trim())
+              .where((text) => text.isNotEmpty)
+              .join(' ')
+              .trim(),
     ),
   );
+}
+
+String _monetaryColumnText(List<Alpha2LayoutItem> items) {
+  const touchTolerance = 4.0;
+  final numeric = items.where(_numericMoneyFragment).toList()
+    ..sort((a, b) {
+      final byX = a.x.compareTo(b.x);
+      return byX != 0 ? byX : a.sequence.compareTo(b.sequence);
+    });
+  if (numeric.isEmpty) {
+    return items
+        .map((item) => item.text.trim())
+        .where((text) => text.isNotEmpty)
+        .join(' ')
+        .trim();
+  }
+
+  var start = numeric.length - 1;
+  while (start > 0) {
+    final previous = numeric[start - 1];
+    final current = numeric[start];
+    final previousRight = previous.x + math.max(0, previous.width);
+    final gap = current.x - previousRight;
+    if (!gap.isFinite || gap > touchTolerance) break;
+    start -= 1;
+  }
+
+  final cluster = numeric.sublist(start);
+  final joined = cluster
+      .map((item) => item.text.trim())
+      .where((text) => text.isNotEmpty)
+      .join(' ')
+      .trim();
+  if (_looksLikeCompleteMoney(joined)) return joined;
+
+  final rightmost = numeric.last.text.trim();
+  if (_parseFlexibleMoney(rightmost) != null) return rightmost;
+  return joined;
+}
+
+bool _numericMoneyFragment(Alpha2LayoutItem item) {
+  final raw = item.text.trim();
+  if (raw.isEmpty) return false;
+  final token = raw.replaceFirst(
+    RegExp(r'^S/\.?\s*', caseSensitive: false),
+    '',
+  );
+  return token.contains(RegExp(r'\d')) &&
+      RegExp(r'^[0-9\s.,()+-]+
+
+_Period? _bcpStatementPeriod(List<Alpha2LayoutPage> pages) {
+  final text = _layoutNormalize(pages.map(_pagePlainText).join(' '));
+  final regex = RegExp(
+    r'DEL\s+(\d{1,2})/(\d{1,2})/(\d{2,4})\s+AL\s+(\d{1,2})/(\d{1,2})/(\d{2,4})',
+  );
+  final periods = <String, _Period>{};
+  for (final match in regex.allMatches(text)) {
+    final startYear = _expandYear(match.group(3));
+    final endYear = _expandYear(match.group(6));
+    final start = _safeUtc(startYear, int.tryParse(match.group(2) ?? ''), int.tryParse(match.group(1) ?? ''));
+    final end = _safeUtc(endYear, int.tryParse(match.group(5) ?? ''), int.tryParse(match.group(4) ?? ''));
+    if (start == null || end == null || start.isAfter(end)) continue;
+    final id = 'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}';
+    periods['${start.millisecondsSinceEpoch}:${end.millisecondsSinceEpoch}'] =
+        _Period(start, end, startYear!, endYear!, id);
+  }
+  return periods.length == 1 ? periods.values.single : null;
+}
+
+int? _expandYear(String? token) {
+  final value = int.tryParse(token ?? '');
+  if (value == null) return null;
+  return (token?.length ?? 0) == 2 ? 2000 + value : value;
+}
+
+DateTime? _safeUtc(int? year, int? month, int? day) {
+  if (year == null || month == null || day == null) return null;
+  final value = DateTime.utc(year, month, day, 12);
+  return value.year == year && value.month == month && value.day == day ? value : null;
+}
+
+const Map<String, int> _months = <String, int>{
+  'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'MAY': 5, 'JUN': 6,
+  'JUL': 7, 'AGO': 8, 'SEP': 9, 'SET': 9, 'OCT': 10, 'NOV': 11, 'DIC': 12,
+};
+
+DateTime? _parseBcpDate(String? token, _Period period) {
+  final compact = _layoutNormalize(token ?? '').replaceAll(' ', '');
+  final match = RegExp(r'^(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$')
+      .firstMatch(compact);
+  if (match == null) return null;
+  final day = int.parse(match.group(1)!);
+  final month = _months[match.group(2)!]!;
+  final years = <int>{period.startYear, period.endYear};
+  final candidates = years.map((year) => _safeUtc(year, month, day)).whereType<DateTime>().toList();
+  final inside = candidates
+      .where((date) => !date.isBefore(period.start) && !date.isAfter(period.end))
+      .toList();
+  if (inside.length == 1) return inside.single;
+  if (inside.length > 1) return null;
+  if (candidates.length == 1) return candidates.single;
+  if (candidates.length < 2) return null;
+  candidates.sort((a, b) => _distanceToPeriod(a, period).compareTo(_distanceToPeriod(b, period)));
+  if (_distanceToPeriod(candidates[0], period) == _distanceToPeriod(candidates[1], period)) return null;
+  return candidates[0];
+}
+
+int _distanceToPeriod(DateTime value, _Period period) {
+  if (value.isBefore(period.start)) return period.start.difference(value).inMilliseconds;
+  if (value.isAfter(period.end)) return value.difference(period.end).inMilliseconds;
+  return 0;
+}
+
+_DatePair? _leadingBcpDatePair(_Line line, List<_Boundary> boundaries, _Period period) {
+  final description = boundaries.where((item) => item.id == 'description').firstOrNull;
+  if (description == null) return null;
+  final leading = line.items
+      .where((item) => item.x < description.minX)
+      .map((item) => item.text.trim())
+      .where((text) => text.isNotEmpty)
+      .join(' ');
+  final compact = _layoutNormalize(leading).replaceAll(' ', '');
+  final matches = RegExp(r'(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)')
+      .allMatches(compact)
+      .toList();
+  if (matches.length != 2) return null;
+  final process = _parseBcpDate('${matches[0].group(1)}${matches[0].group(2)}', period);
+  final value = _parseBcpDate('${matches[1].group(1)}${matches[1].group(2)}', period);
+  return process == null || value == null ? null : _DatePair(process, value);
+}
+
+double? _parseFlexibleMoney(String? value) {
+  final token = (value ?? '').trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+  if (token.isEmpty) return null;
+  final signless = token.replaceFirst(RegExp(r'^-'), '').replaceFirst(RegExp(r'-$'), '');
+  if (signless.isEmpty) return null;
+  final comma = signless.lastIndexOf(',');
+  final dot = signless.lastIndexOf('.');
+  final normalized = comma > dot
+      ? signless.replaceAll('.', '').replaceFirst(',', '.')
+      : signless.replaceAll(',', '');
+  final amount = double.tryParse(normalized);
+  return amount == null || !amount.isFinite ? null : amount.abs();
+}
+
+Alpha2SemanticType _savingsSemantic(
+  String description,
+  Alpha2FlowDirection direction,
+) {
+  final text = _layoutNormalize(description);
+  if (direction == Alpha2FlowDirection.inflow &&
+      RegExp(r'\b(PLANILLA|SUELDO|REMUNERACION)\b').hasMatch(text)) {
+    return Alpha2SemanticType.income;
+  }
+  if (direction == Alpha2FlowDirection.outflow &&
+      RegExp(r'\b(COMISION|MANTENIMIENTO|MANT\.)\b').hasMatch(text)) {
+    return Alpha2SemanticType.fee;
+  }
+  return Alpha2SemanticType.unknown;
+}
+
+String _zeroRowDiagnostic({
+  required int ledgerPages,
+  required int processDateLines,
+  required int valueDateLines,
+  required int pairedDateLines,
+  required int amountColumnLines,
+  required int pairedDateAmountLines,
+}) {
+  if (ledgerPages == 0) return 'STATEMENT_LEDGER_PAGE_NOT_FOUND';
+  if (processDateLines == 0) return 'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND';
+  if (valueDateLines == 0) return 'STATEMENT_ROW_VALUE_DATE_NOT_FOUND';
+  if (pairedDateLines == 0) return 'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION';
+  if (pairedDateAmountLines == 0 && amountColumnLines > 0) return 'STATEMENT_ROW_VERTICAL_FRAGMENTATION';
+  if (pairedDateAmountLines == 0) return 'STATEMENT_ROW_AMOUNT_NOT_FOUND';
+  return 'STATEMENT_LAYOUT_NO_MOVEMENTS';
+}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull {
+    final iterator = this.iterator;
+    return iterator.moveNext() ? iterator.current : null;
+  }
+}
+).hasMatch(token);
+}
+
+bool _looksLikeCompleteMoney(String value) {
+  final token = value
+      .trim()
+      .replaceFirst(RegExp(r'^S/\.?\s*', caseSensitive: false), '')
+      .replaceAll(RegExp(r'\s+'), '');
+  return RegExp(r'^-?(?:\d{1,3}(?:[.,]\d{3})+|\d+)[.,]\d{2}
+
+_Period? _bcpStatementPeriod(List<Alpha2LayoutPage> pages) {
+  final text = _layoutNormalize(pages.map(_pagePlainText).join(' '));
+  final regex = RegExp(
+    r'DEL\s+(\d{1,2})/(\d{1,2})/(\d{2,4})\s+AL\s+(\d{1,2})/(\d{1,2})/(\d{2,4})',
+  );
+  final periods = <String, _Period>{};
+  for (final match in regex.allMatches(text)) {
+    final startYear = _expandYear(match.group(3));
+    final endYear = _expandYear(match.group(6));
+    final start = _safeUtc(startYear, int.tryParse(match.group(2) ?? ''), int.tryParse(match.group(1) ?? ''));
+    final end = _safeUtc(endYear, int.tryParse(match.group(5) ?? ''), int.tryParse(match.group(4) ?? ''));
+    if (start == null || end == null || start.isAfter(end)) continue;
+    final id = 'period:${start.toIso8601String().substring(0, 10)}:${end.toIso8601String().substring(0, 10)}';
+    periods['${start.millisecondsSinceEpoch}:${end.millisecondsSinceEpoch}'] =
+        _Period(start, end, startYear!, endYear!, id);
+  }
+  return periods.length == 1 ? periods.values.single : null;
+}
+
+int? _expandYear(String? token) {
+  final value = int.tryParse(token ?? '');
+  if (value == null) return null;
+  return (token?.length ?? 0) == 2 ? 2000 + value : value;
+}
+
+DateTime? _safeUtc(int? year, int? month, int? day) {
+  if (year == null || month == null || day == null) return null;
+  final value = DateTime.utc(year, month, day, 12);
+  return value.year == year && value.month == month && value.day == day ? value : null;
+}
+
+const Map<String, int> _months = <String, int>{
+  'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'MAY': 5, 'JUN': 6,
+  'JUL': 7, 'AGO': 8, 'SEP': 9, 'SET': 9, 'OCT': 10, 'NOV': 11, 'DIC': 12,
+};
+
+DateTime? _parseBcpDate(String? token, _Period period) {
+  final compact = _layoutNormalize(token ?? '').replaceAll(' ', '');
+  final match = RegExp(r'^(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)$')
+      .firstMatch(compact);
+  if (match == null) return null;
+  final day = int.parse(match.group(1)!);
+  final month = _months[match.group(2)!]!;
+  final years = <int>{period.startYear, period.endYear};
+  final candidates = years.map((year) => _safeUtc(year, month, day)).whereType<DateTime>().toList();
+  final inside = candidates
+      .where((date) => !date.isBefore(period.start) && !date.isAfter(period.end))
+      .toList();
+  if (inside.length == 1) return inside.single;
+  if (inside.length > 1) return null;
+  if (candidates.length == 1) return candidates.single;
+  if (candidates.length < 2) return null;
+  candidates.sort((a, b) => _distanceToPeriod(a, period).compareTo(_distanceToPeriod(b, period)));
+  if (_distanceToPeriod(candidates[0], period) == _distanceToPeriod(candidates[1], period)) return null;
+  return candidates[0];
+}
+
+int _distanceToPeriod(DateTime value, _Period period) {
+  if (value.isBefore(period.start)) return period.start.difference(value).inMilliseconds;
+  if (value.isAfter(period.end)) return value.difference(period.end).inMilliseconds;
+  return 0;
+}
+
+_DatePair? _leadingBcpDatePair(_Line line, List<_Boundary> boundaries, _Period period) {
+  final description = boundaries.where((item) => item.id == 'description').firstOrNull;
+  if (description == null) return null;
+  final leading = line.items
+      .where((item) => item.x < description.minX)
+      .map((item) => item.text.trim())
+      .where((text) => text.isNotEmpty)
+      .join(' ');
+  final compact = _layoutNormalize(leading).replaceAll(' ', '');
+  final matches = RegExp(r'(\d{2})(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)')
+      .allMatches(compact)
+      .toList();
+  if (matches.length != 2) return null;
+  final process = _parseBcpDate('${matches[0].group(1)}${matches[0].group(2)}', period);
+  final value = _parseBcpDate('${matches[1].group(1)}${matches[1].group(2)}', period);
+  return process == null || value == null ? null : _DatePair(process, value);
+}
+
+double? _parseFlexibleMoney(String? value) {
+  final token = (value ?? '').trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+  if (token.isEmpty) return null;
+  final signless = token.replaceFirst(RegExp(r'^-'), '').replaceFirst(RegExp(r'-$'), '');
+  if (signless.isEmpty) return null;
+  final comma = signless.lastIndexOf(',');
+  final dot = signless.lastIndexOf('.');
+  final normalized = comma > dot
+      ? signless.replaceAll('.', '').replaceFirst(',', '.')
+      : signless.replaceAll(',', '');
+  final amount = double.tryParse(normalized);
+  return amount == null || !amount.isFinite ? null : amount.abs();
+}
+
+Alpha2SemanticType _savingsSemantic(
+  String description,
+  Alpha2FlowDirection direction,
+) {
+  final text = _layoutNormalize(description);
+  if (direction == Alpha2FlowDirection.inflow &&
+      RegExp(r'\b(PLANILLA|SUELDO|REMUNERACION)\b').hasMatch(text)) {
+    return Alpha2SemanticType.income;
+  }
+  if (direction == Alpha2FlowDirection.outflow &&
+      RegExp(r'\b(COMISION|MANTENIMIENTO|MANT\.)\b').hasMatch(text)) {
+    return Alpha2SemanticType.fee;
+  }
+  return Alpha2SemanticType.unknown;
+}
+
+String _zeroRowDiagnostic({
+  required int ledgerPages,
+  required int processDateLines,
+  required int valueDateLines,
+  required int pairedDateLines,
+  required int amountColumnLines,
+  required int pairedDateAmountLines,
+}) {
+  if (ledgerPages == 0) return 'STATEMENT_LEDGER_PAGE_NOT_FOUND';
+  if (processDateLines == 0) return 'STATEMENT_ROW_PROCESS_DATE_NOT_FOUND';
+  if (valueDateLines == 0) return 'STATEMENT_ROW_VALUE_DATE_NOT_FOUND';
+  if (pairedDateLines == 0) return 'STATEMENT_ROW_DATE_PAIR_VERTICAL_FRAGMENTATION';
+  if (pairedDateAmountLines == 0 && amountColumnLines > 0) return 'STATEMENT_ROW_VERTICAL_FRAGMENTATION';
+  if (pairedDateAmountLines == 0) return 'STATEMENT_ROW_AMOUNT_NOT_FOUND';
+  return 'STATEMENT_LAYOUT_NO_MOVEMENTS';
+}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull {
+    final iterator = this.iterator;
+    return iterator.moveNext() ? iterator.current : null;
+  }
+}
+)
+      .hasMatch(token);
 }
 
 _Period? _bcpStatementPeriod(List<Alpha2LayoutPage> pages) {
