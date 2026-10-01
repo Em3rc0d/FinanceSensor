@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "scope": "ALPHA2_OWNED_DEVICE_PARSER_REGRESSION",
+  "candidate": "0.2.0-alpha.2+2016",
+  "observedAtDay": "2026-09-30",
+  "stableSignedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+  "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+  "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+  "result": "PHYSICAL_RUNTIME_PASS_PARSER_REMEDIATION_FAIL",
+  "observedAggregates": {
+    "gmailObserved": 11,
+    "statementsImported": 0,
+    "statementsReviewRequired": 10,
+    "uncategorizedMovements": 11,
+    "knownGaps": 21
+  },
+  "strictReviewDiagnostics": {
+    "bcpSavings": {
+      "count": 7,
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED"
+    },
+    "ripleyCredit": {
+      "count": 3,
+      "code": "RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN"
+    }
+  },
+  "passedBoundaries": [
+    "APK_INSTALL_AND_LAUNCH",
+    "R2_SIGNER_IDENTITY",
+    "GMAIL_READONLY_CONNECTION",
+    "PROFILE_PASSWORD_SESSION_ONLY_FLOW",
+    "GMAIL_TRANSACTION_SCAN",
+    "SAFE_PUBLIC_PROJECTION",
+    "CASHFLOW_RECONCILIATION_NO_CARD_PAYMENT_OR_TRANSFER_INFLATION"
+  ],
+  "privacy": {
+    "rawStatementPdfCommitted": false,
+    "rawStatementTextCommitted": false,
+    "rawLayoutGeometryCommitted": false,
+    "pdfPasswordCommitted": false,
+    "oauthTokenCommitted": false,
+    "merchantOrAccountIdentifiersCommitted": false
+  },
+  "promotion": {
+    "predecessorPhysicalEvidenceInheritedByNextCandidate": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}
