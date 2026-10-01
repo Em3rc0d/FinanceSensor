@@ -28,20 +28,24 @@
     "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V2",
     "bcpSavingsRemediation": [
       "EXPLICIT_BALANCE_AND_AGGREGATE_SUMMARY_LABELS_EXCLUDED_FROM_LEDGER_COMPLETENESS",
-      "UNKNOWN_UNDATED_MONETARY_ROWS_REMAIN_FAIL_CLOSED"
+      "UNKNOWN_UNDATED_MONETARY_ROWS_REMAIN_FAIL_CLOSED",
+      "DETACHED_CERTIFIED_CONTROL_VALUES_BIND_ONLY_TO_UNIQUE_NEAREST_LABEL_WITHIN_Y10"
     ],
     "ripleyCreditRemediation": [
       "BILLING_PERIOD_ANCHORED_TO_VISUAL_PERIOD_LINE",
       "ADJACENT_LINE_FALLBACK_IS_NARROW_AND_BOUNDED",
       "REPEATED_IDENTICAL_PERIODS_CONVERGE",
-      "CONFLICTING_ANCHORED_PERIODS_FAIL_CLOSED"
+      "CONFLICTING_ANCHORED_PERIODS_FAIL_CLOSED",
+      "FOUR_DIGIT_YEAR_PREFERRED_BEFORE_TWO_DIGIT_FALLBACK"
     ]
   },
   "regressionTests": [
     "certified BCP balance and aggregate labels stay outside the ledger",
     "unknown undated monetary row still fails closed",
     "Ripley billing period ignores unrelated nearby dates",
-    "Ripley conflicting anchored billing periods still fail closed"
+    "Ripley conflicting anchored billing periods still fail closed",
+    "certified BCP control values may be vertically detached from labels",
+    "Ripley four-digit statement period remains in 2026"
   ],
   "privacy": {
     "rawStatementPdfInRepository": false,
