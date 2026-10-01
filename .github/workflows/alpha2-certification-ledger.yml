@@ -8,12 +8,12 @@ on:
       - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-2016-r1-signing-handoff.json'
+      - 'graph/alpha2-2017-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
-      - 'tools/validate-alpha2-2016-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-2016-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2017-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-2017-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -25,12 +25,12 @@ on:
       - 'graph/alpha2-2013-certification-ledger-extension.json'
       - 'graph/alpha2-2014-certification-ledger-extension.json'
       - 'graph/alpha2-canonical-candidate.json'
-      - 'graph/alpha2-2016-r1-signing-handoff.json'
+      - 'graph/alpha2-2017-r1-signing-handoff.json'
       - 'graph/alpha2-r2-owned-device-campaign.json'
       - 'graph/alpha2-human-intervention-gate.json'
       - 'tools/validate-alpha2-certification-ledger.mjs'
-      - 'tools/validate-alpha2-2016-canonical-candidate.mjs'
-      - 'tools/validate-alpha2-2016-r1-signing-handoff.mjs'
+      - 'tools/validate-alpha2-2017-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-2017-r1-signing-handoff.mjs'
       - 'tools/validate-alpha2-r2-chain.mjs'
       - 'tools/validate-alpha2-human-intervention-gate.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
@@ -47,16 +47,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/validate-alpha2-certification-ledger.mjs
-      - run: node tools/validate-alpha2-2016-canonical-candidate.mjs
-      - run: node tools/validate-alpha2-2016-r1-signing-handoff.mjs
+      - run: node tools/validate-alpha2-2017-canonical-candidate.mjs
+      - run: node tools/validate-alpha2-2017-r1-signing-handoff.mjs
       - run: node tools/validate-alpha2-r2-chain.mjs
       - run: node tools/validate-alpha2-human-intervention-gate.mjs
       - run: node tools/validate-ci-runner-policy.mjs
       - name: Certification ledger summary
         run: |
           echo 'ALPHA2_CERTIFICATION_LEDGER=PASS'
-          echo 'CANDIDATE=0.2.0-alpha.2+2016'
-          echo 'FUNCTIONAL_BASELINE=0.2.0-alpha.2+2015'
+          echo 'CANDIDATE=0.2.0-alpha.2+2017'
+          echo 'FUNCTIONAL_BASELINE=0.2.0-alpha.2+2016'
           echo 'CHAIN_STATE=CANONICAL_FROZEN_SIGNING_REQUIRED'
           echo 'NEXT_GATE=R1_TRUSTED_EDGE_SIGNING'
           echo 'PRIOR_PHYSICAL_EVIDENCE_INHERITED=NO'
