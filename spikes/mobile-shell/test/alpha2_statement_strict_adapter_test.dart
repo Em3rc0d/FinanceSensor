@@ -78,6 +78,20 @@ void main() {
     expect(result.importable, isTrue);
   });
 
+  test('certified BCP detached controls tolerate one PDF baseline gap', () {
+    final result = parser.parse(
+      layout: _layout(
+        includeBrokenMonetaryRow: false,
+        includeWideDetachedBcpSummaryValues: true,
+      ),
+      sourceReceiptId: 'stmt-src:test-bcp-wide-detached-controls',
+      tenantId: 'tenant-1',
+    );
+    expect(result.evidence, hasLength(1));
+    expect(result.reviewCodes, isEmpty);
+    expect(result.importable, isTrue);
+  });
+
   test('unknown undated monetary row still fails closed', () {
     final result = parser.parse(
       layout: _layout(includeBrokenMonetaryRow: false, includeUnknownFooter: true),
@@ -97,6 +111,7 @@ Alpha2StatementLayout _layout({
   bool includeUnknownFooter = false,
   bool includeExtendedBcpSummaryRows = false,
   bool includeDetachedBcpSummaryValues = false,
+  bool includeWideDetachedBcpSummaryValues = false,
 }) {
   final items = <Alpha2LayoutItem>[
     _item('ESTADO DE CUENTA DE AHORROS CUENTA DIGITAL BCP', 20, 780, 0),
@@ -150,6 +165,15 @@ Alpha2StatementLayout _layout({
       _item('0.00', 500, 604, sequence++),
       _item('SALDO DISPONIBLE', 200, 580, sequence++),
       _item('990.00', 500, 574, sequence++),
+    ]);
+  }
+  if (includeWideDetachedBcpSummaryValues) {
+    items.addAll(<Alpha2LayoutItem>[
+      _item('TOTAL MOVIMIENTO', 200, 610, sequence++),
+      _item('10.00', 400, 586, sequence++),
+      _item('0.00', 500, 586, sequence++),
+      _item('SALDO DISPONIBLE', 200, 555, sequence++),
+      _item('990.00', 500, 531, sequence++),
     ]);
   }
   if (includeBrokenMonetaryRow) {
