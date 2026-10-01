@@ -20,7 +20,7 @@ jobs:
       - run: node tools/validate-alpha2-od0-owned-device-harness.mjs
       - run: node tools/validate-ci-runner-policy.mjs
       - run: |
-          echo 'CANDIDATE=0.2.0-alpha.2+2016'
+          echo 'CANDIDATE=0.2.0-alpha.2+2017'
           echo 'OD0_HANDOFF_PACKAGE=BLOCKED'
           echo 'BLOCKER=R1_TRUSTED_EDGE_SIGNING_REQUIRED'
           echo 'OD0_EXECUTION_ALLOWED=NO'
