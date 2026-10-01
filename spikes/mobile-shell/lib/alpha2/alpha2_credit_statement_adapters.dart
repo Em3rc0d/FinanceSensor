@@ -64,6 +64,7 @@ class Alpha2StrictRipleyCreditAdapter {
           _joinRange(line.items, geometry.totalMinX, double.infinity),
         );
         if (signedTotal == null || signedTotal == 0) continue;
+        if (_isCertifiedRipleyControlRow(line, geometry)) continue;
         monetaryRows += 1;
 
         final occurredAt = _parseCreditDate(
@@ -368,6 +369,22 @@ Alpha2LayoutItem? _ripleyTotalLeftAnchor(
   if (candidates.isEmpty) return null;
   candidates.sort((a, b) => b.x.compareTo(a.x));
   return candidates.first;
+}
+
+bool _isCertifiedRipleyControlRow(
+  _CreditLine line,
+  _RipleyGeometry geometry,
+) {
+  final left = _normalizeLayout(
+    _joinRange(
+      line.items,
+      double.negativeInfinity,
+      geometry.totalMinX,
+    ),
+  );
+  return RegExp(
+    r'^(?:SALDO INICIAL|SALDO ANTERIOR)\b',
+  ).hasMatch(left);
 }
 
 double? _ripleyLedgerFooterY(Alpha2LayoutPage page, double headerY) {
