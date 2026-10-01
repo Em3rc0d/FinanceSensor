@@ -1,34 +1,34 @@
 {
-  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V7",
+  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V8",
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
-  "status": "READY_FOR_OD0",
+  "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
   "candidate": {
-    "id": "0.2.0-alpha.2+2015",
-    "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
-    "sourceCommit": "702a28b5f0c9fdaa05ce6c1079b60473df3c1c56",
-    "canonicalInputApkSha256": "5cbc13f01a9f1b021ca2cab04f6b572035ab96c4ff1f8ace574a6e28056bbbc3",
-    "canonicalInputApkBytes": 182550031,
-    "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
-    "signedApkBytes": 182575654,
+    "id": "0.2.0-alpha.2+2016",
+    "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+    "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+    "canonicalInputApkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
+    "canonicalInputApkBytes": 182551707,
+    "signedApkSha256": null,
+    "signedApkBytes": null,
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidPackage": "com.financesensor.lab.gmailconnection.r2",
     "gmailScope": "gmail.readonly",
     "minSdk": 31,
-    "installabilityObservation": "ELIGIBLE_NOT_EXECUTED",
-    "stableSignedInstallability": "OD0_REQUIRED"
+    "installabilityObservation": "BLOCKED_UNTIL_SIGNED",
+    "stableSignedInstallability": "R1_REQUIRED"
   },
-  "r1PhysicalReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2015-2026-09-30.json",
+  "r1PhysicalReceipt": null,
   "historicalInvalidatedCampaign": {
-    "candidate": "0.2.0-alpha.2+2014",
-    "signedApkSha256": null,
-    "lastSanitizedReceipt": null,
+    "candidate": "0.2.0-alpha.2+2015",
+    "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+    "lastSanitizedReceipt": "graph/physical-receipts/ALPHA2-2015-SAFE-REVIEW-DIAGNOSTICS-2026-09-30.json",
     "priorPassedGates": [],
-    "priorOpenGate": "R1_TRUSTED_EDGE_SIGNING",
+    "priorOpenGate": "STRICT_REVIEW_DIAGNOSTICS",
     "continuationAllowed": false,
     "evidenceInheritanceAllowed": false,
-    "reason": "ORIGINAL_CANONICAL_ARTIFACT_EXPIRED_BEFORE_TRUSTED_EDGE_SIGNING_IDENTITY_REFROZEN_AS_2015"
+    "reason": "PARSER_BEHAVIOR_CHANGED_TO_REMEDIATE_2015_PHYSICAL_REVIEW_CAUSES"
   },
   "olderHistoricalCampaigns": [
     {
@@ -96,7 +96,7 @@
     {
       "id": "OD0",
       "contract": "SIGNED_APK_INSTALL_AND_LAUNCH",
-      "status": "READY",
+      "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
       "requires": [
         "R1_TRUSTED_EDGE_SIGNING_PASS"
       ],
@@ -291,10 +291,10 @@
     "current": null
   },
   "currentState": {
-    "r1TrustedEdgeSigning": "PASS",
-    "r2PhysicalCampaign": "READY_FOR_OD0",
-    "nextGate": "OD0_SIGNED_APK_INSTALL_AND_LAUNCH",
-    "currentBlocker": "OWNED_DEVICE_OD0_EXECUTION_REQUIRED",
+    "r1TrustedEdgeSigning": "REQUIRED",
+    "r2PhysicalCampaign": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
+    "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+    "currentBlocker": "R1_TRUSTED_EDGE_SIGNING_REQUIRED",
     "q003": "ACTIVE",
     "q004": "ACTIVE",
     "q005": "ACTIVE",
