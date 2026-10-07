@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import './validate-alpha2-2017-candidate-cut.mjs';
+import './validate-alpha2-edge-v1-runtime.mjs';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -71,7 +71,8 @@ if (creditProfiles.get('PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRUCTUR
 
 if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
 if (!adrIndex.includes('| ADR-039 | Alpha.2 installability incident and Android baseline retention |')) throw new Error('ALPHA2_ADR_039_REGISTRY_MISSING');
-if (!adrIndex.includes('**Next available ADR:** `ADR-040`.')) throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
+if (!adrIndex.includes('| ADR-040 | Provider-neutral Edge V1 as observe-only authority shadow |')) throw new Error('ALPHA2_ADR_040_REGISTRY_MISSING');
+if (!adrIndex.includes('**Next available ADR:** `ADR-041`.')) throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
 
 for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 'FinancialMailScanner']) {
   if (pipeline.includes(forbidden) || main.includes(forbidden)) throw new Error(`ALPHA2_LEGACY_RUNTIME_REFERENCE:${forbidden}`);
@@ -133,7 +134,15 @@ for (const marker of ['summarizeAlpha2Categories','Alpha2FlowDirection.outflow',
 }
 if (!main.includes("Text('Cuenta ${item.accountDisplay}')")) throw new Error('ALPHA2_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
 
-if (/confidence\s*[:=]/i.test(transactionScanner) || transactionScanner.includes('0.96')) throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
+if (
+  transactionScanner.includes('"confidence" to') ||
+  transactionScanner.includes('"matchScore" to') ||
+  transactionScanner.includes('"evidencePercent" to') ||
+  transactionScanner.includes('0.96')
+) throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
+if (!transactionScanner.includes('"numericConfidenceReturned" to false')) {
+  throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_BOUNDARY_MISSING');
+}
 if (!transactionScanner.includes('truthState') || !transactionScanner.includes('OBSERVED')) throw new Error('ALPHA2_GMAIL_OBSERVED_TRUTH_REQUIRED');
 for (const marker of ['PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1','PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1','PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1']) {
   if (!statementScanner.includes(marker)) throw new Error(`ALPHA2_STATEMENT_PROFILE_MISSING:${marker}`);

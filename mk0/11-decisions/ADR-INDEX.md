@@ -64,8 +64,9 @@ Supersedes / superseded by
 | ADR-037 | Dual-source authority and canonical web projection | ACCEPTED FOR ALPHA.2 DESIGN / IMPLEMENTATION OPEN | integrated A-G mobile runtime + canonical web/sync evidence |
 | ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity | ACCEPTED FOR ALPHA.2 IMPLEMENTATION / PHYSICAL MILESTONE OPEN | integrated A-G exact-head CI + owned-device SQLCipher/statement/reconciliation proof |
 | ADR-039 | Alpha.2 installability incident and Android baseline retention | ACCEPTED FOR ALPHA.2 REPAIR / PHYSICAL REVALIDATION REQUIRED | +2003 API-31 install/launch observation before canonical re-freeze |
+| ADR-040 | Provider-neutral Edge V1 as observe-only authority shadow | ACCEPTED FOR ALPHA.2 SHADOW VALIDATION / DURABLE AUTHORITY FORBIDDEN | provider-neutral evaluation + exact signed owned-device evidence before promotion |
 
-**Next available ADR:** `ADR-040`.
+**Next available ADR:** `ADR-041`.
 
 ## MK0 implementation baseline resolved on 2026-09-02
 

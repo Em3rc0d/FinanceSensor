@@ -23,6 +23,8 @@ object Alpha2TransactionScanner {
     private const val PAGE_SIZE = 100
     private const val CONNECT_TIMEOUT_MS = 12_000
     private const val READ_TIMEOUT_MS = 12_000
+    private const val EDGE_MAIL_THRESHOLD = 0.80
+    private const val EDGE_STATEMENT_THRESHOLD = 0.72
 
     private data class Candidate(
         val adapterId: String,
@@ -57,12 +59,22 @@ object Alpha2TransactionScanner {
         )
     }
 
-    fun scan(token: String): Map<String, Any?> {
+    internal fun scan(
+        token: String,
+        edgeMailModel: Alpha2EdgeMailModel? = null,
+        edgeStatementMailModel: Alpha2EdgeStatementMailModel? = null,
+    ): Map<String, Any?> {
         var inspected = 0
         var candidates = 0
         var fullFetched = 0
         var rejected = 0
         var parseMisses = 0
+        var edgeMailPredictions = 0
+        var edgeMailHighConfidence = 0
+        var edgeMailAgreements = 0
+        var edgeMailDisagreements = 0
+        var edgeStatementPredictions = 0
+        var edgeStatementHighConfidence = 0
         var pageToken: String? = null
         val events = mutableListOf<DerivedEvent>()
 
@@ -95,12 +107,43 @@ object Alpha2TransactionScanner {
                     token,
                 )
                 val headers = headers(metadata)
-                val candidate = classify(headers["from"].orEmpty(), headers["subject"].orEmpty())
+                val subject = headers["subject"].orEmpty()
+                val edgeMailPrediction = edgeMailModel?.predict(subject)
+                if (edgeMailPrediction != null) {
+                    edgeMailPredictions += 1
+                    if (
+                        edgeMailPrediction.confidence >= EDGE_MAIL_THRESHOLD &&
+                        edgeMailPrediction.label != "NON_FINANCIAL"
+                    ) {
+                        edgeMailHighConfidence += 1
+                    }
+                }
+                val edgeStatementProbability = edgeStatementMailModel?.probability(subject)
+                if (edgeStatementProbability != null) {
+                    edgeStatementPredictions += 1
+                    if (edgeStatementProbability >= EDGE_STATEMENT_THRESHOLD) {
+                        edgeStatementHighConfidence += 1
+                    }
+                }
+
+                val candidate = classify(headers["from"].orEmpty(), subject)
                 if (candidate == null) {
                     rejected += 1
                     continue
                 }
                 candidates += 1
+                val expectedEdgeLabel = edgeLabelFor(candidate.adapterId)
+                if (
+                    edgeMailPrediction != null &&
+                    edgeMailPrediction.confidence >= EDGE_MAIL_THRESHOLD &&
+                    expectedEdgeLabel != null
+                ) {
+                    if (edgeMailPrediction.label == expectedEdgeLabel) {
+                        edgeMailAgreements += 1
+                    } else {
+                        edgeMailDisagreements += 1
+                    }
+                }
 
                 val full = getJson("$GMAIL_MESSAGES/${encode(messageId)}?format=full", token)
                 fullFetched += 1
@@ -136,7 +179,30 @@ object Alpha2TransactionScanner {
             "rawContentReturned" to false,
             "rawContentPersisted" to false,
             "numericConfidenceReturned" to false,
+            "edgeShadowStatus" to if (edgeMailModel != null && edgeStatementMailModel != null) "ACTIVE" else "UNAVAILABLE",
+            "edgeShadowMode" to "OBSERVE_ONLY",
+            "edgeProviderIdentityFeatures" to false,
+            "edgeMailThreshold" to EDGE_MAIL_THRESHOLD,
+            "edgeMailPredictions" to edgeMailPredictions,
+            "edgeMailHighConfidence" to edgeMailHighConfidence,
+            "edgeMailAgreements" to edgeMailAgreements,
+            "edgeMailDisagreements" to edgeMailDisagreements,
+            "edgeStatementThreshold" to EDGE_STATEMENT_THRESHOLD,
+            "edgeStatementPredictions" to edgeStatementPredictions,
+            "edgeStatementHighConfidence" to edgeStatementHighConfidence,
+            "edgePersistedEvents" to 0,
         )
+    }
+
+    private fun edgeLabelFor(adapterId: String): String? = when (adapterId) {
+        "BCP_CARD_PURCHASE", "INTERBANK_CARD_PURCHASE" -> "PURCHASE"
+        "BCP_ATM_WITHDRAWAL" -> "CASH_WITHDRAWAL"
+        "BCP_INTERNAL_TRANSFER" -> "INTERNAL_TRANSFER"
+        "BCP_EXTERNAL_TRANSFER", "INTERBANK_PLIN_PAYMENT", "INTERBANK_TRANSFER" ->
+            "EXTERNAL_TRANSFER"
+        "BCP_CARD_PAYMENT", "RIPLEY_CARD_PAYMENT" -> "CARD_PAYMENT"
+        "BCP_SERVICE_PAYMENT", "INTERBANK_SERVICE_PAYMENT" -> "SERVICE_PAYMENT"
+        else -> null
     }
 
     private fun classify(from: String, subject: String): Candidate? {
