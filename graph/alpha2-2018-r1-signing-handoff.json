@@ -36,14 +36,19 @@
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1.zip",
-    "status": "PENDING_CI_GENERATION",
-    "sha256": null,
-    "bytes": null,
+    "status": "FROZEN_PUBLIC_SAFE_BUNDLE",
+    "sha256": "a13a848b9c82ea67f498dfbd1fb0a28604ff5cc671d2c5c815e45f431564e91d",
+    "bytes": 86694276,
     "files": 8,
     "privateKeyFiles": 0,
-    "manifestIntegrity": null,
-    "zipIntegrity": null,
-    "generationReceipt": null,
+    "manifestIntegrity": "PASS",
+    "zipIntegrity": "PASS",
+    "generationReceipt": {
+      "workflow": "Alpha.2 +2018 R1 Trusted-Edge Signing",
+      "runId": 37666764883,
+      "artifactId": 11503636682,
+      "artifactArchiveSha256": "e8756ce6dce9d18aee60a6467113121b3ae97b0b5a02c21b5bb6cc5bd8aa3713"
+    },
     "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
   },
   "stableSignedApk": null,
