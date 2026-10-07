@@ -25,16 +25,18 @@ No future product build may introduce an execution path that is not mapped to th
 The only Alpha.2 binary allowed to enter the trusted-edge signing lane is:
 
 ```text
-candidate     0.2.0-alpha.2+2001
-source        f658363772b8d3652a81a8a4275a571f2f409ed8
-apk sha256    7fe14ac1ef62def124d1d15115809308a64e8d3cafffaa619b6c7105c40c8b9f
-apk bytes     182053563
+candidate     0.2.0-alpha.2+2016
+source        6e48f67c9b580be1be43cfa01f19b3b1eb630611
+apk sha256    f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97
+apk bytes     182551707
 package       com.financesensor.lab.gmailconnection.r2
 scope         gmail.readonly
 signer sha1   63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0
 ```
 
 A rebuild from the same source is not interchangeable with this APK. A different source SHA, APK hash, package, scope, or expected signer identity reopens the affected node.
+
+The repository may contain newer **internal development candidates** (currently the +2017 repair line and +2018 Edge-shadow line). They do not silently replace the canonical physical-campaign identity. Promotion to the physical lane requires an explicit canonical receipt, fresh trusted-edge signing and fresh owned-device evidence; prior physical evidence is never inherited.
 
 # Remainder topology
 
