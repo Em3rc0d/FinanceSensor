@@ -70,11 +70,23 @@ for source_name, target_name in (
     ('Alpha2TransactionScanner.kt', 'Alpha2TransactionScanner.kt'),
     ('Alpha2StatementDiscoveryScanner.kt', 'Alpha2StatementDiscoveryScanner.kt'),
     ('Alpha2VaultBridge.kt', 'Alpha2VaultBridge.kt'),
+    ('Alpha2EdgeTextModel.kt', 'Alpha2EdgeTextModel.kt'),
 ):
     source = Path('native/android') / source_name
     if not source.exists():
         raise SystemExit(f'NATIVE_SOURCE_NOT_FOUND:{source}')
     (target_dir / target_name).write_text(source.read_text())
+
+android_assets = Path('android/app/src/main/assets')
+android_assets.mkdir(parents=True, exist_ok=True)
+for asset_name in (
+    'edge_mail_model_v1.json',
+    'edge_statement_mail_model_v1.json',
+):
+    source = Path('native/android/assets') / asset_name
+    if not source.exists():
+        raise SystemExit(f'EDGE_MODEL_ASSET_NOT_FOUND:{source}')
+    (android_assets / asset_name).write_bytes(source.read_bytes())
 
 manifest = Path('android/app/src/main/AndroidManifest.xml')
 text = manifest.read_text()
@@ -94,3 +106,5 @@ print('ANDROID_COMPILE_SDK=37')
 print('ANDROID_MIN_SDK=31')
 print('ANDROID_TARGET_SDK=36')
 print('SQLCIPHER_VERSION=4.18.0')
+print('EDGE_MAIL_MODEL=PACKAGED')
+print('EDGE_STATEMENT_MAIL_MODEL=PACKAGED')
