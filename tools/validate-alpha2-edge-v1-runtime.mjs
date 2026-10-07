@@ -109,6 +109,15 @@ if (!mainActivity.includes('"gmailEvidence" to (transaction["events"]')) {
   throw new Error('EDGE_SHADOW_MUST_NOT_REPLACE_GMAIL_EVIDENCE');
 }
 
+if (!transactionScanner.includes('"numericConfidenceReturned" to false')) {
+  throw new Error('EDGE_NUMERIC_CONFIDENCE_PUBLIC_BOUNDARY_MISSING');
+}
+for (const forbiddenPublicKey of ['"confidence" to', '"matchScore" to', '"evidencePercent" to']) {
+  if (transactionScanner.includes(forbiddenPublicKey)) {
+    throw new Error(`EDGE_NUMERIC_CONFIDENCE_PUBLIC_KEY_FORBIDDEN:${forbiddenPublicKey}`);
+  }
+}
+
 for (const marker of [
   'Alpha2EdgeModelBundle.load(this)',
   'edgeMailModel = edgeModels?.mail',
