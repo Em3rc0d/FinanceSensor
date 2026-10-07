@@ -46,6 +46,9 @@ class MainActivity : FlutterActivity() {
 
     private val io = Executors.newSingleThreadExecutor()
     private val statementScanner = Alpha2StatementDiscoveryScanner()
+    private val edgeModels: Alpha2EdgeModelBundle? by lazy {
+        runCatching { Alpha2EdgeModelBundle.load(this) }.getOrNull()
+    }
     private var pending: MethodChannel.Result? = null
     private var pendingExplicitReconnect = false
     private var accessToken: String? = null
@@ -303,6 +306,16 @@ class MainActivity : FlutterActivity() {
                 "rawGmailReturned" to false,
                 "numericConfidenceReturned" to false,
                 "attachmentBytesFetchedDuringDiscovery" to false,
+                "edgeShadowStatus" to (transaction["edgeShadowStatus"] ?: "UNAVAILABLE"),
+                "edgeShadowMode" to (transaction["edgeShadowMode"] ?: "OBSERVE_ONLY"),
+                "edgeProviderIdentityFeatures" to false,
+                "edgeMailPredictions" to (transaction["edgeMailPredictions"] ?: 0),
+                "edgeMailHighConfidence" to (transaction["edgeMailHighConfidence"] ?: 0),
+                "edgeMailAgreements" to (transaction["edgeMailAgreements"] ?: 0),
+                "edgeMailDisagreements" to (transaction["edgeMailDisagreements"] ?: 0),
+                "edgeStatementPredictions" to (transaction["edgeStatementPredictions"] ?: 0),
+                "edgeStatementHighConfidence" to (transaction["edgeStatementHighConfidence"] ?: 0),
+                "edgePersistedEvents" to 0,
             )
             runOnUiThread { result.success(response) }
         }
@@ -311,7 +324,14 @@ class MainActivity : FlutterActivity() {
     private fun scanTransactionsResilient(token: String): ScannerOutcome {
         for (attempt in 1..SCAN_MAX_ATTEMPTS) {
             try {
-                return ScannerOutcome(Alpha2TransactionScanner.scan(token), null)
+                return ScannerOutcome(
+                    Alpha2TransactionScanner.scan(
+                        token = token,
+                        edgeMailModel = edgeModels?.mail,
+                        edgeStatementMailModel = edgeModels?.statementMail,
+                    ),
+                    null,
+                )
             } catch (error: Alpha2TransactionScanner.ScanException) {
                 if (error.safeCode == "REAUTH_REQUIRED") {
                     return ScannerOutcome(null, error.safeCode, reauthRequired = true)
