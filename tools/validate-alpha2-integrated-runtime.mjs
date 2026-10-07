@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import './validate-alpha2-2017-candidate-cut.mjs';
+import './validate-alpha2-edge-v1-runtime.mjs';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
