@@ -8,6 +8,7 @@ on:
       - 'spikes/mobile-shell/lib/alpha2/**'
       - 'spikes/mobile-shell/lib/main_alpha2.dart'
       - 'spikes/mobile-shell/native/android/Alpha2*.kt'
+      - 'spikes/mobile-shell/native/android/assets/**'
       - 'spikes/mobile-shell/pubspec.yaml'
       - 'spikes/mobile-shell/test/alpha2_*_test.dart'
       - 'graph/alpha2-mobile-golden-vectors-v1.json'
@@ -28,6 +29,7 @@ on:
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'tools/validate-alpha2-2017-candidate-cut.mjs'
+      - 'tools/validate-alpha2-edge-v1-runtime.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
   push:
@@ -36,6 +38,7 @@ on:
       - 'spikes/mobile-shell/lib/alpha2/**'
       - 'spikes/mobile-shell/lib/main_alpha2.dart'
       - 'spikes/mobile-shell/native/android/Alpha2*.kt'
+      - 'spikes/mobile-shell/native/android/assets/**'
       - 'spikes/mobile-shell/pubspec.yaml'
       - 'spikes/mobile-shell/test/alpha2_*_test.dart'
       - 'graph/alpha2-mobile-golden-vectors-v1.json'
@@ -56,6 +59,7 @@ on:
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'tools/validate-alpha2-2017-candidate-cut.mjs'
+      - 'tools/validate-alpha2-edge-v1-runtime.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
 
@@ -91,6 +95,9 @@ jobs:
 
       - name: +2017 parser repair candidate boundary
         run: node tools/validate-alpha2-2017-candidate-cut.mjs
+
+      - name: Edge V1 observe-only runtime boundary
+        run: node tools/validate-alpha2-edge-v1-runtime.mjs
 
       - name: Integrated architecture boundary
         run: node tools/validate-alpha2-integrated-runtime.mjs
@@ -164,7 +171,7 @@ jobs:
           flutter build apk --debug \
             --target lib/main_alpha2.dart \
             --build-name 0.2.0-alpha.2 \
-            --build-number 2017
+            --build-number 2018
 
       - name: Verify APK parser and signature surface
         working-directory: spikes/mobile-shell
@@ -176,7 +183,7 @@ jobs:
           BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
           printf '%s\n' "$BADGING"
           grep -q "package: name='com.financesensor.lab.gmailconnection.r2'" <<< "$BADGING"
-          grep -q "versionCode='2017'" <<< "$BADGING"
+          grep -q "versionCode='2018'" <<< "$BADGING"
           grep -q "minSdkVersion:'31'" <<< "$BADGING"
           grep -q "targetSdkVersion:'36'" <<< "$BADGING"
           echo 'APK_SIGNATURE_VERIFY=PASS'
@@ -192,10 +199,10 @@ jobs:
           APK_BYTES="$(stat -c '%s' "$APK")"
           cat > alpha2-integrated-ci-evidence.txt <<EOF
           ALPHA2_INTEGRATED_RUNTIME_CI=PASS
-          CANDIDATE_ID=0.2.0-alpha.2+2017
-          PREDECESSOR_INTERNAL_CANDIDATE=0.2.0-alpha.2+2016
-          PREDECESSOR_CANONICAL=0.2.0-alpha.2+2016
-          FUNCTIONAL_BASELINE_CANDIDATE=0.2.0-alpha.2+2016
+          CANDIDATE_ID=0.2.0-alpha.2+2018
+          PREDECESSOR_INTERNAL_CANDIDATE=0.2.0-alpha.2+2017
+          PREDECESSOR_CANONICAL=0.2.0-alpha.2+2017
+          FUNCTIONAL_BASELINE_CANDIDATE=0.2.0-alpha.2+2017
           FUNCTIONAL_DELTA=YES
           SOURCE_COMMIT=${SOURCE_SHA}
           ANDROID_OAUTH_PACKAGE=com.financesensor.lab.gmailconnection.r2
@@ -215,7 +222,13 @@ jobs:
           REVIEW_DIAGNOSTICS_PROFILE_SCOPED=YES
           REVIEW_DIAGNOSTICS_ALLOW_LISTED=YES
           PRIVATE_REVIEW_DETAIL_ESCAPES=NO
-          STRICT_PARSER_BEHAVIOR_CHANGED=YES
+          STRICT_PARSER_BEHAVIOR_CHANGED=NO
+          EDGE_V1_RUNTIME=OBSERVE_ONLY
+          EDGE_PROVIDER_IDENTITY_FEATURES=NO
+          EDGE_RUNTIME_PROVIDER_SWITCH=NO
+          EDGE_DURABLE_FINANCIAL_AUTHORITY=NO
+          EDGE_PERSISTED_EVENTS=0
+          GOLDEN_2017_AUTHORITY=PRESERVED
           TRANSACTION_STATEMENT_SCAN_ISOLATION=YES
           TRANSIENT_SCAN_RETRY_BOUNDED=YES
           REAUTH_FAIL_CLOSED=YES
@@ -254,7 +267,7 @@ jobs:
       - name: Upload internal compile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: financesensor-alpha2-2017-candidate-${{ github.run_id }}
+          name: financesensor-alpha2-2018-candidate-${{ github.run_id }}
           path: |
             spikes/mobile-shell/build/app/outputs/flutter-apk/app-debug.apk
             spikes/mobile-shell/alpha2-integrated-ci-evidence.txt
