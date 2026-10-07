@@ -71,7 +71,8 @@ if (creditProfiles.get('PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRUCTUR
 
 if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
 if (!adrIndex.includes('| ADR-039 | Alpha.2 installability incident and Android baseline retention |')) throw new Error('ALPHA2_ADR_039_REGISTRY_MISSING');
-if (!adrIndex.includes('**Next available ADR:** `ADR-040`.')) throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
+if (!adrIndex.includes('| ADR-040 | Provider-neutral Edge V1 as observe-only authority shadow |')) throw new Error('ALPHA2_ADR_040_REGISTRY_MISSING');
+if (!adrIndex.includes('**Next available ADR:** `ADR-041`.')) throw new Error('ALPHA2_ADR_NEXT_NUMBER_INVALID');
 
 for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 'FinancialMailScanner']) {
   if (pipeline.includes(forbidden) || main.includes(forbidden)) throw new Error(`ALPHA2_LEGACY_RUNTIME_REFERENCE:${forbidden}`);
