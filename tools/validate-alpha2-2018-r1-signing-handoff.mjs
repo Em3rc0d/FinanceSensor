@@ -14,6 +14,10 @@ a(r.signer?.powershellGitBlob===execFileSync('git',['hash-object',ps],{encoding:
 a(r.signer?.cmdGitBlob===execFileSync('git',['hash-object',cmd],{encoding:'utf8'}).trim(),'cmd');
 a(r.signer?.expectedSignerSha1==='63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0','signer');
 a(r.handoffBundle?.name==='FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1.zip','bundle');
+a(r.handoffBundle?.status==='FROZEN_PUBLIC_SAFE_BUNDLE','bundle status');
+a(r.handoffBundle?.sha256==='a13a848b9c82ea67f498dfbd1fb0a28604ff5cc671d2c5c815e45f431564e91d'&&r.handoffBundle?.bytes===86694276,'bundle identity');
+a(r.handoffBundle?.manifestIntegrity==='PASS'&&r.handoffBundle?.zipIntegrity==='PASS'&&r.handoffBundle?.privateKeyFiles===0,'bundle integrity');
+a(r.handoffBundle?.generationReceipt?.runId===37666764883&&r.handoffBundle?.generationReceipt?.artifactId===11503636682,'bundle receipt');
 a(r.handoffBundle?.apksignerSha256==='2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180','apksigner');
 a(r.trustedEdgeSigningPass===false&&r.status==='CANONICAL_FROZEN_SIGNING_REQUIRED'&&r.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier');
 a(r.physicalAlpha2Pass===false&&r.buildReady===false&&r.releaseReady===false,'readiness');
