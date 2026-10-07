@@ -29,6 +29,7 @@ on:
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'tools/validate-alpha2-2017-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2018-candidate-cut.mjs'
       - 'tools/validate-alpha2-edge-v1-runtime.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
@@ -59,6 +60,7 @@ on:
       - 'tools/validate-alpha2-mobile-golden-vectors.mjs'
       - 'tools/validate-alpha2-integrated-runtime.mjs'
       - 'tools/validate-alpha2-2017-candidate-cut.mjs'
+      - 'tools/validate-alpha2-2018-candidate-cut.mjs'
       - 'tools/validate-alpha2-edge-v1-runtime.mjs'
       - 'tools/validate-ci-runner-policy.mjs'
       - '.github/workflows/alpha2-integrated-runtime.yml'
@@ -93,8 +95,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: +2017 parser repair candidate boundary
-        run: node tools/validate-alpha2-2017-candidate-cut.mjs
+      - name: +2018 consolidated candidate boundary
+        run: node tools/validate-alpha2-2018-candidate-cut.mjs
 
       - name: Edge V1 observe-only runtime boundary
         run: node tools/validate-alpha2-edge-v1-runtime.mjs
