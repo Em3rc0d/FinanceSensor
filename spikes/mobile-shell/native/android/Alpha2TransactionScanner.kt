@@ -59,7 +59,7 @@ object Alpha2TransactionScanner {
         )
     }
 
-    fun scan(
+    internal fun scan(
         token: String,
         edgeMailModel: Alpha2EdgeMailModel? = null,
         edgeStatementMailModel: Alpha2EdgeStatementMailModel? = null,
