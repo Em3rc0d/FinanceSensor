@@ -1,0 +1,189 @@
+name: Alpha.2 +2018 R1 Trusted-Edge Signing
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [jett/mk0-foundation]
+    paths:
+      - 'graph/alpha2-2018-canonical-candidate.json'
+      - 'graph/alpha2-2018-r1-signing-handoff.json'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-2018.ps1'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-2018.cmd'
+      - 'tools/validate-alpha2-2018-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-2018-r1-signing-handoff.mjs'
+      - '.github/workflows/alpha2-2018-r1-trusted-edge-signing.yml'
+  push:
+    branches: [jett/mk0-foundation]
+    paths:
+      - 'graph/alpha2-2018-canonical-candidate.json'
+      - 'graph/alpha2-2018-r1-signing-handoff.json'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-2018.ps1'
+      - 'tools/SIGN-FINANCESENSOR-ALPHA2-2018.cmd'
+      - 'tools/validate-alpha2-2018-canonical-candidate.mjs'
+      - 'tools/validate-alpha2-2018-r1-signing-handoff.mjs'
+      - '.github/workflows/alpha2-2018-r1-trusted-edge-signing.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: financesensor-alpha2-2018-r1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-signing-handoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate +2018 canonical identity
+        run: node tools/validate-alpha2-2018-canonical-candidate.mjs
+
+      - name: Validate +2018 signing handoff
+        run: node tools/validate-alpha2-2018-r1-signing-handoff.mjs
+
+      - name: Parse Windows signing script
+        shell: pwsh
+        run: |
+          $e=$null; $t=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/SIGN-FINANCESENSOR-ALPHA2-2018.ps1',[ref]$t,[ref]$e)|Out-Null
+          if($e.Count -gt 0){ $e | ForEach-Object { Write-Error $_ }; exit 1 }
+          'SIGNER_POWERSHELL_PARSE=PASS'
+
+      - name: Download exact +2018 CI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: financesensor-alpha2-2018-candidate-37658315530
+          path: canonical-artifact
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37658315530
+
+      - name: Verify immutable +2018 input
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
+          EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
+          test -f "$APK" && test -f "$EVIDENCE"
+          test "$(sha256sum "$APK"|awk '{print $1}')" = '51b5a2a01f376716039e7cc56ac4806805df09a9038474b87f504b284c5ec49c'
+          test "$(stat -c '%s' "$APK")" = '182588309'
+          grep -q '^SOURCE_COMMIT=3d4e7a76e2d0eb3f7886bf804ef03249c5d55d14$' "$EVIDENCE"
+          grep -q '^CANDIDATE_ID=0.2.0-alpha.2+2018$' "$EVIDENCE"
+          grep -q '^EDGE_V1_RUNTIME=OBSERVE_ONLY$' "$EVIDENCE"
+          grep -q '^EDGE_DURABLE_FINANCIAL_AUTHORITY=NO$' "$EVIDENCE"
+          grep -q '^EDGE_PERSISTED_EVENTS=0$' "$EVIDENCE"
+          grep -q '^GOLDEN_2017_AUTHORITY=PRESERVED$' "$EVIDENCE"
+          grep -q '^APK_SIGNATURE_VERIFY=PASS$' "$EVIDENCE"
+          grep -q '^APK_AAPT2_PARSE=PASS$' "$EVIDENCE"
+          echo 'CANONICAL_2018_INPUT=PASS'
+
+      - name: Generate deterministic +2018 trusted-edge bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='canonical-artifact/build/app/outputs/flutter-apk/app-debug.apk'
+          EVIDENCE='canonical-artifact/alpha2-integrated-ci-evidence.txt'
+          APKSIGNER_JAR="$(find "$ANDROID_HOME/build-tools" -mindepth 3 -maxdepth 3 -type f -path '*/lib/apksigner.jar' | sort -V | tail -n 1)"
+          test -f "$APKSIGNER_JAR"
+          test "$(sha256sum "$APKSIGNER_JAR"|awk '{print $1}')" = '2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'
+
+          ROOT="$RUNNER_TEMP/financesensor-alpha2-2018-r1"
+          DIR="$ROOT/FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1"
+          OUT="$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1.zip"
+          rm -rf "$ROOT" "$OUT"
+          mkdir -p "$DIR/public-signing-tool/lib"
+
+          cp "$APK" "$DIR/FinanceSensor-ALPHA2-CANONICAL-INPUT.apk"
+          cp tools/SIGN-FINANCESENSOR-ALPHA2-2018.ps1 "$DIR/"
+          cp tools/SIGN-FINANCESENSOR-ALPHA2-2018.cmd "$DIR/"
+          cp "$APKSIGNER_JAR" "$DIR/public-signing-tool/lib/apksigner.jar"
+          cp "$EVIDENCE" "$DIR/CANONICAL-CI-EVIDENCE.txt"
+
+          cat > "$DIR/BUNDLE-README.txt" <<'README'
+          FinanceSensor Alpha.2 +2018 — R1 trusted-edge signing bundle
+
+          This bundle contains the consolidated Edge V1 observe-only candidate.
+          Edge V1 has no durable financial authority and persists zero model-generated events.
+
+          1. Extract this ZIP on the owned Windows trusted edge.
+          2. Double-click SIGN-FINANCESENSOR-ALPHA2-2018.cmd.
+          3. Select the same private FINANCESENSOR_R2_LAB keystore locally.
+          4. Enter the password only in the local prompt.
+          5. Return only the generated .receipt.txt after PASS.
+
+          Never upload the keystore, password, private key, OAuth token, Gmail content,
+          statement PDFs or financial plaintext.
+          README
+
+          cat > "$DIR/SOURCE.txt" <<'SOURCE'
+          CANDIDATE=0.2.0-alpha.2+2018
+          PRODUCT_SOURCE_COMMIT=3d4e7a76e2d0eb3f7886bf804ef03249c5d55d14
+          MERGE_COMMIT=951d8f556062431968c31b3b25cf01b2ed3bb52d
+          CANONICAL_RUN_ID=37658315530
+          CANONICAL_JOB_ID=112919216487
+          CANONICAL_ARTIFACT_ID=11500390744
+          CANONICAL_ARTIFACT_ZIP_SHA256=f7b954aafd407efe1d74d653186bae50637f1d2eebeae7d4b640809a2c6a76cf
+          CANONICAL_ARTIFACT_ZIP_BYTES=87717087
+          INPUT_APK_SHA256=51b5a2a01f376716039e7cc56ac4806805df09a9038474b87f504b284c5ec49c
+          INPUT_APK_BYTES=182588309
+          EDGE_V1_RUNTIME=OBSERVE_ONLY
+          EDGE_DURABLE_FINANCIAL_AUTHORITY=NO
+          EDGE_PERSISTED_EVENTS=0
+          GOLDEN_2017_AUTHORITY=PRESERVED
+          SOURCE
+
+          (cd "$DIR"; find . -type f ! -name 'BUNDLE-MANIFEST-SHA256.txt' -print0 | sort -z | xargs -0 sha256sum > BUNDLE-MANIFEST-SHA256.txt; sha256sum -c BUNDLE-MANIFEST-SHA256.txt)
+
+          python3 - "$DIR" "$OUT" <<'PY'
+          import pathlib,sys,zipfile
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); prefix=root.name
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as zf:
+              for path in sorted(p for p in root.rglob('*') if p.is_file()):
+                  rel=pathlib.PurePosixPath(prefix)/path.relative_to(root).as_posix()
+                  info=zipfile.ZipInfo(str(rel),date_time=(2020,1,1,0,0,0))
+                  info.compress_type=zipfile.ZIP_DEFLATED
+                  info.external_attr=0o100644<<16
+                  zf.writestr(info,path.read_bytes(),compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)
+          PY
+
+          unzip -t "$OUT" >/dev/null
+          test "$(zipinfo -1 "$OUT"|grep -v '/$'|wc -l)" = '8'
+          BUNDLE_SHA256="$(sha256sum "$OUT"|awk '{print $1}')"
+          BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-2018-R1-BUNDLE-AUDIT.txt" <<AUDIT
+          ALPHA2_2018_R1_BUNDLE=PASS
+          CANDIDATE=0.2.0-alpha.2+2018
+          INPUT_APK_SHA256=51b5a2a01f376716039e7cc56ac4806805df09a9038474b87f504b284c5ec49c
+          BUNDLE_SHA256=${BUNDLE_SHA256}
+          BUNDLE_BYTES=${BUNDLE_BYTES}
+          BUNDLE_FILES=8
+          PRIVATE_KEY_FILES=0
+          EDGE_V1_RUNTIME=OBSERVE_ONLY
+          EDGE_DURABLE_FINANCIAL_AUTHORITY=NO
+          SIGNING_REQUEST_ALLOWED=YES
+          R1_TRUSTED_EDGE_SIGNING=REQUIRED
+          PHYSICAL_ALPHA2_PASS=NO
+          BUILD_READY=NO
+          RELEASE_READY=NO
+          AUDIT
+
+      - name: Upload +2018 trusted-edge handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: financesensor-alpha2-2018-r1-trusted-edge-bundle-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: |
+            FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1.zip
+            FinanceSensor-ALPHA2-2018-R1-BUNDLE-AUDIT.txt
+          if-no-files-found: error
+          retention-days: 7
