@@ -30,7 +30,9 @@
   "signer": {
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
-    "exactScope": "gmail.readonly"
+    "exactScope": "gmail.readonly",
+    "powershellGitBlob": "8311d66bca642f362080df6461ca01be60d1017c",
+    "cmdGitBlob": "55a4151e4319a5136e8ff22377aebd7a6340b295"
   },
   "handoffBundle": {
     "name": "FinanceSensor-ALPHA2-2018-R1-TRUSTED-EDGE-BUNDLE-v1.zip",
@@ -41,7 +43,8 @@
     "privateKeyFiles": 0,
     "manifestIntegrity": null,
     "zipIntegrity": null,
-    "generationReceipt": null
+    "generationReceipt": null,
+    "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
   },
   "stableSignedApk": null,
   "status": "CANONICAL_FROZEN_SIGNING_REQUIRED",
