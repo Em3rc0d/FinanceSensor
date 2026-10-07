@@ -1,5 +1,6 @@
 package com.financesensor.lab.financesensor_mobile_shell
 
+import android.content.Context
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.text.Normalizer
@@ -202,3 +203,25 @@ internal fun edgeNormalize(value: String): String =
         .replace(Regex("\\s+"), " ")
         .trim()
         .uppercase(Locale.ROOT)
+
+
+internal data class Alpha2EdgeModelBundle(
+    val mail: Alpha2EdgeMailModel,
+    val statementMail: Alpha2EdgeStatementMailModel,
+) {
+    companion object {
+        fun load(context: Context): Alpha2EdgeModelBundle =
+            Alpha2EdgeModelBundle(
+                mail = Alpha2EdgeMailModel.fromJson(
+                    context.assets.open("edge_mail_model_v1.json")
+                        .bufferedReader(Charsets.UTF_8)
+                        .use { it.readText() },
+                ),
+                statementMail = Alpha2EdgeStatementMailModel.fromJson(
+                    context.assets.open("edge_statement_mail_model_v1.json")
+                        .bufferedReader(Charsets.UTF_8)
+                        .use { it.readText() },
+                ),
+            )
+    }
+}
