@@ -11,16 +11,17 @@
   },
   "frozenAtBaseCommit": "c2ff69b6a92ce69437610d08fdf43e2973a58a31",
   "canonicalAlpha2": {
-    "candidate": "0.2.0-alpha.2+2014",
-    "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
-    "sourceCommit": "8e5bb535a7263beab0b687b616dff88205da58f3",
-    "apkSha256": "72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3",
-    "apkBytes": 182550031,
+    "candidate": "0.2.0-alpha.2+2016",
+    "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+    "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+    "apkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
+    "apkBytes": 182551707,
     "package": "com.financesensor.lab.gmailconnection.r2",
     "scope": "gmail.readonly",
     "stableSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "signingStatus": "TRUSTED_EDGE_SIGNING_REQUIRED",
-    "r1BundleSha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+    "r1Handoff": "graph/alpha2-2016-r1-signing-handoff.json",
+    "r1BundleSha256": null,
     "priorPhysicalEvidenceInherited": false
   },
   "executionLaws": [
@@ -325,5 +326,7 @@
     "buildReady": false,
     "releaseReady": false
   },
-  "currentFrontier": "R1_TRUSTED_EDGE_SIGNING"
+  "currentFrontier": "R1_TRUSTED_EDGE_SIGNING",
+  "reconciledAtRepositoryHead": "951d8f556062431968c31b3b25cf01b2ed3bb52d",
+  "reconciliationReason": "SYNC_PREBUILD_CANONICAL_REFERENCE_TO_ALPHA2_CANONICAL_AUTHORITY"
 }
