@@ -2,6 +2,25 @@ name: FinanceSensor Heartbeat
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - jett/mk0-foundation
+    paths:
+      - 'STATUS.md'
+      - 'spikes/canonical-resolver/**'
+      - 'spikes/e2ee-sync/**'
+      - 'spikes/physical-ingress/**'
+      - 'spikes/mobile-shell/**'
+      - '.github/workflows/**'
+      - 'ops/**'
+      - 'graph/**'
+      - 'tools/**'
+      - 'product/**'
+      - 'mk0/**'
+      - 'research/**'
+      - '.gitignore'
+      - 'SECURITY.md'
   push:
     branches:
       - main
