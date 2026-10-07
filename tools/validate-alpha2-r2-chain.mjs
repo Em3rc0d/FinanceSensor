@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+const c=JSON.parse(fs.readFileSync('graph/alpha2-canonical-candidate.json','utf8'));
+const r1=JSON.parse(fs.readFileSync('graph/alpha2-2016-r1-signing-handoff.json','utf8'));
+const r2=JSON.parse(fs.readFileSync('graph/alpha2-r2-owned-device-campaign.json','utf8'));
+const h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_R2_CHAIN_2016_FAILED:${m}`)};
+const id='0.2.0-alpha.2+2016',src='6e48f67c9b580be1be43cfa01f19b3b1eb630611',apk='f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97';
+a(c.candidate===id&&c.sourceCommit===src&&c.authority?.apkSha256===apk&&c.signing?.trustedEdgeSigningPass===false,'canonical');
+a(r1.candidate===id&&r1.sourceCommit===src&&r1.inputApk?.sha256===apk&&r1.trustedEdgeSigningPass===false,'R1');
+a(r2.candidate?.id===id&&r2.candidate?.sourceCommit===src&&r2.candidate?.canonicalInputApkSha256===apk&&r2.candidate?.signedApkSha256===null,'R2');
+a(r2.status==='BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING'&&r2.currentState?.nextGate==='R1_TRUSTED_EDGE_SIGNING','frontier');
+a(h.ownedDeviceUat?.requestAllowed===false&&h.preSigning?.requestAllowed===true,'human');
+console.log('ALPHA2_R2_PREBUILD_CHAIN=PASS');
+console.log('CANONICAL_IDENTITY=ALPHA2_2016_UNSIGNED_FROZEN');
+console.log('R1_TRUSTED_EDGE_SIGNING=REQUIRED');
+console.log('OD0_EXECUTION_ALLOWED=NO');

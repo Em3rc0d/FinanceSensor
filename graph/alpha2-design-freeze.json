@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "milestone": "ALPHA_2_FINANCIAL_MEMORY",
+  "status": "DESIGN_FROZEN",
+  "asOf": "2026-09-05",
+  "baseCommit": "7c322a163e15a42fbfbda7dc32ee2b94dbf1b006",
+  "buildReady": false,
+  "implementationStarted": false,
+  "primaryStatementPath": "TARGETED_GMAIL_DISCOVERY",
+  "fallbackStatementPaths": [
+    "USER_SHARE_OPEN",
+    "USER_SELECTED_LOCAL_FILE"
+  ],
+  "gmailScope": "https://www.googleapis.com/auth/gmail.readonly",
+  "nodes": [
+    {
+      "id": "A2-D01",
+      "name": "Gmail statement discovery contract",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md"
+    },
+    {
+      "id": "A2-D02",
+      "name": "Attachment fetch policy",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md"
+    },
+    {
+      "id": "A2-D03",
+      "name": "Password lifecycle",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md"
+    },
+    {
+      "id": "A2-D04",
+      "name": "Ephemeral PDF boundary",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md"
+    },
+    {
+      "id": "A2-D05",
+      "name": "StatementFormatProfile registry",
+      "status": "CLOSED_DESIGN",
+      "authority": "graph/statement-format-registry.json"
+    },
+    {
+      "id": "A2-D06",
+      "name": "Parser runtime boundary",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md"
+    },
+    {
+      "id": "A2-D07",
+      "name": "SQLCipher schema and key boundary",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md"
+    },
+    {
+      "id": "A2-D08",
+      "name": "Reconciliation scoring",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md"
+    },
+    {
+      "id": "A2-D09",
+      "name": "Account graph",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md"
+    },
+    {
+      "id": "A2-D10",
+      "name": "Monthly coverage semantics",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md"
+    },
+    {
+      "id": "A2-D11",
+      "name": "Sensor V1 semantics",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md"
+    },
+    {
+      "id": "A2-D12",
+      "name": "Alpha.2 UX",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md"
+    },
+    {
+      "id": "A2-D13",
+      "name": "Physical certification plan",
+      "status": "CLOSED_DESIGN",
+      "authority": "mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md"
+    }
+  ],
+  "discoveryCandidatePolicy": {
+    "states": ["REJECTED", "WEAK", "PROBABLE", "STRONG", "CONFLICT"],
+    "downloadState": "STRONG",
+    "strongMinimumScore": 85,
+    "probableMinimumScore": 65,
+    "maximumAttachmentBytes": 20971520,
+    "requiredSignals": [
+      "PROFILE_MATCH_UNIQUE",
+      "KNOWN_SENDER",
+      "PDF_DESCRIPTOR",
+      "STATEMENT_MARKER"
+    ],
+    "hardStops": [
+      "PROFILE_MATCH_CONFLICT",
+      "UNKNOWN_SENDER",
+      "NON_PDF_DESCRIPTOR",
+      "EMPTY_ATTACHMENT",
+      "ATTACHMENT_TOO_LARGE",
+      "AUTHORITY_REVOKED"
+    ],
+    "durableRawMetadata": false
+  },
+  "passwordPolicy": {
+    "persistence": false,
+    "logging": false,
+    "analytics": false,
+    "cloud": false,
+    "autofillPersistence": false,
+    "sessionReuseRequiresExplicitChoice": true,
+    "crossInstitutionReuse": false,
+    "deterministicDartZeroizationClaimed": false
+  },
+  "rawBoundary": {
+    "durablePdfBytes": false,
+    "durableDecryptedText": false,
+    "durableOcrPages": false,
+    "durableLayoutGeometry": false,
+    "durableRawRows": false,
+    "activePdfExecution": false,
+    "genericParserFallback": false
+  },
+  "vaultPolicy": {
+    "databaseFamily": "SQLCIPHER_4_X",
+    "dekBits": 256,
+    "plaintextFallback": false,
+    "platformWrappedDek": true,
+    "atomicDerivedBatchAndTerminalSourceState": true,
+    "physicalInspectionTargets": [
+      "DATABASE",
+      "WAL",
+      "SHM_OR_JOURNAL",
+      "TEMP",
+      "MIGRATION_BACKUP",
+      "OS_BACKUP",
+      "LOGS",
+      "CRASH_OUTPUT"
+    ]
+  },
+  "reconciliationPolicy": {
+    "version": "A2_RECONCILIATION_V1",
+    "outcomes": ["CONFIRMED", "PROPOSED", "REVIEW", "REJECTED", "CONFLICT"],
+    "hardVetoes": [
+      "CURRENCY_MISMATCH",
+      "ECONOMIC_SEMANTICS_INCOMPATIBLE",
+      "TENANT_MISMATCH",
+      "ALREADY_LINKED_CONFLICT",
+      "SOURCE_CHANNEL_NOT_INDEPENDENT"
+    ],
+    "features": {
+      "amount": 30,
+      "timeDistance": 15,
+      "institution": 10,
+      "accountOrInstrument": 15,
+      "merchantOrCounterparty": 10,
+      "externalReference": 15,
+      "movementCompatibility": 5
+    },
+    "automaticConfirmation": {
+      "minimumScore": 85,
+      "minimumMarginOverSecondCandidate": 15,
+      "requiresUniqueCandidate": true,
+      "requiresIndependentChannels": true,
+      "requiresAmountAndCurrency": true,
+      "requiresStableAnchor": [
+        "EXACT_EXTERNAL_REFERENCE",
+        "CONFIRMED_ACCOUNT_OR_INSTRUMENT_PLUS_STRONG_MERCHANT"
+      ],
+      "amountOnlyAllowed": false
+    }
+  },
+  "accountMappingPolicy": {
+    "states": [
+      "UNMAPPED",
+      "PROBABLE",
+      "USER_CONFIRMED",
+      "SYSTEM_CONFIRMED_BY_STABLE_EVIDENCE"
+    ],
+    "bankPlusCurrencySufficient": false,
+    "stableEvidencePeriodsForAutomaticConfirmation": 2
+  },
+  "monthlyCoveragePolicy": {
+    "states": [
+      "OPEN_LIVE",
+      "WAITING_FOR_STATEMENTS",
+      "IMPORTING",
+      "RECONCILING",
+      "REVIEW_REQUIRED",
+      "RECONCILED",
+      "REOPENED"
+    ],
+    "globalUnqualifiedPercentageAllowed": false,
+    "reconciledRequiresAllIncludedExpectedSources": true,
+    "reconciledRequiresZeroBlockingConflicts": true,
+    "userExcludedSourcesRemainVisible": true
+  },
+  "sensorPolicy": {
+    "deterministicOnly": true,
+    "llmEnabled": false,
+    "automatedFinancialAdvice": false,
+    "truthStates": ["OBSERVED", "POSTED", "RECONCILED", "PARTIAL", "UNKNOWN"],
+    "genericEvidencePercentageAllowed": false
+  },
+  "slices": [
+    {"id": "ALPHA_2_A", "name": "Statement Discovery", "status": "READY_TO_IMPLEMENT_AFTER_FREEZE_PASS"},
+    {"id": "ALPHA_2_B", "name": "Statement Fetch and Parse", "status": "BLOCKED_BY_ALPHA_2_A"},
+    {"id": "ALPHA_2_C", "name": "Financial Vault", "status": "BLOCKED_BY_ALPHA_2_A"},
+    {"id": "ALPHA_2_D", "name": "Reconciliation", "status": "BLOCKED_BY_ALPHA_2_B_AND_C"},
+    {"id": "ALPHA_2_E", "name": "Account Graph", "status": "BLOCKED_BY_ALPHA_2_C"},
+    {"id": "ALPHA_2_F", "name": "Monthly Coverage", "status": "BLOCKED_BY_ALPHA_2_D_AND_E"},
+    {"id": "ALPHA_2_G", "name": "Sensor V1", "status": "BLOCKED_BY_ALPHA_2_F"}
+  ],
+  "physicalTruth": {
+    "alpha2ProductPass": false,
+    "minimumInstitutions": 2,
+    "minimumSavingsProfiles": 1,
+    "minimumCreditProfiles": 1,
+    "requiredClaims": [
+      "GMAIL_STATEMENT_DISCOVERY",
+      "LOCAL_ATTACHMENT_FETCH",
+      "SESSION_ONLY_UNLOCK",
+      "RAW_DISPOSAL",
+      "ENCRYPTED_RESTART_PERSISTENCE",
+      "STATEMENT_ONLY_INFLOW",
+      "GMAIL_STATEMENT_DEDUP",
+      "MONTHLY_CLOSE_AND_REOPEN",
+      "PRIVACY_RECEIPT_CLEAN"
+    ],
+    "openKnownEdges": [
+      "BCP_SAVINGS_TWO_ONE_PAGE_FINAL_BALANCE_BINDINGS",
+      "BCP_SAVINGS_ONE_PERIOD_DATE_ORDER_VARIANT",
+      "ALPHA2_RUNTIME_PROFILE_RECEIPT_BINDING",
+      "INTERBANK_SAVINGS_MOBILE_PHYSICAL_PROOF",
+      "ANDROID_STABLE_SIGNER_HANDOFF_PR_62"
+    ]
+  },
+  "forbidden": [
+    "GMAIL_MODIFY",
+    "GMAIL_SEND",
+    "BANK_CREDENTIAL_SCRAPING",
+    "WEB_BANK_LOGIN",
+    "BACKGROUND_GMAIL_DAEMON",
+    "CLOUD_FINANCIAL_PLAINTEXT_DATABASE",
+    "OCR_FIRST",
+    "GENERIC_STATEMENT_PARSER",
+    "LLM_FINANCIAL_REASONING",
+    "AUTOMATED_FINANCIAL_ADVICE"
+  ],
+  "authorities": [
+    "mk0/11-decisions/ADR-006-LOCAL-PERSISTENCE-ENCRYPTION.md",
+    "mk0/11-decisions/ADR-031-GMAIL-HISTORICAL-ONBOARDING-COVERAGE.md",
+    "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
+    "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
+    "mk0/11-decisions/ADR-035-STATEMENT-ETL-MONTHLY-RECONCILIATION.md",
+    "mk0/11-decisions/ADR-036-ALPHA2-FINANCIAL-MEMORY.md",
+    "mk0/03-design/ALPHA2-FINANCIAL-MEMORY-UX.md",
+    "mk0/05-data-model/STATEMENT-RECONCILIATION-MODEL.md",
+    "mk0/07-plan/ALPHA2-IMPLEMENTATION-AND-CERTIFICATION.md",
+    "graph/statement-format-registry.json"
+  ]
+}
+
