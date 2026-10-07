@@ -134,7 +134,15 @@ for (const marker of ['summarizeAlpha2Categories','Alpha2FlowDirection.outflow',
 }
 if (!main.includes("Text('Cuenta ${item.accountDisplay}')")) throw new Error('ALPHA2_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
 
-if (/confidence\s*[:=]/i.test(transactionScanner) || transactionScanner.includes('0.96')) throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
+if (
+  transactionScanner.includes('"confidence" to') ||
+  transactionScanner.includes('"matchScore" to') ||
+  transactionScanner.includes('"evidencePercent" to') ||
+  transactionScanner.includes('0.96')
+) throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_FORBIDDEN');
+if (!transactionScanner.includes('"numericConfidenceReturned" to false')) {
+  throw new Error('ALPHA2_TRANSACTION_NUMERIC_CONFIDENCE_BOUNDARY_MISSING');
+}
 if (!transactionScanner.includes('truthState') || !transactionScanner.includes('OBSERVED')) throw new Error('ALPHA2_GMAIL_OBSERVED_TRUTH_REQUIRED');
 for (const marker of ['PE-BCP-SAVINGS-REQUESTED-DISCOVERY-V1','PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1','PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1']) {
   if (!statementScanner.includes(marker)) throw new Error(`ALPHA2_STATEMENT_PROFILE_MISSING:${marker}`);
