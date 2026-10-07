@@ -161,6 +161,8 @@ jobs:
           test "$(zipinfo -1 "$OUT"|grep -v '/$'|wc -l)" = '8'
           BUNDLE_SHA256="$(sha256sum "$OUT"|awk '{print $1}')"
           BUNDLE_BYTES="$(stat -c '%s' "$OUT")"
+          test "$BUNDLE_SHA256" = 'a13a848b9c82ea67f498dfbd1fb0a28604ff5cc671d2c5c815e45f431564e91d'
+          test "$BUNDLE_BYTES" = '86694276'
           cat > "$GITHUB_WORKSPACE/FinanceSensor-ALPHA2-2018-R1-BUNDLE-AUDIT.txt" <<AUDIT
           ALPHA2_2018_R1_BUNDLE=PASS
           CANDIDATE=0.2.0-alpha.2+2018
