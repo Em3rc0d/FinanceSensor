@@ -1,15 +1,15 @@
 {
-  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V8",
+  "schemaVersion": "A2_R2_OWNED_DEVICE_CAMPAIGN_V9",
   "project": "FinanceSensor",
   "mk": "MK0",
   "implements": "graph/prebuild-remainder-design.json#R2",
   "status": "BLOCKED_BY_R1_TRUSTED_EDGE_SIGNING",
   "candidate": {
-    "id": "0.2.0-alpha.2+2016",
-    "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
-    "sourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
-    "canonicalInputApkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
-    "canonicalInputApkBytes": 182551707,
+    "id": "0.2.0-alpha.2+2017",
+    "productSourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
+    "sourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
+    "canonicalInputApkSha256": "5b81d798b5f3885ece41b899a08963b89f5c4e300561a4c469c8c8371c762774",
+    "canonicalInputApkBytes": 182567371,
     "signedApkSha256": null,
     "signedApkBytes": null,
     "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
@@ -21,16 +21,21 @@
   },
   "r1PhysicalReceipt": null,
   "historicalInvalidatedCampaign": {
-    "candidate": "0.2.0-alpha.2+2015",
-    "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
-    "lastSanitizedReceipt": "graph/physical-receipts/ALPHA2-2015-SAFE-REVIEW-DIAGNOSTICS-2026-09-30.json",
+    "candidate": "0.2.0-alpha.2+2016",
+    "signedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+    "lastSanitizedReceipt": "graph/physical-receipts/ALPHA2-2016-PHYSICAL-PARSER-REGRESSION-2026-09-30.json",
     "priorPassedGates": [],
-    "priorOpenGate": "STRICT_REVIEW_DIAGNOSTICS",
+    "priorOpenGate": "STATEMENT_PARSE_OR_PROBE_FAIL_CLOSED",
     "continuationAllowed": false,
     "evidenceInheritanceAllowed": false,
-    "reason": "PARSER_BEHAVIOR_CHANGED_TO_REMEDIATE_2015_PHYSICAL_REVIEW_CAUSES"
+    "reason": "PARSER_BEHAVIOR_CHANGED_TO_REMEDIATE_2016_PHYSICAL_BCP_AND_RIPLEY_REVIEW_CAUSES"
   },
   "olderHistoricalCampaigns": [
+    {
+      "candidate": "0.2.0-alpha.2+2015",
+      "signedApkSha256": "076aa4328165e2e327d11e4cd4dc2d8a4b3ae1aff6b2b871e112910aeadd159e",
+      "evidenceInheritanceAllowed": false
+    },
     {
       "candidate": "0.2.0-alpha.2+2009",
       "signedApkSha256": "7da560b9382dce0e7ee9100e923a68dc54209934c02554cf70b4c07985f0458a",
@@ -157,7 +162,7 @@
         "OD3"
       ],
       "physicalClaims": [
-        "BCP_SAVINGS_V2_STRICT",
+        "BCP_SAVINGS_V4_STRICT",
         "RIPLEY_CREDIT_STRICT",
         "BCP_CREDIT_PROBE_EMITS_NO_FINANCIAL_EVIDENCE",
         "UNEXPLAINED_MONETARY_ROW_QUARANTINES_BATCH",

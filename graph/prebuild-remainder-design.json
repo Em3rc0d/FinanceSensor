@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "MK0_PREBUILD_REMAINDER_DESIGN_V2",
+  "schemaVersion": "MK0_PREBUILD_REMAINDER_DESIGN_V3",
   "project": "FinanceSensor",
   "mk": "MK0",
   "designFreeze": "PASS",
@@ -9,18 +9,20 @@
     "physicalCampaign": "graph/physical-closure-campaign.json",
     "canonicalCandidate": "graph/alpha2-canonical-candidate.json"
   },
-  "frozenAtBaseCommit": "c2ff69b6a92ce69437610d08fdf43e2973a58a31",
+  "frozenAtBaseCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
   "canonicalAlpha2": {
-    "candidate": "0.2.0-alpha.2+2014",
-    "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
-    "sourceCommit": "8e5bb535a7263beab0b687b616dff88205da58f3",
-    "apkSha256": "72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3",
-    "apkBytes": 182550031,
+    "candidate": "0.2.0-alpha.2+2017",
+    "productSourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
+    "sourceCommit": "3b0f99767909deebd34e9843b6fed3f036159903",
+    "apkSha256": "5b81d798b5f3885ece41b899a08963b89f5c4e300561a4c469c8c8371c762774",
+    "apkBytes": 182567371,
     "package": "com.financesensor.lab.gmailconnection.r2",
     "scope": "gmail.readonly",
     "stableSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
     "signingStatus": "TRUSTED_EDGE_SIGNING_REQUIRED",
-    "r1BundleSha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+    "r1BundleName": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v17.zip",
+    "r1BundleStatus": "PENDING_CI_GENERATION",
+    "r1BundleSha256": null,
     "priorPhysicalEvidenceInherited": false
   },
   "executionLaws": [
