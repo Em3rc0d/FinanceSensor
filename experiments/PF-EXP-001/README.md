@@ -27,3 +27,9 @@ node --test experiments/PF-EXP-001/tests/canonical-resolver.test.mjs experiments
 The C0 protocol harness and 28-case registry are included in the downloadable local lab package, not yet committed in this branch. No Action, Android build, PDF, Gmail query or real ledger was executed. Do not interpret this as G0/G1/G2/G3/G4 closure.
 
 **Bounded hardening:** tenant-specific same-evidence replay, conflicting reference fail-closed, finite positive amounts before admission and projection, and changed same-source amount routed to `EVIDENCE_REPLAY_CONFLICT` instead of silently discarded. No change has been merged into `jett/mk0-foundation`.
+
+## C0/G0 Gmail source discovery (2026-11-16)
+
+A bounded Gmail search located one BCP Savings email from 2026-09-04 (a July 2026 hint in the mail, unverified) and Ripley credit PDF candidates from 2026-10-30 and 2026-08-28. All three accounting cycles remain unconfirmed. Direct Gmail attachment retrieval failed by both filename and attachment ID, so there is **no original PDF, independent row oracle or balance proof**.
+
+See `protocol/G0-SOURCE-DISCOVERY-2026-11-16.md` and the sanitized machine receipt under `receipts/`. A separate G0 local structural lab passed 11/11 synthetic tests (PDF password/error handling and oracle schema/arithmetic), but **C0 is blocked and G0–G4 are NOT_RUN**. This is not an approval to read financial documents in the cloud or to build an APK.
