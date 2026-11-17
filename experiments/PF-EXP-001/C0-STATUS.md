@@ -32,3 +32,5 @@ Next possible step after C0 approval: execute existing resolver regressions on a
 - Source / tests blobs: `b95f03cb6ef5472b5a12cb082380a50f17b35985`, `b42d2027caab69397ecb40ab3379ec8f0f62ccd5`.
 - **C0 remains BLOCKED. G0–G4 remain NOT_RUN.** No real PDF, account balance or independent reviewer attestation verified.
 - Source of truth: `receipts/SYNTHETIC-RECONCILIATION-V3.json`.
+
+- Reproducibility scope: the branch versions 52 Node + 11 Python = **63** tests. The separate standalone v3 ZIP also contains four C0 preflight tests and their support files = **67** locally executed. Do not claim those 4 extra tests are present on this branch.
