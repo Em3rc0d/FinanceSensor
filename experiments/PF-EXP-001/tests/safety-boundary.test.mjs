@@ -46,3 +46,19 @@ test('unknown tenant and currency reject candidate', () => {
     assert.equal(result.review[0].reason,'INVALID_MONETARY_CANDIDATE');
   }
 });
+
+test('same evidence ID with changed amount is a visible conflict, not a silent replay', () => {
+  const original = candidate('tenant-A', 'same-evidence', {}, 100);
+  const revised = candidate('tenant-A', 'same-evidence', {}, 900);
+  const result = resolveCandidates([original,revised]);
+  assert.equal(result.canonical.length,1);
+  assert.equal(result.canonical[0].amount,100);
+  assert.equal(result.review.length,1);
+  assert.equal(result.review[0].reason,'EVIDENCE_REPLAY_CONFLICT');
+});
+
+test('identical evidence replay remains idempotent', () => {
+  const result = resolveCandidates([candidate('tenant-A','e-1'),candidate('tenant-A','e-1')]);
+  assert.equal(result.canonical.length,1);
+  assert.equal(result.review.length,0);
+});
