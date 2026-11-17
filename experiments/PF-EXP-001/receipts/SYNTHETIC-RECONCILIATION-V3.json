@@ -1,0 +1,45 @@
+{
+  "schema": "PF_EXP_001_RECONCILIATION_PRECHECK_V1",
+  "executedAt": "2026-11-16",
+  "branch": "jett/pf-exp-001-c0-preflight",
+  "sourceBlob": "b95f03cb6ef5472b5a12cb082380a50f17b35985",
+  "testsBlob": "b42d2027caab69397ecb40ab3379ec8f0f62ccd5",
+  "runtime": {
+    "nativeNode": "22.16.0",
+    "python": "3.13.5"
+  },
+  "suites": [
+    {
+      "name": "reconciliation_node_native",
+      "passed": 31,
+      "total": 31
+    },
+    {
+      "name": "canonical_resolver_preflight_node",
+      "passed": 25,
+      "total": 25
+    },
+    {
+      "name": "pdf_oracle_synthetic_python",
+      "passed": 11,
+      "total": 11
+    }
+  ],
+  "totalPassed": 67,
+  "total": 67,
+  "gates": {
+    "C0": "BLOCKED",
+    "G0": "NOT_RUN",
+    "G1": "NOT_RUN",
+    "G2": "NOT_RUN",
+    "G3": "NOT_RUN",
+    "G4": "NOT_RUN"
+  },
+  "privateBankStatementRowsRead": 0,
+  "bankStatementsVerified": 0,
+  "gmailAttachmentResolved": false,
+  "githubActionsUsed": false,
+  "apkBuilt": false,
+  "scope": "Synthetic, no claims of actual bank financial correctness",
+  "noRealGateAuthority": true
+}
