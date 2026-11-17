@@ -39,3 +39,22 @@ See `protocol/G0-SOURCE-DISCOVERY-2026-11-16.md` and the sanitized machine recei
 The **exact** offline probe and oracle-precheck implementations tested on synthetic PDFs (5+6=11 PASS) are now in `tools/private_pdf_probe.py`, `tools/oracle_precheck.py`, corresponding `tests/test_*.py`, the synthetic fixture under `fixtures/synthetic/`, and `requirements-g0.txt`. See `protocol/G0-OFFLINE-RUNBOOK.md`. Reproducibility is demonstrated on synthetics; source completeness and independent bank truth remain unverified.
 
 **Source discovery is not an approval:** authorized Gmail searches located plausible BCP/Ripley document notifications, but raw attachment retrieval failed. A local private original + independent oracle is required. No Gmail account contents or PDF original committed.
+
+## V3 — Reconciliation precheck without financial gate promotion
+
+The new independent `src/reconcile.mjs` module validates exact source-row identity, signed integer minor units, posting dates, source/currency isolation, expected-vs-observed records, duplicates, missing/phantom rows, and source-verified balance equation semantics for BCP savings or Ripley credit.
+
+`tests/reconcile.test.mjs` contains **31 synthetic adversarial tests**, executed with Node 22.16.0; all passed. The existing 25 Node preflight+resolver checks and 11 Python PDF/oracle checks were rerun locally: **67/67 synthetic tests PASS**.
+
+**These are technical prechecks only.** Even an input declaring `PRIVATE_ACCEPTANCE` and `verifiedAgainstSource=true` cannot advance G0/G2. No system should mistake those JSON claims for independently inspected bank statements.
+
+Reproduce from repository root:
+
+```sh
+node --test experiments/PF-EXP-001/tests/*.test.mjs
+python -m unittest discover -s experiments/PF-EXP-001/tests -p 'test_*.py' -v
+```
+
+Requires Python PyMuPDF and reportlab for the PDF tests (see `requirements-g0.txt`); no GitHub Actions. Sanitized receipt: `receipts/SYNTHETIC-RECONCILIATION-V3.json`.
+
+**C0 BLOCKED; G0–G4 NOT_RUN:** Gmail shows candidate statements, but attachment retrieval failed and no user-owned original was processed in a private local environment. Exact periods, independent manual row oracle and physical bank reconciliation remain unverified.
