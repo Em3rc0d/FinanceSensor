@@ -1,0 +1,72 @@
+{
+  "schema": "PF_EXP_001_GMAIL_SOURCE_DISCOVERY_V1",
+  "date": "2026-11-16",
+  "scope": "BOUNDED_METADATA_DISCOVERY_ONLY",
+  "sourceCandidates": [
+    {
+      "alias": "BCP_SAVINGS_C01",
+      "type": "BCP_SAVINGS",
+      "mailDate": "2026-09-04",
+      "pdfAttachmentAdvertised": true,
+      "periodHint": "2026-07",
+      "periodConfirmed": false,
+      "completenessConfirmed": false
+    },
+    {
+      "alias": "RIPLEY_CREDIT_C01",
+      "type": "RIPLEY_CREDIT",
+      "mailDate": "2026-10-30",
+      "pdfAttachmentAdvertised": true,
+      "periodHint": null,
+      "periodConfirmed": false,
+      "completenessConfirmed": false
+    },
+    {
+      "alias": "RIPLEY_CREDIT_C02",
+      "type": "RIPLEY_CREDIT",
+      "mailDate": "2026-08-28",
+      "pdfAttachmentAdvertised": true,
+      "periodHint": null,
+      "periodConfirmed": false,
+      "completenessConfirmed": false
+    }
+  ],
+  "attachmentFetch": {
+    "BCP_SAVINGS": "FAILED_BY_ID_AND_FILENAME",
+    "RIPLEY_CREDIT": "FAILED_BY_ID_AND_FILENAME",
+    "originalPdfObtained": false
+  },
+  "financialDataRead": {
+    "bankStatementRows": false,
+    "balances": false,
+    "pdfPasswords": false
+  },
+  "oracle": {
+    "independentlyLabeled": false,
+    "completeCycleConfirmed": false,
+    "reconciliationVerified": false
+  },
+  "localSyntheticTests": {
+    "pdfStructuralProbe": {
+      "pass": 5,
+      "total": 5
+    },
+    "oracleStructuralPrecheck": {
+      "pass": 6,
+      "total": 6
+    }
+  },
+  "gates": {
+    "C0": "BLOCKED",
+    "G0": "NOT_RUN",
+    "G1": "NOT_RUN",
+    "G2": "NOT_RUN",
+    "G3": "NOT_RUN",
+    "G4": "NOT_RUN"
+  },
+  "externalActions": {
+    "githubActionsTriggered": false,
+    "apkBuilt": false,
+    "bankDocumentsCommitted": false
+  }
+}
