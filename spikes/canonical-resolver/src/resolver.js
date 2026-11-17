@@ -148,6 +148,8 @@ function minutesApart(a, b) {
 const referenceKeys = ['orderId', 'receiptId', 'invoiceId', 'authorizationId', 'providerTransactionId'];
 
 export function sharedStrongReference(a, b) {
+  // An identical order ID cannot override a conflicting provider transaction ID.
+  if (referenceKeys.some(key => knownConflict(a.references?.[key], b.references?.[key]))) return false;
   return referenceKeys.some(key => {
     const av = a.references?.[key];
     const bv = b.references?.[key];
@@ -203,7 +205,16 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
   const review = [];
 
   for (const candidate of candidates) {
+    // Reject malformed financial magnitudes before any canonicalization.
+    // Never create a durable economic event from NaN/Infinity/unknown tenant.
+    const amount = Number(candidate.amount);
+    if (!Number.isFinite(amount) || amount <= 0 ||
+        !candidate.tenantId || !candidate.currency) {
+      review.push({ candidate, possibleCanonicalId: null, score: 0, reason: 'INVALID_MONETARY_CANDIDATE' });
+      continue;
+    }
     const exactEvidenceReplay = canonical.find(item =>
+      item.tenantId === candidate.tenantId &&
       candidate.evidenceIds.some(id => item.evidenceIds.includes(id))
     );
     if (exactEvidenceReplay) continue;
@@ -285,7 +296,11 @@ export function projectEconomicEffect(
     alreadyAppliedOffsets = { income: 0, expense: 0 }
   } = {}
 ) {
-  const amount = Math.abs(Number(event.amount));
+  const numericAmount = Number(event.amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return zeroEffect(EffectState.REQUIRES_REVIEW);
+  }
+  const amount = numericAmount;
 
   switch (event.semanticType) {
     case EventType.EXPENSE:
