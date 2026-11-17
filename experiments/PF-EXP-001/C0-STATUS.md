@@ -25,3 +25,10 @@ Next possible step after C0 approval: execute existing resolver regressions on a
 - Full repository canonical baseline suite: `NOT_RUN` (only verified resolver source snapshot locally).
 - BCP/Ripley real source G0–G4: `NOT_RUN` and C0: `BLOCKED` until independent oracle and exact source periods are approved.
 - This follow-up supersedes only the earlier V8-smoke description for the new native subset; it does not retroactively certify financial accuracy.
+
+## Synthetic reconciliation follow-up — no financial gate closure
+
+- 2026-11-16: 31/31 new Node native reconciliation prechecks on synthetic rows, plus 25/25 prior Node and 11/11 Python synthetic preflight checks = **67/67 PASS**.
+- Source / tests blobs: `b95f03cb6ef5472b5a12cb082380a50f17b35985`, `b42d2027caab69397ecb40ab3379ec8f0f62ccd5`.
+- **C0 remains BLOCKED. G0–G4 remain NOT_RUN.** No real PDF, account balance or independent reviewer attestation verified.
+- Source of truth: `receipts/SYNTHETIC-RECONCILIATION-V3.json`.
