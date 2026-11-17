@@ -41,5 +41,19 @@
   "githubActionsUsed": false,
   "apkBuilt": false,
   "scope": "Synthetic, no claims of actual bank financial correctness",
-  "noRealGateAuthority": true
+  "noRealGateAuthority": true,
+  "reproducibility": {
+    "branchVersioned": {
+      "nativeNodeTests": 52,
+      "pythonTests": 11,
+      "total": 63
+    },
+    "standalonePackage": {
+      "nativeNodeTests": 56,
+      "pythonTests": 11,
+      "total": 67,
+      "additionalPreflightTests": 4
+    },
+    "note": "Four C0 preflight tests and their contract-based files are only in the separately supplied local package; branch command runs 52 Node tests."
+  }
 }
