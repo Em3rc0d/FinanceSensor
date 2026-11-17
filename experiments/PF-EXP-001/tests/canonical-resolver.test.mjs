@@ -1,8 +1,8 @@
 /**
  * PF-EXP-001 synthetic regression candidates for the EXISTING FinanceSensor
  * canonical resolver. This file belongs in experiments/PF-EXP-001/tests/ inside
- * the checked-out repo. No private data. Tests are NOT RUN until that code is
- * available in an executable environment; NOT an G1/G2 attestation.
+ * the checked-out repo. No private data. Tests were run in Node 22 on the exact
+ * source blob pinned below; this is NOT a G1/G2 real-bank attestation.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
