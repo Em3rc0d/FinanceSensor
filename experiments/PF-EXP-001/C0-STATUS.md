@@ -17,3 +17,11 @@
 **Current evidence:** source code and contract reviewed; 28 test cases inventoried; 4/4 synthetic protocol-integrity tests run locally; 14/14 *embedded V8* semantic smoke checks against the fetched resolver with mock hash/UUID (not native Node test, not real PDF). Financial G0–G4 remain NOT_RUN. 0 APK, 0 real banking files processed.
 
 Next possible step after C0 approval: execute existing resolver regressions on a trusted local Node 22 checkout, then G0-protected BCP/Ripley parser experiments against independent oracles. No Android build is authorized.
+
+## Follow-up: native Node regression milestone
+
+- **25/25 local native assertions PASS**: 14 synthetic core resolver, 7 new adversarial safety, 4 C0 protocol shape checks.
+- Source correction is isolated to `jett/pf-exp-001-c0-preflight`, Git blob `e8e7193a36f40eb92654fb11c9e56ea65cfdd64b`.
+- Full repository canonical baseline suite: `NOT_RUN` (only verified resolver source snapshot locally).
+- BCP/Ripley real source G0–G4: `NOT_RUN` and C0: `BLOCKED` until independent oracle and exact source periods are approved.
+- This follow-up supersedes only the earlier V8-smoke description for the new native subset; it does not retroactively certify financial accuracy.
