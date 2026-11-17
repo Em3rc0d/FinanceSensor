@@ -44,7 +44,7 @@ The **exact** offline probe and oracle-precheck implementations tested on synthe
 
 The new independent `src/reconcile.mjs` module validates exact source-row identity, signed integer minor units, posting dates, source/currency isolation, expected-vs-observed records, duplicates, missing/phantom rows, and source-verified balance equation semantics for BCP savings or Ripley credit.
 
-`tests/reconcile.test.mjs` contains **31 synthetic adversarial tests**, executed with Node 22.16.0; all passed. The existing 25 Node preflight+resolver checks and 11 Python PDF/oracle checks were rerun locally: **67/67 synthetic tests PASS**.
+`tests/reconcile.test.mjs` contains **31 synthetic adversarial tests**, executed with Node 22.16.0; all passed. The existing 25 Node preflight+resolver checks and 11 Python PDF/oracle checks were rerun locally: **67/67 synthetic tests PASS in the standalone v3 ZIP**. The GitHub branch itself contains 52 Node tests (14 resolver + 7 safety + 31 reconciliation) and 11 Python tests = **63 branch-versioned tests**; the additional 4 C0 preflight tests and their supporting contract files are in the downloadable v3 package, not in this branch.
 
 **These are technical prechecks only.** Even an input declaring `PRIVATE_ACCEPTANCE` and `verifiedAgainstSource=true` cannot advance G0/G2. No system should mistake those JSON claims for independently inspected bank statements.
 
@@ -55,6 +55,6 @@ node --test experiments/PF-EXP-001/tests/*.test.mjs
 python -m unittest discover -s experiments/PF-EXP-001/tests -p 'test_*.py' -v
 ```
 
-Requires Python PyMuPDF and reportlab for the PDF tests (see `requirements-g0.txt`); no GitHub Actions. Sanitized receipt: `receipts/SYNTHETIC-RECONCILIATION-V3.json`.
+Requires Python PyMuPDF and reportlab for the PDF tests (see `requirements-g0.txt`); no GitHub Actions. Sanitized receipt: `receipts/SYNTHETIC-RECONCILIATION-V3.json`. On a branch checkout, the shown Node command executes **52** tests; the standalone v3 ZIP runs **56**, including 4 additional C0 preflight checks.
 
 **C0 BLOCKED; G0–G4 NOT_RUN:** Gmail shows candidate statements, but attachment retrieval failed and no user-owned original was processed in a private local environment. Exact periods, independent manual row oracle and physical bank reconciliation remain unverified.
