@@ -33,3 +33,9 @@ The C0 protocol harness and 28-case registry are included in the downloadable lo
 A bounded Gmail search located one BCP Savings email from 2026-09-04 (a July 2026 hint in the mail, unverified) and Ripley credit PDF candidates from 2026-10-30 and 2026-08-28. All three accounting cycles remain unconfirmed. Direct Gmail attachment retrieval failed by both filename and attachment ID, so there is **no original PDF, independent row oracle or balance proof**.
 
 See `protocol/G0-SOURCE-DISCOVERY-2026-11-16.md` and the sanitized machine receipt under `receipts/`. A separate G0 local structural lab passed 11/11 synthetic tests (PDF password/error handling and oracle schema/arithmetic), but **C0 is blocked and G0–G4 are NOT_RUN**. This is not an approval to read financial documents in the cloud or to build an APK.
+
+### Versioned G0 probe tools
+
+The **exact** offline probe and oracle-precheck implementations tested on synthetic PDFs (5+6=11 PASS) are now in `tools/private_pdf_probe.py`, `tools/oracle_precheck.py`, corresponding `tests/test_*.py`, the synthetic fixture under `fixtures/synthetic/`, and `requirements-g0.txt`. See `protocol/G0-OFFLINE-RUNBOOK.md`. Reproducibility is demonstrated on synthetics; source completeness and independent bank truth remain unverified.
+
+**Source discovery is not an approval:** authorized Gmail searches located plausible BCP/Ripley document notifications, but raw attachment retrieval failed. A local private original + independent oracle is required. No Gmail account contents or PDF original committed.
