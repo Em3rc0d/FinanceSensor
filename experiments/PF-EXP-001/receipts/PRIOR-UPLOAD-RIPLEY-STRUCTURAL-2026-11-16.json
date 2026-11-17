@@ -1,0 +1,30 @@
+{
+  "schema": "PF_EXP_001_PRIOR_UPLOAD_STRUCTURAL_OBSERVATION_V1",
+  "document": "Previously user-provided Ripley credit statement; not the October Gmail attachment",
+  "observedCycle": "2026-07-23/2026-08-22",
+  "pages": 2,
+  "selectableTextPages": 2,
+  "encrypted": false,
+  "statementMovementRowsVisuallyCounted": 3,
+  "automaticLedgerColumnValuesExtracted": 4,
+  "automaticLayoutExtractionMatchedSeparateVisualTranscription": true,
+  "sourceStatementBalanceEquationDiscrepancyMinorUnits": 0,
+  "exposure": "No account numbers, actual balances, amounts, merchant strings, row dates, private PDF or passwords included",
+  "limitations": [
+    "This preliminary equation was checked on a previously uploaded statement, not the October Gmail encrypted file",
+    "The visual reference was transcribed by the same assistant; an independent second reviewer is still required",
+    "The layout extraction uses known coordinates and is not a generalized parser",
+    "Does not verify Gmail attachment completeness or PDF access path"
+  ],
+  "gates": {
+    "C0": "BLOCKED",
+    "G0": "NOT_RUN",
+    "G1": "NOT_RUN",
+    "G2": "NOT_RUN"
+  },
+  "privacy": {
+    "originalPdfCommitted": false,
+    "privateDataCommitted": false,
+    "passwordRequested": false
+  }
+}
