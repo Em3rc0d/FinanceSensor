@@ -217,7 +217,21 @@ export function resolveCandidates(candidates, { autoMergeThreshold = 0.9, review
       item.tenantId === candidate.tenantId &&
       candidate.evidenceIds.some(id => item.evidenceIds.includes(id))
     );
-    if (exactEvidenceReplay) continue;
+    if (exactEvidenceReplay) {
+      // Same provenance is idempotent only if its financial meaning is stable.
+      // Parser changes or corrupted evidence must surface as a discrepancy.
+      const sameReplay = Number(exactEvidenceReplay.amount).toFixed(2) === amount.toFixed(2) &&
+        exactEvidenceReplay.currency === candidate.currency &&
+        exactEvidenceReplay.flowDirection === candidate.flowDirection &&
+        exactEvidenceReplay.semanticType === candidate.semanticType &&
+        exactEvidenceReplay.occurredAt === candidate.occurredAt &&
+        sameKnownValue(exactEvidenceReplay.accountId, candidate.accountId) &&
+        sameKnownValue(exactEvidenceReplay.instrumentId, candidate.instrumentId);
+      if (!sameReplay) {
+        review.push({ candidate, possibleCanonicalId: exactEvidenceReplay.id, score: 0, reason: 'EVIDENCE_REPLAY_CONFLICT' });
+      }
+      continue;
+    }
 
     let best = null;
     let bestScore = 0;
