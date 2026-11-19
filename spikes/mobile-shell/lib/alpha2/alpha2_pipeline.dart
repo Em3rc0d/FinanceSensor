@@ -117,6 +117,7 @@ class Alpha2PipelineResult {
     required this.runtime,
     required this.productGate,
     required this.projection,
+    this.localEvidence = const <Alpha2Evidence>[],
   });
 
   final String ingressCoverage;
@@ -125,6 +126,8 @@ class Alpha2PipelineResult {
   final Alpha2RuntimeResult runtime;
   final Alpha2ProductGateResult productGate;
   final Alpha2PublicDashboardProjection projection;
+  // Trusted local detail only; deliberately absent from public projection JSON.
+  final List<Alpha2Evidence> localEvidence;
 }
 
 class Alpha2Pipeline {
@@ -286,6 +289,7 @@ class Alpha2Pipeline {
       runtime: runtime,
       productGate: productGate,
       projection: projection,
+      localEvidence: List<Alpha2Evidence>.unmodifiable(evidence),
     );
   }
 
