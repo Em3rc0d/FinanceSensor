@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const ripley = Alpha2StrictRipleyCreditAdapter();
+  const bcp = Alpha2StrictBcpCreditAdapter();
   const bcpProbe = Alpha2BcpCreditStructuralProbe();
 
   test('Ripley strict adapter imports ledger totals and excludes summary/formulas', () {
@@ -111,6 +112,42 @@ void main() {
       ],
     );
     expect(result.evidence.every((item) => item.amount != 243.45), isTrue);
+  });
+
+  test('BCP strict adapter recovers description left of centered header', () {
+    final result = bcp.parse(
+      layout: _bcpCenteredHeaderLayout(),
+      sourceReceiptId: 'stmt-src:bcp-centered-header',
+      tenantId: 'tenant-1',
+    );
+
+    expect(result.importable, isTrue);
+    expect(result.reviewCodes, isEmpty);
+    expect(result.evidence, hasLength(2));
+    expect(result.evidence.map((item) => item.merchantCanonical), <String?>[
+      'pago banca movil',
+      'comercio demo',
+    ]);
+    expect(result.evidence[0].semanticType, Alpha2SemanticType.cardPayment);
+    expect(result.evidence[0].occurredAt, DateTime.utc(2026, 7, 26, 12));
+    expect(result.evidence[0].processedAt, DateTime.utc(2026, 7, 27, 12));
+    expect(result.evidence[1].occurredAt, DateTime.utc(2026, 8, 1, 12));
+    expect(result.evidence[1].processedAt, DateTime.utc(2026, 8, 3, 12));
+  });
+
+  test('BCP strict adapter fails the whole document when one ledger page has unknown geometry', () {
+    final result = bcp.parse(
+      layout: _bcpCenteredHeaderLayout(includeUnrecognizedLedgerPage: true),
+      sourceReceiptId: 'stmt-src:bcp-partial-page',
+      tenantId: 'tenant-1',
+    );
+
+    expect(result.importable, isFalse);
+    expect(result.evidence, isEmpty);
+    expect(
+      result.reviewCodes,
+      contains('BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN'),
+    );
   });
 
   test('BCP credit probe emits only coarse whitelisted structural code', () {
@@ -222,6 +259,47 @@ Alpha2StatementLayout _ripleyLayout({
     ],
     pageCount: 1,
   );
+}
+
+Alpha2StatementLayout _bcpCenteredHeaderLayout({
+  bool includeUnrecognizedLedgerPage = false,
+}) {
+  final firstPage = <Alpha2LayoutItem>[
+    _item('Estado de Cuenta Tarjeta VISA', 60, 850, 0),
+    _item('Periodo de facturación 27/07/2026 - 25/08/2026', 400, 830, 1),
+    _item('Fecha de proceso', 40, 780, 2),
+    _item('Fecha de consumo', 100, 780, 3),
+    _item('Descripción', 300, 780, 4),
+    _item('Tipo de Operación', 445, 780, 5),
+    _item('Soles', 560, 780, 6),
+    _item('Dólares', 630, 780, 7),
+    _item('27Jul', 40, 730, 8),
+    _item('26Jul', 100, 730, 9),
+    _item('PAGO BANCA MOVIL', 160, 730, 10),
+    _item('PAGO', 470, 730, 11),
+    _item('344.00-', 565, 730, 12),
+    _item('03Ago', 40, 700, 13),
+    _item('01Ago', 100, 700, 14),
+    _item('COMERCIO DEMO', 160, 700, 15),
+    _item('CONSUMO', 470, 700, 16),
+    _item('108.50', 565, 700, 17),
+    _item('Cómo calcular tu pago mínimo', 20, 300, 18),
+  ];
+  final pages = <Alpha2LayoutPage>[
+    Alpha2LayoutPage(pageNumber: 1, items: firstPage),
+    if (includeUnrecognizedLedgerPage)
+      Alpha2LayoutPage(
+        pageNumber: 2,
+        items: <Alpha2LayoutItem>[
+          _item('04Ago', 40, 730, 30),
+          _item('02Ago', 100, 730, 31),
+          _item('MOVIMIENTO SIN CABECERA', 160, 730, 32),
+          _item('CONSUMO', 470, 730, 33),
+          _item('10.00', 565, 730, 34),
+        ],
+      ),
+  ];
+  return Alpha2StatementLayout(pages: pages, pageCount: pages.length);
 }
 
 Alpha2StatementLayout _ripleyPhysicalHeaderLayout() {

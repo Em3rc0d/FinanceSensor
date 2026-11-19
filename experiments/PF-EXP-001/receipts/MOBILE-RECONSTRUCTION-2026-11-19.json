@@ -1,0 +1,93 @@
+{
+  "schema": "PF_EXP_001_MOBILE_RECONSTRUCTION_RECEIPT_V1",
+  "executedAtLocal": "2026-11-19",
+  "source": {
+    "repo": "Em3rc0d/FinanceSensor",
+    "mainBase": "316dd39",
+    "recoveredBranch": "pf-exp-001-laptop",
+    "recoveredCommit": "c5ef50b",
+    "integrationBranch": "codex/pf-exp-001-mobile-reconstruction",
+    "integrationPatchCommit": "140178f",
+    "integrationStrategy": "branch from origin/main and cherry-pick recovered patch",
+    "localChangesBeforeIntegration": false
+  },
+  "recoveredChange": {
+    "files": 13,
+    "insertions": 413,
+    "deletions": 56,
+    "bcpNodeDateContract": "occurredAt=consumptionAt; valueAt=processAt",
+    "bcpMobileAdapter": "A2_BCP_CREDIT_STRICT_V1",
+    "ripleyMobileAdapter": "A2_RIPLEY_CREDIT_STRICT_V4",
+    "vaultSchema": 2,
+    "processedAtPreserved": true,
+    "replayResultPreserved": true
+  },
+  "tests": [
+    {
+      "suite": "flutter analyze",
+      "result": "PASS",
+      "issues": 0
+    },
+    {
+      "suite": "flutter test",
+      "result": "PASS",
+      "passed": 95,
+      "total": 95
+    },
+    {
+      "suite": "integrated runtime validator",
+      "result": "PASS"
+    },
+    {
+      "suite": "Node BCP date regressions",
+      "result": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "suite": "PF-EXP-001 Node synthetic tests",
+      "result": "PASS",
+      "passed": 52,
+      "total": 52
+    },
+    {
+      "suite": "PF-EXP-001 Python offline tests",
+      "result": "PASS",
+      "passed": 11,
+      "total": 11
+    }
+  ],
+  "reviewRemediation": {
+    "partialBcpPageImport": "FAIL_CLOSED_WITH_BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN",
+    "centeredBcpDescriptionHeader": "LEADING_DATE_PAIR_RECOVERY_TESTED",
+    "bcpDiagnostics": "ALLOWLISTED_AND_RENDERED",
+    "vaultRetryReplay": "TESTED_IN_MEMORY_AND_PLATFORM_RESPONSE",
+    "schema1To2Migration": "STATIC_TRANSACTION_CONTRACT_TESTED",
+    "apkRebuilt": false
+  },
+  "approvedLocalApk": {
+    "committedToGit": false,
+    "rebuiltDuringThisRecovery": false,
+    "package": "com.financesensor.lab.gmailconnection.r2",
+    "versionName": "0.2.0-alpha.2",
+    "versionCode": 2019,
+    "sha256": "b39ee4be7fe172cd6dffee8f2d52aed2ce39f54bfec5ed6d12e130543bd046b1",
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0"
+  },
+  "privacy": {
+    "keystoreCommitted": false,
+    "passwordCommitted": false,
+    "tokenCommitted": false,
+    "privatePdfCommitted": false,
+    "privateFinancialDataCommitted": false,
+    "apkCommitted": false,
+    "githubActionsUsedForApk": false
+  },
+  "gates": {
+    "checkoutRecovery": "PASS",
+    "syntheticRegression": "PASS",
+    "physicalPhoneInstall": "NOT_RUN",
+    "privateStatementValidation": "NOT_RUN",
+    "releaseReady": "NO"
+  }
+}

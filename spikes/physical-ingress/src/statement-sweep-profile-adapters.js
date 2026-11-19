@@ -315,8 +315,8 @@ function parseBcpCreditLayout({ pages = [], tenantId, accountId = null } = {}) {
         amount: signed,
         currency: penPresent ? 'PEN' : 'USD',
         description,
-        occurredAt: processAt,
-        valueAt: consumptionAt,
+        occurredAt: consumptionAt,
+        valueAt: processAt,
         sourcePage: page.pageNumber,
         sourceSequence: rows.length,
         isPayment

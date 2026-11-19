@@ -6,6 +6,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const [
   authorityText,
   creditAuthorityText,
+  validationOverlayText,
   pipeline,
   productGate,
   monthlyCoverage,
@@ -29,6 +30,7 @@ const [
 ] = await Promise.all([
   read('graph/alpha2-mobile-runtime-authority.json'),
   read('graph/alpha2-credit-mobile-profile-authority.json'),
+  read('graph/pf-exp-001-mobile-validation-v1.json'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_pipeline.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_product_gate.dart'),
   read('spikes/mobile-shell/lib/alpha2/alpha2_monthly_coverage.dart'),
@@ -53,6 +55,7 @@ const [
 
 const authority = JSON.parse(authorityText);
 const creditAuthority = JSON.parse(creditAuthorityText);
+const validationOverlay = JSON.parse(validationOverlayText);
 if (authority.contract !== 'ALPHA2_MOBILE_RUNTIME_AUTHORITY_V1') throw new Error('ALPHA2_AUTHORITY_CONTRACT_MISMATCH');
 if (authority.adr !== 'ADR-038') throw new Error('ALPHA2_AUTHORITY_ADR_MISMATCH');
 if (authority.authorities?.dart?.canonicalTransactionAuthority !== true) throw new Error('ALPHA2_DART_CANONICAL_AUTHORITY_REQUIRED');
@@ -68,6 +71,11 @@ if (creditAuthority.privacy?.genericParserFallback !== false || creditAuthority.
 const creditProfiles = new Map((creditAuthority.profiles ?? []).map(item => [item.profileId, item]));
 if (creditProfiles.get('PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRICT_IMPORT') throw new Error('ALPHA2_RIPLEY_STRICT_AUTHORITY_REQUIRED');
 if (creditProfiles.get('PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1')?.mode !== 'STRUCTURAL_PROBE_ONLY') throw new Error('ALPHA2_BCP_CREDIT_PROBE_ONLY_REQUIRED');
+if (validationOverlay.schemaVersion !== 'PF_EXP_001_MOBILE_VALIDATION_V1') throw new Error('PF_EXP_001_OVERLAY_SCHEMA');
+if (validationOverlay.claims?.releaseReady !== false) throw new Error('PF_EXP_001_PREMATURE_RELEASE');
+const validationProfiles = new Map((validationOverlay.profiles ?? []).map(item => [item.profileId, item]));
+if (validationProfiles.get('PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1')?.adapter !== 'A2_BCP_CREDIT_STRICT_V1') throw new Error('PF_EXP_001_BCP_PROFILE');
+if (validationProfiles.get('PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1')?.adapter !== 'A2_RIPLEY_CREDIT_STRICT_V4') throw new Error('PF_EXP_001_RIPLEY_PROFILE');
 
 if (!adrIndex.includes('| ADR-038 | Alpha.2 mobile runtime authority and Node↔Dart parity |')) throw new Error('ALPHA2_ADR_038_REGISTRY_MISSING');
 if (!adrIndex.includes('| ADR-039 | Alpha.2 installability incident and Android baseline retention |')) throw new Error('ALPHA2_ADR_039_REGISTRY_MISSING');
@@ -80,7 +88,7 @@ for (const forbidden of ['ConservativeStatementParser', 'main_human_test.dart', 
 if (!pipeline.includes('Alpha2BcpSavingsGeometryParser')) throw new Error('ALPHA2_BCP_GEOMETRY_PARSER_NOT_WIRED');
 if (!pipeline.includes('Alpha2StrictBcpSavingsAdapter')) throw new Error('ALPHA2_STATEMENT_STRICT_ADAPTER_NOT_WIRED');
 if (!pipeline.includes('Alpha2StrictRipleyCreditAdapter')) throw new Error('ALPHA2_RIPLEY_STRICT_ADAPTER_NOT_WIRED');
-if (!pipeline.includes('Alpha2BcpCreditStructuralProbe')) throw new Error('ALPHA2_BCP_CREDIT_PROBE_NOT_WIRED');
+if (!pipeline.includes('Alpha2StrictBcpCreditAdapter')) throw new Error('PF_EXP_001_BCP_STRICT_ADAPTER_NOT_WIRED');
 if (!pipeline.includes('alpha2RuntimeStatementProfiles')) throw new Error('ALPHA2_EXACT_PROFILE_ROUTER_MISSING');
 if (!pipeline.includes("terminalState: 'QUARANTINED'")) throw new Error('ALPHA2_PARSE_REVIEW_FAIL_CLOSED_MISSING');
 if (!pipeline.includes('bytes.fillRange(0, bytes.length, 0)')) throw new Error('ALPHA2_OWNED_PDF_BUFFER_ZERO_MISSING');
@@ -94,11 +102,11 @@ for (const marker of [
 ]) if (!statementStrict.includes(marker)) throw new Error(`ALPHA2_STATEMENT_COMPLETENESS_MARKER_MISSING:${marker}`);
 
 for (const marker of [
-  'A2_RIPLEY_CREDIT_STRICT_V3',
+  'A2_RIPLEY_CREDIT_STRICT_V4',
   'TUS MOVIMIENTOS DEL MES',
   'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED',
   'geometry.totalMinX',
-  'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1',
+  'A2_BCP_CREDIT_STRICT_V1',
   'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
   'BCP_CREDIT_STRUCTURAL_V1_',
   'evidence: const <Alpha2Evidence>[]'
@@ -171,8 +179,8 @@ console.log('FINANCIAL_AUTHORITY=DART');
 console.log('ANDROID_TRUSTED_EDGE=KOTLIN');
 console.log('NODE_ROLE=REFERENCE_ORACLE_ONLY');
 console.log('STATEMENT_STRICT_COMPLETENESS=A2_BCP_SAVINGS_COMPLETENESS_V4');
-console.log('RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V3');
-console.log('BCP_CREDIT_MODE=STRUCTURAL_PROBE_ONLY');
+console.log('RIPLEY_CREDIT_STRICT_ADAPTER=A2_RIPLEY_CREDIT_STRICT_V4');
+console.log('BCP_CREDIT_MODE=STRICT_IMPORT:A2_BCP_CREDIT_STRICT_V1');
 console.log('EXACT_FETCH_ENABLED_PROFILES=3');
 console.log('STATEMENT_PARTIAL_BATCH_IMPORT=FORBIDDEN');
 console.log('ACCOUNT_GRAPH_PRODUCT_GATE=WIRED');

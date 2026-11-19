@@ -52,6 +52,8 @@ class Alpha2StatementImportOutcome {
 
 const List<String> alpha2SafeStatementOutcomeStatuses = <String>[
   'IMPORTED',
+  'ALREADY_IMPORTED',
+  'DISCARDED',
   'REVIEW_REQUIRED',
   'PDF_REJECTED',
   'FETCH_REJECTED',
@@ -134,7 +136,7 @@ class Alpha2Pipeline {
       geometryParser: Alpha2BcpSavingsGeometryParser(),
     ),
     this.ripleyCreditParser = const Alpha2StrictRipleyCreditAdapter(),
-    this.bcpCreditProbe = const Alpha2BcpCreditStructuralProbe(),
+    this.bcpCreditParser = const Alpha2StrictBcpCreditAdapter(),
   });
 
   final Alpha2IngressSource ingress;
@@ -142,7 +144,7 @@ class Alpha2Pipeline {
   final Alpha2StatementLayoutReader pdfReader;
   final Alpha2StrictBcpSavingsAdapter bcpSavingsParser;
   final Alpha2StrictRipleyCreditAdapter ripleyCreditParser;
-  final Alpha2BcpCreditStructuralProbe bcpCreditProbe;
+  final Alpha2StrictBcpCreditAdapter bcpCreditParser;
 
   Future<Alpha2PipelineResult> refresh({
     required String tenantId,
@@ -412,7 +414,11 @@ class Alpha2Pipeline {
               sourceReceiptId: sourceReceiptId,
               tenantId: tenantId,
             ),
-          alpha2BcpCreditProfileId => bcpCreditProbe.inspect(layout: layout),
+          alpha2BcpCreditProfileId => bcpCreditParser.parse(
+              layout: layout,
+              sourceReceiptId: sourceReceiptId,
+              tenantId: tenantId,
+            ),
           _ => throw StateError('ALPHA2_PROFILE_ROUTING_IMPOSSIBLE'),
         };
       } catch (_) {
@@ -451,8 +457,9 @@ class Alpha2Pipeline {
         );
       }
 
+      late final Alpha2VaultCommitResult commit;
       try {
-        await vault.commitEvidenceBatch(
+        commit = await vault.commitEvidenceBatch(
           sourceReceiptId: sourceReceiptId,
           evidence: parsed.evidence,
           terminalState: 'IMPORTED',
@@ -467,10 +474,15 @@ class Alpha2Pipeline {
         );
       }
 
+      final committedStatus = commit.replayed
+          ? (commit.terminalState == 'IMPORTED'
+              ? 'ALREADY_IMPORTED'
+              : commit.terminalState)
+          : commit.terminalState;
       return Alpha2StatementImportOutcome(
         profileId: candidate.profileId,
-        status: 'IMPORTED',
-        evidenceCount: parsed.evidence.length,
+        status: committedStatus,
+        evidenceCount: commit.replayed ? 0 : commit.rowCount,
         reviewCodes: const <String>[],
         statementPeriodId: parsed.statementPeriodId,
       );
@@ -522,6 +534,15 @@ String _safeStatementReviewCode({
 
   const priority = <String>[
     'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
+    'BCP_CREDIT_CYCLE_AMBIGUOUS',
+    'BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN',
+    'BCP_CREDIT_LEDGER_GEOMETRY_UNKNOWN',
+    'BCP_CREDIT_DOUBLE_CURRENCY',
+    'BCP_CREDIT_SIGN_MISMATCH',
+    'BCP_CREDIT_DATE_AMBIGUOUS',
+    'BCP_CREDIT_DATED_ROW_UNEXPLAINED',
+    'BCP_CREDIT_ROW_UNEXPLAINED',
+    'BCP_CREDIT_LAYOUT_NO_MOVEMENTS',
     'STATEMENT_HEADER_GEOMETRY_UNKNOWN',
     'STATEMENT_COMPLETENESS_GEOMETRY_UNKNOWN',
     'STATEMENT_LEDGER_PAGE_NOT_FOUND',
@@ -554,6 +575,15 @@ String _safeStatementReviewCode({
 
 const Set<String> _alpha2SafeStatementReviewCodes = <String>{
   'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
+  'BCP_CREDIT_CYCLE_AMBIGUOUS',
+  'BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN',
+  'BCP_CREDIT_LEDGER_GEOMETRY_UNKNOWN',
+  'BCP_CREDIT_DOUBLE_CURRENCY',
+  'BCP_CREDIT_SIGN_MISMATCH',
+  'BCP_CREDIT_DATE_AMBIGUOUS',
+  'BCP_CREDIT_DATED_ROW_UNEXPLAINED',
+  'BCP_CREDIT_ROW_UNEXPLAINED',
+  'BCP_CREDIT_LAYOUT_NO_MOVEMENTS',
   'STATEMENT_PERIOD_AMBIGUOUS',
   'STATEMENT_HEADER_GEOMETRY_UNKNOWN',
   'STATEMENT_ROW_BOTH_DEBIT_CREDIT',
@@ -630,6 +660,10 @@ Alpha2Evidence alpha2EvidenceFromSafeVaultRow(Map<String, Object?> row) {
   final evidenceId = row['evidenceId'] as String? ?? '';
   final tenantId = row['tenantId'] as String? ?? '';
   final occurredAt = DateTime.tryParse(row['occurredAt'] as String? ?? '');
+  final processedRaw = row['processedAt'] as String?;
+  final processedAt = processedRaw == null || processedRaw.isEmpty
+      ? null
+      : DateTime.tryParse(processedRaw);
   final currency = row['currency'] as String? ?? '';
   final amount = row['amount'] is num
       ? (row['amount'] as num).toDouble()
@@ -649,6 +683,7 @@ Alpha2Evidence alpha2EvidenceFromSafeVaultRow(Map<String, Object?> row) {
     amount: amount,
     currency: currency,
     occurredAt: occurredAt,
+    processedAt: processedAt,
     semanticType: _semantic(row['semanticType'] as String?),
     channel: _channel(row['channel'] as String?),
     truthState: _truth(row['truthState'] as String?),

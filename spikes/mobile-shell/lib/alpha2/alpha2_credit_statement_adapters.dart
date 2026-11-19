@@ -11,7 +11,8 @@ const String alpha2BcpCreditProfileId =
 const String alpha2RipleyCreditProfileId =
     'PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1';
 const String alpha2RipleyCreditAdapterVersion =
-    'A2_RIPLEY_CREDIT_STRICT_V3';
+    'A2_RIPLEY_CREDIT_STRICT_V4';
+const String alpha2BcpCreditAdapterVersion = 'A2_BCP_CREDIT_STRICT_V1';
 const String alpha2BcpCreditProbeVersion =
     'A2_BCP_CREDIT_STRUCTURAL_PROBE_V1';
 const String alpha2BcpCreditProbePrefix = 'BCP_CREDIT_STRUCTURAL_V1_';
@@ -80,11 +81,20 @@ class Alpha2StrictRipleyCreditAdapter {
         }
         explainedRows += 1;
 
+        final processedAt = _parseCreditDate(_joinRange(
+          line.items,
+          geometry.processDateMinX,
+          geometry.descriptionMinX,
+        ));
         final description = _joinRange(
           line.items,
-          geometry.descriptionMinX,
+          geometry.processDateMinX,
           geometry.descriptionMaxX,
-        ).trim();
+        )
+            .replaceAll(RegExp(r'\b\d{1,2}/(?:\d{1,2}|[A-Za-z]{3})/\d{2,4}\b'), ' ')
+            .replaceAll(RegExp(r'\bT\d{3,}\b', caseSensitive: false), ' ')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
         if (description.isEmpty) {
           review.add('RIPLEY_CREDIT_DESCRIPTION_REQUIRED');
           continue;
@@ -97,7 +107,7 @@ class Alpha2StrictRipleyCreditAdapter {
         final digest = sha256
             .convert(
               utf8.encode(
-                'ripley-credit-v1|$sourceReceiptId|${page.pageNumber}|${evidence.length}|${occurredAt.toIso8601String()}|${(amount * 100).round()}|${direction.name}',
+                'ripley-credit-v1|$tenantId|$sourceReceiptId|${page.pageNumber}|${line.items.map((item) => item.sequence).reduce(math.min)}',
               ),
             )
             .toString();
@@ -109,6 +119,7 @@ class Alpha2StrictRipleyCreditAdapter {
             amount: amount,
             currency: 'PEN',
             occurredAt: occurredAt,
+            processedAt: processedAt,
             semanticType: _creditSemantic(description, direction),
             channel: Alpha2EvidenceChannel.statementLedger,
             truthState: Alpha2TruthState.posted,
@@ -132,6 +143,141 @@ class Alpha2StrictRipleyCreditAdapter {
       review.add('RIPLEY_CREDIT_LAYOUT_NO_MOVEMENTS');
     }
 
+    return Alpha2StatementParseResult(
+      evidence: List<Alpha2Evidence>.unmodifiable(evidence),
+      reviewCodes: List<String>.unmodifiable(review.toList()..sort()),
+      pageCount: layout.pageCount,
+      statementPeriodId: period.id,
+    );
+  }
+}
+
+/// Strict BCP credit-card adapter. It imports only rows covered by an explicit
+/// billing cycle and complete, unambiguous column geometry.
+class Alpha2StrictBcpCreditAdapter {
+  const Alpha2StrictBcpCreditAdapter();
+
+  Alpha2StatementParseResult parse({
+    required Alpha2StatementLayout layout,
+    required String sourceReceiptId,
+    required String tenantId,
+    String? accountId,
+  }) {
+    if (sourceReceiptId.trim().isEmpty || tenantId.trim().isEmpty) {
+      throw ArgumentError('ALPHA2_BCP_CREDIT_PARSE_IDENTITY_REQUIRED');
+    }
+    final period = _bcpStatementPeriod(layout.pages);
+    if (period == null) {
+      return Alpha2StatementParseResult(
+        evidence: const <Alpha2Evidence>[],
+        reviewCodes: const <String>['BCP_CREDIT_CYCLE_AMBIGUOUS'],
+        pageCount: layout.pageCount,
+        statementPeriodId: null,
+      );
+    }
+    final evidence = <Alpha2Evidence>[];
+    final review = <String>{};
+    var geometryPages = 0;
+    for (final page in layout.pages) {
+      final looksLikeLedgerPage = _looksLikeBcpCreditLedgerPage(page);
+      final process = _findHeader(page, const ['FECHA DE PROCESO']);
+      final consumption = _findHeader(page, const ['FECHA DE CONSUMO']);
+      final description = _findHeader(page, const ['DESCRIPCION']);
+      final operation = _findHeader(page, const ['TIPO DE OPERACION']);
+      final soles = _findHeader(page, const ['SOLES']);
+      final dollars = _findHeader(page, const ['DOLARES']);
+      if (process == null || consumption == null || description == null ||
+          operation == null || soles == null || dollars == null ||
+          !(process.x < consumption.x && consumption.x < description.x &&
+            description.x < operation.x && operation.x < soles.x && soles.x < dollars.x)) {
+        if (looksLikeLedgerPage) {
+          review.add('BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN');
+        }
+        continue;
+      }
+      geometryPages++;
+      final headerY = <double>[process.y, consumption.y, description.y,
+        operation.y, soles.y, dollars.y].reduce(math.min);
+      final footerY = _bcpLedgerFooterY(page, headerY);
+      final bounds = <double>[
+        (process.x + consumption.x) / 2,
+        (consumption.x + description.x) / 2,
+        (description.x + operation.x) / 2,
+        (operation.x + soles.x) / 2,
+        (soles.x + dollars.x) / 2,
+      ];
+      for (final line in _creditLines(page)) {
+        if (line.y >= headerY - 1 || (footerY != null && line.y <= footerY + 1)) continue;
+        final whole = _normalizeLayout(line.items.map((item) => item.text).join(' '));
+        final control = whole.replaceFirst(RegExp(r'^_+'), '');
+        if (RegExp(r'^(SALDO ANTERIOR|SUB TOTAL|MONTO TOTAL FACTURADO)\b').hasMatch(control)) continue;
+        final pen = _parseSignedMoney(_joinRange(line.items, bounds[3], bounds[4]));
+        final usd = _parseSignedMoney(_joinRange(line.items, bounds[4], double.infinity));
+        final nonZero = <({String currency, double value})>[
+          if (pen != null && pen != 0) (currency: 'PEN', value: pen),
+          if (usd != null && usd != 0) (currency: 'USD', value: usd),
+        ];
+        final hasDate = RegExp(r'\b\d{1,2}(?:/|\s*)[A-Z]{3}\b').hasMatch(whole);
+        if (nonZero.isEmpty) {
+          if (hasDate) review.add('BCP_CREDIT_DATED_ROW_UNEXPLAINED');
+          continue;
+        }
+        if (nonZero.length != 1) {
+          review.add('BCP_CREDIT_DOUBLE_CURRENCY');
+          continue;
+        }
+        final leading = _parseBcpLeadingDatePairAndDescription(
+          line,
+          period,
+          maximumX: bounds[2],
+        );
+        final processedAt = leading?.processedAt;
+        final occurredAt = leading?.occurredAt;
+        if (processedAt == null || occurredAt == null ||
+            processedAt.isBefore(period.start) || processedAt.isAfter(period.end) ||
+            occurredAt.isAfter(period.end) || occurredAt.isAfter(processedAt)) {
+          review.add('BCP_CREDIT_DATE_AMBIGUOUS');
+          continue;
+        }
+        final descriptionText = leading!.description;
+        final operationText = _normalizeLayout(_joinRange(line.items, bounds[2], bounds[3]));
+        if (descriptionText.isEmpty ||
+            !(operationText.contains('PAGO') || operationText.contains('CONSUMO'))) {
+          review.add('BCP_CREDIT_ROW_UNEXPLAINED');
+          continue;
+        }
+        final money = nonZero.single;
+        final payment = operationText.contains('PAGO');
+        if ((payment && money.value >= 0) || (!payment && money.value <= 0)) {
+          review.add('BCP_CREDIT_SIGN_MISMATCH');
+          continue;
+        }
+        final sequence = line.items.map((item) => item.sequence).reduce(math.min);
+        final digest = sha256.convert(utf8.encode(
+          'bcp-credit-v1|$tenantId|$sourceReceiptId|${page.pageNumber}|$sequence',
+        )).toString();
+        evidence.add(Alpha2Evidence(
+          evidenceId: 'stmt:${digest.substring(0, 40)}',
+          tenantId: tenantId,
+          amount: money.value.abs(),
+          currency: money.currency,
+          occurredAt: occurredAt,
+          processedAt: processedAt,
+          semanticType: payment ? Alpha2SemanticType.cardPayment :
+              _creditSemantic(descriptionText, Alpha2FlowDirection.outflow),
+          channel: Alpha2EvidenceChannel.statementLedger,
+          truthState: Alpha2TruthState.posted,
+          institutionCode: 'BCP',
+          accountId: accountId,
+          merchantCanonical: descriptionText,
+          statementPeriodId: period.id,
+          flowDirection: payment ? Alpha2FlowDirection.inflow : Alpha2FlowDirection.outflow,
+        ).normalized());
+      }
+    }
+    if (geometryPages == 0) review.add('BCP_CREDIT_LEDGER_GEOMETRY_UNKNOWN');
+    if (evidence.isEmpty && review.isEmpty) review.add('BCP_CREDIT_LAYOUT_NO_MOVEMENTS');
+    if (review.isNotEmpty) evidence.clear();
     return Alpha2StatementParseResult(
       evidence: List<Alpha2Evidence>.unmodifiable(evidence),
       reviewCodes: List<String>.unmodifiable(review.toList()..sort()),
@@ -388,13 +534,74 @@ bool _isCertifiedRipleyControlRow(
 }
 
 double? _ripleyLedgerFooterY(Alpha2LayoutPage page, double headerY) {
-  final markers = page.items.where((item) {
-    final text = _normalizeLayout(item.text);
+  final markers = _creditLines(page).where((line) {
+    final text = _normalizeLayout(line.items.map((item) => item.text).join(' '));
     return text.contains('COMO SE CALCULA EL PAGO TOTAL') ||
         text.contains('PAGO TOTAL Y MINIMO DEL MES');
-  }).where((item) => item.y < headerY).toList();
+  }).where((line) => line.y < headerY).toList();
   if (markers.isEmpty) return null;
-  return markers.map((item) => item.y).reduce(math.max);
+  return markers.map((line) => line.y).reduce(math.max);
+}
+
+double? _bcpLedgerFooterY(Alpha2LayoutPage page, double headerY) {
+  final markers = _creditLines(page).where((line) {
+    final text = _normalizeLayout(line.items.map((item) => item.text).join(' '));
+    return text.contains('COMO CALCULAR TU PAGO MINIMO');
+  }).where((line) => line.y < headerY).toList();
+  return markers.isEmpty ? null : markers.map((line) => line.y).reduce(math.max);
+}
+
+bool _looksLikeBcpCreditLedgerPage(Alpha2LayoutPage page) {
+  final pageText = _normalizeLayout(page.items.map((item) => item.text).join(' '));
+  final headerSignals = <String>[
+    'FECHA DE PROCESO',
+    'FECHA DE CONSUMO',
+    'TIPO DE OPERACION',
+    'DESCRIPCION',
+    'SOLES',
+    'DOLARES',
+  ].where(pageText.contains).length;
+  if (headerSignals >= 2) return true;
+
+  return _creditLines(page).any((line) {
+    final text = line.items.map((item) => item.text).join(' ');
+    final dates = RegExp(
+      r'\b\d{1,2}\s*(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\b',
+      caseSensitive: false,
+    ).allMatches(_normalizeLayout(text)).length;
+    if (dates < 2) return false;
+    return line.items.any((item) {
+      final money = _parseSignedMoney(item.text);
+      return money != null && money != 0;
+    });
+  });
+}
+
+({DateTime processedAt, DateTime occurredAt, String description})?
+    _parseBcpLeadingDatePairAndDescription(
+  _CreditLine line,
+  _CreditPeriod period, {
+  required double maximumX,
+}) {
+  final left = _joinRange(line.items, double.negativeInfinity, maximumX);
+  final match = RegExp(
+    r'^\s*(\d{1,2})\s*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\s+(\d{1,2})\s*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\s+(.*)$',
+    caseSensitive: false,
+  ).firstMatch(_normalizeLayout(left));
+  if (match == null) return null;
+  final processedAt = _resolveBcpDdMon('${match.group(1)}${match.group(2)}', period);
+  final occurredAt = _resolveBcpDdMon(
+    '${match.group(3)}${match.group(4)}',
+    period,
+    earliest: period.start.subtract(const Duration(days: 31)),
+  );
+  final description = match.group(5)?.trim() ?? '';
+  if (processedAt == null || occurredAt == null || description.isEmpty) return null;
+  return (
+    processedAt: processedAt,
+    occurredAt: occurredAt,
+    description: description,
+  );
 }
 
 Alpha2LayoutItem? _findHeader(
@@ -623,6 +830,62 @@ _CreditPeriod? _ripleyStatementPeriod(List<Alpha2LayoutPage> pages) {
   }
 
   return candidates.length == 1 ? candidates.values.single : null;
+}
+
+_CreditPeriod? _bcpStatementPeriod(List<Alpha2LayoutPage> pages) {
+  final candidates = <String, _CreditPeriod>{};
+  for (final page in pages) {
+    final lines = _creditLines(page);
+    for (var index = 0; index < lines.length; index++) {
+      final anchor = _normalizeLayout(lines[index].items.map((item) => item.text).join(' '));
+      if (!_containsAny(anchor, const [
+        'CICLO DE FACTURACION', 'PERIODO DE FACTURACION', 'FECHA DE FACTURACION'
+      ])) continue;
+      final texts = <String>[anchor];
+      for (final offset in const [-1, 1]) {
+        final nearby = index + offset;
+        if (nearby >= 0 && nearby < lines.length &&
+            (lines[nearby].y - lines[index].y).abs() <= 36) {
+          texts.add(_normalizeLayout(lines[nearby].items.map((item) => item.text).join(' ')));
+        }
+      }
+      for (final text in texts) {
+        final tokens = _creditDateTokens(text);
+        if (tokens.length != 2) continue;
+        final period = _creditPeriodFromTokens(tokens);
+        if (period != null &&
+            period.end.difference(period.start).inDays <= 62) {
+          candidates[period.id] = period;
+        }
+      }
+    }
+  }
+  return candidates.length == 1 ? candidates.values.single : null;
+}
+
+DateTime? _resolveBcpDdMon(
+  String raw,
+  _CreditPeriod period, {
+  DateTime? earliest,
+}) {
+  final normalized = _normalizeLayout(raw);
+  final match = RegExp(
+    r'\b(\d{1,2})\s*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\b',
+  ).firstMatch(normalized);
+  if (match == null) return null;
+  const months = <String, int>{
+    'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'MAY': 5, 'JUN': 6,
+    'JUL': 7, 'AGO': 8, 'SEP': 9, 'SET': 9, 'OCT': 10, 'NOV': 11, 'DIC': 12,
+  };
+  final minimum = earliest ?? period.start;
+  final results = <DateTime>[];
+  for (var year = minimum.year; year <= period.end.year; year++) {
+    final value = _safeUtc(year, months[match.group(2)!], int.tryParse(match.group(1)!));
+    if (value != null && !value.isBefore(minimum) && !value.isAfter(period.end)) {
+      results.add(value);
+    }
+  }
+  return results.length == 1 ? results.single : null;
 }
 
 List<String> _creditDateTokens(String raw) {

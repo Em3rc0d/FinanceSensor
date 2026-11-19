@@ -98,7 +98,7 @@ class _ReadFailingVault implements Alpha2Vault {
   @override
   Future<Alpha2VaultCapabilities> initialize() => _delegate.initialize();
   @override
-  Future<void> commitEvidenceBatch({required String sourceReceiptId, required List<Alpha2Evidence> evidence, required String terminalState}) =>
+  Future<Alpha2VaultCommitResult> commitEvidenceBatch({required String sourceReceiptId, required List<Alpha2Evidence> evidence, required String terminalState}) =>
       _delegate.commitEvidenceBatch(sourceReceiptId: sourceReceiptId, evidence: evidence, terminalState: terminalState);
   @override
   Future<List<Map<String, Object?>>> readSafeEvidence() async => throw StateError('private detail');

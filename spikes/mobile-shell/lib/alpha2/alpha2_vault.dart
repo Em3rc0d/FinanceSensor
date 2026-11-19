@@ -20,9 +20,21 @@ class Alpha2VaultCapabilities {
   final bool? hardwareBackedKey;
 }
 
+class Alpha2VaultCommitResult {
+  const Alpha2VaultCommitResult({
+    required this.replayed,
+    required this.rowCount,
+    required this.terminalState,
+  });
+
+  final bool replayed;
+  final int rowCount;
+  final String terminalState;
+}
+
 abstract interface class Alpha2Vault {
   Future<Alpha2VaultCapabilities> initialize();
-  Future<void> commitEvidenceBatch({
+  Future<Alpha2VaultCommitResult> commitEvidenceBatch({
     required String sourceReceiptId,
     required List<Alpha2Evidence> evidence,
     required String terminalState,
@@ -59,7 +71,7 @@ class Alpha2PlatformVault implements Alpha2Vault {
   }
 
   @override
-  Future<void> commitEvidenceBatch({
+  Future<Alpha2VaultCommitResult> commitEvidenceBatch({
     required String sourceReceiptId,
     required List<Alpha2Evidence> evidence,
     required String terminalState,
@@ -71,13 +83,28 @@ class Alpha2PlatformVault implements Alpha2Vault {
         .contains(terminalState.toUpperCase())) {
       throw ArgumentError('ALPHA2_VAULT_TERMINAL_STATE_INVALID');
     }
-    await _channel.invokeMethod<void>(
+    final raw = await _channel.invokeMapMethod<Object?, Object?>(
       'commitEvidenceBatch',
       <String, Object?>{
         'sourceReceiptId': sourceReceiptId,
         'terminalState': terminalState.toUpperCase(),
         'evidence': evidence.map((item) => item.normalized().toSafeDiagnosticMap()).toList(),
       },
+    ) ?? const <Object?, Object?>{};
+    final replayed = raw['replayed'];
+    final rowCount = raw['rowCount'];
+    final returnedState = (raw['terminalState'] as String? ?? '').toUpperCase();
+    if (replayed is! bool || rowCount is! int || rowCount < 0 ||
+        !const <String>{'IMPORTED', 'QUARANTINED', 'FAILED', 'DISCARDED'}
+            .contains(returnedState) ||
+        (!replayed && rowCount != evidence.length) ||
+        (!replayed && returnedState != terminalState.toUpperCase())) {
+      throw StateError('ALPHA2_VAULT_COMMIT_RESPONSE_INVALID');
+    }
+    return Alpha2VaultCommitResult(
+      replayed: replayed,
+      rowCount: rowCount,
+      terminalState: returnedState,
     );
   }
 
@@ -103,7 +130,8 @@ class InMemoryAlpha2Vault implements Alpha2Vault {
   bool _initialized = false;
   bool _shredded = false;
   final List<Map<String, Object?>> _rows = <Map<String, Object?>>[];
-  final Set<String> _terminalSources = <String>{};
+  final Map<String, ({String state, int rowCount})> _terminalSources =
+      <String, ({String state, int rowCount})>{};
 
   @override
   Future<Alpha2VaultCapabilities> initialize() async {
@@ -119,19 +147,50 @@ class InMemoryAlpha2Vault implements Alpha2Vault {
   }
 
   @override
-  Future<void> commitEvidenceBatch({
+  Future<Alpha2VaultCommitResult> commitEvidenceBatch({
     required String sourceReceiptId,
     required List<Alpha2Evidence> evidence,
     required String terminalState,
   }) async {
     if (!_initialized || _shredded) throw StateError('ALPHA2_VAULT_NOT_OPEN');
-    if (_terminalSources.contains(sourceReceiptId)) return;
+    final normalizedState = terminalState.trim().toUpperCase();
+    if (!const <String>{'IMPORTED', 'QUARANTINED', 'FAILED', 'DISCARDED'}
+        .contains(normalizedState)) {
+      throw ArgumentError('ALPHA2_VAULT_TERMINAL_STATE_INVALID');
+    }
+    if (evidence.isNotEmpty && normalizedState != 'IMPORTED') {
+      throw ArgumentError('ALPHA2_VAULT_EVIDENCE_REQUIRES_IMPORTED');
+    }
+    final existing = _terminalSources[sourceReceiptId];
+    if (existing != null) {
+      final retryable = existing.rowCount == 0 &&
+          (existing.state == 'QUARANTINED' || existing.state == 'FAILED') &&
+          normalizedState == 'IMPORTED' && evidence.isNotEmpty;
+      if (!retryable) {
+        return Alpha2VaultCommitResult(
+          replayed: true,
+          rowCount: existing.rowCount,
+          terminalState: existing.state,
+        );
+      }
+    }
     final staged = evidence
         .map((item) => Map<String, Object?>.from(item.normalized().toSafeDiagnosticMap()))
         .toList();
+    final ids = staged.map((row) => row['evidenceId']).toSet();
+    if (ids.length != staged.length ||
+        _rows.any((row) => ids.contains(row['evidenceId']))) {
+      throw StateError('ALPHA2_VAULT_DUPLICATE_EVIDENCE');
+    }
     // Atomic test-double behavior: publish the batch only after all rows validate.
     _rows.addAll(staged);
-    _terminalSources.add(sourceReceiptId);
+    _terminalSources[sourceReceiptId] =
+        (state: normalizedState, rowCount: staged.length);
+    return Alpha2VaultCommitResult(
+      replayed: false,
+      rowCount: staged.length,
+      terminalState: normalizedState,
+    );
   }
 
   @override

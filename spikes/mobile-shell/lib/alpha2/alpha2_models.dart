@@ -31,6 +31,7 @@ class Alpha2Evidence {
     required this.amount,
     required this.currency,
     required this.occurredAt,
+    this.processedAt,
     required this.semanticType,
     required this.channel,
     required this.truthState,
@@ -49,6 +50,7 @@ class Alpha2Evidence {
   final double amount;
   final String currency;
   final DateTime occurredAt;
+  final DateTime? processedAt;
   final Alpha2SemanticType semanticType;
   final Alpha2EvidenceChannel channel;
   final Alpha2TruthState truthState;
@@ -81,6 +83,7 @@ class Alpha2Evidence {
       amount: amount.abs(),
       currency: normalizedCurrency,
       occurredAt: occurredAt.toUtc(),
+      processedAt: processedAt?.toUtc(),
       semanticType: semanticType,
       channel: channel,
       truthState: truthState,
@@ -101,6 +104,7 @@ class Alpha2Evidence {
         'amount': amount,
         'currency': currency,
         'occurredAt': occurredAt.toUtc().toIso8601String(),
+        'processedAt': processedAt?.toUtc().toIso8601String(),
         'semanticType': semanticType.name,
         'channel': channel.name,
         'truthState': truthState.name,

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "PF_EXP_001_MOBILE_VALIDATION_V1",
+  "status": "STATIC_IMPLEMENTED_PHYSICAL_OPEN",
+  "profiles": [
+    {
+      "profileId": "PE-BCP-CREDIT-MONTHLY-DISCOVERY-V1",
+      "mode": "STRICT_IMPORT",
+      "adapter": "A2_BCP_CREDIT_STRICT_V1",
+      "occurredAt": "CONSUMPTION_DATE",
+      "processedAt": "PROCESS_DATE",
+      "physicalPass": false
+    },
+    {
+      "profileId": "PE-RIPLEY-CREDIT-MONTHLY-DISCOVERY-V1",
+      "mode": "STRICT_IMPORT",
+      "adapter": "A2_RIPLEY_CREDIT_STRICT_V4",
+      "occurredAt": "OPERATION_DATE",
+      "processedAt": "PROCESS_DATE",
+      "physicalPass": false
+    }
+  ],
+  "claims": {
+    "physicalProfilePass": false,
+    "canonicalPromotion": false,
+    "releaseReady": false
+  }
+}
