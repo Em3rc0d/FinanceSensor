@@ -1,0 +1,55 @@
+{
+  "schema": "PF_RES_001A_ACCEPTANCE_V1",
+  "date": "2026-11-19",
+  "baseCommit": "92be4f9b6933f0d004e1e22bc8ff3a3aada68679",
+  "status": "IMPLEMENTED_AUTOMATED_VALIDATION_PHYSICAL_OPEN",
+  "runtime": "Flutter 3.44.7 / Dart 3.12.2",
+  "changes": [
+    "Local read model with Lima economic dates, confirmed-account scope and integer minor units",
+    "Separate consumption/fees/withdrawals/transfers/payments/refunds/reversals",
+    "Total components and tenant-isolated local evidence detail",
+    "Category tasks restricted to spending semantics; unknown operations ask for interpretation",
+    "Independent 365-day recurrence window and conservative partial coverage",
+    "Minimized public V1 serialization unchanged"
+  ],
+  "checks": {
+    "flutterAnalyze": "PASS",
+    "flutterSuite": {
+      "passed": 105,
+      "failed": 0
+    },
+    "newReportTests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "experimentNode": {
+      "passed": 52,
+      "failed": 0
+    },
+    "integratedRuntimeValidator": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "acceptance": {
+    "A01": "AUTOMATED_PASS",
+    "A02": "AUTOMATED_PASS",
+    "A03": "AUTOMATED_PASS",
+    "A04": "AUTOMATED_PASS",
+    "A05": "UNLINKED_PASS_LINKED_RELATION_NOT_AVAILABLE",
+    "A06": "AUTOMATED_PASS",
+    "A07": "AUTOMATED_PASS",
+    "A08": "AUTOMATED_PASS",
+    "A09": "FILTER_REFRESH_PASS_NATIVE_RESTART_NOT_RUN",
+    "A10": "LARGE_TEXT_360PX_PASS_PHYSICAL_SCREEN_READER_NOT_RUN"
+  },
+  "limits": {
+    "linkedRefundCompensation": "No canonical economic-link authority available; separated, not netted",
+    "privateDocuments": "NOT_RUN",
+    "physicalSqlCipherMigration": "NOT_RUN",
+    "physicalAndroidAcceptance": "NOT_RUN",
+    "apkBuilt": false,
+    "actionsApkBuild": false,
+    "RES001B": "DESIGN_OPEN",
+    "contractFullyClosed": false,
+    "releaseReady": false
+  }
+}

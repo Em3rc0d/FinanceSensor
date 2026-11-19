@@ -1,6 +1,6 @@
 # PF-RES-001 — Comprensión financiera verificable
 Fecha: 2026-11-19. Base auditada: 35d1edbe976dc76ffd75a7172190bd4c1037729f.
-Estado: SPECIFIED / IMPLEMENTATION_NOT_STARTED. No acredita cierre físico ni release.
+Estado: RES-001A_IMPLEMENTED / AUTOMATED_VALIDATION; PHYSICAL_OPEN. RES-001B permanece DESIGN_OPEN. No acredita cierre físico ni release.
 
 ## Autoridad y alcance
 Continúa RECOVER-2026-11-19 y PF-EXP-001 bajo GALACTIC → DISCOVER → ABSTRACT → GRAVITY → CONTRACT → BUILD → VALIDATE. Trazabilidad: DC-03 interpretación, DC-04 procedencia, DC-05 cobertura, DC-08 tiempo, DC-20 pendientes. La visión completa no se convierte en backlog inmediato.
@@ -65,3 +65,11 @@ Esta campaña no se ha ejecutado en esta sesión. No usar el certificado del APK
 ## Cierre
 A cierra con implementación y aceptación específica, no por existencia de este archivo. Integrar un candidato local tras pruebas; sin APKs por slice ni Actions para APKs.
 La comparación de esfuerzo humano y conciliación completa de PF-EXP-001 permanecen abiertas; no se declaran GO público, G-MK0 cerrado ni releaseReady.
+
+
+## Recibo de implementación — RES-001A, 2026-11-19
+Implementado en alpha2_registered_summary.dart y alpha2_registered_summary_view.dart, integrado en main_alpha2.dart. La evidencia segura disponible en pipeline se expone solo al detalle local; ALPHA2_PUBLIC_DASHBOARD_V1 no cambia. Periodo/cuenta, clases económicas y categorías derivan del mismo conjunto; recurrencias tienen ventana separada de365 días. Historial visible carga40 movimientos por bloque, sin limitar los totales. Diagnóstico global queda desplegable y distingue importación nueva de replay.
+
+Límite explícito de A05: el modelo canónico vigente no transporta un vínculo económico de reembolso/reversión a compra. Todos se muestran separados; no se fabricó una relación ni se usó coincidencia de importe como autoridad. El caso vinculado continúa sin integración hasta existir esa autoridad de dominio. La cobertura del resumen se mantiene parcial al no disponer de certificado exacto de ámbito.
+
+Pruebas y límites: ver ../receipts/RES-001A-BUILD-VALIDATE-2026-11-19.json. Validación automatizada no cierra corpus privado, migración SQLCipher física, restauración nativa ni uso real de lector de pantalla. Este cambio no genera APK.

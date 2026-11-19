@@ -133,14 +133,23 @@ if (!monthlyCoverage.includes('externalBlocks.isNotEmpty')) throw new Error('ALP
 if (!sensor.includes("reason == 'ACCOUNT_MAPPING_REQUIRED'")) throw new Error('ALPHA2_ACCOUNT_MAPPING_SENSOR_GAP_NOT_WIRED');
 if (!sensor.includes('monthlyClose.externalBlockingReasons')) throw new Error('ALPHA2_EXTERNAL_PRODUCT_GAPS_NOT_SURFACED');
 if (!main.includes('Estado mensual') || !main.includes('Mapeo de cuenta')) throw new Error('ALPHA2_MOBILE_COVERAGE_PRODUCT_STATE_MISSING');
-if (!main.includes('Alpha2FinanceInsightsSections(projection: projection)')) throw new Error('ALPHA2_MOBILE_FINANCE_INSIGHTS_NOT_WIRED');
+const registeredSummary = await read('spikes/mobile-shell/lib/alpha2/alpha2_registered_summary.dart');
+const registeredView = await read('spikes/mobile-shell/lib/alpha2/alpha2_registered_summary_view.dart');
+if (!main.includes('Alpha2RegisteredSummaryView(')) throw new Error('RES001A_LOCAL_REPORT_NOT_WIRED');
+for (const marker of ['Alpha2ReportScope', 'alpha2LimaTime', 'alpha2RegisteredMinorUnits', 'alpha2LocalProvenance', 'event.tenantId != tenantId']) {
+  if (!registeredSummary.includes(marker)) throw new Error(`RES001A_RULE_MISSING:${marker}`);
+}
+for (const marker of ['Resumen registrado', 'No es saldo disponible', 'Ámbito de cuentas', 'Ver componentes', 'Origen del movimiento', 'Pendientes de esta selección', 'Categorías', 'Recurrentes: ventana histórica independiente']) {
+  if (!registeredView.includes(marker)) throw new Error(`RES001A_SURFACE_MISSING:${marker}`);
+}
+if (projection.includes('localEvidence')) throw new Error('RES001A_LOCAL_EVIDENCE_IN_PUBLIC_PROJECTION');
 for (const marker of ['Categorías', 'Recurrentes', 'Lo que falta confirmar']) {
   if (!dashboardSections.includes(marker)) throw new Error(`ALPHA2_MOBILE_INSIGHT_SECTION_MISSING:${marker}`);
 }
 for (const marker of ['summarizeAlpha2Categories','Alpha2FlowDirection.outflow','Alpha2SemanticType.cardPayment','summarizeAlpha2KnowledgeGaps']) {
   if (!dashboardInsights.includes(marker)) throw new Error(`ALPHA2_DASHBOARD_INSIGHT_RULE_MISSING:${marker}`);
 }
-if (!main.includes("Text('Cuenta ${item.accountDisplay}')")) throw new Error('ALPHA2_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
+if (!registeredView.includes('_accountLabel')) throw new Error('RES001A_OPAQUE_ACCOUNT_DISPLAY_NOT_SURFACED');
 
 if (
   transactionScanner.includes('"confidence" to') ||
