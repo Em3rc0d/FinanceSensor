@@ -38,10 +38,16 @@ void main() {
           'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED',
         ],
       ),
+      Alpha2StatementImportOutcome(
+        profileId: alpha2BcpCreditProfileId,
+        status: 'REVIEW_REQUIRED',
+        evidenceCount: 0,
+        reviewCodes: <String>['BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN'],
+      ),
     ];
 
     final counts = alpha2StatementOutcomeCounts(outcomes);
-    expect(counts['REVIEW_REQUIRED'], 4);
+    expect(counts['REVIEW_REQUIRED'], 5);
     expect(
       counts['REVIEW_DIAGNOSTIC:BCP_SAVINGS:STATEMENT_HEADER_GEOMETRY_UNKNOWN'],
       1,
@@ -60,6 +66,11 @@ void main() {
       1,
     );
     expect(
+      counts[
+          'REVIEW_DIAGNOSTIC:BCP_CREDIT:BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN'],
+      1,
+    );
+    expect(
       counts.keys.join(' '),
       isNot(contains('PRIVATE_PROVIDER_DETAIL_SHOULD_NOT_ESCAPE')),
     );
@@ -74,7 +85,7 @@ void main() {
         .where((gap) => gap.reason.startsWith('STATEMENT_REVIEW_'))
         .toList();
 
-    expect(reviewGaps.fold<int>(0, (sum, gap) => sum + gap.count), 4);
+    expect(reviewGaps.fold<int>(0, (sum, gap) => sum + gap.count), 5);
     expect(
       reviewGaps.any(
         (gap) =>

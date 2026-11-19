@@ -179,6 +179,7 @@ class Alpha2StrictBcpCreditAdapter {
     final review = <String>{};
     var geometryPages = 0;
     for (final page in layout.pages) {
+      final looksLikeLedgerPage = _looksLikeBcpCreditLedgerPage(page);
       final process = _findHeader(page, const ['FECHA DE PROCESO']);
       final consumption = _findHeader(page, const ['FECHA DE CONSUMO']);
       final description = _findHeader(page, const ['DESCRIPCION']);
@@ -189,6 +190,9 @@ class Alpha2StrictBcpCreditAdapter {
           operation == null || soles == null || dollars == null ||
           !(process.x < consumption.x && consumption.x < description.x &&
             description.x < operation.x && operation.x < soles.x && soles.x < dollars.x)) {
+        if (looksLikeLedgerPage) {
+          review.add('BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN');
+        }
         continue;
       }
       geometryPages++;
@@ -222,18 +226,20 @@ class Alpha2StrictBcpCreditAdapter {
           review.add('BCP_CREDIT_DOUBLE_CURRENCY');
           continue;
         }
-        final processedAt = _resolveBcpDdMon(
-          _joinRange(line.items, double.negativeInfinity, bounds[0]), period);
-        final occurredAt = _resolveBcpDdMon(
-          _joinRange(line.items, bounds[0], bounds[1]), period,
-          earliest: period.start.subtract(const Duration(days: 31)));
+        final leading = _parseBcpLeadingDatePairAndDescription(
+          line,
+          period,
+          maximumX: bounds[2],
+        );
+        final processedAt = leading?.processedAt;
+        final occurredAt = leading?.occurredAt;
         if (processedAt == null || occurredAt == null ||
             processedAt.isBefore(period.start) || processedAt.isAfter(period.end) ||
             occurredAt.isAfter(period.end) || occurredAt.isAfter(processedAt)) {
           review.add('BCP_CREDIT_DATE_AMBIGUOUS');
           continue;
         }
-        final descriptionText = _joinRange(line.items, bounds[1], bounds[2]).trim();
+        final descriptionText = leading!.description;
         final operationText = _normalizeLayout(_joinRange(line.items, bounds[2], bounds[3]));
         if (descriptionText.isEmpty ||
             !(operationText.contains('PAGO') || operationText.contains('CONSUMO'))) {
@@ -543,6 +549,59 @@ double? _bcpLedgerFooterY(Alpha2LayoutPage page, double headerY) {
     return text.contains('COMO CALCULAR TU PAGO MINIMO');
   }).where((line) => line.y < headerY).toList();
   return markers.isEmpty ? null : markers.map((line) => line.y).reduce(math.max);
+}
+
+bool _looksLikeBcpCreditLedgerPage(Alpha2LayoutPage page) {
+  final pageText = _normalizeLayout(page.items.map((item) => item.text).join(' '));
+  final headerSignals = <String>[
+    'FECHA DE PROCESO',
+    'FECHA DE CONSUMO',
+    'TIPO DE OPERACION',
+    'DESCRIPCION',
+    'SOLES',
+    'DOLARES',
+  ].where(pageText.contains).length;
+  if (headerSignals >= 2) return true;
+
+  return _creditLines(page).any((line) {
+    final text = line.items.map((item) => item.text).join(' ');
+    final dates = RegExp(
+      r'\b\d{1,2}\s*(?:ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\b',
+      caseSensitive: false,
+    ).allMatches(_normalizeLayout(text)).length;
+    if (dates < 2) return false;
+    return line.items.any((item) {
+      final money = _parseSignedMoney(item.text);
+      return money != null && money != 0;
+    });
+  });
+}
+
+({DateTime processedAt, DateTime occurredAt, String description})?
+    _parseBcpLeadingDatePairAndDescription(
+  _CreditLine line,
+  _CreditPeriod period, {
+  required double maximumX,
+}) {
+  final left = _joinRange(line.items, double.negativeInfinity, maximumX);
+  final match = RegExp(
+    r'^\s*(\d{1,2})\s*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\s+(\d{1,2})\s*(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|SET|OCT|NOV|DIC)\s+(.*)$',
+    caseSensitive: false,
+  ).firstMatch(_normalizeLayout(left));
+  if (match == null) return null;
+  final processedAt = _resolveBcpDdMon('${match.group(1)}${match.group(2)}', period);
+  final occurredAt = _resolveBcpDdMon(
+    '${match.group(3)}${match.group(4)}',
+    period,
+    earliest: period.start.subtract(const Duration(days: 31)),
+  );
+  final description = match.group(5)?.trim() ?? '';
+  if (processedAt == null || occurredAt == null || description.isEmpty) return null;
+  return (
+    processedAt: processedAt,
+    occurredAt: occurredAt,
+    description: description,
+  );
 }
 
 Alpha2LayoutItem? _findHeader(

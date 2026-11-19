@@ -258,11 +258,14 @@ String? _statementReviewGapLabel(String reason) {
     'BCP_CREDIT_ADAPTER_CERTIFICATION_REQUIRED' =>
       'el parser de este perfil aún requiere certificación',
     'STATEMENT_PERIOD_AMBIGUOUS' ||
-    'RIPLEY_CREDIT_PERIOD_AMBIGUOUS' =>
+    'RIPLEY_CREDIT_PERIOD_AMBIGUOUS' ||
+    'BCP_CREDIT_CYCLE_AMBIGUOUS' =>
       'no se pudo fijar un único período del estado de cuenta',
     'STATEMENT_HEADER_GEOMETRY_UNKNOWN' ||
     'STATEMENT_COMPLETENESS_GEOMETRY_UNKNOWN' ||
-    'RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN' =>
+    'RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN' ||
+    'BCP_CREDIT_LEDGER_GEOMETRY_UNKNOWN' ||
+    'BCP_CREDIT_LEDGER_PAGE_GEOMETRY_UNKNOWN' =>
       'la geometría del ledger no coincide con el contrato certificado',
     'STATEMENT_LEDGER_PAGE_NOT_FOUND' =>
       'no se identificó una página de movimientos',
@@ -275,14 +278,25 @@ String? _statementReviewGapLabel(String reason) {
       'las filas monetarias quedaron fragmentadas o sin monto vinculable',
     'STATEMENT_ROW_BOTH_DEBIT_CREDIT' =>
       'una fila aparece simultáneamente como cargo y abono',
+    'BCP_CREDIT_DOUBLE_CURRENCY' =>
+      'una fila presenta importes simultáneos en soles y dólares',
+    'BCP_CREDIT_SIGN_MISMATCH' =>
+      'el signo del importe no coincide con el tipo de operación',
+    'BCP_CREDIT_DATE_AMBIGUOUS' =>
+      'las fechas de proceso y consumo no pudieron fijarse con seguridad',
     'STATEMENT_MONETARY_ROW_UNEXPLAINED' ||
     'RIPLEY_CREDIT_MONETARY_ROW_UNEXPLAINED' =>
       'hay una fila monetaria que el parser no puede explicar',
+    'BCP_CREDIT_DATED_ROW_UNEXPLAINED' ||
+    'BCP_CREDIT_ROW_UNEXPLAINED' =>
+      'hay una fila BCP que el parser no puede explicar por completo',
     'RIPLEY_CREDIT_DESCRIPTION_REQUIRED' =>
       'hay un movimiento sin descripción vinculable',
     'STATEMENT_LAYOUT_NO_MOVEMENTS' ||
     'RIPLEY_CREDIT_LAYOUT_NO_MOVEMENTS' =>
       'no se encontraron movimientos importables en el layout reconocido',
+    'BCP_CREDIT_LAYOUT_NO_MOVEMENTS' =>
+      'no se encontraron movimientos BCP importables en el layout reconocido',
     'STATEMENT_STRICT_PARSE_RUNTIME_REJECTED' ||
     'STATEMENT_IMPORT_RUNTIME_REJECTED' =>
       'el parser se detuvo de forma segura durante la importación',
