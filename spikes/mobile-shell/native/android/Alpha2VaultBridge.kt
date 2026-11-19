@@ -18,6 +18,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
+import kotlin.math.roundToLong
 
 /**
  * Alpha.2 encrypted local vault.
@@ -35,7 +36,7 @@ class Alpha2VaultBridge(private val context: Context) {
         private const val PREFS = "financesensor_alpha2_vault_meta"
         private const val WRAPPED_DEK = "wrapped_dek_v1"
         private const val DATABASE_NAME = "financesensor-alpha2.db"
-        private const val SCHEMA_VERSION = 1
+        private const val SCHEMA_VERSION = 2
         private const val DEK_BYTES = 32
     }
 
@@ -108,13 +109,9 @@ class Alpha2VaultBridge(private val context: Context) {
             val existing = db.rawQuery("SELECT value FROM vault_meta WHERE key='schema_version'", emptyArray()).use { cursor ->
                 if (cursor.moveToFirst()) cursor.getString(0) else null
             }
-            if (existing != null && existing != SCHEMA_VERSION.toString()) {
+            if (existing != null && existing !in setOf("1", SCHEMA_VERSION.toString())) {
                 throw VaultException("ALPHA2_VAULT_SCHEMA_VERSION_MISMATCH", "Vault schema mismatch")
             }
-            db.execSQL(
-                "INSERT OR REPLACE INTO vault_meta(key,value) VALUES('schema_version',?)",
-                arrayOf(SCHEMA_VERSION.toString()),
-            )
             db.execSQL(
                 """
                 CREATE TABLE IF NOT EXISTS statement_sources (
@@ -132,6 +129,7 @@ class Alpha2VaultBridge(private val context: Context) {
                   amount_minor INTEGER NOT NULL CHECK(amount_minor > 0),
                   currency TEXT NOT NULL,
                   occurred_at TEXT NOT NULL,
+                  processed_at TEXT,
                   semantic_type TEXT NOT NULL,
                   evidence_channel TEXT NOT NULL,
                   truth_state TEXT NOT NULL,
@@ -145,6 +143,13 @@ class Alpha2VaultBridge(private val context: Context) {
                   FOREIGN KEY(source_receipt_id) REFERENCES statement_sources(source_receipt_id)
                 )
                 """.trimIndent(),
+            )
+            if (existing == "1") {
+                db.execSQL("ALTER TABLE derived_evidence ADD COLUMN processed_at TEXT")
+            }
+            db.execSQL(
+                "INSERT OR REPLACE INTO vault_meta(key,value) VALUES('schema_version',?)",
+                arrayOf(SCHEMA_VERSION.toString()),
             )
             db.setTransactionSuccessful()
         } finally {
@@ -162,12 +167,31 @@ class Alpha2VaultBridge(private val context: Context) {
         if (terminalState !in setOf("IMPORTED", "QUARANTINED", "FAILED", "DISCARDED")) {
             throw VaultException("ALPHA2_VAULT_TERMINAL_STATE_INVALID", "Terminal state invalid")
         }
+        if (rows.isNotEmpty() && terminalState != "IMPORTED") {
+            throw VaultException("ALPHA2_VAULT_EVIDENCE_REQUIRES_IMPORTED", "Evidence requires imported state")
+        }
+        rows.forEach(::validateSafeRow)
+        if (rows.map { it["evidenceId"] }.toSet().size != rows.size) {
+            throw VaultException("ALPHA2_VAULT_DUPLICATE_EVIDENCE", "Duplicate evidence in batch")
+        }
 
-        val replay = db.rawQuery(
-            "SELECT terminal_state FROM statement_sources WHERE source_receipt_id=?",
+        val existing = db.rawQuery(
+            """SELECT s.terminal_state, COUNT(e.evidence_id)
+               FROM statement_sources s LEFT JOIN derived_evidence e
+                 ON e.source_receipt_id=s.source_receipt_id
+               WHERE s.source_receipt_id=? GROUP BY s.terminal_state""".trimIndent(),
             arrayOf(sourceReceiptId),
-        ).use { cursor -> cursor.moveToFirst() }
-        if (replay) return@synchronized mapOf("replayed" to true, "rowCount" to 0)
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) to cursor.getInt(1) else null
+        }
+        val retry = existing != null && existing.second == 0 &&
+            existing.first in setOf("QUARANTINED", "FAILED") &&
+            terminalState == "IMPORTED" && rows.isNotEmpty()
+        if (existing != null && !retry) return@synchronized mapOf(
+            "replayed" to true,
+            "rowCount" to existing.second,
+            "terminalState" to existing.first,
+        )
 
         db.beginTransaction()
         try {
@@ -176,17 +200,21 @@ class Alpha2VaultBridge(private val context: Context) {
                 put("source_receipt_id", sourceReceiptId)
                 put("terminal_state", terminalState)
             }
-            db.insertOrThrow("statement_sources", null, source)
+            if (retry) {
+                db.update("statement_sources", source, "source_receipt_id=?", arrayOf(sourceReceiptId))
+            } else {
+                db.insertOrThrow("statement_sources", null, source)
+            }
 
             for (row in rows) {
-                validateSafeRow(row)
                 val values = ContentValues().apply {
                     put("evidence_id", row["evidenceId"] as String)
                     put("source_receipt_id", sourceReceiptId)
                     put("tenant_id", row["tenantId"] as String)
-                    put("amount_minor", ((row["amount"] as Number).toDouble() * 100.0).toLong())
+                    put("amount_minor", ((row["amount"] as Number).toDouble() * 100.0).roundToLong())
                     put("currency", (row["currency"] as String).uppercase())
                     put("occurred_at", row["occurredAt"] as String)
+                    putNullable("processed_at", row["processedAt"])
                     put("semantic_type", row["semanticType"] as String)
                     put("evidence_channel", row["channel"] as String)
                     put("truth_state", row["truthState"] as String)
@@ -208,14 +236,14 @@ class Alpha2VaultBridge(private val context: Context) {
         } finally {
             db.endTransaction()
         }
-        mapOf("replayed" to false, "rowCount" to rows.size)
+        mapOf("replayed" to false, "rowCount" to rows.size, "terminalState" to terminalState)
     }
 
     private fun readSafeEvidence(): List<Map<String, Any?>> = synchronized(lock) {
         val db = database ?: openEncryptedDatabase().also { database = it }
         db.rawQuery(
             """
-            SELECT evidence_id, tenant_id, amount_minor, currency, occurred_at,
+            SELECT evidence_id, tenant_id, amount_minor, currency, occurred_at, processed_at,
                    semantic_type, evidence_channel, truth_state, institution_code,
                    account_id, instrument_id, merchant_canonical, statement_period_id,
                    category_name, flow_direction
@@ -231,16 +259,17 @@ class Alpha2VaultBridge(private val context: Context) {
                     "amountMinor" to cursor.getLong(2),
                     "currency" to cursor.getString(3),
                     "occurredAt" to cursor.getString(4),
-                    "semanticType" to cursor.getString(5),
-                    "channel" to cursor.getString(6),
-                    "truthState" to cursor.getString(7),
-                    "institutionCode" to cursor.stringOrNull(8),
-                    "accountId" to cursor.stringOrNull(9),
-                    "instrumentId" to cursor.stringOrNull(10),
-                    "merchantCanonical" to cursor.stringOrNull(11),
-                    "statementPeriodId" to cursor.stringOrNull(12),
-                    "categoryName" to cursor.stringOrNull(13),
-                    "flowDirection" to cursor.getString(14),
+                    "processedAt" to cursor.stringOrNull(5),
+                    "semanticType" to cursor.getString(6),
+                    "channel" to cursor.getString(7),
+                    "truthState" to cursor.getString(8),
+                    "institutionCode" to cursor.stringOrNull(9),
+                    "accountId" to cursor.stringOrNull(10),
+                    "instrumentId" to cursor.stringOrNull(11),
+                    "merchantCanonical" to cursor.stringOrNull(12),
+                    "statementPeriodId" to cursor.stringOrNull(13),
+                    "categoryName" to cursor.stringOrNull(14),
+                    "flowDirection" to cursor.getString(15),
                 )
             }
             result

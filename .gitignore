@@ -37,6 +37,8 @@ client_secret*.json
 *.sqlite3
 *.db
 .cache/
+.dart_tool/
+.flutter-plugins-dependencies
 
 # IDE / OS metadata
 .DS_Store

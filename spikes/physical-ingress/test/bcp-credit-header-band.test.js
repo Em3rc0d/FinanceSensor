@@ -53,4 +53,8 @@ test('BCP credit binds Soles/Dólares to the transaction header band, not unrela
     ['CARD_PAYMENT', 344, 'PEN'],
     ['PURCHASE', 108.5, 'PEN']
   ]);
+  assert.deepEqual(result.rows.map(row => [row.occurredAt, row.auditValueAt]), [
+    ['2026-07-26T12:00:00.000Z', '2026-07-27T12:00:00.000Z'],
+    ['2026-08-01T12:00:00.000Z', '2026-08-03T12:00:00.000Z']
+  ]);
 });

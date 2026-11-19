@@ -49,5 +49,8 @@ test('BCP credit recovers strict leading date pair when centered headers distort
   ]);
   assert.match(result.rows[0].rawMerchant, /PAGO BANCA MOVIL/);
   assert.match(result.rows[1].rawMerchant, /COMERCIO DEMO/);
-  assert.equal(result.rows[0].auditValueAt.endsWith('T12:00:00.000Z'), true);
+  assert.equal(result.rows[0].occurredAt, '2026-07-26T12:00:00.000Z');
+  assert.equal(result.rows[0].auditValueAt, '2026-07-27T12:00:00.000Z');
+  assert.equal(result.rows[1].occurredAt, '2026-08-01T12:00:00.000Z');
+  assert.equal(result.rows[1].auditValueAt, '2026-08-03T12:00:00.000Z');
 });
