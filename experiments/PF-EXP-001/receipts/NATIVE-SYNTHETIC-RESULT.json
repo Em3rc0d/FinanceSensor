@@ -1,0 +1,54 @@
+{
+  "schema": "PF_EXP_001_NATIVE_SYNTHETIC_REGRESSION_V1",
+  "executedAtUTC": "2026-11-17T01:58:02+00:00",
+  "source": {
+    "repo": "Em3rc0d/FinanceSensor",
+    "branch": "jett/pf-exp-001-c0-preflight",
+    "sourceFile": "spikes/canonical-resolver/src/resolver.js",
+    "gitBlobSha": "e8e7193a36f40eb92654fb11c9e56ea65cfdd64b",
+    "localBlobMatch": true
+  },
+  "runtime": "Node.js 22.16.0 native crypto and node:test",
+  "testGroups": [
+    {
+      "suite": "C0 preflight structure",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "suite": "Canonical resolver synthetic scenarios",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "suite": "New adversarial safety regression",
+      "passed": 7,
+      "total": 7
+    }
+  ],
+  "totalPassed": 25,
+  "total": 25,
+  "executionContext": "Local source snapshot on trusted tool container; not GitHub Actions",
+  "sourcePrivacy": {
+    "gmailFetched": false,
+    "statementsProcessed": 0,
+    "pdfPasswordsUsed": false,
+    "sensitiveContentCommitted": false,
+    "apkBuilt": false
+  },
+  "gates": {
+    "C0": "BLOCKED",
+    "G0": "NOT_RUN",
+    "G1": "NOT_RUN",
+    "G2": "NOT_RUN",
+    "G3": "NOT_RUN",
+    "G4": "NOT_RUN"
+  },
+  "limits": [
+    "Full repository baseline suite NOT_RUN",
+    "No independent row-and-balance oracle",
+    "No user-owned Gmail or PDF physical verification",
+    "No release authorization"
+  ],
+  "note": "Synthetic tests are not real financial correctness evidence. Source patch is experimental branch only."
+}

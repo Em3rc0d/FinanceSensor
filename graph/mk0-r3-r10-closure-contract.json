@@ -1,0 +1,206 @@
+{
+  "schemaVersion": "MK0_R3_R10_CLOSURE_CONTRACT_V1",
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "authority": {
+    "design": "graph/prebuild-remainder-design.json",
+    "closureLedger": "graph/closure-ledger.json",
+    "buildReadiness": "graph/build-readiness.json",
+    "receiptTemplate": "graph/CLOSURE-RECEIPT-TEMPLATE.md"
+  },
+  "frozenFromRepoSha": "3146b957cb316b9643862a37d4756ad7ae27c83c",
+  "status": "DESIGN_FROZEN_EXECUTION_OPEN",
+  "globalLaws": {
+    "exactRepoShaRequired": true,
+    "parentReceiptsRequired": true,
+    "evidenceRequired": true,
+    "residualRisksRequired": true,
+    "residualRisksMinItems": 1,
+    "noneKnownRequiresRationale": true,
+    "reopenTriggersRequired": true,
+    "reopenTriggersMinItems": 1,
+    "contradictionAuditRequired": true,
+    "publicCiCanClaimPhysicalPass": false,
+    "publicCiCanPromoteBuildReady": false,
+    "publicCiCanPromoteReleaseReady": false,
+    "buildReadyRequiresGMk0Closed": true,
+    "releaseReadyImpliedByBuildReady": false,
+    "upstreamContradictionReopensOwner": true
+  },
+  "receiptContract": {
+    "schema": "graph/mk0-r3-r10-closure-receipt-schema.json",
+    "repoShaPattern": "^[0-9a-f]{40}$",
+    "statusForValidClosure": "CLOSED",
+    "physicalEvidenceInheritance": "EXPLICIT_IMMUTABLE_REFERENCE_ONLY",
+    "rawPrivateEvidenceAllowedInGitHub": false
+  },
+  "nodes": [
+    {
+      "id": "R3",
+      "title": "Q-003 Gmail production and provider closure",
+      "dependsOn": ["R2"],
+      "closes": ["Q-003"],
+      "executionClass": "PHYSICAL_AND_PROVIDER",
+      "requiredEvidenceClaims": [
+        "R2_SANITIZED_OWNED_ANDROID_RECEIPT",
+        "REFRESH_BEFORE_REVOKE_PASS",
+        "REFRESHED_BEARER_ACCEPTED_BY_GMAIL",
+        "REQUEST_RESPONSE_BYTES_BY_ENDPOINT",
+        "ENDPOINT_LATENCY_BY_ENDPOINT",
+        "MOBILE_CREDENTIAL_CUSTODY_INSPECTED",
+        "PROVIDER_REVOKE_RESULT_RECORDED",
+        "GOOGLE_RESTRICTED_SCOPE_VERIFICATION_STATUS_RECORDED",
+        "GOOGLE_SECURITY_ASSESSMENT_APPLICABILITY_RECORDED",
+        "CONSENT_DISCLOSURE_MATCHES_OBSERVED_DATA_PATH"
+      ],
+      "forbiddenShortcuts": [
+        "SYNTHETIC_OAUTH_ONLY",
+        "POLICY_ASSUMED_WITHOUT_PROVIDER_RECORD",
+        "R2_PASS_IMPLICITLY_CLOSES_Q003"
+      ]
+    },
+    {
+      "id": "R4",
+      "title": "Q-004 privacy, deletion and backup closure",
+      "dependsOn": ["R2"],
+      "closes": ["Q-004"],
+      "executionClass": "PHYSICAL_PRIVACY_INSPECTION",
+      "requiredEvidenceClaims": [
+        "R2_SANITIZED_OWNED_ANDROID_RECEIPT",
+        "NETWORK_STORAGE_CACHE_TEMP_INSPECTED",
+        "ANDROID_CREDENTIAL_CUSTODY_INSPECTED",
+        "IOS_CREDENTIAL_CUSTODY_INSPECTED",
+        "TELEMETRY_REDACTION_INSPECTED",
+        "CRASH_REPORT_REDACTION_INSPECTED",
+        "CLOUD_DELETION_OBSERVED",
+        "WITNESS_DELETION_OBSERVED",
+        "BACKUP_RETENTION_AT_OR_BELOW_35_DAYS",
+        "PRE_DELETE_BACKUP_CANNOT_RESURRECT_TENANT_AUTHORITY"
+      ],
+      "forbiddenShortcuts": [
+        "DOCUMENTATION_ONLY_PRIVACY_PASS",
+        "ANDROID_ONLY_CUSTODY_CLAIMED_AS_CROSS_PLATFORM",
+        "R2_PASS_IMPLICITLY_CLOSES_Q004"
+      ]
+    },
+    {
+      "id": "R5",
+      "title": "Q-005 multi-device crypto, witness and recovery closure",
+      "dependsOn": ["R2"],
+      "closes": ["Q-005"],
+      "executionClass": "CROSS_DEVICE_PHYSICAL",
+      "requiredEvidenceClaims": [
+        "ANDROID_WRAP_IOS_UNWRAP_PASS",
+        "IOS_WRAP_ANDROID_UNWRAP_PASS",
+        "ANDROID_SIGN_IOS_VERIFY_PASS",
+        "IOS_SIGN_ANDROID_VERIFY_PASS",
+        "NEGATIVE_CRYPTO_MATRIX_FAILS_CLOSED",
+        "THREE_WITNESSES_PRESENT",
+        "TWO_OF_THREE_QUORUM_PASS",
+        "AT_LEAST_TWO_FAILURE_DOMAINS",
+        "CRASH_RESTART_PASS",
+        "PARTITION_REJOIN_PASS",
+        "LONG_OFFLINE_REJOIN_PASS",
+        "ALL_DEVICES_LOST_RECOVERY_PASS",
+        "TRK_ROTATION_PASS",
+        "RECOVERY_KEY_ROTATION_PASS",
+        "NEW_RECOVERY_KIT_ISSUED",
+        "OLD_DEVICE_DENIED_FUTURE_EPOCH",
+        "OLD_RECOVERY_KIT_DENIED_FUTURE_EPOCH"
+      ],
+      "forbiddenShortcuts": [
+        "SAME_PLATFORM_ONLY",
+        "SINGLE_WITNESS_OR_SINGLE_FAILURE_DOMAIN",
+        "SIMULATED_RECOVERY_ONLY",
+        "R2_PASS_IMPLICITLY_CLOSES_Q005"
+      ]
+    },
+    {
+      "id": "R6",
+      "title": "P0 quarry closure consensus",
+      "dependsOn": ["R3", "R4", "R5"],
+      "closes": [],
+      "executionClass": "CLOSURE_RECEIPT_AUDIT",
+      "requiredEvidenceClaims": [
+        "Q003_CLOSURE_RECEIPT_VALID",
+        "Q004_CLOSURE_RECEIPT_VALID",
+        "Q005_CLOSURE_RECEIPT_VALID",
+        "CROSS_QUARRY_CONTRADICTION_AUDIT_PASS",
+        "RESIDUAL_RISKS_RECONCILED"
+      ],
+      "requiredOutputs": [
+        "mk0/11-decisions/closure-receipts/Q-003.md",
+        "mk0/11-decisions/closure-receipts/Q-004.md",
+        "mk0/11-decisions/closure-receipts/Q-005.md"
+      ]
+    },
+    {
+      "id": "R7",
+      "title": "Architecture and security closure audit",
+      "dependsOn": ["R6"],
+      "closes": ["A-001", "SEC-001"],
+      "executionClass": "DOCUMENTARY_RECONCILIATION_BOUND_TO_PHYSICAL_EVIDENCE",
+      "requiredEvidenceClaims": [
+        "CORE_ARCHITECTURE_MATCHES_OBSERVED_BOUNDARIES",
+        "SECURITY_PRIVACY_MATCHES_OBSERVED_CUSTODY_AND_DELETION",
+        "EDGE_CLOUD_BOUNDARY_RECONCILED",
+        "NO_ARCHITECTURE_OR_SECURITY_CLAIM_EXCEEDS_EVIDENCE"
+      ]
+    },
+    {
+      "id": "R8",
+      "title": "Data model, workflow and operations closure audit",
+      "dependsOn": ["R7"],
+      "closes": ["DM-001", "WF-001", "OPS-001"],
+      "executionClass": "MODEL_WORKFLOW_OPERATIONS_AUDIT",
+      "requiredEvidenceClaims": [
+        "DATA_MODEL_MATCHES_CANONICAL_RUNTIME_AND_SYNC_KEYS",
+        "WORKFLOWS_MATCH_SIGNATURE_UX_AND_REVIEW_STATES",
+        "OPERATIONS_MATCH_RECOVERY_DELETION_REVOCATION_PROVIDER_BOUNDARIES",
+        "NO_UNRESOLVED_P0_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "R9",
+      "title": "G-MK0 closure",
+      "dependsOn": ["R8"],
+      "closes": ["G-MK0"],
+      "executionClass": "FINAL_GRAPH_CONSENSUS",
+      "requiredEvidenceClaims": [
+        "ALL_G_MK0_DEPENDENCIES_CLOSED_OR_PASS_AS_CONTRACTED",
+        "CLOSURE_LEDGER_REVALIDATED",
+        "BUILD_READINESS_REVALIDATED",
+        "RELEASE_READY_REMAINS_INDEPENDENT"
+      ]
+    },
+    {
+      "id": "R10",
+      "title": "BUILD_READY transition",
+      "dependsOn": ["R9"],
+      "closes": [],
+      "executionClass": "STATE_TRANSITION_ONLY",
+      "requiredEvidenceClaims": [
+        "G_MK0_STATUS_CLOSED",
+        "BUILD_READY_TRUE_DERIVED_FROM_LEDGER",
+        "EXACT_REPO_SHA_RECORDED",
+        "RELEASE_READY_REMAINS_FALSE_UNLESS_INDEPENDENTLY_PROVEN"
+      ]
+    }
+  ],
+  "currentState": {
+    "R3": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R4": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R5": "PHYSICAL_OR_PROVIDER_OPEN",
+    "R6": "BLOCKED_BY_PRIOR_NODE",
+    "R7": "AUDIT_OPEN",
+    "R8": "AUDIT_OPEN",
+    "R9": "BLOCKED_BY_PRIOR_NODE",
+    "R10": "BLOCKED_BY_PRIOR_NODE",
+    "q003": "ACTIVE",
+    "q004": "ACTIVE",
+    "q005": "ACTIVE",
+    "gMk0": "OPEN",
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "A2_R2_SANITIZED_RECEIPT_SCHEMA_V1",
+  "receiptClass": "SANITIZED_SUMMARY_ONLY",
+  "requiredTopLevel": [
+    "schemaVersion",
+    "candidateId",
+    "sourceCommit",
+    "signedApkSha256",
+    "signedApkBytes",
+    "signerSha1",
+    "androidPackage",
+    "gmailScope",
+    "deviceClass",
+    "androidApiLevel",
+    "gateResults",
+    "sanitizationPass"
+  ],
+  "requiredGateIds": ["OD0", "OD1", "OD2", "OD3", "OD4", "OD5", "OD6", "OD7", "OD8", "OD9", "OD10", "OD11"],
+  "allowedGateStatuses": ["PASS", "FAIL", "INCONCLUSIVE"],
+  "allowedStableResultValueTypes": ["string", "number", "boolean"],
+  "forbiddenKeysCaseInsensitive": [
+    "password",
+    "keystore",
+    "privatekey",
+    "accesstoken",
+    "refreshtoken",
+    "authorization",
+    "gmailmessageid",
+    "gmailattachmentid",
+    "rawgmail",
+    "rawmime",
+    "rawpdf",
+    "pdfpassword",
+    "merchant",
+    "accountnumber",
+    "externalreference",
+    "financialplaintext"
+  ],
+  "forbiddenValueClasses": [
+    "OAUTH_BEARER_TOKEN",
+    "PRIVATE_KEY_MATERIAL",
+    "RAW_GMAIL_CONTENT",
+    "RAW_STATEMENT_CONTENT",
+    "REAL_ACCOUNT_IDENTIFIER",
+    "MERCHANT_LEVEL_TRANSACTION_SAMPLE"
+  ],
+  "coarseCounterLaw": "COUNTERS_MAY_DESCRIBE_COUNTS_ONLY_AND_MUST_NOT_CONTAIN_TRANSACTION_VALUES",
+  "receiptPassLaw": "ALL_REQUIRED_GATES_PASS_ON_ONE_SIGNED_APK_HASH_AND_SANITIZATION_PASS_TRUE",
+  "doesNotImply": ["Q003_CLOSED", "Q004_CLOSED", "Q005_CLOSED", "G_MK0_CLOSED", "BUILD_READY", "RELEASE_READY"]
+}

@@ -1,0 +1,20 @@
+# PF-EXP-001 PRIVATE FINANCIAL DATA — NEVER COMMIT
+private/
+private-corpus/
+oracle-private/
+oracles/private/
+**/*.decrypted.pdf
+**/*.unlocked.pdf
+**/*.secret
+**/*.password
+**/*.key
+**/*.pem
+**/raw-email/
+**/raw-attachments/
+**/account-reports/
+**/private-manifest*.json
+!fixtures/synthetic/**
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

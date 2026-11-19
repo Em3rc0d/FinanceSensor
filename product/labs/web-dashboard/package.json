@@ -1,0 +1,13 @@
+{
+  "name": "@financesensor/alpha2-web-dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "validate": "node validate.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

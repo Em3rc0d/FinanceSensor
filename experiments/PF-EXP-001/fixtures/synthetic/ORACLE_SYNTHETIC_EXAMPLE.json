@@ -1,0 +1,18 @@
+{
+  "synthetic": true,
+  "sourceClass": "BCP_SAVINGS",
+  "custody": "PRIVATE_LOCAL",
+  "consentScopeVerified": true,
+  "period": {"start":"2026-07-01","end":"2026-07-31"},
+  "sourceDocumentComplete": true,
+  "oracle": {
+    "method": "MANUAL_FROM_ORIGINAL_SOURCE",
+    "reviewerAlias":"SYNTHETIC_REVIEWER",
+    "copiedFromParser":false,
+    "rows":[
+      {"rowRef":"SYNTHETIC_P1_ROW1","page":1,"currency":"PEN","signedMinorUnits":10000,"countsTowardBalance":true},
+      {"rowRef":"SYNTHETIC_P1_ROW2","page":1,"currency":"PEN","signedMinorUnits":-6000,"countsTowardBalance":true}
+    ],
+    "balances":[{"currency":"PEN","openingMinorUnits":30000,"closingMinorUnits":34000}]
+  }
+}

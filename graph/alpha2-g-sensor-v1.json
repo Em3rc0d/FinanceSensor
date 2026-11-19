@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "slice": "ALPHA_2_G",
+  "name": "Sensor V1",
+  "status": "STATIC_IMPLEMENTED_CI_PASS",
+  "asOf": "2026-09-05",
+  "baseCommit": "f2956b3f8676e2d8728b9f71b1c4480590406bc8",
+  "implementationReceipt": {
+    "pullRequest": 77,
+    "candidateHeadSha": "ecd32e9001901468594eec6a7869bc29a1923743",
+    "mergeCommitSha": "4bbe179555e5220c302ad59717bfef8fc2702718",
+    "workflows": [
+      {
+        "name": "FinanceSensor Statement ETL Contract",
+        "runId": 33999149624,
+        "runNumber": 102,
+        "conclusion": "success"
+      },
+      {
+        "name": "FinanceSensor Gmail Historical",
+        "runId": 33999149617,
+        "runNumber": 140,
+        "conclusion": "success"
+      }
+    ]
+  },
+  "dependency": {
+    "slice": "ALPHA_2_F",
+    "requiredStatus": "STATIC_IMPLEMENTED_CI_PASS"
+  },
+  "model": {
+    "version": "A2_SENSOR_V1",
+    "categoryVersion": "A2_BASE_CATEGORY_V1",
+    "recurrenceVersion": "A2_RECURRENCE_CANDIDATE_V1",
+    "truthStates": [
+      "OBSERVED",
+      "POSTED",
+      "RECONCILED",
+      "PARTIAL",
+      "UNKNOWN"
+    ],
+    "baseCategories": [
+      "Comida",
+      "Transporte",
+      "Hogar",
+      "Servicios",
+      "Compras",
+      "Entretenimiento",
+      "Suscripciones",
+      "Salud",
+      "Estudios",
+      "Viajes",
+      "Familia",
+      "Mascotas",
+      "Comisiones",
+      "Impuestos",
+      "Otros"
+    ]
+  },
+  "determinismBoundary": {
+    "deterministicOnly": true,
+    "llmEnabled": false,
+    "automatedFinancialAdvice": false,
+    "recommendationsInSensorV1": false,
+    "genericEvidencePercentageAllowed": false,
+    "crossCurrencyAggregationAllowed": false,
+    "everyOutputRequiresAlgorithmVersion": true,
+    "everyOutputRequiresEvidenceInputs": true,
+    "everyOutputRequiresTruthState": true
+  },
+  "categoryBoundary": {
+    "explicitBaseCategoryPreserved": true,
+    "semanticFeeMapsToComisiones": true,
+    "unknownCategoryGuessed": false,
+    "unknownCategoryBecomesGap": true
+  },
+  "recurrenceBoundary": {
+    "promotionState": "CANDIDATE_ONLY",
+    "truthState": "OBSERVED",
+    "minimumOccurrencesImplementationPin": 3,
+    "eligibleSemanticTypes": [
+      "EXPENSE",
+      "FEE"
+    ],
+    "forbiddenSemanticTypes": [
+      "INCOME",
+      "CARD_PAYMENT",
+      "REFUND",
+      "REVERSAL",
+      "INTERNAL_TRANSFER",
+      "EXTERNAL_TRANSFER"
+    ],
+    "cadenceWindowsDaysImplementationPin": {
+      "WEEKLY": [5, 9],
+      "MONTHLY": [24, 38],
+      "QUARTERLY": [75, 105],
+      "YEARLY": [330, 400]
+    },
+    "note": "Cadence windows are versioned implementation pins for candidate observation only; they do not promote a recurring pattern to ACTIVE or financial authority."
+  },
+  "cashflowBoundary": {
+    "perPeriodPerCurrency": true,
+    "crossCurrencyCombinedTotal": false,
+    "includedSemantics": [
+      "INCOME",
+      "EXPENSE",
+      "FEE"
+    ],
+    "internalTransferExcluded": true,
+    "cardPaymentExcludedFromSensorCashflow": true,
+    "reconciledTruthRequiresReconciledMonthlyClose": true,
+    "otherwiseTruthState": "PARTIAL"
+  },
+  "knowledgeGapBoundary": {
+    "monthlyBlockingReasonsBecomeGaps": true,
+    "unknownCategoryBecomesGap": true,
+    "gapTruthState": "UNKNOWN",
+    "rawSourceTextDurable": false,
+    "rawGmailIdentifiersRequired": false
+  },
+  "persistence": {
+    "repositoryTransactional": true,
+    "snapshotIdentityDeterministic": true,
+    "inputOrderIndependent": true,
+    "replayIdempotent": true,
+    "physicalSchemaMigrationInThisSlice": false
+  },
+  "staticNegativeGate": [
+    "LLM_USED_0",
+    "AUTOMATED_FINANCIAL_ADVICE_0",
+    "RECOMMENDATIONS_0",
+    "GENERIC_EVIDENCE_PERCENTAGE_0",
+    "CROSS_CURRENCY_AGGREGATION_0",
+    "UNKNOWN_CATEGORY_GUESS_0",
+    "FEE_CATEGORY_COMISIONES_PASS",
+    "RECURRING_TWO_OCCURRENCES_CANDIDATE_0",
+    "RECURRING_THREE_MONTHLY_OCCURRENCES_CANDIDATE_PASS",
+    "RECURRING_PROMOTION_ACTIVE_0",
+    "CARD_PAYMENT_RECURRING_EXPENSE_0",
+    "INTERNAL_TRANSFER_RECURRING_EXPENSE_0",
+    "IRREGULAR_CADENCE_RECURRING_0",
+    "RECONCILED_MONTH_CASHFLOW_TRUTH_RECONCILED_PASS",
+    "OPEN_MONTH_CASHFLOW_TRUTH_PARTIAL_PASS",
+    "MONTHLY_BLOCKING_REASON_GAP_PASS",
+    "CATEGORY_UNKNOWN_GAP_PASS",
+    "EVERY_OUTPUT_VERSION_EVIDENCE_TRUTH_PASS",
+    "CROSS_TENANT_EVENT_FAILS_CLOSED",
+    "SENSOR_REPLAY_DUPLICATE_OUTPUT_0",
+    "SENSOR_TRANSACTION_FAILURE_ROLLS_BACK"
+  ],
+  "physicalPromotion": {
+    "realRecurringPatternPrecision": "OPEN",
+    "realCategoryPrecision": "OPEN",
+    "realCashflowObservationAgainstOwnedStatements": "OPEN",
+    "realKnowledgeGapUx": "OPEN",
+    "realRestartPersistence": "OPEN",
+    "physicalSchemaConstraints": "OPEN",
+    "androidPhysicalSensor": "OPEN"
+  },
+  "claims": {
+    "staticImplementationPass": true,
+    "physicalSensorPass": false,
+    "alpha2ProductPass": false,
+    "buildReady": false
+  },
+  "forbiddenPromotions": [
+    "STATIC_SENSOR_PASS=>PHYSICAL_SENSOR_PASS",
+    "RECURRING_CANDIDATE=>ACTIVE_RECURRING_PATTERN",
+    "SYNTHETIC_CATEGORY_PASS=>REAL_CATEGORY_PRECISION_PASS",
+    "STATIC_SENSOR_PASS=>AUTOMATED_FINANCIAL_ADVICE",
+    "ALPHA_2_G_PASS=>ALPHA_2_PHYSICAL_PRODUCT_PASS",
+    "ALPHA_2_G_PASS=>GLOBAL_BUILD_READY"
+  ]
+}

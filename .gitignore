@@ -17,6 +17,9 @@ tmp/
 # Local Gmail/OAuth evidence and execution output
 financesensor-level-c-result.json
 financesensor-level-c-*.json
+financesensor-p1-production-lifecycle-result.json
+financesensor-p1-sanitized-receipt.json
+financesensor-p1-*.json
 *credentials*.json
 *credential*.json
 client_secret*.json

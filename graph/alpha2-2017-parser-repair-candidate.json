@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "A2_2017_PARSER_REPAIR_CANDIDATE_V1",
+  "candidate": "0.2.0-alpha.2+2017",
+  "status": "INTERNAL_BUILD_CANDIDATE",
+  "objective": "REMEDIATE_PHYSICAL_STRICT_REVIEW_CAUSES_FROM_2016",
+  "predecessor": {
+    "candidate": "0.2.0-alpha.2+2016",
+    "productSourceCommit": "6e48f67c9b580be1be43cfa01f19b3b1eb630611",
+    "canonicalUnsignedApkSha256": "f93d3d5411fab884698fce88a24db30a0004f4969503634d845bc1d3cc53ed97",
+    "stableSignedApkSha256": "95ef5592b7f344c069a1c37378861ef577870567dd02f51acdbf31a996964c11",
+    "signingReceipt": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2016-2026-09-30.json",
+    "physicalObservationReceipt": "graph/physical-receipts/ALPHA2-2016-PHYSICAL-PARSER-REGRESSION-2026-09-30.json",
+    "physicalEvidenceInheritanceAllowed": false
+  },
+  "physicalDiagnostics": {
+    "gmailObserved": 11,
+    "statementsImported": 0,
+    "statementsReviewRequired": 10,
+    "uncategorizedMovements": 11,
+    "knownGaps": 21,
+    "bcpSavings": {
+      "count": 7,
+      "code": "STATEMENT_MONETARY_ROW_UNEXPLAINED"
+    },
+    "ripleyCredit": {
+      "count": 3,
+      "code": "RIPLEY_CREDIT_LEDGER_GEOMETRY_UNKNOWN"
+    }
+  },
+  "productDelta": {
+    "parserBehaviorChanged": true,
+    "bcpSavingsCompletenessVersion": "A2_BCP_SAVINGS_COMPLETENESS_V4",
+    "ripleyCreditStrictAdapter": "A2_RIPLEY_CREDIT_STRICT_V3",
+    "bcpSavingsRemediation": [
+      "DETACHED_CERTIFIED_CONTROL_VALUES_BIND_WITHIN_BOUNDED_Y36",
+      "INTERVENING_NARRATIVE_OR_DATED_LEDGER_LINES_BLOCK_CONTROL_BINDING",
+      "UNKNOWN_UNDATED_MONETARY_ROWS_REMAIN_FAIL_CLOSED"
+    ],
+    "ripleyCreditRemediation": [
+      "FECHA_DE_OPERACION_AND_FECHA_DE_CONSUMO_HEADER_VARIANTS_SUPPORTED",
+      "TEA_TNA_OR_INTERES_RATE_HEADER_CAN_BOUND_RIGHTMOST_TOTAL_AUTHORITY",
+      "SALDO_INICIAL_AND_SALDO_ANTERIOR_ARE_CONTROL_ROWS_NOT_MOVEMENTS",
+      "RIGHTMOST_TOTAL_REMAINS_MOVEMENT_AMOUNT_AUTHORITY"
+    ]
+  },
+  "regressionTests": [
+    "certified BCP detached controls tolerate one PDF baseline gap",
+    "unknown undated monetary row still fails closed",
+    "Ripley physical header variant accepts operation date and TEA/TNA",
+    "Ripley strict adapter imports ledger totals and excludes summary/formulas",
+    "Ripley conflicting anchored billing periods still fail closed"
+  ],
+  "privacy": {
+    "rawStatementPdfInRepository": false,
+    "rawScreenshotsInRepository": false,
+    "merchantNamesFromPhysicalEvidenceInRepository": false,
+    "transactionAmountsFromPhysicalEvidenceInRepository": false,
+    "accountIdentifiersInRepository": false,
+    "pdfPasswordsInRepository": false,
+    "oauthTokensInRepository": false
+  },
+  "build": {
+    "buildName": "0.2.0-alpha.2",
+    "versionCode": 2017,
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "trustedEdgeResignRequired": true,
+    "canonicalPromotionPending": true
+  },
+  "boundaries": {
+    "predecessorPhysicalEvidenceInherited": false,
+    "realOauthExecutedByCi": false,
+    "realGmailExecutedByCi": false,
+    "realFinancialDataInCi": false,
+    "physicalAlpha2Pass": false,
+    "buildReady": false,
+    "releaseReady": false
+  }
+}

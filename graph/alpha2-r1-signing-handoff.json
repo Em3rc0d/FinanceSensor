@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "A2_R1_TRUSTED_EDGE_HANDOFF_V15",
+  "project": "FinanceSensor",
+  "candidate": "0.2.0-alpha.2+2014",
+  "productSourceCommit": "7b7f18ce9cf58564270dc4cfcb0c0a3dd72ea74b",
+  "sourceCommit": "8e5bb535a7263beab0b687b616dff88205da58f3",
+  "canonicalRunId": 35291827028,
+  "canonicalJobId": 105436111056,
+  "canonicalArtifactId": 10526841901,
+  "canonicalArtifactName": "financesensor-alpha2-2014-candidate-35291827028",
+  "canonicalArtifactZipSha256": "d41eca871471d9700d2d8c48b2b70a7ac806f3cae0ee11c3e5020c0a171a9f80",
+  "canonicalArtifactZipBytes": 87694587,
+  "inputApk": {
+    "sha256": "72f3e6a8a850abb76cbf6dcd5c472a9a12d5ea058c30c9d929676d5e03bdada3",
+    "bytes": 182550031,
+    "minSdk": 31,
+    "targetSdk": 36,
+    "signatureVerify": "PASS",
+    "aapt2Parse": "PASS",
+    "scanResilience": "A2_SCAN_RESILIENCE_V1",
+    "safeReviewDiagnostics": "A2_SAFE_REVIEW_DIAGNOSTICS_V1",
+    "strictParserBehaviorChanged": false,
+    "physicalClaimsInheritedFromPriorCandidate": false
+  },
+  "signer": {
+    "powershellGitBlob": "17c2a5e6f2e932c3cd032a52d9af1c68757658c4",
+    "cmdGitBlob": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "windowsNativeStdin": "PROCESS_START_INFO_REDIRECTED",
+    "directPasswordPipe": "FORBIDDEN",
+    "expectedSignerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly"
+  },
+  "handoffBundle": {
+    "name": "FinanceSensor-ALPHA2-R1-TRUSTED-EDGE-BUNDLE-v14.zip",
+    "status": "FROZEN_PUBLIC_SAFE_BUNDLE",
+    "sha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+    "bytes": 86665753,
+    "files": 8,
+    "privateKeyFiles": 0,
+    "secretLikeValueMatches": 0,
+    "apksignerSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180",
+    "zipStructure": "PASS",
+    "zipIntegrity": "PASS",
+    "manifestIntegrity": "PASS",
+    "ps1GitBlobVerified": "17c2a5e6f2e932c3cd032a52d9af1c68757658c4",
+    "cmdGitBlobVerified": "3d01373b69051d30f88a57f26fa815e52d952d6d",
+    "generationReceipt": {
+      "status": "PR_HEAD_CI_PASS",
+      "headSha": "846296261b59a6acc8bb4a225b7d4fbdb28cd853",
+      "runId": 35293721081,
+      "artifactId": 10526829557,
+      "wrapperArtifactSha256": "1cb124bf2884e55fd559dd7ee0bac0c4036287183d0c5e30072187fc8341ce90",
+      "wrapperArtifactBytes": 86294990,
+      "observedInnerBundleSha256": "eb959aca58b8c9a2b9ce75e4f059a87f1f40b0032fb667a8f092a98c5a04b6be",
+      "observedInnerBundleBytes": 86665753,
+      "manifestIntegrity": "PASS"
+    }
+  },
+  "stableSignedApk": null,
+  "historicalPhysicalReceipts": [
+    {
+      "candidate": "0.2.0-alpha.2+2013",
+      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2013-2026-09-17.json",
+      "inheritAsCurrentPass": false
+    },
+    {
+      "candidate": "0.2.0-alpha.2+2012",
+      "path": "graph/physical-receipts/ALPHA2-R1-TRUSTED-EDGE-SIGNING-2012-2026-09-15.json",
+      "inheritAsCurrentPass": false
+    }
+  ],
+  "ciGate": {
+    "workflow": "Alpha.2 R1 Trusted-Edge Signing",
+    "workflowPath": ".github/workflows/alpha2-r1-trusted-edge-signing.yml",
+    "validator": "tools/validate-alpha2-r1-signing-handoff.mjs",
+    "canonicalValidator": "tools/validate-alpha2-canonical-candidate.mjs",
+    "powershellParserRequired": true,
+    "privateSigningMaterialAllowed": false,
+    "bundleGenerationInPublicCi": true,
+    "physicalSigningInPublicCi": false,
+    "exactCanonicalArtifactRequired": true
+  },
+  "physicalReceipt": null,
+  "status": "CANONICAL_FROZEN_SIGNING_REQUIRED",
+  "trustedEdgeSigningPass": false,
+  "signedApkSha256": null,
+  "signedApkBytes": null,
+  "nextGate": "R1_TRUSTED_EDGE_SIGNING",
+  "physicalAlpha2Pass": false,
+  "buildReady": false,
+  "releaseReady": false
+}

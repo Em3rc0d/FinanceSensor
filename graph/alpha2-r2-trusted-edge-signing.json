@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "candidate": "0.1.0-alpha.1+1001",
+  "gate": "TRUSTED_EDGE_STABLE_LAB_SIGNING",
+  "status": "PHYSICAL_SIGNING_AND_OWNED_DEVICE_GMAIL_PASS_ALPHA2_INTEGRATION_OPEN",
+  "asOf": "2026-09-06",
+  "inputBuild": {
+    "receipt": "graph/alpha2-human-test-build.json",
+    "sourceCommit": "9d990fc579429cc0bc8e5c02306d8ebe4622e145",
+    "artifactId": 9979184888,
+    "apkSha256": "c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d",
+    "apkBytes": 172884802,
+    "exactMatchRequiredBeforeSigning": true
+  },
+  "signer": {
+    "identity": "FINANCESENSOR_R2_LAB",
+    "expectedSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidPackage": "com.financesensor.lab.gmailconnection.r2",
+    "privateKeystoreInGitHub": false,
+    "privateKeystoreInPublicCi": false,
+    "passwordInGitHub": false,
+    "passwordInPublicCi": false,
+    "aliasResolvedByCertificateFingerprint": true
+  },
+  "tooling": {
+    "powershell": "tools/SIGN-FINANCESENSOR-R2.ps1",
+    "windowsLauncher": "tools/SIGN-FINANCESENSOR-R2.cmd",
+    "inputApkSignatureVerifiedBeforeSigning": true,
+    "inputApkHashPinned": true,
+    "outputMustDifferFromInput": true,
+    "partialOutputDeletedOnAnyFailure": true,
+    "signedOutputVerifiedWithApkSigner": true,
+    "signedOutputFingerprintMustMatch": true,
+    "signedApkSha256Receipt": true,
+    "sanitizedReceipt": true,
+    "deterministicPasswordZeroizationClaimed": false,
+    "sessionOnlyPasswordCustody": true,
+    "passwordTransport": "stdin",
+    "powershellParsedByRealPwshInCi": true,
+    "physicalWindowsRepairEvidence": "mk0/10-evidence/EV-R2-SIGNER-STDIN-FIX-2026-09-06.md"
+  },
+  "staticImplementationReceipt": {
+    "pullRequest": 81,
+    "candidateHeadSha": "aa57df60dba10bf133a9c4ab0f727c98c8b3a1ec",
+    "mergeCommitSha": "7984e5670b5884d84bc613cb002b188e2cb83aa8",
+    "workflow": {
+      "name": "FinanceSensor Android Human Test Alpha",
+      "runId": 34013149864,
+      "runNumber": 10,
+      "jobId": 101432316748,
+      "conclusion": "success"
+    }
+  },
+  "physicalReceipt": {
+    "evidence": "mk0/10-evidence/EV-R2-PHYSICAL-RECEIPT-2026-09-06.md",
+    "trustedEdgeSigningPass": true,
+    "sourceCommit": "9d990fc579429cc0bc8e5c02306d8ebe4622e145",
+    "inputApkSha256": "c0a4a5a9a908ed0ea04cbb5ddef10f1343ed84cfa1db5fbe1b2ac00e0a768d1d",
+    "signedApkSha256": "4b0f65227599eda16e25d14703da1020eaa2f87b69f6cc665997de46b084a94b",
+    "signedApkBytes": 172908785,
+    "signerSha1": "63:2F:3A:4C:AE:C6:86:5B:C4:02:E8:82:12:2E:33:38:A6:EF:EB:D0",
+    "androidOauthPackage": "com.financesensor.lab.gmailconnection.r2",
+    "exactScope": "gmail.readonly",
+    "ownedDeviceInstallPass": true,
+    "realOauthPass": true,
+    "realGmailPass": true,
+    "realBoundedScanPass": true,
+    "messagesInspectedObserved": 300,
+    "messagesOpenedAfterMetadataObserved": 11,
+    "movementsObserved": 11,
+    "userSuppliedVisualEvidence": true,
+    "privateSigningMaterialInGitHub": false
+  },
+  "historicalEvidenceBoundary": {
+    "previousPr": 62,
+    "previousSourceCommit": "7c322a163e15a42fbfbda7dc32ee2b94dbf1b006",
+    "previousSignedApkSha256": "4b0f65227599eda16e25d14703da1020eaa2f87b69f6cc665997de46b084a94b",
+    "currentSignedOutputEqualsHistoricalBytes": true,
+    "inheritedAsCurrentPhysicalPass": false,
+    "reason": "The current physical receipt independently binds the certified c0a4a5... input to the stable R2 signer. Historical provenance is not inherited even though the resulting stable-signed bytes are equal."
+  },
+  "claims": {
+    "staticSignerHandoffReady": true,
+    "physicalSigningPass": true,
+    "ownedDeviceGmailHumanTestPass": true,
+    "alpha2PhysicalProductPass": false,
+    "alpha2MobileIntegration": "OPEN",
+    "buildReady": false,
+    "releaseReady": false
+  },
+  "laws": [
+    "CURRENT_PHYSICAL_RECEIPT_MUST_BIND_CERTIFIED_INPUT",
+    "PHYSICAL_SIGNING_PASS!=ALPHA2_MOBILE_INTEGRATED",
+    "REAL_OAUTH_PASS!=GOOGLE_PRODUCTION_VERIFICATION",
+    "HUMAN_TEST_READY!=BUILD_READY",
+    "BUILD_READY!=RELEASE_READY"
+  ]
+}

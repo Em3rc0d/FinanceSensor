@@ -1,0 +1,41 @@
+name: MK0 Foundation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: financesensor-mk0-foundation
+  cancel-in-progress: true
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify canonical resolver invariants
+        working-directory: spikes/canonical-resolver
+        run: npm test
+
+      - name: Verify E2EE / recovery / witness invariants
+        working-directory: spikes/e2ee-sync
+        run: npm test
+
+      - name: Verify physical ingress / privacy invariants
+        working-directory: spikes/physical-ingress
+        run: npm test
+
+      - name: Foundation summary
+        run: |
+          echo 'FINANCESENSOR_MK0_FOUNDATION=PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public-safe diagnostic suite on an ephemeral GitHub-hosted runner. Real Gmail execution remains LOCAL EDGE ONLY.' >> "$GITHUB_STEP_SUMMARY"

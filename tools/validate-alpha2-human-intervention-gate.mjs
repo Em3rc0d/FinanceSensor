@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+const h=JSON.parse(fs.readFileSync('graph/alpha2-human-intervention-gate.json','utf8'));
+const a=(x,m)=>{if(!x)throw new Error(`ALPHA2_HUMAN_GATE_V6_FAILED:${m}`)};
+a(h.schemaVersion==='A2_HUMAN_INTERVENTION_GATE_V6','schema');
+a(h.currentCandidate==='0.2.0-alpha.2+2016','identity');
+a(h.candidateCanonicalCommit==='6e48f67c9b580be1be43cfa01f19b3b1eb630611','canonical');
+a(h.candidateState==='CANONICAL_FROZEN_SIGNING_REQUIRED','state');
+a(h.preSigning?.requestAllowed===true&&h.preSigning?.completed===false,'signing eligibility');
+a(h.preSigning?.requiredCiConsensusGreen===true&&h.preSigning?.exactPhysicalFailureRegressionPass===true,'CI');
+a(h.ownedDeviceUat?.requestAllowed===false&&h.ownedDeviceUat?.trustedEdgeSigningPass===false,'UAT blocked');
+a(h.claims?.signingRequestAllowed===true&&h.claims?.trustedEdgeSigningPass===false,'claims');
+a(h.claims?.physicalAlpha2Pass===false&&h.claims?.buildReady===false&&h.claims?.releaseReady===false,'readiness');
+console.log('ALPHA2_HUMAN_INTERVENTION_GATE=PASS');
+console.log('SIGNING_REQUEST_ALLOWED=YES');
+console.log('OWNED_DEVICE_UAT_REQUEST_ALLOWED=NO');
+console.log('NEXT_GATE=R1_TRUSTED_EDGE_SIGNING');

@@ -1,0 +1,49 @@
+name: Alpha.2 Statement Discovery
+
+on:
+  pull_request:
+    branches:
+      - jett/mk0-foundation
+    paths:
+      - 'graph/alpha2-a-statement-discovery.json'
+      - 'spikes/physical-ingress/package.json'
+      - 'spikes/physical-ingress/src/gmail-rest-provider.js'
+      - 'spikes/physical-ingress/src/statement-discovery.js'
+      - 'spikes/physical-ingress/test/gmail-rest-provider.test.js'
+      - 'spikes/physical-ingress/test/statement-discovery.test.js'
+      - 'tools/validate-alpha2-a-statement-discovery.mjs'
+      - '.github/workflows/alpha2-statement-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate frozen Alpha.2 boundary
+        run: node tools/validate-alpha2-design-freeze.mjs
+      - name: Validate statement discovery graph
+        run: node tools/validate-alpha2-a-statement-discovery.mjs
+      - name: Run metadata-only discovery tests
+        run: |
+          node --check spikes/physical-ingress/src/statement-discovery.js
+          node --check spikes/physical-ingress/src/gmail-rest-provider.js
+          node --test \
+            spikes/physical-ingress/test/statement-discovery.test.js \
+            spikes/physical-ingress/test/gmail-rest-provider.test.js
+      - name: Assert no Alpha.2-B capability entered
+        run: |
+          ! grep -E "fetchGmailStatementAttachment|/attachments/" spikes/physical-ingress/src/statement-discovery.js
+          ! grep -E "body\(.*data|body/data" spikes/physical-ingress/src/gmail-rest-provider.js
+          echo 'ATTACHMENT_BYTES_FETCHED=0'
+          echo 'PASSWORD_REQUESTED=0'
+          echo 'VAULT_MUTATION=0'
+          echo 'REAL_GMAIL_IN_CI=0'
+          echo 'BUILD_READY=NO'

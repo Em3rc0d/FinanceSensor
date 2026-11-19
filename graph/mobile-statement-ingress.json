@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "status": "STATIC_SPIKE_IN_PROGRESS_PHYSICAL_OPEN",
+  "asOf": "2026-09-03",
+  "product": {
+    "surface": "FLUTTER_MOBILE_APP",
+    "primaryPhysicalTarget": "ANDROID",
+    "requiredProductionTargets": ["ANDROID", "IOS"],
+    "desktopProduct": false
+  },
+  "runtime": {
+    "package": "pdfrx",
+    "version": "2.4.8",
+    "engine": "PDFIUM",
+    "license": "MIT",
+    "flutter": "3.44.7",
+    "dart": "3.12.2",
+    "input": "UINT8LIST_DEVICE_MEMORY",
+    "networkRequiredForParse": false,
+    "rejectedCandidate": {
+      "package": "pdfrx",
+      "version": "2.5.0",
+      "reason": "REQUIRES_FLUTTER_GTE_3_47_0_AND_WOULD_FORCE_UNPLANNED_BASELINE_CHANGE"
+    }
+  },
+  "passwordBoundary": {
+    "custody": "EPHEMERAL_DART_OPERATION",
+    "persist": false,
+    "log": false,
+    "cloud": false,
+    "github": false,
+    "analytics": false,
+    "memoryZeroizationClaim": false,
+    "law": "PASSWORD_REFERENCE_DROPPED != PASSWORD_BYTES_PROVEN_WIPED"
+  },
+  "pdfBufferBoundary": {
+    "ownedWorkingCopyMutable": true,
+    "zeroAfterDisposeRequired": true,
+    "rawPdfDurable": false,
+    "decryptedTextDurable": false
+  },
+  "requiredEvidence": {
+    "dependencyResolution": "OPEN",
+    "flutterAnalyze": "OPEN",
+    "flutterTests": "OPEN",
+    "androidDebugApk": "OPEN",
+    "syntheticEncryptedPdfAndroidRuntime": "OPEN",
+    "wrongPasswordSanitized": "OPEN",
+    "ownedAndroidRealStatement": "OPEN",
+    "iosCompile": "DEFERRED_BY_EXISTING_STATIC_DEBT",
+    "ownedIosRealStatement": "DEFERRED_BY_EXISTING_PHYSICAL_DEBT"
+  },
+  "forbiddenPromotions": [
+    "PDF_RUNTIME_SELECTED=>MOBILE_STATEMENT_PHYSICAL_PASS",
+    "FLUTTER_ANALYZE_PASS=>REAL_STATEMENT_PARSE_PASS",
+    "ANDROID_APK_BUILD_PASS=>REAL_STATEMENT_PARSE_PASS",
+    "WINDOWS_STATEMENT_PASS=>ANDROID_STATEMENT_PASS",
+    "ANDROID_STATEMENT_PASS=>IOS_STATEMENT_PASS",
+    "PASSWORD_REFERENCE_DROPPED=>PASSWORD_MEMORY_ZEROIZED",
+    "MOBILE_STATEMENT_STATIC_READY=>BUILD_READY",
+    "DEPENDENCY_CONFLICT=>SILENT_FLUTTER_BASELINE_UPGRADE"
+  ],
+  "references": [
+    "mk0/11-decisions/ADR-009-MOBILE-IMPLEMENTATION-STACK.md",
+    "mk0/11-decisions/ADR-033-FINANCIAL-SOURCE-COVERAGE-ASYMMETRY.md",
+    "mk0/11-decisions/ADR-034-MOBILE-STATEMENT-PDF-RUNTIME.md",
+    "spikes/mobile-shell/README.md"
+  ],
+  "buildReady": false
+}

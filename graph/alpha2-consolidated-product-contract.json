@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "contract": "ALPHA2_CONSOLIDATED_MONEY_V1",
+  "status": "DESIGN_FROZEN_IMPLEMENTATION_OPEN",
+  "asOf": "2026-09-06",
+  "sources": {
+    "gmail": {
+      "primaryRole": "LOW_LATENCY_TRANSACTION_EVENT_OBSERVATION",
+      "defaultTruthState": "OBSERVED",
+      "exclusiveExpenseSemantics": false,
+      "mayCompleteMonthAlone": false,
+      "rawServerStorageAllowed": false,
+      "rawWebProjectionAllowed": false
+    },
+    "statement": {
+      "primaryRole": "PERIODIC_POSTED_ACCOUNT_TRUTH",
+      "incomeAuthority": true,
+      "expenseReconciliationAuthority": true,
+      "defaultTruthState": "POSTED",
+      "exclusiveIncomeSemantics": false,
+      "rawServerStorageAllowed": false,
+      "rawWebProjectionAllowed": false,
+      "genericParserFallbackAllowed": false
+    }
+  },
+  "canonicalLedger": {
+    "sourceObservationIsCanonicalTransaction": false,
+    "multiSourceBindingsRequired": true,
+    "truthStates": ["UNKNOWN", "PARTIAL", "OBSERVED", "POSTED", "RECONCILED"],
+    "economicEffects": ["EXPENSE", "INCOME", "TRANSFER", "CARD_PAYMENT", "REFUND", "REVERSAL", "FEE", "CASH_WITHDRAWAL", "UNKNOWN"],
+    "directionEqualsEconomicMeaning": false,
+    "duplicateSourceObservationsMayCreateDuplicateCanonicalMovements": false,
+    "replayDeterministicRequired": true
+  },
+  "evidenceUx": {
+    "publicNumericConfidenceAllowed": false,
+    "fixedEvidencePercentAllowed": false,
+    "forbiddenCopy": ["96% evidencia"],
+    "preferredLabels": ["Observado en Gmail", "Registrado en EECC", "Conciliado", "Cobertura parcial", "Fuente pendiente", "Revisión requerida"],
+    "internalMatchScoreIsProbability": false,
+    "globalCoveragePercentAllowedWithoutExplicitDenominator": false
+  },
+  "web": {
+    "role": "CANONICAL_LEDGER_PRESENTATION",
+    "gmailDirectAccessAllowed": false,
+    "gmailRefreshAuthorityAllowed": false,
+    "rawGmailBodyAllowed": false,
+    "rawMimeAllowed": false,
+    "rawStatementPdfAllowed": false,
+    "pdfPasswordAllowed": false,
+    "canonicalMinimizedProjectionRequired": true,
+    "defaultDashboard": ["MONTH", "CONFIRMED_INCOME", "CANONICAL_SPENDING", "NET_MOVEMENT_WITH_COVERAGE", "CATEGORY_BREAKDOWN", "RECURRENCE_CANDIDATES", "ACCOUNTS", "MOVEMENT_TIMELINE", "SOURCE_COVERAGE"]
+  },
+  "mobile": {
+    "role": "TRUSTED_ACQUISITION_EDGE",
+    "gmailOauthAuthorityLocal": true,
+    "statementDiscoveryLocal": true,
+    "statementParsingLocal": true,
+    "encryptedVaultLocal": true,
+    "reconciliationLocal": true,
+    "accountGraphLocal": true,
+    "coverageLocal": true,
+    "sensorLocal": true
+  },
+  "physicalTestCadence": {
+    "mode": "MILESTONE_ONLY",
+    "perSliceApkRequestsAllowed": false,
+    "nextPhysicalCandidateRequiresIntegratedExactShaGate": true,
+    "requiredInternalGates": ["EVIDENCE_SEMANTICS", "A_DISCOVERY", "B_FETCH_PARSE", "C_VAULT", "D_RECONCILIATION", "E_ACCOUNT_GRAPH", "F_COVERAGE", "G_SENSOR", "WEB", "E2EE_SYNC", "ANDROID", "PRIVACY", "CI_RECEIPT"]
+  },
+  "productionPolicy": {
+    "gmailRestrictedScopeProductionVerificationClosed": false,
+    "googleSecurityAssessmentExemptionClaimed": false,
+    "q003MustRemainOpenUntilProviderProductionClosure": true
+  },
+  "claims": {
+    "designFrozen": true,
+    "alpha2MobileIntegrated": false,
+    "buildReady": false,
+    "releaseReady": false
+  },
+  "laws": [
+    "PRIMARY_SOURCE_ROLE!=EXCLUSIVE_SEMANTICS",
+    "SOURCE_OBSERVATION!=CANONICAL_TRANSACTION",
+    "MATCH_SCORE!=PROBABILITY",
+    "MONEY_LEFT_ACCOUNT!=EXPENSE",
+    "OBSERVED!=POSTED",
+    "RAW_EVIDENCE!=WEB_PROJECTION",
+    "CI_GREEN!=PHYSICAL_PASS",
+    "PHYSICAL_PASS!=BUILD_READY",
+    "BUILD_READY!=RELEASE_READY"
+  ]
+}

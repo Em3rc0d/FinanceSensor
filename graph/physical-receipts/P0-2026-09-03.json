@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "phase": "P0",
+  "status": "PASS",
+  "observedAtDay": "2026-09-03",
+  "sourceBaselineCommit": "dcc5514aa503a32b6449e24e9ab0080b7692db33",
+  "evidenceMode": "COMPOSITE_PHYSICAL_RECEIPTS_PLUS_ADVERSARIAL_ALLOWLIST",
+  "receipt": {
+    "path": "mk0/10-evidence/EV-PHYSICAL-CAMPAIGN-P0-HARNESS-SANITIZATION-2026-09-03.md",
+    "blobSha": "8dda5d3f104d7fcf7339afb425095377b2d74970"
+  },
+  "requiredClaims": [
+    "OUTPUT_ALLOWLIST_ACTIVE",
+    "SECRET_VALUE_PRINTING_DISABLED",
+    "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT",
+    "PRIVATE_KEY_BYTES_ABSENT",
+    "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY",
+    "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED"
+  ],
+  "physicalSources": [
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-GMAIL-R1-PHYSICAL-CONNECT-PASS-2026-09-02.md",
+      "blobSha": "b9316381264d506822de130c929a78b8ff4be5c3",
+      "role": "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-LOCAL-DISCONNECT-PASS-PROVIDER-REVOKE-UNVERIFIED-2026-09-02.md",
+      "blobSha": "60080dbf911ec7b6216708393d4457e3a62fe92b",
+      "role": "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    },
+    {
+      "path": "mk0/10-evidence/EV-Q003-ANDROID-R2-STABLE-LOCAL-LIFECYCLE-PASS-2026-09-03.md",
+      "blobSha": "4d1b34f23f806709c1f50995c588ce71b51dd943",
+      "role": "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    }
+  ],
+  "staticGuardSources": [
+    {
+      "path": "tools/physical-evidence-sanitizer.mjs",
+      "blobSha": "c25e2b04c192cda6d31084daff3873a0f1c6cd09",
+      "role": "ALLOWLIST_SANITIZER_IMPLEMENTATION"
+    },
+    {
+      "path": "tools/validate-physical-evidence-sanitizer.mjs",
+      "blobSha": "102c77ed0f5cf43e54f5ba3de15d52684e79cce7",
+      "role": "ADVERSARIAL_ALLOWLIST_GUARD"
+    }
+  ],
+  "claimEvidence": {
+    "OUTPUT_ALLOWLIST_ACTIVE": [
+      "ALLOWLIST_SANITIZER_IMPLEMENTATION",
+      "ADVERSARIAL_ALLOWLIST_GUARD"
+    ],
+    "SECRET_VALUE_PRINTING_DISABLED": [
+      "ADVERSARIAL_ALLOWLIST_GUARD",
+      "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    ],
+    "REAL_GMAIL_IDENTIFIERS_ABSENT_FROM_SANITIZED_OUTPUT": [
+      "REAL_OWNED_DEVICE_SANITIZED_RECEIPT",
+      "ADVERSARIAL_ALLOWLIST_GUARD"
+    ],
+    "PRIVATE_KEY_BYTES_ABSENT": [
+      "REAL_OWNED_DEVICE_SANITIZED_RECEIPT",
+      "ADVERSARIAL_ALLOWLIST_GUARD"
+    ],
+    "PACKET_STORAGE_EVIDENCE_REDUCED_LOCALLY": [
+      "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    ],
+    "UNNECESSARY_EXACT_IDENTIFIERS_REMOVED_OR_PSEUDONYMIZED": [
+      "REAL_OWNED_DEVICE_SANITIZED_RECEIPT"
+    ]
+  },
+  "assertions": {
+    "rawEvidenceRemainsLocal": true,
+    "realAccountIdentityNotRecorded": true,
+    "realGmailContentNotRecorded": true,
+    "tokenMaterialNotRecorded": true,
+    "privateSigningMaterialNotRecorded": true,
+    "providerResponseBodiesNotCommitted": true,
+    "unnecessaryExactHistoryAndCountValuesRedactedOrNotRecorded": true
+  },
+  "residualRiskCodes": [
+    "P0_VALIDATES_PUBLICATION_BOUNDARY_NOT_RAW_LOCAL_CAPTURE_ABSENCE",
+    "P0_DOES_NOT_PROVE_P1_P7_PRODUCT_PROPERTIES"
+  ],
+  "doesNotProve": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "Q003_CLOSED",
+    "Q004_CLOSED",
+    "Q005_CLOSED"
+  ]
+}

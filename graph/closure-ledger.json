@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 1,
+  "project": "FinanceSensor",
+  "mk": "MK0",
+  "buildReady": false,
+  "nodes": [
+    {
+      "id": "P-001",
+      "kind": "product",
+      "title": "Product thesis",
+      "status": "PASS",
+      "artifacts": ["product/PRODUCT-THESIS.md"],
+      "dependsOn": [],
+      "validates": ["P-002", "Q-001", "Q-003", "Q-004", "WF-001"],
+      "revalidates": [],
+      "evidence": ["mk0/10-evidence/EV-MK0-PRODUCT-CONTRACT-2026-09-01.md"],
+      "closureReceipt": null
+    },
+    {
+      "id": "P-002",
+      "kind": "product",
+      "title": "Product invariants",
+      "status": "PASS",
+      "artifacts": ["product/PRODUCT-INVARIANTS.md"],
+      "dependsOn": ["P-001"],
+      "validates": ["Q-001", "Q-002", "Q-004", "Q-005", "DM-001", "T-001", "WF-001"],
+      "revalidates": ["P-001"],
+      "evidence": ["mk0/10-evidence/EV-MK0-PRODUCT-CONTRACT-2026-09-01.md"],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-001",
+      "kind": "quarry",
+      "title": "Canonical financial semantics",
+      "status": "CLOSED",
+      "artifacts": ["mk0/02-quarries/Q-001-CANONICAL-TRANSACTIONS.md"],
+      "dependsOn": ["P-001", "P-002", "C-001", "C-002"],
+      "validates": ["Q-002", "DM-001", "S-001", "T-001", "G-MK0"],
+      "revalidates": ["P-001", "P-002", "C-001", "C-002"],
+      "evidence": [
+        "spikes/canonical-resolver/fixtures/classification-cases.json",
+        "spikes/canonical-resolver/src/resolver.js",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/Q-001.md"
+    },
+    {
+      "id": "Q-002",
+      "kind": "quarry",
+      "title": "Fingerprinting, deduplication and idempotency",
+      "status": "CLOSED",
+      "artifacts": ["mk0/02-quarries/Q-002-FINGERPRINTING.md"],
+      "dependsOn": ["P-002", "Q-001"],
+      "validates": ["DM-001", "S-001", "T-001", "G-MK0"],
+      "revalidates": ["P-002", "Q-001"],
+      "evidence": [
+        "spikes/canonical-resolver/BENCHMARK-CONTRACT.md",
+        "spikes/canonical-resolver/src/resolver.js",
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/Q-002.md"
+    },
+    {
+      "id": "C-001",
+      "kind": "contradiction",
+      "title": "External transfer is not an economic category",
+      "status": "CLOSED",
+      "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
+      "dependsOn": [],
+      "validates": ["Q-001"],
+      "revalidates": ["Q-001", "DM-001", "G-MK0"],
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/C-001.md"
+    },
+    {
+      "id": "C-002",
+      "kind": "contradiction",
+      "title": "Refund and reversal require relationship-aware offsets",
+      "status": "CLOSED",
+      "artifacts": ["graph/CONTRADICTIONS.md", "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md"],
+      "dependsOn": [],
+      "validates": ["Q-001"],
+      "revalidates": ["Q-001", "DM-001", "G-MK0"],
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": "mk0/11-decisions/closure-receipts/C-002.md"
+    },
+    {
+      "id": "Q-003",
+      "kind": "quarry",
+      "title": "Gmail production feasibility",
+      "status": "ACTIVE",
+      "artifacts": ["mk0/02-quarries/Q-003-GMAIL-POLICY.md"],
+      "dependsOn": ["P-001"],
+      "validates": ["A-001", "SEC-001", "S-003", "T-003", "G-MK0"],
+      "revalidates": ["P-001"],
+      "evidence": [
+        "mk0/02-quarries/Q-003-GMAIL-POLICY.md",
+        "research/GMAIL-2026-SOURCES.md",
+        "spikes/physical-ingress/README.md",
+        "spikes/physical-ingress/src/provider.js",
+        "spikes/physical-ingress/src/ingress.js",
+        "spikes/physical-ingress/test/ingress.test.js",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-004",
+      "kind": "quarry",
+      "title": "Email privacy and data minimization",
+      "status": "ACTIVE",
+      "artifacts": ["mk0/02-quarries/Q-004-EMAIL-PRIVACY.md"],
+      "dependsOn": ["P-001", "P-002"],
+      "validates": ["A-001", "SEC-001", "S-003", "T-003", "G-MK0"],
+      "revalidates": ["P-001", "P-002"],
+      "evidence": [
+        "mk0/02-quarries/Q-004-EMAIL-PRIVACY.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
+        "tools/validate-privacy-matrix.mjs",
+        "spikes/physical-ingress/src/privacy.js",
+        "spikes/physical-ingress/src/vault.js",
+        "spikes/physical-ingress/test/ingress.test.js",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "Q-005",
+      "kind": "quarry",
+      "title": "Local-first E2EE multi-device synchronization",
+      "status": "ACTIVE",
+      "artifacts": [
+        "mk0/02-quarries/Q-005-LOCAL-FIRST-SYNC.md",
+        "mk0/04-architecture/PERIPHERAL-NERVOUS-SYSTEM.md",
+        "mk0/04-architecture/PARASYMPATHETIC-SYNC.md",
+        "mk0/11-decisions/ADR-014-RECOVERY-WITHOUT-SERVER-MASTER-KEY.md"
+      ],
+      "dependsOn": ["P-002"],
+      "validates": ["A-001", "DM-001", "SEC-001", "S-002", "T-002", "G-MK0"],
+      "revalidates": ["P-002"],
+      "evidence": [
+        "spikes/e2ee-sync/src/protocol.js",
+        "spikes/e2ee-sync/src/scheduler.js",
+        "spikes/e2ee-sync/src/sequence.js",
+        "spikes/e2ee-sync/src/recovery.js",
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
+        "mk0/05-data-model/SYNC-KEY-MODEL.md",
+        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "A-001",
+      "kind": "architecture",
+      "title": "Core architecture",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/04-architecture/CORE-ARCHITECTURE.md"],
+      "dependsOn": ["Q-003", "Q-004", "Q-005"],
+      "validates": ["DM-001", "G-MK0"],
+      "revalidates": ["Q-003", "Q-004", "Q-005"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "SEC-001",
+      "kind": "security",
+      "title": "Security and privacy architecture",
+      "status": "DRAFTED",
+      "artifacts": [
+        "mk0/04-architecture/SECURITY-PRIVACY.md",
+        "mk0/04-architecture/Q005-SECURITY-REVALIDATION.md"
+      ],
+      "dependsOn": ["Q-003", "Q-004", "Q-005"],
+      "validates": ["DM-001", "G-MK0"],
+      "revalidates": ["Q-003", "Q-004", "Q-005", "A-001"],
+      "evidence": [
+        "research/SYNC-CRYPTO-2026-SOURCES.md",
+        "research/Q005-PRODUCTION-CRYPTO-2026-SOURCES.md",
+        "mk0/04-architecture/PRIVACY-DATA-MATRIX.json",
+        "mk0/04-architecture/PRIVACY-RECOVERY-MATRIX.json",
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "DM-001",
+      "kind": "data-model",
+      "title": "Core data model",
+      "status": "DRAFTED",
+      "artifacts": [
+        "mk0/05-data-model/CORE-DATA-MODEL.md",
+        "mk0/05-data-model/INVARIANTS.md",
+        "mk0/05-data-model/ECONOMIC-EFFECT-MODEL.md",
+        "mk0/05-data-model/SYNC-KEY-MODEL.md"
+      ],
+      "dependsOn": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
+      "validates": ["WF-001", "G-MK0"],
+      "revalidates": ["P-002", "Q-001", "Q-002", "Q-005", "A-001", "SEC-001"],
+      "evidence": [
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md",
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-001",
+      "kind": "spike",
+      "title": "Canonical resolver feasibility spike",
+      "status": "ACTIVE",
+      "artifacts": ["spikes/canonical-resolver/src/resolver.js"],
+      "dependsOn": ["Q-001", "Q-002"],
+      "validates": ["T-001"],
+      "revalidates": ["Q-001", "Q-002", "DM-001"],
+      "evidence": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-001",
+      "kind": "test",
+      "title": "Canonical resolver invariant suite",
+      "status": "PASS",
+      "artifacts": [
+        "spikes/canonical-resolver/test/resolver.test.js",
+        "spikes/canonical-resolver/test/corpus.test.js",
+        "spikes/canonical-resolver/test/fingerprinting.test.js",
+        "spikes/canonical-resolver/test/fingerprinting-benchmark.test.js",
+        "spikes/canonical-resolver/test/economic-effect.test.js",
+        ".github/workflows/mk0-foundation.yml"
+      ],
+      "dependsOn": ["P-002", "Q-001", "Q-002", "S-001"],
+      "validates": [],
+      "revalidates": ["P-002", "Q-001", "Q-002", "S-001", "DM-001"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        "mk0/10-evidence/EV-MK0-ECG-2026-09-01.md",
+        "mk0/10-evidence/EV-Q001-Q002-CLOSURE-CANDIDATE-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-002",
+      "kind": "spike",
+      "title": "E2EE multi-device convergence, autonomic sync and recovery spike",
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/e2ee-sync/src/protocol.js",
+        "spikes/e2ee-sync/src/scheduler.js",
+        "spikes/e2ee-sync/src/sequence.js",
+        "spikes/e2ee-sync/src/recovery.js"
+      ],
+      "dependsOn": ["Q-005"],
+      "validates": ["T-002"],
+      "revalidates": ["Q-005", "DM-001", "SEC-001", "Q-004"],
+      "evidence": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-002",
+      "kind": "test",
+      "title": "E2EE sync, parasympathetic and recovery invariant suite",
+      "status": "PASS",
+      "artifacts": [
+        "spikes/e2ee-sync/test/protocol.test.js",
+        "spikes/e2ee-sync/test/scheduler.test.js",
+        "spikes/e2ee-sync/test/sequence.test.js",
+        "spikes/e2ee-sync/test/lease-failure.test.js",
+        "spikes/e2ee-sync/test/recovery.test.js",
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml"
+      ],
+      "dependsOn": ["Q-005", "S-002"],
+      "validates": [],
+      "revalidates": ["Q-005", "S-002", "DM-001", "SEC-001", "Q-004"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml",
+        "mk0/10-evidence/EV-Q005-PERIPHERAL-PARASYMPATHETIC-2026-09-01.md",
+        "mk0/10-evidence/EV-Q005-RECOVERY-ELECTROSHOCK-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "S-003",
+      "kind": "spike",
+      "title": "Physical financial ingress contractual harness",
+      "status": "ACTIVE",
+      "artifacts": [
+        "spikes/physical-ingress/README.md",
+        "spikes/physical-ingress/src/provider.js",
+        "spikes/physical-ingress/src/ingress.js",
+        "spikes/physical-ingress/src/vault.js",
+        "spikes/physical-ingress/src/privacy.js"
+      ],
+      "dependsOn": ["Q-003", "Q-004"],
+      "validates": ["T-003"],
+      "revalidates": ["Q-003", "Q-004", "Q-001", "Q-002", "A-001", "SEC-001"],
+      "evidence": [
+        "spikes/physical-ingress/test/ingress.test.js",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "T-003",
+      "kind": "test",
+      "title": "Physical ingress, recovery and privacy invariant suite",
+      "status": "PASS",
+      "artifacts": [
+        "spikes/physical-ingress/test/ingress.test.js",
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml"
+      ],
+      "dependsOn": ["Q-003", "Q-004", "S-003"],
+      "validates": [],
+      "revalidates": ["Q-003", "Q-004", "S-003", "Q-001", "Q-002", "A-001", "SEC-001"],
+      "evidence": [
+        ".github/workflows/mk0-foundation.yml",
+        ".github/workflows/heartbeat.yml",
+        "mk0/10-evidence/EV-Q003-Q004-INGRESS-HARNESS-2026-09-01.md"
+      ],
+      "closureReceipt": null
+    },
+    {
+      "id": "WF-001",
+      "kind": "ux",
+      "title": "Signature wireframes",
+      "status": "DRAFTED",
+      "artifacts": ["mk0/06-wireframes/SIGNATURE-WIREFRAMES.md", "mk0/06-wireframes/VIEWPORT-CONTRACT.md"],
+      "dependsOn": ["P-001", "P-002", "DM-001"],
+      "validates": ["G-MK0"],
+      "revalidates": ["P-001", "P-002", "DM-001"],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "OPS-001",
+      "kind": "operations",
+      "title": "Repository merge governance",
+      "status": "OPEN",
+      "artifacts": ["ops/MERGE-GATE.md"],
+      "dependsOn": [],
+      "validates": ["G-MK0"],
+      "revalidates": [],
+      "evidence": [],
+      "closureReceipt": null
+    },
+    {
+      "id": "G-MK0",
+      "kind": "gate",
+      "title": "MK0 BUILD_READY",
+      "status": "BLOCKED",
+      "artifacts": ["mk0/12-release/RELEASE-GATES.md", "STATUS.md"],
+      "dependsOn": ["Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001", "OPS-001"],
+      "validates": [],
+      "revalidates": ["P-001", "P-002", "Q-001", "Q-002", "Q-003", "Q-004", "Q-005", "A-001", "SEC-001", "DM-001", "WF-001", "OPS-001"],
+      "evidence": [],
+      "closureReceipt": null
+    }
+  ]
+}
