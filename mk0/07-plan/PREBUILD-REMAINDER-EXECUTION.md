@@ -36,12 +36,15 @@ No binary execution occurs in Phase 0.
 
 Use only the canonical Alpha.2 APK pinned by the design graph.
 
+The candidate id and binary identity are read from `graph/alpha2-canonical-candidate.json`; this plan intentionally does not hard-code a historical build number. An internal development candidate is not eligible for R1 until an explicit canonical-promotion receipt exists.
+
+
 ### Required output set
 
 ```text
-FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2001.apk
-FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2001.apk.sha256
-FinanceSensor-ALPHA2-R2-STABLE-0.2.0-alpha.2+2001.apk.receipt.txt
+FinanceSensor-ALPHA2-R2-STABLE-<CANONICAL_CANDIDATE>.apk
+FinanceSensor-ALPHA2-R2-STABLE-<CANONICAL_CANDIDATE>.apk.sha256
+FinanceSensor-ALPHA2-R2-STABLE-<CANONICAL_CANDIDATE>.apk.receipt.txt
 ```
 
 The receipt is the only signing artifact eligible for repository ingestion. The private keystore/password remain outside the repository and outside sanitized evidence.
