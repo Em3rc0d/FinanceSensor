@@ -1,0 +1,69 @@
+{
+  "schema": "RES-001B-GATE-02-RESULT-V1",
+  "date": "2026-11-20",
+  "status": "FAIL",
+  "reason": "SQLCipher OPEN_READONLY mutates WAL shared-memory state or creates WAL sidecars",
+  "sourceHeadBeforeUpdate": "35d3ca74edf01f4edcb299b2df678758c7b75100",
+  "environment": {
+    "agp": "9.1.1",
+    "gradle": "9.3.1",
+    "compileSdk": 37,
+    "instrumentedApi": 35,
+    "applicationId": "com.financesensor.lab.res001b.synthetic",
+    "githubActionsUsed": false
+  },
+  "dependency": {
+    "coordinate": "net.zetetic:sqlcipher-android:4.18.0",
+    "aarSha256": "f59aaf02ffd4de649f85a6c0d296f9a91763764c07707997834abc0cfc745222",
+    "resolved": "PASS"
+  },
+  "instrumentation": {
+    "tests": 8,
+    "finalRun1": "PASS",
+    "finalRun2": "PASS",
+    "failuresPerFinalRun": 0,
+    "skippedPerFinalRun": 0,
+    "junitXmlSha256": "6727736fab0993aea1d84ce10d337de3a70e0ba591509f02cc048ecf3d72cb21",
+    "testSourceSha256": "0512400bab553aba5aa5e9aaa3c3a97e5103ef0cced97e7b9424b24896f1d3c6"
+  },
+  "matrix": {
+    "encryptedFixture": "PASS",
+    "rollbackReadOnlyNoWrite": "PASS",
+    "writeStatementRejected": "PASS",
+    "missingDatabaseNoCreate": "PASS",
+    "wrongKeyNoMutation": "PASS",
+    "schemaV1NoMigration": "PASS",
+    "schemaV2NoMigration": "PASS",
+    "incompatibleSchemaRejected": "PASS",
+    "missingSyntheticKeyMaterialNoCreate": "PASS",
+    "liveWalShmNoMutation": "FAIL",
+    "closedWalSidecarNoCreation": "FAIL",
+    "archivedWal": "NOT_RUN",
+    "productionBridge": "NOT_RUN",
+    "privateInventory": "NOT_RUN"
+  },
+  "walEvidence": {
+    "live": "main DB and WAL unchanged; SHM content changed",
+    "closed": "main DB unchanged; empty WAL and 32768-byte SHM created"
+  },
+  "baseline": {
+    "pythonSyntheticTests": "PASS 5/5",
+    "installedPocketFinancesBefore": 2020,
+    "installedPocketFinancesAfter": 2020,
+    "personalApkBuilt": false,
+    "bankDataAccessed": false
+  },
+  "remainingBlockers": [
+    "No proven SQLCipher strategy prevents WAL/SHM mutation in place",
+    "Archived WAL bundle remains unqualified",
+    "Existing hardware-backed key path remains untested",
+    "Production aggregate bridge remains unimplemented"
+  ],
+  "privacy": {
+    "realTransactions": false,
+    "bankDocuments": false,
+    "credentials": false,
+    "rawKeys": false,
+    "rowLevelLogs": false
+  }
+}
