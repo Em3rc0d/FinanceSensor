@@ -2,6 +2,7 @@ import hashlib
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from safe_inventory import inventory, DiagnosticRefused
 
@@ -9,7 +10,7 @@ class InventoryTests(unittest.TestCase):
     def setUp(self):
         self.t = tempfile.TemporaryDirectory()
         self.path = Path(self.t.name)/'synthetic.db'
-        with sqlite3.connect(self.path) as con:
+        with closing(sqlite3.connect(self.path)) as con:
             con.executescript("""
             CREATE TABLE statement_sources(source_receipt_id TEXT PRIMARY KEY, terminal_state TEXT);
             CREATE TABLE derived_evidence(evidence_id TEXT, semantic_type TEXT, flow_direction TEXT,
@@ -40,7 +41,9 @@ class InventoryTests(unittest.TestCase):
         with self.assertRaises(DiagnosticRefused): inventory(p)
         self.assertFalse(p.exists())
     def test_unexpected_schema(self):
-        with sqlite3.connect(self.path) as con: con.execute('DROP TABLE derived_evidence')
+        with closing(sqlite3.connect(self.path)) as con:
+            con.execute('DROP TABLE derived_evidence')
+            con.commit()
         with self.assertRaises(DiagnosticRefused): inventory(self.path)
     def test_no_write_permission(self):
         self.path.chmod(0o444)

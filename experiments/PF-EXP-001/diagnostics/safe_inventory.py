@@ -1,5 +1,6 @@
 """RES-001B synthetic SQLite aggregation prototype; NOT a SQLCipher reader."""
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from urllib.parse import quote
 
@@ -23,7 +24,11 @@ def inventory(db_path: Path) -> dict:
         raise DiagnosticRefused('DB_NOT_PRESENT')
     uri = 'file:' + quote(str(path.resolve()), safe='/') + '?mode=ro'
     try:
-        with sqlite3.connect(uri, uri=True, timeout=1) as con:
+        # sqlite3.Connection.__exit__ finalizes the transaction but does not
+        # close the handle. Explicit closing is required for deterministic
+        # cleanup on Windows and prevents a diagnostic reader from retaining
+        # an unnecessary lock after returning its aggregate.
+        with closing(sqlite3.connect(uri, uri=True, timeout=1)) as con:
             con.execute('PRAGMA query_only=ON')
             con.set_authorizer(_authorizer)
             for table, required in {
